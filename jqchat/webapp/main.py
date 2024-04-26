@@ -1,0 +1,392 @@
+# The GPT web UI as a template based Flask app
+import os
+import requests
+import asyncio
+import json
+import re
+import logging
+import sys
+import openai
+from openai import OpenAI
+import pandas as pd
+
+from collections import deque
+
+from flask_cors import CORS
+from flask import Flask, request, jsonify, send_from_directory, Response
+from dotenv import load_dotenv
+
+from jqchat.kernel_program.main import APP_PORT as KERNEL_APP_PORT
+
+load_dotenv('.env')
+# 但官方推荐使用client = OpenAI()
+base_url=os.getenv("OPENAI_API_BASE",'https://api.openai.com/v1')
+openai_client = OpenAI()
+openai_client.base_url = base_url
+
+#todo 保留openai只是暂时不想改代码
+openai.default_headers = {"x-foo": "true"}  #新增的，来自官方 https://github.com/openai/openai-python/tree/e9724398d2bdd87ba41f199c3577303f1b80f2c7
+openai.api_version = os.environ.get("OPENAI_API_VERSION")
+openai.log = os.getenv("OPENAI_API_LOGLEVEL")
+
+
+OPENAI_EXTRA_HEADERS = json.loads(os.environ.get("OPENAI_EXTRA_HEADERS", "{}"))
+
+if openai.api_type == "open_ai":
+    AVAILABLE_MODELS = json.loads(os.environ.get("OPENAI_MODELS", '''[{"displayName": "GPT-3.5", "name": "gpt-3.5-turbo"}, {"displayName": "GPT-4", "name": "gpt-4"}]'''))
+elif openai.api_type == "azure":
+    try:
+        AVAILABLE_MODELS = json.loads(os.environ["AZURE_OPENAI_DEPLOYMENTS"])
+    except KeyError as e:
+        raise RuntimeError('AZURE_OPENAI_DEPLOYMENTS environment variable not set') from e
+else:
+    raise ValueError(f'Invalid OPENAI_API_TYPE: {openai.api_type}')
+
+UPLOAD_FOLDER = 'workspace/'
+os.makedirs(UPLOAD_FOLDER, exist_ok=True)
+
+
+APP_PORT = int(os.environ.get("WEB_PORT", 8080))
+
+
+class LimitedLengthString:
+    def __init__(self, maxlen=2000):
+        self.data = deque()
+        self.len = 0
+        self.maxlen = maxlen
+
+    def append(self, string):
+        self.data.append(string)
+        self.len += len(string)
+        while self.len > self.maxlen:
+            popped = self.data.popleft()
+            self.len -= len(popped)
+
+    def get_string(self):
+        result = ''.join(self.data)
+        return result[-self.maxlen:]
+
+
+message_buffer = LimitedLengthString()
+
+
+def allowed_file(filename):
+    return True
+
+
+def inspect_file(filename: str) -> str:
+    READER_MAP = {
+        '.csv': pd.read_csv,
+        '.tsv': pd.read_csv,
+        '.xlsx': pd.read_excel,
+        '.xls': pd.read_excel,
+        '.xml': pd.read_xml,
+        '.json': pd.read_json,
+        '.hdf': pd.read_hdf,
+        '.hdf5': pd.read_hdf,
+        '.feather': pd.read_feather,
+        '.parquet': pd.read_parquet,
+        '.pkl': pd.read_pickle,
+        '.sql': pd.read_sql,
+    }
+
+    _, ext = os.path.splitext(filename)
+
+    try:
+        df = READER_MAP[ext.lower()](filename)
+        return f'The file contains the following columns: {", ".join(df.columns)}'
+    except KeyError:
+        return ''  # unsupported file type
+    except Exception:
+        return ''  # file reading failed. - Don't want to know why.
+
+system_prompt=f"""Act as a data analyst hereby referred to as EXPERT with ten years of experience in the domain of data anylasis. Your role is to help inexperienced people explore/analyse data. Be sure to help the user understand what to focus on and give suggestions on where it would make sense to dig deeper.
+    If generating Python code, follow the instructions under [GENERATE_PYTHON_INSTRUCTIONS].
+    
+    [GENERATE_PYTHON_INSTRUCTIONS]
+    Notes: 
+        First, think step by step what you want to do and write it down in English.
+        Then generate valid Python code in a code block 
+        Make sure all code is valid - it will be run in a Jupyter Python 3 kernel environment. 
+        Define every variable before you use it.
+        For data munging, you can use 
+            'numpy', # numpy==1.26.2
+            'dateparser', # dateparser==1.2.0
+            'pandas', # pandas==1.5.3
+            'geopandas', # geopandas==0.14.1
+        For pdf extraction, you can use
+            'PyPDF2', # PyPDF2==3.0.1
+            'pdfminer', # pdfminer==20191125
+            'pdfplumber', # pdfplumber==0.10.3
+        For data visualization, you can use
+            'matplotlib', # matplotlib==3.8.2
+        Be sure to generate charts with matplotlib. If you need geographical charts, use geopandas with the geopandas.datasets module.
+        If the user has just uploaded a file, focus on the file that was most recently uploaded (and optionally all previously uploaded files)
+    
+    Teacher mode: if the code modifies or produces a file, at the end of the code block insert a print statement that prints a link to it as HTML string: <a href='/download?file=INSERT_FILENAME_HERE'>Download file</a>. Replace INSERT_FILENAME_HERE with the actual filename.
+    """
+
+# todo:需同步更新readme中安装的软件包和这里的版本描述
+async def get_code(user_prompt, user_openai_key=None, model="gpt-4"):
+
+    user_code_prompt = f"""First, here is a history of what I asked you to do earlier. 
+    The actual prompt follows after ENDOFHISTORY. 
+    History:
+    {message_buffer.get_string()}
+    ENDOFHISTORY.
+    Aiming to help the user in the best possible way with the below [USER_PROMPT] do one of the following:
+    1. Write Python code, in a triple backtick Markdown code block, that supports what the user is trying to achieve. Use the instructions under [GENERATE_PYTHON_INSTRUCTIONS]
+    2. Answer the question the user asks.
+    3. Ask follow-up questions to better understand what the user wants to achieve. 
+    
+    [USER_PROMPT]
+    {user_prompt}
+    """
+
+    if user_openai_key:
+        openai.api_key = user_openai_key
+
+    arguments = dict(
+        temperature=0.1,
+        # headers=OPENAI_EXTRA_HEADERS,
+        messages=[
+            {"role": "system", "content": system_prompt},
+            {"role": "user", "content": user_code_prompt},
+        ]
+    )
+
+    if openai.api_type == 'open_ai':
+        arguments["model"] = model
+    elif openai.api_type == 'azure':
+        arguments["deployment_id"] = model
+    else:
+        return None, f"Error: Invalid OPENAI_PROVIDER: {openai.api_type}", 500
+
+    try:
+        result_GPT = openai_client.chat.completions.create(**arguments)
+
+        if 'error' in result_GPT:
+            raise openai.APIError(code=result_GPT.error.code, message=result_GPT.error.message)
+
+        if result_GPT.choices[0].finish_reason == 'content_filter':
+            raise openai.APIError('Content Filter')
+
+    except openai.OpenAIError as e:
+        return None, f"Error from API: {e}", 500
+
+    try:
+        content = result_GPT.choices[0].message.content
+
+    except AttributeError:
+        return None, f"Malformed answer from API: {content}", 500
+    
+    print('Will extract code from the content text:\n' + content)
+
+    def extract_code(text):
+        # Match triple backtick blocks first
+        triple_match = re.search(r'```(?:\w+\n)?(.+?)```', text, re.DOTALL)
+        if triple_match:
+            return triple_match.group(1).strip()
+        else:
+            # If no triple backtick blocks, match single backtick blocks
+            single_match = re.search(r'`(.+?)`', text, re.DOTALL)
+            if single_match:
+                return single_match.group(1).strip()
+
+    return extract_code(content), content.strip(), 200
+
+
+async def get_chat(user_prompt, user_openai_key=None, model="gpt-3.5-turbo"):
+
+    user_chat_prompt = f"""First, here is a history of what I asked you to do earlier. 
+    The actual prompt follows after ENDOFHISTORY. 
+    History:
+    {message_buffer.get_string()}
+    ENDOFHISTORY.
+    {user_prompt}
+    DO NOT GENERATE ANY CODE
+    Teacher mode: if the results return a link to a file that was generated, make sure to include the link in your answer.
+    """
+
+    # print('user_chat_prompt:\n' + user_chat_prompt)
+
+    if user_openai_key:
+        openai.api_key = user_openai_key
+
+    arguments = dict(
+        temperature=0.1,
+        # headers=OPENAI_EXTRA_HEADERS,
+        messages=[
+            {"role": "system", "content": system_prompt},
+            {"role": "user", "content": user_chat_prompt},
+        ]
+    )
+
+    if openai.api_type == 'open_ai':
+        arguments["model"] = model
+    elif openai.api_type == 'azure':
+        arguments["deployment_id"] = model
+    else:
+        return None, f"Error: Invalid OPENAI_PROVIDER: {openai.api_type}", 500
+
+    try:
+        # result_GPT = openai.ChatCompletion.create(**arguments)
+        result_GPT =openai_client.chat.completions.create(**arguments)
+
+        if 'error' in result_GPT:
+            raise openai.APIError(code=result_GPT.error.code, message=result_GPT.error.message)
+
+        if result_GPT.choices[0].finish_reason == 'content_filter':
+            raise openai.APIError('Content Filter')
+
+    except openai.OpenAIError as e:
+        return None, f"Error from API: {e}", 500
+
+    try:
+        content = result_GPT.choices[0].message.content
+
+    except AttributeError:
+        return None, f"Malformed answer from API: {content}", 500
+    return content, 200
+
+# We know this Flask app is for local use. So we can disable the verbose Werkzeug logger
+log = logging.getLogger('werkzeug')
+log.setLevel(logging.ERROR)
+
+cli = sys.modules['flask.cli']
+cli.show_server_banner = lambda *x: None
+
+app = Flask(__name__)
+app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
+
+CORS(app)
+
+
+@app.route('/')
+def index():
+
+    # Check if index.html exists in the static folder
+    if not os.path.exists(os.path.join(app.root_path, 'static/index.html')):
+        print("index.html not found in static folder. Exiting. Did you forget to run `make compile_frontend` before installing the local package?")
+
+    return send_from_directory('static', 'index.html')
+
+
+@app.route("/models")
+def models():
+    return jsonify(AVAILABLE_MODELS)
+
+
+@app.route('/api/<path:path>', methods=["GET", "POST"])
+def proxy_kernel_manager(path):
+    if request.method == "POST":
+        print('starting code execution')
+        resp = requests.post(
+            f'http://localhost:{KERNEL_APP_PORT}/{path}', json=request.get_json())
+        
+        requestjson = request.get_json()
+        print(f"""started code execution with status: {resp.status_code} {requestjson}""")
+    else:
+        resp = requests.get(f'http://localhost:{KERNEL_APP_PORT}/{path}')
+
+    excluded_headers = ['content-encoding',
+                        'content-length', 'transfer-encoding', 'connection']
+    headers = [(name, value) for (name, value) in resp.raw.headers.items()
+               if name.lower() not in excluded_headers]
+
+    response = Response(resp.content, resp.status_code, headers)
+    return response
+
+
+@app.route('/assets/<path:path>')
+def serve_static(path):
+    return send_from_directory('static/assets/', path)
+
+
+@app.route('/download')
+def download_file():
+
+    # Get query argument file
+    file = request.args.get('file')
+    # from `workspace/` send the file
+    # make sure to set required headers to make it download the file
+    return send_from_directory(os.path.join(os.getcwd(), 'workspace'), file, as_attachment=True)
+
+
+@app.route('/inject-context', methods=['POST'])
+def inject_context():
+    user_prompt = request.json.get('prompt', '')
+
+    # Append all messages to the message buffer for later use
+    message_buffer.append(user_prompt + "\n\n")
+
+    return jsonify({"result": "success"})
+
+
+@app.route('/generate', methods=['POST'])
+# def generate_code():
+def agent_entry():
+    print('触发python_backend......jqchat/webapp/main.py#L257')
+    user_prompt = request.json.get('prompt', '')
+    print('=='*30)
+    print(f'user_prompt:\n{user_prompt}')
+    user_openai_key = request.json.get('openAIKey', None)
+    model = request.json.get('model', None)
+
+    loop = asyncio.new_event_loop()
+    asyncio.set_event_loop(loop)
+    code, text, status = loop.run_until_complete(
+        get_code(user_prompt, user_openai_key, model))
+    print('~~'*30)
+    print('ai_code:')
+    print(code)
+    loop.close()
+    print('~~'*30)
+    print('=='*30)
+    # Append all messages to the message buffer for later use
+    message_buffer.append(user_prompt + "\n\n")
+
+    return jsonify({'code': code, 'text': text}), status
+
+@app.route('/chat', methods=['POST'])
+def generate_chat():
+    #all of this comes from the system, not the user!
+    user_prompt = request.json.get('prompt', '')
+    user_openai_key = request.json.get('openAIKey', None)
+    model = request.json.get('model', None)
+    print('CHAT_TEXT: ' + user_prompt)
+    loop = asyncio.new_event_loop()
+    asyncio.set_event_loop(loop)
+
+    text, status = loop.run_until_complete(
+        get_chat(user_prompt, user_openai_key, model))
+    loop.close()
+
+    print('CHAT_TEXT: ' + text)
+
+    # Append all messages to the message buffer for later use
+    message_buffer.append('USER: ' + user_prompt + "\n\n")
+    print(f"""RETURNING TO UI: ${status}""")
+    return jsonify({'text': text}), status
+
+@app.route('/upload', methods=['POST'])
+def upload_file():
+    # check if the post request has the file part
+    if 'file' not in request.files:
+        return jsonify({'error': 'No file part in the request'}), 400
+    file = request.files['file']
+    # if user does not select file, browser also
+    # submit an empty part without filename
+    if file.filename == '':
+        return jsonify({'error': 'No selected file'}), 400
+    if file and allowed_file(file.filename):
+        file_target = os.path.join(app.config['UPLOAD_FOLDER'], file.filename)
+        file.save(file_target)
+        file_info = inspect_file(file_target)
+        return jsonify({'message': f'File {file.filename} uploaded successfully.\n{file_info}'}), 200
+    else:
+        return jsonify({'error': 'File type not allowed'}), 400
+
+
+if __name__ == '__main__':
+    app.run(host="0.0.0.0", port=APP_PORT, debug=True, use_reloader=False)
