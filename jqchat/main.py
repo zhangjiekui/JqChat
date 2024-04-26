@@ -39,17 +39,6 @@ def setup_logging():
     file_handler.setFormatter(logging.Formatter(log_format))
     logging.getLogger().addHandler(file_handler)
 
-def print_color(text, color="gray"):
-    # Default to gray
-    code="242"
-
-    if color == "green":
-        code="35"
-    
-    gray_code = "\033[38;5;%sm" % code
-    reset_code = "\033[0m"
-    print(f"{gray_code}{text}{reset_code}")
-
 
 def print_banner():
         print("")

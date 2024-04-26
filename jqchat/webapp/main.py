@@ -68,27 +68,31 @@ class LimitedLengthString:
 
 
 message_buffer = LimitedLengthString()
-
+READER_MAP = {
+    '.csv': pd.read_csv,
+    '.tsv': pd.read_csv,
+    '.xlsx': pd.read_excel,
+    '.xls': pd.read_excel,
+    '.xml': pd.read_xml,
+    '.json': pd.read_json,
+    '.hdf': pd.read_hdf,
+    '.hdf5': pd.read_hdf,
+    '.feather': pd.read_feather,
+    '.parquet': pd.read_parquet,
+    '.pkl': pd.read_pickle,
+    '.sql': pd.read_sql,
+}
 
 def allowed_file(filename):
-    return True
+    _, ext = os.path.splitext(filename)
+    if ext in READER_MAP.keys():
+        return True
+    else:
+        return False
 
 
 def inspect_file(filename: str) -> str:
-    READER_MAP = {
-        '.csv': pd.read_csv,
-        '.tsv': pd.read_csv,
-        '.xlsx': pd.read_excel,
-        '.xls': pd.read_excel,
-        '.xml': pd.read_xml,
-        '.json': pd.read_json,
-        '.hdf': pd.read_hdf,
-        '.hdf5': pd.read_hdf,
-        '.feather': pd.read_feather,
-        '.parquet': pd.read_parquet,
-        '.pkl': pd.read_pickle,
-        '.sql': pd.read_sql,
-    }
+
 
     _, ext = os.path.splitext(filename)
 
@@ -337,6 +341,9 @@ def agent_entry():
     asyncio.set_event_loop(loop)
     code, text, status = loop.run_until_complete(
         get_code(user_prompt, user_openai_key, model))
+    
+
+    
     print('~~'*30)
     print('ai_code:')
     print(code)
@@ -387,6 +394,10 @@ def upload_file():
     else:
         return jsonify({'error': 'File type not allowed'}), 400
 
+def test():
+    print(allowed_file('a.csv'))
+    print(allowed_file('a.xx'))
 
 if __name__ == '__main__':
+    # test()
     app.run(host="0.0.0.0", port=APP_PORT, debug=True, use_reloader=False)
