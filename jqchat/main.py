@@ -9,7 +9,6 @@ import logging
 import asyncio
 import time
 import webbrowser
-
 from multiprocessing import Process
 
 from jqchat.webapp.main import app, APP_PORT
@@ -53,6 +52,8 @@ def print_banner():
         print("=="*30)  
 
 def main():
+    
+
     setup_logging()
 
     webapp_process = Process(target=run_webapp)

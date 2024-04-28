@@ -6,28 +6,25 @@ import json
 import re
 import logging
 import sys
-import openai
-from openai import OpenAI
+
+
 import pandas as pd
 
 from collections import deque
 
 from flask_cors import CORS
 from flask import Flask, request, jsonify, send_from_directory, Response
-from dotenv import load_dotenv
 
 from jqchat.kernel_program.main import APP_PORT as KERNEL_APP_PORT
+from jqcode.c0_init_env_models import get_openai,get_openai_client
 
-load_dotenv('.env')
-# 但官方推荐使用client = OpenAI()
-base_url=os.getenv("OPENAI_API_BASE",'https://api.openai.com/v1')
-openai_client = OpenAI()
-openai_client.base_url = base_url
 
 #todo 保留openai只是暂时不想改代码
-openai.default_headers = {"x-foo": "true"}  #新增的，来自官方 https://github.com/openai/openai-python/tree/e9724398d2bdd87ba41f199c3577303f1b80f2c7
-openai.api_version = os.environ.get("OPENAI_API_VERSION")
-openai.log = os.getenv("OPENAI_API_LOGLEVEL")
+openai = get_openai()
+# 官方推荐使用client = OpenAI()
+openai_client = get_openai_client()
+
+
 
 
 OPENAI_EXTRA_HEADERS = json.loads(os.environ.get("OPENAI_EXTRA_HEADERS", "{}"))
@@ -131,7 +128,7 @@ system_prompt=f"""Act as a data analyst hereby referred to as EXPERT with ten ye
     """
 
 # todo:需同步更新readme中安装的软件包和这里的版本描述
-async def get_code(user_prompt, user_openai_key=None, model="gpt-4"):
+async def get_code(user_prompt, user_openai_key="NotNeeded", model="gpt-4"):
 
     user_code_prompt = f"""First, here is a history of what I asked you to do earlier. 
     The actual prompt follows after ENDOFHISTORY. 
@@ -343,7 +340,7 @@ def agent_entry():
         get_code(user_prompt, user_openai_key, model))
     
 
-    
+
     print('~~'*30)
     print('ai_code:')
     print(code)
@@ -401,3 +398,16 @@ def test():
 if __name__ == '__main__':
     # test()
     app.run(host="0.0.0.0", port=APP_PORT, debug=True, use_reloader=False)
+
+    # litellm ollama proxy https://github.com/BerriAI/litellm/blob/5583197d635158bbe9be41b5ca797a975ef3c905/docs/my-website/docs/tutorials/model_config_proxy.md
+    # litellm --model ollama_chat/wizardlm2:8x22b-q2_K https://microsoft.github.io/autogen/docs/topics/non-openai-models/local-litellm-ollama/
+    # https://github.com/ollama/ollama/blob/main/docs/gpu.md
+    # ollama run wizardlm2:8x22b-q2_K
+
+
+    # litellm --model ollama_chat/wizardlm2:8x22b-q2_K  --api_base https://my-endpoint.com
+    #  Uvicorn running on http://0.0.0.0:4000
+    # "model": "NotRequired", # Loaded with LiteLLM command
+    # "api_key": "NotRequired", # Not needed
+    # "base_url": "http://0.0.0.0:4000"  # Your LiteLLM URL
+    # 配置https://github.com/ollama/ollama/blob/main/docs/faq.md#how-do-i-configure-ollama-server
