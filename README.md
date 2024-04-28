@@ -1,4 +1,17 @@
 
+## Git同步
+### 本地
+```sh
+cd /home/jqsoft/AgentRagChatCI/AgentRagChatCI-0.0.1
+git add .
+git commit -a
+```
+
+### 同步
+```sh
+git push
+```
+
 ## Installation
 
 ubuntu上推荐下面的安装和运行方法:
