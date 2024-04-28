@@ -35,7 +35,7 @@ embedding_model_name_8k = os.getenv("EMBEDDING_MODEL_8k",'jinaai/jina-embeddings
 
 ELASTIC_PASSWORD = os.getenv("ELASTIC_PASSWORD")
 CERT_FINGERPRINT = os.getenv("CERT_FINGERPRINT")
-ES_URL = os.getenv("ELASTIC_PASSWORD","https://localhost:9200")
+ES_URL = os.getenv("ES_URL","https://localhost:9200")
 
 def get_openai():
     openai.api_type = api_type
@@ -70,12 +70,15 @@ def get_emb_rerank_8k_model():
         model_kwargs=embedding_model_kwargs,
         encode_kwargs=embedding_encode_kwargs,
     )
+    print(f'{embedding_model_name=}初始化成功！')
 
     reranker_args = {'model': rerank_model_name, 'top_n': 5, 'device': 'cuda:2'}
     reranker = BCERerank(**reranker_args)
+    print(f'{rerank_model_name=}初始化成功！')
 
     embedding_model_8k = SentenceTransformer(embedding_model_name_8k, trust_remote_code=True, device='cuda:3')
     embedding_model_8k.max_seq_length = 8192
+    print(f'{embedding_model_name_8k=}初始化成功！{embedding_model_8k.max_seq_length=}，可根据实际需要进行修改。')
     return embed_model,reranker,embedding_model_8k
 
 
@@ -92,6 +95,7 @@ def get_es_connection():
     print('-------Elasticsearch Connection详细信息-------')
     print(es_connection.info())
     print('-------Elasticsearch Connection详细信息-------')
+    print('-------可以通过Kibana URL查看:| http://127.0.0.1:5601 | -------')
     return es_connection
 
 if __name__ == '__main__':
