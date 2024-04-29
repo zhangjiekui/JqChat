@@ -4,8 +4,6 @@ import pathlib
 import openai
 from openai import OpenAI
 from langchain_openai import ChatOpenAI
-
-from langchain_community.embeddings import HuggingFaceEmbeddings
 from BCEmbedding.tools.langchain import BCERerank
 from sentence_transformers import SentenceTransformer
 
@@ -30,8 +28,8 @@ api_type =os.getenv("OPENAI_API_TYPE",'open_ai')
 llm_model_name = os.getenv("LLM_MODEL_NAME",'gpt-4')
 
 embedding_model_name = os.getenv("EMBEDDING_MODEL_NAME",'maidalun1020/bce-embedding-base_v1')
-rerank_model_name = os.getenv("RERANK_MODEL_NAME",'maidalun1020/bce-reranker-base_v1') #supports long passages (more than 512 tokens, less than 32k tokens) reranking
 embedding_model_name_8k = os.getenv("EMBEDDING_MODEL_8k",'jinaai/jina-embeddings-v2-base-zh') # max_tokes =8192
+rerank_model_name = os.getenv("RERANK_MODEL_NAME",'maidalun1020/bce-reranker-base_v1') #supports long passages (more than 512 tokens, less than 32k tokens) reranking
 
 ELASTIC_PASSWORD = os.getenv("ELASTIC_PASSWORD")
 CERT_FINGERPRINT = os.getenv("CERT_FINGERPRINT")
@@ -47,7 +45,7 @@ def get_openai():
 # 直接使用OpenAI
 def get_openai_client():
     openai_client = OpenAI(base_url=base_url,api_key=api_key)
-    print(f'当前使用的OpenAI模型base_url为:{openai_client.base_url}')
+    print(f'当前使用的模型base_url为:OpenAI, {openai_client.base_url}')
     return openai_client
 
 def get_langchain_chat_model():
@@ -58,13 +56,18 @@ def get_langchain_chat_model():
         streaming=True,
         temperature=0
     )
-    print(f'当前使用的Langchain ChatOpenAI模型为:{chat_model.model_name},API_URL为{chat_model.openai_api_base}')
+    print(f'当前使用的模型为:Langchain ChatOpenAI, {chat_model.model_name},API_URL为{chat_model.openai_api_base}')
     return chat_model
 
 # todo: embedding_model_8k with langchain
-def get_emb_rerank_8k_model():
+def get_emb_8k_rerank_model(model_name=embedding_model_name):
+    if 'bge' in embedding_model_name: 
+        # 有query_instruction https://github.com/langchain-ai/langchain/blob/ee94ef55ee6ab064da08340817955f821dfa6261/libs/langchain/langchain/embeddings/huggingface.py#L187
+        from langchain_community.embeddings import HuggingFaceBgeEmbeddings as HuggingFaceEmbeddings
+    else:
+        from langchain_community.embeddings import HuggingFaceEmbeddings
     embedding_model_kwargs = {'device': 'cuda:1'}
-    embedding_encode_kwargs = {'batch_size': 32, 'normalize_embeddings': True, 'show_progress_bar': False}
+    embedding_encode_kwargs = {'batch_size': 32, 'normalize_embeddings': True}
     embed_model = HuggingFaceEmbeddings(
         model_name=embedding_model_name,
         model_kwargs=embedding_model_kwargs,
@@ -79,7 +82,7 @@ def get_emb_rerank_8k_model():
     embedding_model_8k = SentenceTransformer(embedding_model_name_8k, trust_remote_code=True, device='cuda:3')
     embedding_model_8k.max_seq_length = 8192
     print(f'{embedding_model_name_8k=}初始化成功！{embedding_model_8k.max_seq_length=}，可根据实际需要进行修改。')
-    return embed_model,reranker,embedding_model_8k
+    return embed_model,embedding_model_8k,reranker
 
 
 def get_es_connection(): 
@@ -98,11 +101,42 @@ def get_es_connection():
     print('-------可以通过Kibana URL查看:| http://127.0.0.1:5601 | -------')
     return es_connection
 
+# 方式一，使用LangChain indexing API，防止重复插入
+# https://python.langchain.com/docs/modules/data_connection/indexing 
+
+def get_es_searchstore_index_documents(documents,embedding,es_connection,index_name,cleanup="incremental",clear_before_add_index=True):
+    es_searchstore = ElasticsearchStore(es_connection=es_connection, index_name=index_name, embedding=embedding)
+    namespace = f"elasticsearch/{index_name}"
+    record_manager = SQLRecordManager(namespace, db_url="sqlite:///record_manager_cache.sql")
+    record_manager.create_schema()
+    
+    def _clear():
+        """Hacky helper method to clear content. See the `full` mode section to to understand why it works."""
+    clear_result_report = index([], record_manager, es_searchstore, cleanup="full", source_id_key="source")
+    print(f'Clear_Result report of "index_documents_to_es_searchstore":{clear_result_report}')
+
+    if clear_before_add_index:
+        _clear()
+    es_searchstore.index_name=index_name
+    index_result_report=index(documents, record_manager, es_searchstore, cleanup=cleanup, source_id_key="source")
+    print(f'Index_Result report of "index_documents_to_es_searchstore":{index_result_report}')
+
+    es_searchstore.client.indices.refresh(index=index_name)
+    return es_searchstore
+
+# 方式二：常见的在教程中见到的
+def get_es_searchstore_from_documents(documents,embedding,es_connection,index_name,strategy=ElasticsearchStore.ApproxRetrievalStrategy(hybrid=True)):
+    es_searchstore = ElasticsearchStore.from_documents(documents=documents,embedding=embedding,es_connection=es_connection,index_name=index_name,strategy=strategy)
+    es_searchstore.client.indices.refresh(index=index_name)
+    es_searchstore.index_name=index_name
+    return es_searchstore
+
 if __name__ == '__main__':
+    # litellm --model ollama_chat/qwen:110b-chat-v1.5-q4_K_M
     open_ai = get_openai()
     openai_client = get_openai_client()
     langchain_chat_model = get_langchain_chat_model()
-    embed_model,reranker,embedding_model_8k = get_emb_rerank_8k_model()
+    embed_model,reranker,embedding_model_8k = get_emb_8k_rerank_model()
     es_connection = get_es_connection()
     
 
