@@ -54,8 +54,10 @@ def get_langchain_chat_model():
         openai_api_base=base_url,    
         openai_api_key= api_key,
         streaming=True,
-        temperature=0
+        temperature=0,
+        max_tokens=5000
     )
+    #.bind(response_format={"type": "json_object"})
     print(f'当前使用的模型为:Langchain ChatOpenAI, {chat_model.model_name},API_URL为{chat_model.openai_api_base}')
     return chat_model
 
@@ -133,6 +135,7 @@ def get_es_searchstore_from_documents(documents,embedding,es_connection,index_na
 
 if __name__ == '__main__':
     # litellm --model ollama_chat/qwen:110b-chat-v1.5-q4_K_M
+    # litellm --model ollama_chat/llama3:70b-instruct
     open_ai = get_openai()
     openai_client = get_openai_client()
     langchain_chat_model = get_langchain_chat_model()
