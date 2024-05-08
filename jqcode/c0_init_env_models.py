@@ -54,11 +54,11 @@ def get_langchain_chat_model():
         openai_api_base=base_url,    
         openai_api_key= api_key,
         streaming=True,
-        temperature=0,
+        temperature=0.2,
         max_tokens=5000
     )
     #.bind(response_format={"type": "json_object"})
-    print(f'当前使用的模型为:Langchain ChatOpenAI, {chat_model.model_name},API_URL为{chat_model.openai_api_base}')
+    print(f'当前使用的模型为:Langchain ChatOpenAI, {chat_model.model_name}, API_URL为{chat_model.openai_api_base}')
     return chat_model
 
 # todo: embedding_model_8k with langchain
@@ -68,7 +68,7 @@ def get_emb_8k_rerank_model(model_name=embedding_model_name):
         from langchain_community.embeddings import HuggingFaceBgeEmbeddings as HuggingFaceEmbeddings
     else:
         from langchain_community.embeddings import HuggingFaceEmbeddings
-    embedding_model_kwargs = {'device': 'cuda:1'}
+    embedding_model_kwargs = {'device': 'cpu'}
     embedding_encode_kwargs = {'batch_size': 32, 'normalize_embeddings': True}
     embed_model = HuggingFaceEmbeddings(
         model_name=embedding_model_name,
@@ -77,11 +77,11 @@ def get_emb_8k_rerank_model(model_name=embedding_model_name):
     )
     print(f'{embedding_model_name=}初始化成功！')
 
-    reranker_args = {'model': rerank_model_name, 'top_n': 5, 'device': 'cuda:2'}
+    reranker_args = {'model': rerank_model_name, 'top_n': 5, 'device': 'cpu'}
     reranker = BCERerank(**reranker_args)
     print(f'{rerank_model_name=}初始化成功！')
 
-    embedding_model_8k = SentenceTransformer(embedding_model_name_8k, trust_remote_code=True, device='cuda:3')
+    embedding_model_8k = SentenceTransformer(embedding_model_name_8k, trust_remote_code=True, device='cpu')
     embedding_model_8k.max_seq_length = 8192
     print(f'{embedding_model_name_8k=}初始化成功！{embedding_model_8k.max_seq_length=}，可根据实际需要进行修改。')
     return embed_model,embedding_model_8k,reranker
@@ -141,5 +141,16 @@ if __name__ == '__main__':
     langchain_chat_model = get_langchain_chat_model()
     embed_model,reranker,embedding_model_8k = get_emb_8k_rerank_model()
     es_connection = get_es_connection()
+    from langchain_core.messages import HumanMessage,SystemMessage
+    res = langchain_chat_model.invoke([SystemMessage('请使用中文回答我！'), HumanMessage('你好')])
+    print(res)
     
+
+    '''
+docker run --shm-size=64g --name xinference103 -d -p 9997:9997 -e XINFERENCE_MODEL_SRC=modelscope -v /home/jqsoft/.xinference:/root/.xinference -v /home/jqsoft/.cache/huggingface:/root/.cache/huggingface -v /home/jqsoft/.cache/modelscope:/root/.cache/modelscope --gpus all xprobe/xinference:latest xinference-local -H 0.0.0.0 --log-level debug
+
+docker run --shm-size=64g --name xinferencenightly -d -p 9997:9997 -e XINFERENCE_MODEL_SRC=modelscope -v /home/jqsoft/.xinference:/root/.xinference -v /home/jqsoft/.cache/huggingface:/root/.cache/huggingface -v /home/jqsoft/.cache/modelscope:/root/.cache/modelscope --gpus all xprobe/xinference:nightly-main xinference-local -H 0.0.0.0 --log-level debug
+
+
+    '''
 

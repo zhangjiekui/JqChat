@@ -5,6 +5,8 @@ import langchain
 import pprint
 from typing import Literal
 from langchain import hub
+from langchain_core.runnables import RunnableConfig
+from langgraph.pregel import GraphRecursionError
 from langchain_core.output_parsers import StrOutputParser,JsonOutputParser
 from langchain_core.messages import HumanMessage,SystemMessage
 from langchain_core.prompts import ChatPromptTemplate
@@ -15,16 +17,17 @@ from langchain_community.tools.tavily_search import TavilySearchResults ### Sear
 from jqcode.c0_init_env_models import get_langchain_chat_model
 from jqcode.c0_init_env_models import get_emb_8k_rerank_model
 from jqcode.c0_init_env_models import get_es_connection, get_es_searchstore_index_documents,get_es_searchstore_from_documents
-
 from langchain_community.chat_models import ChatOllama
+
 # Set UP: LLM, embeddings,web_search_tool
-web_search_tool = TavilySearchResults()
-llm = get_langchain_chat_model()
-# llm = ChatOllama(name='Qwen110B',model='qwen:110b-chat-v1.5-q4_K_M', temperature=0)
+llm = get_langchain_chat_model() # llm = ChatOllama(name='Qwen110B',model='qwen:110b-chat-v1.5-q4_K_M', temperature=0)
 embed_model,embedding_model_8k,reranker = get_emb_8k_rerank_model()
+web_search_tool = TavilySearchResults()
+
+
+### Build Index
 
 # Docs to index
-### Build Index
 urls = [
     "https://lilianweng.github.io/posts/2023-06-23-agent/",
     "https://lilianweng.github.io/posts/2023-03-15-prompt-engineering/",
@@ -41,7 +44,7 @@ def replace_multiple_newlines(text):
 
 docs_list_cleaned = []
 for doc in docs_list:
-    doc.page_content =  replace_multiple_newlines(doc.page_content)
+    doc.page_content = replace_multiple_newlines(doc.page_content)
     docs_list_cleaned.append(doc)
 
 # Split
@@ -55,28 +58,71 @@ es_connection = get_es_connection()
 vectorstore = get_es_searchstore_index_documents(documents=doc_splits, es_connection=es_connection,embedding=embed_model,index_name='test')
 retriever = vectorstore.as_retriever()
 
+### Router
+# Data model
+class web_search(BaseModel):
+    """
+    The internet. Use web_search for questions that are related to anything else than agents, prompt engineering, and adversarial attacks.
+    """
+    query: str = Field(description="The query to use when searching the internet.")
+
+class vectorstore(BaseModel):
+    """
+    A vectorstore containing documents related to agents, prompt engineering, and adversarial attacks. Use the vectorstore for questions on these topics.
+    """
+    query: str = Field(description="The query to use when searching the vectorstore.")
+
+# Preamble
+preamble_llm_router = """You are an expert at answer the user's question: (1)answer user directly if you do know how to response; or (2) routing a user question to a vectorstore or web search.
+The vectorstore contains documents related to agents, prompt engineering, and adversarial attacks, use the vectorstore for questions on these topics.
+Otherwise, use web-search if you don't know how to answer the questions."""
+
+structured_llm_router = llm.bind_tools(tools=[web_search, vectorstore])
+# Prompt
+route_prompt = ChatPromptTemplate.from_messages(
+    [
+        ("system",preamble_llm_router),
+        ("human", "{question}"),
+    ]
+)
+
+question_router = route_prompt | structured_llm_router
+response = question_router.invoke({"question": "Who will the Bears draft first in the NFL draft?"})
+print(f"{response.content=}")
+print(f"{response.tool_calls=}")
+response = question_router.invoke({"question": "What are the types of agent memory?"})
+print(f"{response.content=}")
+print(f"{response.tool_calls=}")
+response = question_router.invoke({"question": "Hi how are you?"})
+print(f"{response.content=}")
+print(f"{response.tool_calls=}")
+
+
 ### Retrieval Grader
 
 # Retrieval Grader Data model
-class GradeDocuments(BaseModel):
-    """Binary score for relevance check on retrieved documents."""
-    binary: str = Field(description="Documents are relevant to the question, VALUE must be 'yes' or 'no'")
+class GradeDocumentsRelavance(BaseModel):
+    """Binary classification for relevance check on retrieved documents."""
+    k: str = Field(description="Whether Documents are relevant to the question, k must be 'yes' or 'no'")
 
-# Retrieval Grader Prompt
-preamble = """You are a grader assessing relevance of a retrieved document to a user question. \nIf the document contains keyword(s) or semantic meaning related to the user question, grade it as relevant.\nIt does not need to be a stringent test.The goal is to filter out erroneous retrievals.\nGive a binary classification 'yes' or 'no' to indicate whether the document is relevant to the question.\nProvide me the binary classification with JSON: a single KEY 'binary' and VALUE must be 'yes' or 'no'.No preamble or explaination.
+# Retrieval Documents Relavance Grader Prompt
+preamble_documents_relevant_grader = """You are a grader assessing relevance of a retrieved document to a user question. \nIf the document contains keyword(s) or semantic meaning related to the user question, grade it as relevant.\nIt does not need to be a stringent test.The goal is to filter out erroneous retrievals.\nGive a binary classification 'yes' or 'no' to indicate whether the document is relevant to the question.\nProvide me the binary classification with JSON: a single KEY 'k' and VALUE must be 'yes' or 'no'.No preamble or explaination.
 """
-# structured_llm_documents_relevant_grader = llm.with_structured_output(GradeDocuments, method="json_mode")
-structured_llm_documents_relevant_grader = llm.with_structured_output(GradeDocuments, include_raw=True)
-grade_prompt = ChatPromptTemplate.from_messages(
+# structured_llm_documents_relevant_grader = llm.with_structured_output(GradeDocumentsRelavance, method="json_mode")
+# structured_llm_documents_relevant_grader = llm.with_structured_output(GradeDocumentsRelavance, include_raw=True)
+structured_llm_documents_relevant_grader = llm.with_structured_output(GradeDocumentsRelavance)
+retrieval_document_relevance_prompt = ChatPromptTemplate.from_messages(
     [
-        ("system",preamble),
-        ("human", "Retrieved document: \n\n {document} \n\n User question: {question}\n\nResponse me just a simple JSON: a single key 'binary', and the value must be 'yes' or 'no'"),
+        ("system",preamble_documents_relevant_grader),
+        ("human", "Retrieved document: \n\n {document} \n\n User question: {question}\n\nResponse me just a simple JSON: a single KRY 'r', and the VALUE must be 'yes' or 'no'"),
     ]
 )
-# Retrieval Grader
-retrieval_grader = grade_prompt | structured_llm_documents_relevant_grader
-# response =  retrieval_grader.invoke({"question": "张结魁", "document": "张结魁"})
-# print("question: 张结魁, document: 张结魁",response)
+# Retrieval Documents Relavance Grader
+retrieval_document_relevance_grader = retrieval_document_relevance_prompt | structured_llm_documents_relevant_grader
+response =  retrieval_document_relevance_grader.invoke({"question": "张结魁", "document": "张结魁"})
+print("question: 张结魁, document: 张结魁",response)
+response =  retrieval_document_relevance_grader.invoke({"question": "张结魁", "document": "笑傲江湖"})
+print("question: 张结魁, document: 笑傲江湖",response)
 
 question = "types of memory"
 docs = retriever.invoke(question)
@@ -85,19 +131,19 @@ for doc in docs:
     doc_txt = doc.page_content
     print(f"{question=}")
     print(f"doc_txt的类型：{type(doc_txt)}")
-    # print(f"doc_txt的内容：{doc_txt}") #太长，根据需要取消注释
-    response =  retrieval_grader.invoke({"question": question, "document": doc_txt})
+    print(f"doc_txt的内容：{doc_txt}") #太长，根据需要取消注释
+    response =  retrieval_document_relevance_grader.invoke({"question": question, "document": doc_txt})
     print(f"{response=}")
 
 
 ### RAG Generate
 # Preamble
-preamble = """You are an assistant for question-answering tasks. Use the following pieces of retrieved context to answer the question. If you don't know the answer, just say that you don't know. Use three sentences maximum and keep the answer concise."""
+preamble_rag = """You are an assistant for question-answering tasks. Use the following pieces of retrieved context to answer the question. If you don't know the answer, just say that you don't know. Use three sentences maximum and keep the answer concise."""
 
 # Prompt
 prompt = lambda x: ChatPromptTemplate.from_messages(
     [
-        SystemMessage(preamble),
+        SystemMessage(preamble_rag),
         HumanMessage(
             f"Question: {x['question']} \nAnswer: ",
             additional_kwargs={"documents": x["documents"]},
@@ -117,13 +163,13 @@ generation = rag_chain_generation
 
 ### LLM Generate/Fallback
 # Preamble
-preamble = """You are an assistant for question-answering tasks. Answer the question based upon your knowledge. Use three sentences maximum and keep the answer concise."""
+preamble_llm = """You are an assistant for question-answering tasks. Answer the question based upon your knowledge. Use three sentences maximum and keep the answer concise."""
 
 
 # Prompt
 prompt = lambda x: ChatPromptTemplate.from_messages(
     [
-        SystemMessage(preamble),
+        SystemMessage(preamble_llm),
         HumanMessage(
             f"Question: {x['question']} \nAnswer: "
         )
@@ -143,65 +189,71 @@ generation = llm_chain.invoke({"question": question})
 # Supported Grader Data model
 class GradeSupported(BaseModel):
     """Binary classification for whether an answer is supported by a set of facts."""
-    binary: str = Field(description="Answer is supported by the facts, VALUE must be 'yes' or 'no'")
+    k: str = Field(description="Whether answer is supported by the facts, k must be 'yes' or 'no'")
 
 #Supported Grader Preamble
-preamble = """You are a grader assessing whether an answer is supported by a set of facts.\nGive a binary classification 'yes' or 'no'  to indicate whether the answer is supported by a set of facts.\nProvide the binary classification as a JSON with a single KEY 'binary' and VALUE must be 'yes' or 'no', such as "binary":"yes" or "binary":"no", and no preamble or explaination. """
+# preamble = """You are a grader assessing whether an answer is supported by a set of facts.\nGive a binary classification 'yes' or 'no'  to indicate whether the answer is supported by a set of facts.\nProvide me the binary classification with JSON: a single KEY 'k' and VALUE must be 'yes' or 'no'.No preamble or explaination. """
 
-structured_llm_hallucinations_grader = llm.with_structured_output(GradeSupported, method="json_mode",include_raw=True)
-# structured_llm_hallucinations_grader = llm.with_structured_output(GradeSupported, include_raw=True)
+preamble_answer_is_supported_by_documents_grader = """You are a grader assessing whether an answer is supported by a set of facts.\nProvide me a binary classification with JSON: a single KEY 'k' and VALUE must be 'yes' or 'no', 'yes' means the answer is supported by the provided set of facts.No preamble or explaination. """
+
+# structured_llm_hallucinations_grader = llm.with_structured_output(GradeSupported, method="json_mode",include_raw=True)
+structured_llm_answer_is_supported_by_documents_grader = llm.with_structured_output(GradeSupported)
 # Supported (Hallucination) Grader Prompt
-hallucination_prompt = ChatPromptTemplate.from_messages(
+answer_is_supported_by_documents_prompt = ChatPromptTemplate.from_messages(
     [
-        ("system", preamble),
-        ("human", "Here are the set of facts: \n\n {documents} \n\n Here is the answer: {generation}"),
+        ("system", preamble_answer_is_supported_by_documents_grader),
+        ("human", "Here are the set of facts: \n\n {documents} \n\n Here is the answer: {generation}\n\nResponse me just a simple JSON: a single KEY 'k', and the VALUE must be 'yes' or 'no'"),
     ]
 )
 
-hallucination_grader = hallucination_prompt | structured_llm_hallucinations_grader 
-# hallucination_hallucinations_grader_json_mode = hallucination_prompt | structured_llm_hallucinations_grader_json_mode
+answer_is_supported_by_documents_grader = answer_is_supported_by_documents_prompt | structured_llm_answer_is_supported_by_documents_grader 
 print(f'{generation=}')
-# response =  hallucination_grader_default_function_mode.invoke({"documents": docs, "generation": generation})
-response1 =  hallucination_grader.invoke({"documents": docs, "generation": generation})
-print(response1['raw'].content)
+response =  answer_is_supported_by_documents_grader.invoke({"documents": docs, "generation": generation})
+print(f"{response=}")
 
-# response =  hallucination_grader_default_function_mode.invoke({"documents": docs, "generation": rag_chain_generation})
-response1 =  hallucination_grader.invoke({"documents": docs, "generation": rag_chain_generation})
+response =  answer_is_supported_by_documents_grader.invoke({"documents": docs, "generation": rag_chain_generation})
 print(f'{rag_chain_generation=}')
-print(response1)
+print(f"{response=}")
 
 ### Answer Grader
 
 # Data model
 class GradeAnswer(BaseModel):
-    """Binary score to assess answer addresses question."""
+    """Binary classification to assess answer addresses question."""
 
-    binary_score: str = Field(description="Answer addresses the question, 'yes' or 'no'")
+    k: str = Field(description="Whether answer addresses the question, k must be 'yes' or 'no'")
 
 # Preamble
-preamble = """You are a grader assessing whether an answer addresses / resolves a question \n
-Give a binary score 'yes' or 'no'. yes' means that the answer resolves the question. Must be: "binary_score":"yes" or "binary_score":"no" """
+preamble_answer_grader = """You are a grader assessing whether an answer addresses / resolves a question \n
+Provide me a binary classification with JSON: a single KEY 'k' and VALUE must be 'yes' or 'no', 'yes' means the answer addresses / resolves the question.No preamble or explaination."""
 
-structured_llm_grader = llm.with_structured_output(GradeAnswer, include_raw=True)
+# structured_llm_answer_grader = llm.with_structured_output(GradeAnswer, include_raw=True)
+structured_llm_answer_grader = llm.with_structured_output(GradeAnswer)
 
 # Prompt
 answer_prompt = ChatPromptTemplate.from_messages(
     [
-        ("system",preamble),
-        ("human", "User question: \n\n {question} \n\n LLM generation: {generation}"),
+        ("system",preamble_answer_grader),
+        ("human", "question: \n\n {question} \n\n answer: {generation}\n\nResponse me just a simple JSON: a single KEY 'k', and the VALUE must be 'yes' or 'no'"),
     ]
 )
-
-answer_grader = answer_prompt | structured_llm_grader
+answer_grader = answer_prompt | structured_llm_answer_grader
 print(f'{question=}')
 print(f'{generation=}')
-answer_grader.invoke({"question": question,"generation": generation})
+response = answer_grader.invoke({"question": question,"generation": generation})
+print(f"{response=}")
 
 rag_question='types of memory'
 # rag_chain_generation
 print(f'{rag_question=}')
 print(f'{rag_chain_generation=}')
-answer_grader.invoke({"question": rag_question,"generation": rag_chain_generation})
+response = answer_grader.invoke({"question": rag_question,"generation": rag_chain_generation})
+print(f"{response=}")
+
+print(f'{question=}')
+print(f'{rag_chain_generation=}')
+response = answer_grader.invoke({"question": question,"generation": rag_chain_generation})
+print(f"{response=}")
 
 ### GraphState
 from typing_extensions import TypedDict
@@ -273,6 +325,7 @@ def generate(state):
 
     # RAG generation
     generation = rag_chain.invoke({"documents": documents, "question": question})
+    # rag_chain.invoke({"documents": docs, "question": question}) 
     return {"documents": documents, "question": question, "generation": generation}
 
 def grade_documents(state):
@@ -293,14 +346,20 @@ def grade_documents(state):
     # Score each doc
     filtered_docs = []
     for d in documents:
-        score = retrieval_grader.invoke({"question": question, "document": d.page_content})
-        grade = score.binary_score
-        if grade == "yes":
-            print("---GRADE: DOCUMENT RELEVANT---")
+        score = retrieval_document_relevance_grader.invoke({"question": question, "document": d.page_content})
+        try:
+            grade = score.k
+            if grade == "yes":
+                print("---GRADE: DOCUMENT RELEVANT---")
+                filtered_docs.append(d)
+            else:
+                print("---GRADE: DOCUMENT NOT RELEVANT---")
+                continue
+        except Exception as e:
+            print(f"---ERROR: 无法获取'问题-文档相关性'的判别结果，详细错误信息如下:---")
+            print(e)
             filtered_docs.append(d)
-        else:
-            print("---GRADE: DOCUMENT NOT RELEVANT---")
-            continue
+
     return {"documents": filtered_docs, "question": question}
 
 def web_search(state):
@@ -320,7 +379,13 @@ def web_search(state):
     # Web search
     docs = web_search_tool.invoke({"query": question})
     web_results = "\n".join([d["content"] for d in docs])
+    print('Web search results:')
+    print(web_results)
+
+
     web_results = Document(page_content=web_results)
+
+    
 
     return {"documents": web_results, "question": question}
 
@@ -403,16 +468,31 @@ def grade_generation_v_documents_and_question(state):
     documents = state["documents"]
     generation = state["generation"]
 
-    score = hallucination_grader.invoke({"documents": documents, "generation": generation})
-    grade = score.binary_score
+    # Check hallucination / answer_is_supported_by_documents
+    score = answer_is_supported_by_documents_grader.invoke({"documents": documents, "generation": generation})
+    try:
+        grade = score.k
+    except Exception as e:
+        grade = "yes" # 继续按正常往下执行！
+        print(f"---ERROR: 无法获取'文档-答案支持性'的判别结果，详细错误信息如下:---")
+        print(e)
+        print("---正常往下执行---") 
 
-    # Check hallucination
+    
     if grade == "yes":
         print("---DECISION: GENERATION IS GROUNDED IN DOCUMENTS---")
         # Check question-answering
         print("---GRADE GENERATION vs QUESTION---")
         score = answer_grader.invoke({"question": question,"generation": generation})
-        grade = score.binary_score
+        
+        try:
+            grade = score.k
+        except Exception as e:
+            grade = "yes" # 继续按正常往下执行！
+            print(f"---ERROR: 无法获取'答案-问题解决性'的判别结果，详细错误信息如下:---")
+            print(e)
+            print("---正常往下执行---") 
+
         if grade == "yes":
             print("---DECISION: GENERATION ADDRESSES QUESTION---")
             return "useful"
@@ -420,11 +500,13 @@ def grade_generation_v_documents_and_question(state):
             print("---DECISION: GENERATION DOES NOT ADDRESS QUESTION---")
             return "not useful"
     else:
-        pprint("---DECISION: GENERATION IS NOT GROUNDED IN DOCUMENTS, RE-TRY---")
-        return "not supported"
+        pprint.pprint("---DECISION: GENERATION IS NOT GROUNDED IN DOCUMENTS, RE-TRY---")
+        # return "not supported"
+        return "not supported" # todo
+
     
 ## Build Graph
-import pprint
+
 
 from langgraph.graph import END, StateGraph
 
@@ -469,15 +551,27 @@ workflow.add_edge("llm_fallback", END)
 
 # Compile
 app = workflow.compile()
-
 # Run
-inputs = {"question": "What player are the Bears expected to draft first in the 2024 NFL draft?"}
-for output in app.stream(inputs):
-    for key, value in output.items():
-        # Node
-        pprint.pprint(f"Node '{key}':")
-        # Optional: print full state at each node
-    pprint.pprint("\n---\n")
 
-# Final generation
-pprint.pprint(value["generation"])
+config = RunnableConfig(recursion_limit=5)
+
+questions = ["What are the types of agent memory?","What player are the Bears expected to draft first in the 2024 NFL draft?","合肥是一个什么样的城市？","Hello, how are you today?"]
+for question in questions:
+    print('=*='*20)
+    print(f"{question=}")
+    inputs = {"question": question}
+    try:
+        for output in app.stream(inputs,config):
+            for key, value in output.items():
+                # Node
+                pprint.pprint(f"Node '{key}':")
+                # Optional: print full state at each node
+            pprint.pprint("\n---\n")
+    except GraphRecursionError:
+        print("!!!!!!GraphRecursionError: Graph recursion limit reached.!!!!!!")
+    except Exception as e:
+        print(f"!!!!!!Error: {e}.!!!!!!")
+
+        # Final generation
+    print("answer:")
+    pprint.pprint(value["generation"])
