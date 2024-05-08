@@ -118,10 +118,12 @@ retrieval_document_relevance_prompt = ChatPromptTemplate.from_messages(
 )
 # Retrieval Documents Relavance Grader
 retrieval_document_relevance_grader = retrieval_document_relevance_prompt | structured_llm_documents_relevant_grader
-response =  retrieval_document_relevance_grader.invoke({"question": "张结魁", "document": "张结魁"})
-print("question: 张结魁, document: 张结魁",response)
-response =  retrieval_document_relevance_grader.invoke({"question": "张结魁", "document": "笑傲江湖"})
-print("question: 张结魁, document: 笑傲江湖",response)
+response =  retrieval_document_relevance_grader.invoke({"question": "令狐冲", "document": "令狐冲"})
+print(f"question: 令狐冲, document: 令狐冲. {response=}")
+response =  retrieval_document_relevance_grader.invoke({"question": "令狐冲", "document": "笑傲江湖"})
+print(f"question: 令狐冲, document: 笑傲江湖.{response=}")
+response =  retrieval_document_relevance_grader.invoke({"question": "令狐冲", "document": "林海雪原"})
+print(f"question: 令狐冲, document: 林海雪原.{response=}")
 
 question = "types of memory"
 docs = retriever.invoke(question)
@@ -129,8 +131,8 @@ for doc in docs:
     print('==='*20)
     doc_txt = doc.page_content
     print(f"{question=}")
-    print(f"doc_txt的类型：{type(doc_txt)}")
-    print(f"doc_txt的内容：{doc_txt}") #太长，根据需要取消注释
+    # print(f"doc_txt的类型：{type(doc_txt)}")
+    # print(f"doc_txt的内容：{doc_txt}") #太长，根据需要取消注释
     response =  retrieval_document_relevance_grader.invoke({"question": question, "document": doc_txt})
     print(f"{response=}")
 
