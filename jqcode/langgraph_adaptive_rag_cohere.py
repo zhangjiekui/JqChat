@@ -73,7 +73,7 @@ class vectorstore(BaseModel):
     query: str = Field(description="The query to use when searching the vectorstore.")
 
 # Preamble
-preamble_llm_router = """You are an expert at answer the user's question: (1)answer user directly if you do know how to response; or (2) routing a user question to a vectorstore or web search.
+preamble_llm_router = """You are an expert at answer the user's question: (1)answer user directly if you do know how to response; or (2)routing a user question to a vectorstore or web search.
 The vectorstore contains documents related to agents, prompt engineering, and adversarial attacks, use the vectorstore for questions on these topics.
 Otherwise, use web-search if you don't know how to answer the questions."""
 
@@ -114,7 +114,7 @@ structured_llm_documents_relevant_grader = llm.with_structured_output(GradeDocum
 retrieval_document_relevance_prompt = ChatPromptTemplate.from_messages(
     [
         ("system",preamble_documents_relevant_grader),
-        ("human", "Retrieved document: \n\n {document} \n\n User question: {question}\n\nResponse me just a simple JSON: a single KRY 'r', and the VALUE must be 'yes' or 'no'"),
+        ("human", "Retrieved document: {document} \n\n User question: {question}\n\nResponse me just a simple JSON: a single KRY 'r', and the VALUE must be 'yes' or 'no'"),
     ]
 )
 # Retrieval Documents Relavance Grader
@@ -202,7 +202,7 @@ structured_llm_answer_is_supported_by_documents_grader = llm.with_structured_out
 answer_is_supported_by_documents_prompt = ChatPromptTemplate.from_messages(
     [
         ("system", preamble_answer_is_supported_by_documents_grader),
-        ("human", "Here are the set of facts: \n\n {documents} \n\n Here is the answer: {generation}\n\nResponse me just a simple JSON: a single KEY 'k', and the VALUE must be 'yes' or 'no'"),
+        ("human", "Here are the set of facts: {documents} \n\n Here is the answer: {generation}\n\nResponse me just a simple JSON: a single KEY 'k', and the VALUE must be 'yes' or 'no'"),
     ]
 )
 
@@ -234,7 +234,7 @@ structured_llm_answer_grader = llm.with_structured_output(GradeAnswer)
 answer_prompt = ChatPromptTemplate.from_messages(
     [
         ("system",preamble_answer_grader),
-        ("human", "question: \n\n {question} \n\n answer: {generation}\n\nResponse me just a simple JSON: a single KEY 'k', and the VALUE must be 'yes' or 'no'"),
+        ("human", "question: {question} \n\n answer: {generation}\n\nResponse me just a simple JSON: a single KEY 'k', and the VALUE must be 'yes' or 'no'"),
     ]
 )
 answer_grader = answer_prompt | structured_llm_answer_grader
@@ -542,7 +542,8 @@ workflow.add_conditional_edges(
     "generate",
     grade_generation_v_documents_and_question,
     {
-        "not supported": "generate", # Hallucinations: re-generate 
+        # "not supported": "generate", # Hallucinations: re-generate 
+        "not supported": END, # todo
         "not useful": "web_search", # Fails to answer question: fall-back to web-search 
         "useful": END,
     },
@@ -567,11 +568,17 @@ for question in questions:
                 pprint.pprint(f"Node '{key}':")
                 # Optional: print full state at each node
             pprint.pprint("\n---\n")
+
     except GraphRecursionError:
         print("!!!!!!GraphRecursionError: Graph recursion limit reached.!!!!!!")
     except Exception as e:
         print(f"!!!!!!Error: {e}.!!!!!!")
 
-        # Final generation
-    print("answer:")
-    pprint.pprint(value["generation"])
+    # Final generation
+    try:
+        print("answer:")
+        pprint.pprint(value["generation"])
+    except:
+        print(output)
+
+        
