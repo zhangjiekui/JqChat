@@ -54,7 +54,7 @@ def get_langchain_chat_model():
         openai_api_base=base_url,    
         openai_api_key= api_key,
         streaming=True,
-        temperature=0.2,
+        temperature=0.0,
         max_tokens=5000
     )
     #.bind(response_format={"type": "json_object"})

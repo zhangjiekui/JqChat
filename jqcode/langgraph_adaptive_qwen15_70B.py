@@ -106,14 +106,14 @@ class GradeDocumentsRelavance(BaseModel):
     k: str = Field(description="Whether Documents are relevant to the question, k must be 'yes' or 'no'")
 
 # Retrieval Documents Relavance Grader Prompt
-preamble_documents_relevant_grader = """You are a grader assessing relevance of a retrieved document to a user question. \nIf the document contains keyword(s) or semantic meaning related to the user question, grade it as relevant.\nIt does not need to be a stringent test.The goal is to filter out erroneous retrievals.\nGive a binary classification 'yes' or 'no' to indicate whether the document is relevant to the question.\nProvide me the binary classification with JSON: a single KEY 'k' and VALUE must be 'yes' or 'no'.No preamble or explaination.
-"""
+preamble_documents_relevant_grader = """You are a grader assessing relevance of a retrieved document to a user question. If the document contains keyword(s) or semantic meaning related to the user question, grade it as relevant. It does not need to be a stringent test.The goal is to filter out erroneous retrievals. Response me with a simple JSON string can be directly consumed by  ‘json.loads’ method, must be ‘{{"k":"yes"}}’ or  ‘{{"k":"no"}}’,'yes' means a retrieved document is related to a user question.No preamble or explaination."""
 # structured_llm_documents_relevant_grader = llm.with_structured_output(GradeDocumentsRelavance, method="json_mode")
 # structured_llm_documents_relevant_grader = llm.with_structured_output(GradeDocumentsRelavance, include_raw=True)
 structured_llm_documents_relevant_grader = llm.with_structured_output(GradeDocumentsRelavance,method='json_mode')
 retrieval_document_relevance_prompt = ChatPromptTemplate.from_messages(
     [
-        ("human", "Retrieved document: {document} \n\n User question: {question}\n\n" + preamble_documents_relevant_grader),
+        ("system",preamble_documents_relevant_grader),
+        ("human", "Retrieved document: {document} \n\n User question: {question}")
     ]
 )
 # Retrieval Documents Relavance Grader
@@ -193,9 +193,9 @@ class GradeSupported(BaseModel):
     k: str = Field(description="Whether answer is supported by the facts, k must be 'yes' or 'no'")
 
 #Supported Grader Preamble
-# preamble = """You are a grader assessing whether an answer is supported by a set of facts.\nGive a binary classification 'yes' or 'no'  to indicate whether the answer is supported by a set of facts.\nProvide me the binary classification with JSON: a single KEY 'k' and VALUE must be 'yes' or 'no'.No preamble or explaination. """
+# preamble = """You are a grader assessing whether an answer is supported by a set of facts.\nGive a binary classification 'yes' or 'no'  to indicate whether the answer is supported by a set of facts.\nResponse me with a simple JSON string can be directly  consumed by  ’json.loads‘ method : a single KEY 'k' and VALUE must be 'yes' or 'no', such as ’{"k","yes"}‘ or  ’{"k","no"}‘.No preamble or explaination. """
 
-preamble_answer_is_supported_by_documents_grader = """You are a grader assessing whether an answer is supported by a set of facts.\nProvide me a binary classification with JSON: a single KEY 'k' and VALUE must be 'yes' or 'no', 'yes' means the answer is supported by the provided set of facts.No preamble or explaination. """
+preamble_answer_is_supported_by_documents_grader = """You are a grader assessing whether an answer is supported by a set of facts. Response me with a simple JSON string can be directly consumed by  ‘json.loads’ method, must be ‘{{"k":"yes"}}’ or  ‘{{"k":"no"}}’,'yes' means the answer is supported by the provided set of facts.No preamble or explaination. """
 
 # structured_llm_hallucinations_grader = llm.with_structured_output(GradeSupported, method="json_mode",include_raw=True)
 structured_llm_answer_is_supported_by_documents_grader = llm.with_structured_output(GradeSupported, method="json_mode")
@@ -203,7 +203,7 @@ structured_llm_answer_is_supported_by_documents_grader = llm.with_structured_out
 answer_is_supported_by_documents_prompt = ChatPromptTemplate.from_messages(
     [
         ("system", preamble_answer_is_supported_by_documents_grader),
-        ("human", "Here are the set of facts: {documents} \n\n Here is the answer: {generation}\n\nResponse me just a simple JSON: a single KEY 'k', and the VALUE must be 'yes' or 'no'"),
+        ("human", "Here are the set of facts: {documents} \n\n Here is the answer: {generation}"),
     ]
 )
 
@@ -225,8 +225,7 @@ class GradeAnswer(BaseModel):
     k: str = Field(description="Whether answer addresses the question, k must be 'yes' or 'no'")
 
 # Preamble
-preamble_answer_grader = """You are a grader assessing whether an answer addresses / resolves a question \n
-Provide me a binary classification with JSON: a single KEY 'k' and VALUE must be 'yes' or 'no', 'yes' means the answer addresses / resolves the question.No preamble or explaination."""
+preamble_answer_grader = """You are a grader assessing whether an answer addresses / resolves a question. Response me with a simple JSON string can be directly consumed by  ‘json.loads’ method, must be ‘{{"k":"yes"}}’ or  ‘{{"k":"no"}}’,'yes' means the answer addresses / resolves the question.No preamble or explaination."""
 
 # structured_llm_answer_grader = llm.with_structured_output(GradeAnswer, include_raw=True)
 structured_llm_answer_grader = llm.with_structured_output(GradeAnswer, method="json_mode")
@@ -235,7 +234,7 @@ structured_llm_answer_grader = llm.with_structured_output(GradeAnswer, method="j
 answer_prompt = ChatPromptTemplate.from_messages(
     [
         ("system",preamble_answer_grader),
-        ("human", "question: {question} \n\n answer: {generation}\n\nResponse me just a simple JSON: a single KEY 'k', and the VALUE must be 'yes' or 'no'"),
+        ("human", "question: {question} \n\n answer: {generation}"),
     ]
 )
 answer_grader = answer_prompt | structured_llm_answer_grader
@@ -567,10 +566,9 @@ for question in questions:
         for output in app.stream(inputs,config):
             for key, value in output.items():
                 # Node
-                pprint.pprint(f"Node '{key}':")
-                # Optional: print full state at each node
-            pprint.pprint("\n---\n")
-
+                pprint.pprint(f"Node: {key}")
+                # pprint.pprint(f"Value:\n {value}") # Optional: print full state at each node                
+            
     except GraphRecursionError:
         print("!!!!!!GraphRecursionError: Graph recursion limit reached.!!!!!!")
     except Exception as e:
