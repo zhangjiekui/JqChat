@@ -98,6 +98,32 @@ response = question_router.invoke({"question": "Hi how are you?"})
 print(f"{response.content=}")
 print(f"{response.tool_calls=}")
 
+### Coding Grader
+# Coding Grader Data model
+class GradeCodingRelavance(BaseModel):
+    """Binary classification for a user question is relevant to Python code generating/code executing."""
+    k: str = Field(description="Whether a user question is relevant to Python code generating/code executing, k must be 'yes' or 'no'")
+# Python Code Generating/Code Executing Relavance Grader Prompt
+preamble_coding_relevant_grader = """You are a grader assessing relevance of a user question to Python code generating/code executing. Response me with a simple JSON string can be directly consumed by  ‘json.loads’ method, must be ‘{{"k":"yes"}}’ or  ‘{{"k":"no"}}’,'yes' means a user question is related to Python code generating/code executing.No preamble or explaination."""
+# structured_llm_documents_relevant_grader = llm.with_structured_output(GradeDocumentsRelavance, method="json_mode", include_raw=True)
+structured_llm_coding_relevant_grader = llm.with_structured_output(GradeCodingRelavance,method='json_mode')
+coding_relevance_prompt = ChatPromptTemplate.from_messages(
+    [
+        ("system",preamble_coding_relevant_grader),
+        # SystemMessage(preamble_documents_relevant_grader), #就可以在提示语中不必使用‘{{"k":"yes"}}’
+        ("human", "User question: {question}")
+    ]
+)
+# Coding Relavance Grader
+coding_relevance_grader = coding_relevance_prompt | structured_llm_coding_relevant_grader
+
+query = "令狐冲"
+response =  coding_relevance_grader.invoke({"question": query })
+print(f"question: {query} is related to Python code generating/code executing: {response=}")
+query = "请生成Y=sin(x)的代码并执行"
+response =  coding_relevance_grader.invoke({"question": query })
+print(f"question: {query} is related to Python code generating/code executing: {response=}")
+
 
 ### Retrieval Grader
 
@@ -250,8 +276,9 @@ response = answer_grader.invoke({"question": question,"generation": rag_chain_ge
 print(f"{response=}")
 
 ### GraphState
+from typing import Annotated, List
 from typing_extensions import TypedDict
-from typing import List
+from langgraph.graph.message import add_messages
 
 class GraphState(TypedDict):
     """|
@@ -261,11 +288,13 @@ class GraphState(TypedDict):
         question: question
         generation: LLM generation
         documents: list of documents
+        messages: Annotated[list, add_messages]
     """
     question : str
     generation : str
     documents : List[str]
     question_searched : dict
+    messages: Annotated[list, add_messages]
 
 ## Graph Flow
 from langchain.schema import Document
@@ -511,6 +540,8 @@ def grade_generation_v_documents_and_question(state):
 
 
 from langgraph.graph import END, StateGraph
+from langgraph.checkpoint.aiosqlite import AsyncSqliteSaver
+
 
 workflow = StateGraph(GraphState)
 
@@ -553,15 +584,15 @@ workflow.add_conditional_edges(
 workflow.add_edge("llm_fallback", END)
 
 # Compile
-app = workflow.compile()
-# Visualize this graph in ascii
-app.get_graph().print_ascii()
+memory = AsyncSqliteSaver.from_conn_string(":memory:")
+app = workflow.compile(checkpointer=memory)
+
+# app.get_graph().print_ascii()  #Visualize this graph in ascii
+
 # Run
-
-config = RunnableConfig(recursion_limit=25)
-
-questions = ["What are the types of agent memory?","What player are the Bears expected to draft first in the 2024 NFL draft?","合肥是一个什么样的城市？","Hello, how are you today?"]
-for question in questions:
+config = RunnableConfig(recursion_limit=25) #todo
+config = {"configurable": {"thread_id": "2"}}
+def run_graph_workflow(question:str):
     print('=*='*20)
     print(f"{question=}")
     inputs = {"question": question}
@@ -570,18 +601,33 @@ for question in questions:
             for key, value in output.items():
                 # Node
                 print(f"Node: {key}")
-                # pprint.pprint(f"Value:\n {value}") # Optional: print full state at each node                
+                # pprint.pprint(f"Value:\n {value}") # Optional: print full state at each node
+                # Final generation
+        try:
+            print("answer:")
+            print(value["generation"])
+            result = value["generation"]
+        except:
+            print(output) 
+            result = output               
             
     except GraphRecursionError:
         print("!!!!!!GraphRecursionError: Graph recursion limit reached.!!!!!!")
+        result = 'GraphRecursionError'
     except Exception as e:
         print(f"!!!!!!Error: {e}.!!!!!!")
+        result = f'Exception:{e}'
+    return result
 
-    # Final generation
-    try:
-        print("answer:")
-        print(value["generation"])
-    except:
-        print(output)
 
-        
+
+async def arun_graph_workflow(question:str):
+    return run_graph_workflow(question)
+
+
+if __name__ == '__main__':
+    questions = ["What are the types of agent memory?","What player are the Bears expected to draft first in the 2024 NFL draft?","合肥是一个什么样的城市？","Hello, how are you today?"]
+
+    for question in questions:
+        run_graph_workflow(question)
+

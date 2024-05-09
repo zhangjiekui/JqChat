@@ -16,15 +16,13 @@ from flask_cors import CORS
 from flask import Flask, request, jsonify, send_from_directory, Response
 
 from jqchat.kernel_program.main import APP_PORT as KERNEL_APP_PORT
-from jqcode.c0_init_env_models import get_openai,get_openai_client
-
+from jqcode.c0_init_env_models import get_openai,get_openai_client,llm_model_name,api_key
+from jqcode.langgraph_adaptive_qwen15_70B110B_cleaned import arun_graph_workflow, coding_relevance_grader
 
 #todo 保留openai只是暂时不想改代码
 openai = get_openai()
 # 官方推荐使用client = OpenAI()
 openai_client = get_openai_client()
-
-
 
 
 OPENAI_EXTRA_HEADERS = json.loads(os.environ.get("OPENAI_EXTRA_HEADERS", "{}"))
@@ -41,8 +39,6 @@ else:
 
 UPLOAD_FOLDER = 'workspace/'
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
-
-
 APP_PORT = int(os.environ.get("WEB_PORT", 8080))
 
 
@@ -128,7 +124,7 @@ system_prompt=f"""Act as a data analyst hereby referred to as EXPERT with ten ye
     """
 
 # todo:需同步更新readme中安装的软件包和这里的版本描述
-async def get_code(user_prompt, user_openai_key="NotNeeded", model="gpt-4"):
+async def get_code(user_prompt, user_openai_key=api_key, model=llm_model_name):
 
     user_code_prompt = f"""First, here is a history of what I asked you to do earlier. 
     The actual prompt follows after ENDOFHISTORY. 
@@ -197,7 +193,7 @@ async def get_code(user_prompt, user_openai_key="NotNeeded", model="gpt-4"):
     return extract_code(content), content.strip(), 200
 
 
-async def get_chat(user_prompt, user_openai_key=None, model="gpt-3.5-turbo"):
+async def get_chat(user_prompt, user_openai_key=api_key, model=llm_model_name):
 
     user_chat_prompt = f"""First, here is a history of what I asked you to do earlier. 
     The actual prompt follows after ENDOFHISTORY. 
@@ -331,15 +327,30 @@ def agent_entry():
     user_prompt = request.json.get('prompt', '')
     print('=='*30)
     print(f'user_prompt:\n{user_prompt}')
-    user_openai_key = request.json.get('openAIKey', None)
-    model = request.json.get('model', None)
+    model = llm_model_name
+    user_openai_key = api_key
+
+    # user_openai_key = request.json.get('openAIKey', api_key)
+    # model = request.json.get('model', llm_model_name)
+
+
+    response =  coding_relevance_grader.invoke({"question": user_prompt})
+    print(f"question: {user_prompt} is related to Python code generating/code executing: {response=}")
+    try:
+        is_coding = response.k
+    except:
+        is_coding = 'No'
 
     loop = asyncio.new_event_loop()
     asyncio.set_event_loop(loop)
-    code, text, status = loop.run_until_complete(
-        get_code(user_prompt, user_openai_key, model))
-    
 
+    code, text, status = "print('NoneCode')", "NoneText", 200
+
+    if is_coding == 'yes':
+        code, text, status = loop.run_until_complete(get_code(user_prompt, user_openai_key, model))
+
+    else:
+        text = loop.run_until_complete(arun_graph_workflow(question=user_prompt))
 
     print('~~'*30)
     print('ai_code:')
