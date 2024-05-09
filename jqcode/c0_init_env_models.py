@@ -103,11 +103,21 @@ def get_es_connection():
     print('-------可以通过Kibana URL查看:| http://127.0.0.1:5601 | -------')
     return es_connection
 
+hybrid=False
+strategy=ElasticsearchStore.ApproxRetrievalStrategy(hybrid=hybrid)
+def get_es_searchstore(embedding=None,es_connection=None,index_name='test',strategy=strategy):
+    embedding = embedding if embedding else get_emb_8k_rerank_model()[0]
+    es_connection = es_connection if es_connection else get_es_connection()
+    index_name = index_name if index_name else 'test'    
+    es_searchstore = ElasticsearchStore(es_connection=es_connection, index_name=index_name, embedding=embedding,strategy=strategy)
+    return es_searchstore
+
+
 # 方式一，使用LangChain indexing API，防止重复插入
 # https://python.langchain.com/docs/modules/data_connection/indexing 
 
-def get_es_searchstore_index_documents(documents,embedding,es_connection,index_name,cleanup="incremental",clear_before_add_index=True):
-    es_searchstore = ElasticsearchStore(es_connection=es_connection, index_name=index_name, embedding=embedding)
+def get_es_searchstore_index_documents(documents,embedding,es_connection,index_name,cleanup="incremental",clear_before_add_index=True,strategy=strategy):
+    es_searchstore = ElasticsearchStore(es_connection=es_connection, index_name=index_name, embedding=embedding,strategy=strategy)
     namespace = f"elasticsearch/{index_name}"
     record_manager = SQLRecordManager(namespace, db_url="sqlite:///record_manager_cache.sql")
     record_manager.create_schema()
@@ -127,7 +137,7 @@ def get_es_searchstore_index_documents(documents,embedding,es_connection,index_n
     return es_searchstore
 
 # 方式二：常见的在教程中见到的
-def get_es_searchstore_from_documents(documents,embedding,es_connection,index_name,strategy=ElasticsearchStore.ApproxRetrievalStrategy(hybrid=True)):
+def get_es_searchstore_from_documents(documents,embedding,es_connection,index_name,strategy=strategy):
     es_searchstore = ElasticsearchStore.from_documents(documents=documents,embedding=embedding,es_connection=es_connection,index_name=index_name,strategy=strategy)
     es_searchstore.client.indices.refresh(index=index_name)
     es_searchstore.index_name=index_name
@@ -136,6 +146,10 @@ def get_es_searchstore_from_documents(documents,embedding,es_connection,index_na
 if __name__ == '__main__':
     # litellm --model ollama_chat/qwen:110b-chat-v1.5-q4_K_M
     # litellm --model ollama_chat/llama3:70b-instruct
+    es_searchstore = get_es_searchstore()
+
+    
+
     open_ai = get_openai()
     openai_client = get_openai_client()
     langchain_chat_model = get_langchain_chat_model()
