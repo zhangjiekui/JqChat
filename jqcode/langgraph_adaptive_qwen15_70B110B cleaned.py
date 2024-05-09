@@ -1,13 +1,8 @@
-### Tracing (optional)
-import os
 import re
-import langchain
 import pprint
-from typing import Literal
-from langchain import hub
 from langchain_core.runnables import RunnableConfig
 from langgraph.pregel import GraphRecursionError
-from langchain_core.output_parsers import StrOutputParser,JsonOutputParser
+from langchain_core.output_parsers import StrOutputParser
 from langchain_core.messages import HumanMessage,SystemMessage
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_core.pydantic_v1 import BaseModel, Field
@@ -270,6 +265,7 @@ class GraphState(TypedDict):
     question : str
     generation : str
     documents : List[str]
+    question_searched : dict
 
 ## Graph Flow
 from langchain.schema import Document
@@ -324,7 +320,7 @@ def generate(state):
 
     # RAG generation
     generation = rag_chain.invoke({"documents": documents, "question": question})
-    # rag_chain.invoke({"documents": docs, "question": question}) 
+
     return {"documents": documents, "question": question, "generation": generation}
 
 def grade_documents(state):
@@ -378,15 +374,11 @@ def web_search(state):
     # Web search
     docs = web_search_tool.invoke({"query": question})
     web_results = "\n".join([d["content"] for d in docs])
-    print('Web search results:')
+    print('Web Search Results:')
     print(web_results)
 
-
     web_results = Document(page_content=web_results)
-
-    
-
-    return {"documents": web_results, "question": question}
+    return {"documents": web_results, "question": question, "question_searched":{question:True}}
 
 ### Edges ###
 
@@ -437,7 +429,7 @@ def decide_to_generate(state):
         str: Binary decision for next node to call
     """
 
-    print("---ASSESS GRADED DOCUMENTS---")
+    print("---DECIDED TO GENERATE OR WEB SEARCH BASED ON HAVINE ANY DOCUMENTS RELEVANT TO QUESTION ---")
     question = state["question"]
     filtered_documents = state["documents"]
 
@@ -466,7 +458,7 @@ def grade_generation_v_documents_and_question(state):
     question = state["question"]
     documents = state["documents"]
     generation = state["generation"]
-
+ 
     # Check hallucination / answer_is_supported_by_documents
     score = answer_is_supported_by_documents_grader.invoke({"documents": documents, "generation": generation})
     try:
@@ -497,11 +489,21 @@ def grade_generation_v_documents_and_question(state):
             return "useful"
         else:
             print("---DECISION: GENERATION DOES NOT ADDRESS QUESTION---")
-            return "not useful"
+            
+            try:
+                question_has_searched = state["question_searched"][question]
+            except:
+                question_has_searched = False
+            
+            if question_has_searched:
+                print("---BUT WE HAVE WEB SEARCHED THE QUESTION, SO DIRECTLY ROUTE TO 'END' NODE---")
+                return "useful"
+            else:
+                return "not useful"
     else:
         # pprint.pprint("---DECISION: GENERATION IS NOT GROUNDED IN DOCUMENTS, RE-TRY---")
         # return "not supported"
-        pprint.pprint("---DECISION: GENERATION IS NOT GROUNDED IN DOCUMENTS, BUT WE DO NOT RE-TRY (RE-GENERATION), JUST DIRECTLY TO 'END' NODE---")
+        print("---DECISION: GENERATION IS NOT GROUNDED IN DOCUMENTS, BUT WE DO NOT RE-TRY (RE-GENERATION), JUST DIRECTLY TO 'END' NODE---")
         return "not supported" # todo
 
     
@@ -552,9 +554,11 @@ workflow.add_edge("llm_fallback", END)
 
 # Compile
 app = workflow.compile()
+# Visualize this graph in ascii
+app.get_graph().print_ascii()
 # Run
 
-config = RunnableConfig(recursion_limit=5)
+config = RunnableConfig(recursion_limit=25)
 
 questions = ["What are the types of agent memory?","What player are the Bears expected to draft first in the 2024 NFL draft?","合肥是一个什么样的城市？","Hello, how are you today?"]
 for question in questions:
@@ -565,7 +569,7 @@ for question in questions:
         for output in app.stream(inputs,config):
             for key, value in output.items():
                 # Node
-                pprint.pprint(f"Node: {key}")
+                print(f"Node: {key}")
                 # pprint.pprint(f"Value:\n {value}") # Optional: print full state at each node                
             
     except GraphRecursionError:
@@ -576,7 +580,7 @@ for question in questions:
     # Final generation
     try:
         print("answer:")
-        pprint.pprint(value["generation"])
+        print(value["generation"])
     except:
         print(output)
 
