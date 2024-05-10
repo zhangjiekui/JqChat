@@ -17,7 +17,7 @@ from flask import Flask, request, jsonify, send_from_directory, Response
 
 from jqchat.kernel_program.main import APP_PORT as KERNEL_APP_PORT
 from jqcode.c0_init_env_models import get_openai,get_openai_client,llm_model_name,api_key
-from jqcode.jq_agent import arun_graph_workflow, coding_relevance_grader
+from jqcode.jq_agent_with_memory import arun_graph_workflow, coding_relevance_grader
 
 #todo 保留openai只是暂时不想改代码
 openai = get_openai()
@@ -331,7 +331,7 @@ def agent_entry():
     print('触发python_backend......jqchat/webapp/main.py#L257')
     user_prompt = request.json.get('prompt', '')
     print('=='*30)
-    print(f'user_prompt:\n{user_prompt}')
+    print(f'(IN Web) User Question: {user_prompt}')
     model = llm_model_name
     user_openai_key = api_key
 
@@ -340,7 +340,7 @@ def agent_entry():
 
 
     response =  coding_relevance_grader.invoke({"question": user_prompt})
-    print(f"question: {user_prompt} is related to [Code/Data/File]: {response=}")
+    print(f"判断：Whether question '{user_prompt}' is related to [Code/Data/File]? 判断结果：{response=}")
     try:
         is_coding = response.k
     except:

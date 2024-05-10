@@ -1,5 +1,10 @@
+# https://langchain-ai.github.io/langgraph/tutorials/introduction/
 import re
 import pprint
+from langchain.schema import Document
+from langgraph.graph import END, StateGraph
+from langgraph.prebuilt import ToolNode, tools_condition
+from langgraph.checkpoint.aiosqlite import AsyncSqliteSaver
 from langchain_core.runnables import RunnableConfig
 from langgraph.pregel import GraphRecursionError
 from langchain_core.output_parsers import StrOutputParser
@@ -215,7 +220,7 @@ from typing import Annotated, List
 from typing_extensions import TypedDict
 from langgraph.graph.message import add_messages
 
-class GraphState(TypedDict):
+class State(TypedDict):
     """|
     Represents the state of our graph.
 
@@ -230,11 +235,14 @@ class GraphState(TypedDict):
     documents : List[str]
     question_searched : dict
     messages: Annotated[list, add_messages]
+        # Messages have the type "list". 
+        # The `add_messages` function in the annotation defines how this state key should be updated
+        # (in this case, it appends messages to the list, rather than overwriting them)
 
 ## Graph Flow
-from langchain.schema import Document
 
-def retrieve(state):
+
+def retrieve(state:State):
     """
     Retrieve documents
 
@@ -251,7 +259,7 @@ def retrieve(state):
     documents = retriever.invoke(question)
     return {"documents": documents, "question": question}
 
-def llm_fallback(state):
+def llm_fallback(state:State):
     """
     Generate answer using the LLM w/o vectorstore
 
@@ -266,7 +274,7 @@ def llm_fallback(state):
     generation = llm_chain.invoke({"question": question})
     return {"question": question, "generation": generation}
 
-def generate(state):
+def generate(state:State):
     """
     Generate answer using the vectorstore
 
@@ -287,7 +295,7 @@ def generate(state):
 
     return {"documents": documents, "question": question, "generation": generation}
 
-def grade_documents(state):
+def grade_documents(state:State):
     """
     Determines whether the retrieved documents are relevant to the question.
 
@@ -321,7 +329,7 @@ def grade_documents(state):
 
     return {"documents": filtered_docs, "question": question}
 
-def web_search(state):
+def web_search(state:State):
     """
     Web search based on the re-phrased question.
 
@@ -346,7 +354,7 @@ def web_search(state):
 
 ### Edges ###
 
-def route_question(state):
+def route_question(state:State):
     """
     Route question to web search or RAG.
 
@@ -368,7 +376,9 @@ def route_question(state):
         print("---ROUTE QUESTION TO LLM---")
         return "llm_fallback" 
     if len(source.additional_kwargs["tool_calls"]) == 0:
-      raise "Router could not decide source"
+        print("---Router Could Not Decide Where To GO (len[tool_calls]) == 0) ---")
+        print("---SO ROUTE QUESTION TO LLM---")
+        return "llm_fallback"
 
     # Choose datasource
     datasource = source.additional_kwargs["tool_calls"][0]["function"]["name"]
@@ -380,9 +390,9 @@ def route_question(state):
         return "vectorstore"
     else: 
         print("---ROUTE QUESTION TO LLM---")
-        return "vectorstore"
+        return "llm_fallback"
 
-def decide_to_generate(state):
+def decide_to_generate(state:State):
     """
     Determines whether to generate an answer, or re-generate a question.
 
@@ -407,7 +417,7 @@ def decide_to_generate(state):
         print("---DECISION: GENERATE---")
         return "generate"
 
-def grade_generation_v_documents_and_question(state):
+def grade_generation_v_documents_and_question(state:State):
     """
     Determines whether the generation is grounded in the document and answers question.
 
@@ -473,21 +483,19 @@ def grade_generation_v_documents_and_question(state):
     
 ## Build Graph
 
-
-from langgraph.graph import END, StateGraph
-from langgraph.checkpoint.aiosqlite import AsyncSqliteSaver
-
-
-workflow = StateGraph(GraphState)
+workflow = StateGraph(State)
 
 # Define the nodes
+    # The first argument is the unique node name
+    # The second argument is the function or object that will be called whenever the node is used.
+
 workflow.add_node("web_search", web_search) # web search
 workflow.add_node("retrieve", retrieve) # retrieve
 workflow.add_node("grade_documents", grade_documents) # grade documents
 workflow.add_node("generate", generate) # rag
 workflow.add_node("llm_fallback", llm_fallback) # llm
 
-# Build graph
+# define the edges
 workflow.set_conditional_entry_point(
     route_question,
     {
@@ -519,7 +527,7 @@ workflow.add_conditional_edges(
 workflow.add_edge("llm_fallback", END)
 
 # Compile
-memory = AsyncSqliteSaver.from_conn_string(":memory:")
+memory = AsyncSqliteSaver.from_conn_string("checkpoints.sqlite")
 app = workflow.compile()
 
 # app.get_graph().print_ascii()  #Visualize this graph in ascii
