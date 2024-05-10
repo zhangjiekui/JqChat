@@ -17,7 +17,7 @@ from flask import Flask, request, jsonify, send_from_directory, Response
 
 from jqchat.kernel_program.main import APP_PORT as KERNEL_APP_PORT
 from jqcode.c0_init_env_models import get_openai,get_openai_client,llm_model_name,api_key
-from jqcode.langgraph_adaptive_qwen15_70B110B_cleaned import arun_graph_workflow, coding_relevance_grader
+from jqcode.jq_agent import arun_graph_workflow, coding_relevance_grader
 
 #todo 保留openai只是暂时不想改代码
 openai = get_openai()
@@ -99,24 +99,29 @@ def inspect_file(filename: str) -> str:
 
 system_prompt=f"""Act as a data analyst hereby referred to as EXPERT with ten years of experience in the domain of data anylasis. Your role is to help inexperienced people explore/analyse data. Be sure to help the user understand what to focus on and give suggestions on where it would make sense to dig deeper.
     If generating Python code, follow the instructions under [GENERATE_PYTHON_INSTRUCTIONS].
-    
-    [GENERATE_PYTHON_INSTRUCTIONS]
-    Notes: 
         First, think step by step what you want to do and write it down in English.
         Then generate valid Python code in a code block 
         Make sure all code is valid - it will be run in a Jupyter Python 3 kernel environment. 
-        Define every variable before you use it.
-        For data munging, you can use 
-            'numpy', # numpy==1.26.2
-            'dateparser', # dateparser==1.2.0
-            'pandas', # pandas==1.5.3
-            'geopandas', # geopandas==0.14.1
-        For pdf extraction, you can use
-            'PyPDF2', # PyPDF2==3.0.1
-            'pdfminer', # pdfminer==20191125
-            'pdfplumber', # pdfplumber==0.10.3
-        For data visualization, you can use
-            'matplotlib', # matplotlib==3.8.2
+        MUST CHECK:
+            Define every variable before you use it.
+            Import every module/package before you use it.such as:
+                import numpy as np
+                import pandas as pd
+                import seaborn as sns
+                import matplotlib.pyplot as plt                
+        Following modules/packages are available:
+            For data munging, you can use 
+                'numpy', # numpy==1.26.2
+                'dateparser', # dateparser==1.2.0
+                'pandas', # pandas==1.5.3
+                'geopandas', # geopandas==0.14.1                
+            For pdf extraction, you can use
+                'PyPDF2', # PyPDF2==3.0.1
+                'pdfminer', # pdfminer==20191125
+                'pdfplumber', # pdfplumber==0.10.3
+            For data visualization, you can use
+                'matplotlib', # matplotlib==3.8.4
+                'seaborn', # seaborn ==0.13.2
         Be sure to generate charts with matplotlib. If you need geographical charts, use geopandas with the geopandas.datasets module.
         If the user has just uploaded a file, focus on the file that was most recently uploaded (and optionally all previously uploaded files)
     
@@ -335,7 +340,7 @@ def agent_entry():
 
 
     response =  coding_relevance_grader.invoke({"question": user_prompt})
-    print(f"question: {user_prompt} is related to Python code generating/code executing: {response=}")
+    print(f"question: {user_prompt} is related to [Code/Data/File]: {response=}")
     try:
         is_coding = response.k
     except:
@@ -344,7 +349,7 @@ def agent_entry():
     loop = asyncio.new_event_loop()
     asyncio.set_event_loop(loop)
 
-    code, text, status = "print('NoneCode')", "NoneText", 200
+    code, text, status = None, None, 200
 
     if is_coding == 'yes':
         code, text, status = loop.run_until_complete(get_code(user_prompt, user_openai_key, model))
@@ -353,8 +358,9 @@ def agent_entry():
         text = loop.run_until_complete(arun_graph_workflow(question=user_prompt))
 
     print('~~'*30)
-    print('ai_code:')
-    print(code)
+    if code:
+        print('ai_code:')
+        print(code)
     loop.close()
     print('~~'*30)
     print('=='*30)

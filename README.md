@@ -81,6 +81,9 @@ Set the `API_PORT`, `WEB_PORT`, `SNAKEMQ_PORT` variables to override the default
 ## Reference Project
 <img src="https://github.com/ricklamers/gpt-code-ui/assets/1309307/9ad4061d-2e26-4407-9431-109b650fb022" alt="GPT-Code logo" width=240 />
 
+### gpt-code-ui
+github code: https://github.com/ricklamers/gpt-code-ui
+
 An open source implementation of OpenAI's ChatGPT [Code interpreter](https://openai.com/blog/chatgpt-plugins#code-interpreter).
 
 Simply ask the OpenAI model to do something and it will generate & execute the code for you.

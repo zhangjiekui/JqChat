@@ -585,13 +585,14 @@ workflow.add_edge("llm_fallback", END)
 
 # Compile
 memory = AsyncSqliteSaver.from_conn_string(":memory:")
-app = workflow.compile(checkpointer=memory)
+app = workflow.compile()
 
 # app.get_graph().print_ascii()  #Visualize this graph in ascii
 
 # Run
 config = RunnableConfig(recursion_limit=25) #todo
-config = {"configurable": {"thread_id": "2"}}
+# app = workflow.compile(checkpointer=memory)
+# config = {"configurable": {"thread_id": "2"}}
 def run_graph_workflow(question:str):
     print('=*='*20)
     print(f"{question=}")
