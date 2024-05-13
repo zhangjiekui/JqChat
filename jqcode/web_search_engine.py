@@ -48,9 +48,10 @@ def convert_search_query_backup(query):
 
 def convert_search_query(query):
     query = query.strip()
-    query = re.sub(r' +', ' ', query)
-    query_terms = query.strip().split(' ')
-    converted_query = '+'.join(query_terms)
+    # query = re.sub(r' +', ' ', query)
+    # query_terms = query.strip().split(' ')
+    # converted_query = '+'.join(query_terms)
+    converted_query = re.sub(r' +', ' ', query)
     return converted_query
 
 
@@ -180,18 +181,38 @@ class BingSearch:
             return []
         
 def get_search_result_links(query): # todo优化逻辑
-    baidu = BaiduSearch()
-    urls1 = baidu.search(query)
-    print(f'Baidu搜索到 {len(urls1)} 条相关内容！')
+    if query:
+        if is_query_chinese(query):
+            baidu = BaiduSearch()
+            urls = baidu.search(query)
+            url_num = len(urls)
+            print(f'Baidu搜索到 {url_num} 条相关内容！')
+            if url_num == 0:
+                bing =BingSearch()
+                urls=bing.search(query)
+                url_num = len(urls)
+                print(f'Bing搜索到 {url_num} 条相关内容！')
+        else:
+            bing =BingSearch()
+            urls=bing.search(query)
+            url_num = len(urls)
+            print(f'Bing搜索到 {url_num} 条相关内容！')
+            if url_num == 0:
+                baidu = BaiduSearch()
+                urls = baidu.search(query)
+                url_num = len(urls)
+                print(f'Baidu搜索到 {url_num} 条相关内容！')
 
-    bing =BingSearch()
-    urls2=bing.search(query)
-    print(f'Bing搜索到 {len(urls2)} 条相关内容！')
-    urls=urls1+urls2
-    if urls:
-        return urls
+
+
+        if urls:
+            print(urls)
+            return urls
+        else:
+            print('没有搜索到任何相关内容！')
+            return []
     else:
-        print('没有搜索到任何相关内容！')
+        print("搜索查询(query)为空！请检查")
         return []
 
 
@@ -341,9 +362,12 @@ if __name__ == "__main__":
     # docs = get_search_result_documents(urls)
 
     # query = '中国科学技术大学'
+    query = 'how python install langchain langgraph package'
+    d2 = get_web_search_documents(query,es_vectorstore=es_vectorstore)
 
     query = '合肥八中       校区数量'
     d2 = get_web_search_documents(query,es_vectorstore=es_vectorstore)
+
     for doc in d2:
         print(doc.page_content)
 
