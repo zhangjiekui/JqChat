@@ -311,6 +311,9 @@ def llm_fallback(state:State):
     messages_content = [f'[{m.type}]{m.content}' for m in state["messages"][:-1]]
     messages_content_without_repeated = sorted(set(messages_content),key=messages_content.index)                        
     context_str = ''.join(messages_content_without_repeated)
+    print(f'{len(context_str)=}')
+
+
     generation = llm_chain.invoke({"question": question,"context":context_str})
     ai_message = AIMessage(content=generation)
     return {"messages": ai_message, "generation": generation}
@@ -354,8 +357,8 @@ def grade_documents(state:State):
     # Score each doc
     filtered_docs = []
     for d in documents:
-        score = retrieval_document_relevance_grader.invoke({"question": question, "document": d.page_content})
         try:
+            score = retrieval_document_relevance_grader.invoke({"question": question, "document": d.page_content})
             grade = score.k
             if grade == "yes":
                 print("---GRADE: DOCUMENT RELEVANT---")
@@ -514,10 +517,10 @@ def grade_generation_v_documents_and_question(state:State):
     if grade == "yes":
         print("---DECISION: GENERATION IS GROUNDED IN DOCUMENTS---")
         # Check question-answering
-        print("---GRADE GENERATION vs QUESTION---")
-        score = answer_grader.invoke({"question": question,"generation": generation})
+        print("---GRADE GENERATION vs QUESTION---")       
         
         try:
+            score = answer_grader.invoke({"question": question,"generation": generation})
             grade = score.k
         except Exception as e:
             grade = "yes" # 继续按正常往下执行！
@@ -625,7 +628,7 @@ test_app = workflow.compile()
 test_app.get_graph().print_ascii()  #Visualize this graph in ascii
 
 # Run With Memory
-def run_graph_workflow(question:str,config = {"recursion_limit":25,"configurable": {"thread_id": "18"}}):
+def run_graph_workflow(question:str,config = {"recursion_limit":25,"configurable": {"thread_id": "111"}}):
     memory = SqliteSaver.from_conn_string("checkpoints.sqlite")
     app = workflow.compile(checkpointer=memory)   
 
@@ -693,18 +696,29 @@ if __name__ == '__main__':
 
     questions = ["What are the types of agent memory?","What player are the Bears expected to draft first in the 2024 NFL draft?","合肥是一个什么样的城市？","Hello, how are you today?"]
     questions_test_memory = ["我叫张结魁","你知道我叫什么吗?"]
+    value=run_graph_workflow(questions[-1])
+    print(value)
+
+    print("~~~~test_memory~~~~"*5)
+    for question in questions_test_memory:
+        value=run_graph_workflow(question)
+        print(value)
+
+
     print("$$$$run_graph_workflow$$$$"*5)
     for question in questions:
         value=run_graph_workflow(question)
         print(value)
-    print("~~~~~~~~~~~~~~~~~~~~~~~~~~~"*5) 
-    print("A&A&arun_graph_workflowA&A&"*5)
-    print("~~~~~~~~~~~~~~~~~~~~~~~~~~~"*5) 
-    for question in questions:
-        coro = arun_graph_workflow(question)
-        value=asyncio.run(coro)
-        # print(value)
-    print('END PROGRAM')
+    print("~~~~~~~~~~~~~~~~~~~~~~~~~~~"*5)
+
+
+    # print("A&A&arun_graph_workflowA&A&"*5)
+    # print("~~~~~~~~~~~~~~~~~~~~~~~~~~~"*5) 
+    # for question in questions:
+    #     coro = arun_graph_workflow(question)
+    #     value=asyncio.run(coro)
+    #     # print(value)
+    # print('END PROGRAM')
 
 
 
