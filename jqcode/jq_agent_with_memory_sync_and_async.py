@@ -24,12 +24,13 @@ from langchain_community.tools.tavily_search import TavilySearchResults ### Sear
 from jqcode.c0_init_env_models import get_langchain_chat_model
 from jqcode.c0_init_env_models import get_emb_8k_rerank_model
 from jqcode.c0_init_env_models import get_es_connection, get_es_searchstore, get_es_searchstore_index_documents
+from jqcode.web_search_engine import get_web_search_documents,is_query_chinese
 
 
 # Set UP: LLM, embeddings,web_search_tool
 llm = get_langchain_chat_model() # llm = ChatOllama(name='Qwen110B',model='qwen:110b-chat-v1.5-q4_K_M', temperature=0)
 embed_model,embedding_model_8k,reranker = get_emb_8k_rerank_model()
-web_search_tool = TavilySearchResults(max_results=2,handle_tool_error=True)
+web_search_tool = TavilySearchResults(max_results=3,handle_tool_error=True)
 
 ### Build Index
 index_name='test'
@@ -384,8 +385,22 @@ def web_search(state:State):
     print("---WEB SEARCH---")
     question = state["question"]
     # Web search
-    docs = web_search_tool.invoke({"query": question})
-    web_results = "\n".join([d["content"] for d in docs])
+    chinese = is_query_chinese(question)
+    if chinese:#中文，优先使用搜索引擎
+        try:
+            docs = get_web_search_documents(question)
+            web_results = "\n".join([d.page_content for d in docs])
+        except:
+            docs = web_search_tool.invoke({"query": question})
+            web_results = "\n".join([d["content"] for d in docs]) 
+    else:# 非中文，优先使用web_search_tool（TavilySearchResults）
+        try:
+            docs = web_search_tool.invoke({"query": question})
+            web_results = "\n".join([d["content"] for d in docs])
+        except:
+            docs = get_web_search_documents(question)
+            web_results = "\n".join([d.page_content for d in docs])
+    # todo: 需对doc进行split和检索（embedding和/或rerank） 
     web_search_message = ToolMessage(content=web_results,name='web_search',tool_call_id='0')
     web_results_document = Document(page_content=web_results)
     return {"documents": web_results_document, "question_searched":{question:True},"messages":web_search_message}
@@ -485,9 +500,9 @@ def grade_generation_v_documents_and_question(state:State):
     documents = state["documents"]
     generation = state["generation"]
  
-    # Check hallucination / answer_is_supported_by_documents
-    score = answer_is_supported_by_documents_grader.invoke({"documents": documents, "generation": generation})
+    # Check hallucination / answer_is_supported_by_documents    
     try:
+        score = answer_is_supported_by_documents_grader.invoke({"documents": documents, "generation": generation})
         grade = score.k
     except Exception as e:
         grade = "yes" # 继续按正常往下执行！
