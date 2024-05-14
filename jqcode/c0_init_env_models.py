@@ -107,8 +107,6 @@ def get_all_knowledge_base(es_connection=get_es_connection(),exclude_system_indi
     all_indices = es_connection.indices.get_alias(index="*")
     if exclude_system_indices:
         all_indices = [index_name for index_name in all_indices if not index_name.startswith('.')]
-    for index_name in all_indices:
-        print(index_name)
     return all_indices
 
 
@@ -155,22 +153,16 @@ def get_es_searchstore_from_documents(documents,embedding,es_connection,index_na
 if __name__ == '__main__':
     # litellm --model ollama_chat/qwen:110b-chat-v1.5-q4_K_M
     # litellm --model ollama_chat/llama3:70b-instruct
+    es_connection = get_es_connection()
     es_searchstore = get_es_searchstore()
 
-    knowledge_base_list = get_all_knowledge_base()
-
-    
+    knowledge_base_list = get_all_knowledge_base(es_connection)    
 
     open_ai = get_openai()
     openai_client = get_openai_client()
     langchain_chat_model = get_langchain_chat_model()
     embed_model,reranker,embedding_model_8k = get_emb_8k_rerank_model()
-    es_connection = get_es_connection()
-
-    all_indices = es_connection.indices.get_alias(index="*")
-    for index in all_indices:
-      print(index)
-
+    
 
     from langchain_core.messages import HumanMessage,SystemMessage
     res = langchain_chat_model.invoke([SystemMessage('请使用中文回答我！'), HumanMessage('你好')])
