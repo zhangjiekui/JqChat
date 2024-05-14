@@ -24,11 +24,17 @@ if dotenv_loaded:
 else:
     print("load_dotenv('.env')失败，请检查！")
 # https://python.langchain.com/v0.1/docs/integrations/chat/ollama_functions/
-IS_OLLAMA_FUNCTIONS = os.getenv("IS_OLLAMA_FUNCTIONS",False)
+
 base_url=os.getenv("OPENAI_API_BASE",'http://10.1.150.105:4000/v1')
 api_key =os.getenv("OPENAI_API_KEY",'NotNeeded')
 api_type =os.getenv("OPENAI_API_TYPE",'open_ai')
 llm_model_name = os.getenv("LLM_MODEL_NAME",'gpt-4')
+USING_OLLAMA_FUNCTIONS = os.getenv("USING_OLLAMA_FUNCTIONS",'false')
+USING_OLLAMA_LITELLM = False
+prefix = 'ollama_chat/'
+
+if prefix in llm_model_name:
+    USING_OLLAMA_LITELLM =True
 
 embedding_model_name = os.getenv("EMBEDDING_MODEL_NAME",'maidalun1020/bce-embedding-base_v1')
 embedding_model_name_8k = os.getenv("EMBEDDING_MODEL_8k",'jinaai/jina-embeddings-v2-base-zh') # max_tokes =8192
@@ -65,14 +71,17 @@ def get_langchain_chat_model():
     return chat_model
 
 def get_langchain_chat_ollama_functions():
+    _llm_model_name = llm_model_name
+    if prefix in _llm_model_name:
+        _llm_model_name = _llm_model_name.replace(prefix,'')
     litellm_model = OllamaFunctions(
-        model = llm_model_name,
+        model = _llm_model_name,
         streaming=True,
         temperature=0.0,
         max_tokens=5000, 
         format="json"
     )
-    print(f'当前使用的模型为:Langchain ChatLiteLLM, {litellm_model.model}, API_URL为{litellm_model.base_url}')
+    print(f'当前使用的模型为:Langchain OllamaFunctions, {litellm_model.model}, API_URL为{litellm_model.base_url}')
     return litellm_model
 
 # litellm_model = get_langchain_litellm_model()

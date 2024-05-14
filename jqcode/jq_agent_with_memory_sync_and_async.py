@@ -21,18 +21,25 @@ from langchain.text_splitter import RecursiveCharacterTextSplitter
 from langchain_community.document_loaders import WebBaseLoader
 from langchain_community.tools.tavily_search import TavilySearchResults ### Search
 # from langchain_community.chat_models import ChatOllama
-from jqcode.c0_init_env_models import get_langchain_chat_model,get_langchain_chat_ollama_functions,IS_OLLAMA_FUNCTIONS
+from jqcode.c0_init_env_models import get_langchain_chat_model,get_langchain_chat_ollama_functions,USING_OLLAMA_FUNCTIONS,USING_OLLAMA_LITELLM
 from jqcode.c0_init_env_models import get_emb_8k_rerank_model
 from jqcode.c0_init_env_models import get_es_connection, get_es_searchstore, get_es_searchstore_index_documents
 from jqcode.web_search_engine import get_web_search_documents,is_query_chinese
 
 # Set UP: LLM, embeddings,web_search_tool
 
-if IS_OLLAMA_FUNCTIONS:
+if USING_OLLAMA_FUNCTIONS.lower()=='true':
+    USING_OLLAMA_FUNCTIONS = True
+
+else:
+    USING_OLLAMA_FUNCTIONS = False
+
+if USING_OLLAMA_FUNCTIONS:
     llm = get_langchain_chat_ollama_functions()
 else:
     llm = get_langchain_chat_model() # llm = ChatOllama(name='Qwen110B',model='qwen:110b-chat-v1.5-q4_K_M', temperature=0)
-    method_mode ="json_mode"
+
+method_mode ='function_calling' if USING_OLLAMA_LITELLM else "json_mode"
 
 embed_model,embedding_model_8k,reranker = get_emb_8k_rerank_model()
 web_search_tool = TavilySearchResults(max_results=3,handle_tool_error=True)
@@ -109,7 +116,7 @@ class code_execution(BaseModel):
     """
     query: str = Field(description="The query to use when asking for running/executing a code snippet.")
 
-tools=[web_search, vectorstore, code_generation, code_execution]
+tools=[web_search, vectorstore, code_generation, code_execution, direct_response]
 
 # res1 = structured_llm_router.invoke("请使用python生成代码，绘制y=sin(x)的曲线图，并保存所绘图形，提供下载链接")
 # print(res1)
@@ -121,8 +128,8 @@ tools=[web_search, vectorstore, code_generation, code_execution]
 
 
 # Preamble
-if IS_OLLAMA_FUNCTIONS:
-    tools.append(direct_response)
+if USING_OLLAMA_FUNCTIONS:
+    # tools.append(direct_response)
     tool_names=", ".join([str(tool).split('__.')[-1][:-2] for tool in tools])
     structured_llm_router = llm.bind_tools(tools=tools)     
 else:
@@ -154,7 +161,7 @@ class GradeCodingRelavance(BaseModel):
 # Code Generating/Code Executing Relavance Grader Prompt
 preamble_coding_relevant_grader = """You are a grader assessing relevance of a user question to [code generating/executing,file processing/analyzing, data exploring/analyzing]. Response me with a simple JSON string can be directly consumed by  ‘json.loads’ method, must be ‘{{"k":"yes"}}’ or  ‘{{"k":"no"}}’,'yes' means a user question is related to Python code generating/code executing.No preamble or explaination."""
 # structured_llm_documents_relevant_grader = llm.with_structured_output(GradeDocumentsRelavance, method=method_mode, include_raw=True)
-if IS_OLLAMA_FUNCTIONS:
+if USING_OLLAMA_FUNCTIONS:
     structured_llm_coding_relevant_grader = llm.with_structured_output(GradeCodingRelavance)
 else:
     structured_llm_coding_relevant_grader = llm.with_structured_output(GradeCodingRelavance,method=method_mode)
@@ -182,7 +189,7 @@ class GradeDocumentsRelavance(BaseModel):
 preamble_documents_relevant_grader = """You are a grader assessing relevance of a retrieved document to a user question. If the document contains keyword(s) or semantic meaning related to the user question, grade it as relevant. It does not need to be a stringent test.The goal is to filter out erroneous retrievals. Response me with a simple JSON string can be directly consumed by  ‘json.loads’ method, must be ‘{{"k":"yes"}}’ or  ‘{{"k":"no"}}’,'yes' means a retrieved document is related to a user question.No preamble or explaination."""
 # structured_llm_documents_relevant_grader = llm.with_structured_output(GradeDocumentsRelavance, method=method_mode, include_raw=True)
 
-if IS_OLLAMA_FUNCTIONS:
+if USING_OLLAMA_FUNCTIONS:
     structured_llm_documents_relevant_grader = llm.with_structured_output(GradeDocumentsRelavance)
 else:
     structured_llm_documents_relevant_grader = llm.with_structured_output(GradeDocumentsRelavance,method=method_mode)
@@ -242,7 +249,7 @@ class GradeSupported(BaseModel):
 #Supported Grader Preamble
 
 preamble_answer_is_supported_by_documents_grader = """You are a grader assessing whether an answer is supported by a set of facts. Response me with a simple JSON string can be directly consumed by  ‘json.loads’ method, must be ‘{{"k":"yes"}}’ or  ‘{{"k":"no"}}’,'yes' means the answer is supported by the provided set of facts.No preamble or explaination. """
-if IS_OLLAMA_FUNCTIONS:
+if USING_OLLAMA_FUNCTIONS:
     structured_llm_answer_is_supported_by_documents_grader = llm.with_structured_output(GradeSupported)
 else:
     structured_llm_answer_is_supported_by_documents_grader = llm.with_structured_output(GradeSupported, method=method_mode)
@@ -266,7 +273,7 @@ class GradeAnswer(BaseModel):
 
 # Preamble
 preamble_answer_grader = """You are a grader assessing whether an answer addresses / resolves a question. Response me with a simple JSON string can be directly consumed by  ‘json.loads’ method, must be ‘{{"k":"yes"}}’ or  ‘{{"k":"no"}}’,'yes' means the answer addresses / resolves the question.No preamble or explaination."""
-if IS_OLLAMA_FUNCTIONS:
+if USING_OLLAMA_FUNCTIONS:
     structured_llm_answer_grader = llm.with_structured_output(GradeAnswer)
 else:
     structured_llm_answer_grader = llm.with_structured_output(GradeAnswer, method=method_mode)
@@ -471,7 +478,7 @@ def route_question(state:State):
     print(f"---ROUTE DESTINATION---")
     
     # Fallback to LLM
-    if IS_OLLAMA_FUNCTIONS:
+    if USING_OLLAMA_FUNCTIONS:
         try:
             tool_calls = source.additional_kwargs['function_call']
             # tool_calls = {'name': 'web_search', 'arguments': '{"query": "How to respond when someone asks \'how are you today?\'"}'}
@@ -686,9 +693,9 @@ workflow.add_conditional_edges(
 )
 workflow.add_edge("llm_fallback", END)
 
-# Compile
-test_app = workflow.compile()
-test_app.get_graph().print_ascii()  #Visualize this graph in ascii
+# Compile and Visualize
+# test_app = workflow.compile()
+# test_app.get_graph().print_ascii()  #Visualize this graph in ascii
 
 # Run With Memory
 def run_graph_workflow(question:str,config = {"recursion_limit":25,"configurable": {"thread_id": "UserName_SessionID"}}):
@@ -760,7 +767,7 @@ if __name__ == '__main__':
     # WARNING 05-13 17:46:33 scheduler.py:619] Input prompt (74314 tokens) is too long and exceeds limit of 4096
 
     questions = ["What are the types of agent memory?","What player are the Bears expected to draft first in the 2024 NFL draft?","合肥是一个什么样的城市？","Hello, how are you today?"]
-    questions_test_memory = ["我叫张结魁","你知道我叫什么吗?"]
+    questions_test_memory = ["我叫张结魁，你叫什么呀？我们做好朋友吧","你还记得我叫什么吗?"]
     value=run_graph_workflow(questions[-1])
     print(value)
 
