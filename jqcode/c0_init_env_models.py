@@ -11,6 +11,8 @@ from elasticsearch import Elasticsearch
 from langchain_elasticsearch import ElasticsearchStore
 from langchain.indexes import SQLRecordManager, index
 from langchain_elasticsearch.chat_history import ElasticsearchChatMessageHistory
+from langchain_community.chat_models import ChatOllama
+from langchain_experimental.llms.ollama_functions import OllamaFunctions
 
 from dotenv import load_dotenv
  
@@ -21,7 +23,8 @@ if dotenv_loaded:
     print("load_dotenv('.env')成功！")
 else:
     print("load_dotenv('.env')失败，请检查！")
-
+# https://python.langchain.com/v0.1/docs/integrations/chat/ollama_functions/
+IS_OLLAMA_FUNCTIONS = os.getenv("IS_OLLAMA_FUNCTIONS",False)
 base_url=os.getenv("OPENAI_API_BASE",'http://10.1.150.105:4000/v1')
 api_key =os.getenv("OPENAI_API_KEY",'NotNeeded')
 api_type =os.getenv("OPENAI_API_TYPE",'open_ai')
@@ -56,10 +59,24 @@ def get_langchain_chat_model():
         streaming=True,
         temperature=0.0,
         max_tokens=5000
-    )
-    #.bind(response_format={"type": "json_object"})
+    )#.bind(response_format={"type": "json_object"})
+
     print(f'当前使用的模型为:Langchain ChatOpenAI, {chat_model.model_name}, API_URL为{chat_model.openai_api_base}')
     return chat_model
+
+def get_langchain_chat_ollama_functions():
+    litellm_model = OllamaFunctions(
+        model = llm_model_name,
+        streaming=True,
+        temperature=0.0,
+        max_tokens=5000, 
+        format="json"
+    )
+    print(f'当前使用的模型为:Langchain ChatLiteLLM, {litellm_model.model}, API_URL为{litellm_model.base_url}')
+    return litellm_model
+
+# litellm_model = get_langchain_litellm_model()
+# pass
 
 # todo: embedding_model_8k with langchain
 def get_emb_8k_rerank_model(model_name=embedding_model_name):
@@ -151,8 +168,9 @@ def get_es_searchstore_from_documents(documents,embedding,es_connection,index_na
     return es_searchstore
 
 if __name__ == '__main__':
-    # litellm --model ollama_chat/qwen:110b-chat-v1.5-q4_K_M
+    # qwen:110b-chat-v1.5-q4_K_M
     # litellm --model ollama_chat/llama3:70b-instruct
+    # litellm --model ollama_chat/yi:34b-chat-v1.5-q8_0
     es_connection = get_es_connection()
     es_searchstore = get_es_searchstore()
 

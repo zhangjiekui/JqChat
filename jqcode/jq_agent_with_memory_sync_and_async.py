@@ -21,16 +21,22 @@ from langchain.text_splitter import RecursiveCharacterTextSplitter
 from langchain_community.document_loaders import WebBaseLoader
 from langchain_community.tools.tavily_search import TavilySearchResults ### Search
 # from langchain_community.chat_models import ChatOllama
-from jqcode.c0_init_env_models import get_langchain_chat_model
+from jqcode.c0_init_env_models import get_langchain_chat_model,get_langchain_chat_ollama_functions,IS_OLLAMA_FUNCTIONS
 from jqcode.c0_init_env_models import get_emb_8k_rerank_model
 from jqcode.c0_init_env_models import get_es_connection, get_es_searchstore, get_es_searchstore_index_documents
 from jqcode.web_search_engine import get_web_search_documents,is_query_chinese
 
-
 # Set UP: LLM, embeddings,web_search_tool
-llm = get_langchain_chat_model() # llm = ChatOllama(name='Qwen110B',model='qwen:110b-chat-v1.5-q4_K_M', temperature=0)
+
+if IS_OLLAMA_FUNCTIONS:
+    llm = get_langchain_chat_ollama_functions()
+else:
+    llm = get_langchain_chat_model() # llm = ChatOllama(name='Qwen110B',model='qwen:110b-chat-v1.5-q4_K_M', temperature=0)
+    method_mode ="json_mode"
+
 embed_model,embedding_model_8k,reranker = get_emb_8k_rerank_model()
 web_search_tool = TavilySearchResults(max_results=3,handle_tool_error=True)
+
 
 ### Build Index
 index_name='test'
@@ -73,6 +79,12 @@ retriever = vectorstore.as_retriever()
 
 ### Router
 # Data model
+class direct_response(BaseModel):
+    """
+    Direct response. Answer user directly if you do know how to response.
+    """
+    query: str = Field(description="The question user want you to answer.")
+
 class web_search(BaseModel):
     """
     The internet. Use web_search for questions that are related to anything else than agent memory , prompt engineering, and adversarial attacks.
@@ -81,7 +93,7 @@ class web_search(BaseModel):
 
 class vectorstore(BaseModel):
     """
-    A vectorstore containing documents related to agent memory, prompt engineering, and adversarial attacks. Use the vectorstore for questions on these topics.
+    A vectorstore containing documents related to agent memory, prompt engineering, and adversarial attacks. MUST use the vectorstore for questions on these topics.
     """
     query: str = Field(description="The query to use when searching the vectorstore.")
 
@@ -98,7 +110,7 @@ class code_execution(BaseModel):
     query: str = Field(description="The query to use when asking for running/executing a code snippet.")
 
 tools=[web_search, vectorstore, code_generation, code_execution]
-structured_llm_router = llm.bind_tools(tools=tools) 
+
 # res1 = structured_llm_router.invoke("请使用python生成代码，绘制y=sin(x)的曲线图，并保存所绘图形，提供下载链接")
 # print(res1)
 # res2 = structured_llm_router.invoke("请使用python生成代码，绘制和保存y=sin(x)的曲线图，并实际运行/执行代码，提供下载链接")
@@ -109,7 +121,14 @@ structured_llm_router = llm.bind_tools(tools=tools)
 
 
 # Preamble
-tool_names=", ".join([tool['function']['name'] for tool in structured_llm_router.kwargs['tools']])
+if IS_OLLAMA_FUNCTIONS:
+    tools.append(direct_response)
+    tool_names=", ".join([str(tool).split('__.')[-1][:-2] for tool in tools])
+    structured_llm_router = llm.bind_tools(tools=tools)     
+else:
+    structured_llm_router = llm.bind_tools(tools=tools) 
+    tool_names=", ".join([tool['function']['name'] for tool in structured_llm_router.kwargs['tools']])
+    
 # print(tool_names)
 preamble_llm_router = """You are an expert at answer the user's question: (1)answer user directly if you do know how to response; or (2)routing the user question to a tool if you don't know how to answer the questions. You have access to the following tools: """ + tool_names
 # print(preamble_llm_router)
@@ -134,8 +153,13 @@ class GradeCodingRelavance(BaseModel):
     k: str = Field(description="Whether a user question is relevant to [code generating/executing,file processing/analyzing, data exploring/analyzing], k must be 'yes' or 'no'")
 # Code Generating/Code Executing Relavance Grader Prompt
 preamble_coding_relevant_grader = """You are a grader assessing relevance of a user question to [code generating/executing,file processing/analyzing, data exploring/analyzing]. Response me with a simple JSON string can be directly consumed by  ‘json.loads’ method, must be ‘{{"k":"yes"}}’ or  ‘{{"k":"no"}}’,'yes' means a user question is related to Python code generating/code executing.No preamble or explaination."""
-# structured_llm_documents_relevant_grader = llm.with_structured_output(GradeDocumentsRelavance, method="json_mode", include_raw=True)
-structured_llm_coding_relevant_grader = llm.with_structured_output(GradeCodingRelavance,method='json_mode')
+# structured_llm_documents_relevant_grader = llm.with_structured_output(GradeDocumentsRelavance, method=method_mode, include_raw=True)
+if IS_OLLAMA_FUNCTIONS:
+    structured_llm_coding_relevant_grader = llm.with_structured_output(GradeCodingRelavance)
+else:
+    structured_llm_coding_relevant_grader = llm.with_structured_output(GradeCodingRelavance,method=method_mode)
+
+
 coding_relevance_prompt = ChatPromptTemplate.from_messages(
     [
         ("system",preamble_coding_relevant_grader),
@@ -156,8 +180,13 @@ class GradeDocumentsRelavance(BaseModel):
 
 # Retrieval Documents Relavance Grader Prompt
 preamble_documents_relevant_grader = """You are a grader assessing relevance of a retrieved document to a user question. If the document contains keyword(s) or semantic meaning related to the user question, grade it as relevant. It does not need to be a stringent test.The goal is to filter out erroneous retrievals. Response me with a simple JSON string can be directly consumed by  ‘json.loads’ method, must be ‘{{"k":"yes"}}’ or  ‘{{"k":"no"}}’,'yes' means a retrieved document is related to a user question.No preamble or explaination."""
-# structured_llm_documents_relevant_grader = llm.with_structured_output(GradeDocumentsRelavance, method="json_mode", include_raw=True)
-structured_llm_documents_relevant_grader = llm.with_structured_output(GradeDocumentsRelavance,method='json_mode')
+# structured_llm_documents_relevant_grader = llm.with_structured_output(GradeDocumentsRelavance, method=method_mode, include_raw=True)
+
+if IS_OLLAMA_FUNCTIONS:
+    structured_llm_documents_relevant_grader = llm.with_structured_output(GradeDocumentsRelavance)
+else:
+    structured_llm_documents_relevant_grader = llm.with_structured_output(GradeDocumentsRelavance,method=method_mode)
+
 retrieval_document_relevance_prompt = ChatPromptTemplate.from_messages(
     [
         ("system",preamble_documents_relevant_grader),
@@ -188,7 +217,7 @@ rag_chain = prompt | llm | StrOutputParser()
 
 ### LLM Generate/Fallback
 # Preamble
-preamble_llm = """You are an assistant for question-answering tasks. Answer the question based upon your knowledge. Use three sentences maximum and keep the answer concise."""
+preamble_llm = """You are an assistant for question-answering tasks. Answer the question based upon your knowledge in the language the user asked ."""
 # Prompt
 prompt = lambda x: ChatPromptTemplate.from_messages(
     [
@@ -213,8 +242,10 @@ class GradeSupported(BaseModel):
 #Supported Grader Preamble
 
 preamble_answer_is_supported_by_documents_grader = """You are a grader assessing whether an answer is supported by a set of facts. Response me with a simple JSON string can be directly consumed by  ‘json.loads’ method, must be ‘{{"k":"yes"}}’ or  ‘{{"k":"no"}}’,'yes' means the answer is supported by the provided set of facts.No preamble or explaination. """
-# structured_llm_hallucinations_grader = llm.with_structured_output(GradeSupported, method="json_mode",include_raw=True)
-structured_llm_answer_is_supported_by_documents_grader = llm.with_structured_output(GradeSupported, method="json_mode")
+if IS_OLLAMA_FUNCTIONS:
+    structured_llm_answer_is_supported_by_documents_grader = llm.with_structured_output(GradeSupported)
+else:
+    structured_llm_answer_is_supported_by_documents_grader = llm.with_structured_output(GradeSupported, method=method_mode)
 # Supported (Hallucination) Grader Prompt
 answer_is_supported_by_documents_prompt = ChatPromptTemplate.from_messages(
     [
@@ -235,7 +266,10 @@ class GradeAnswer(BaseModel):
 
 # Preamble
 preamble_answer_grader = """You are a grader assessing whether an answer addresses / resolves a question. Response me with a simple JSON string can be directly consumed by  ‘json.loads’ method, must be ‘{{"k":"yes"}}’ or  ‘{{"k":"no"}}’,'yes' means the answer addresses / resolves the question.No preamble or explaination."""
-structured_llm_answer_grader = llm.with_structured_output(GradeAnswer, method="json_mode")
+if IS_OLLAMA_FUNCTIONS:
+    structured_llm_answer_grader = llm.with_structured_output(GradeAnswer)
+else:
+    structured_llm_answer_grader = llm.with_structured_output(GradeAnswer, method=method_mode)
 
 # Prompt
 answer_prompt = ChatPromptTemplate.from_messages(
@@ -312,6 +346,9 @@ def llm_fallback(state:State):
     messages_content_without_repeated = sorted(set(messages_content),key=messages_content.index)                        
     context_str = ''.join(messages_content_without_repeated)
     print(f'{len(context_str)=}')
+
+    context_str = context_str[-1000:]
+    print(f'截断后的{len(context_str)=}')
 
 
     generation = llm_chain.invoke({"question": question,"context":context_str})
@@ -433,19 +470,37 @@ def route_question(state:State):
 
     print(f"---ROUTE DESTINATION---")
     
-    # Fallback to LLM or raise error if no decision
-    try:
-        tool_calls = source.tool_calls
-    except:
-        tool_calls = []
-        print("---ROUTE QUESTION TO LLM---")
-        return "llm_fallback" 
-    if len(tool_calls) == 0:
-        print("---Router Could Not Decide Where To GO (len[tool_calls]) == 0), SO ROUTE QUESTION TO LLM ---")
-        return "llm_fallback"
+    # Fallback to LLM
+    if IS_OLLAMA_FUNCTIONS:
+        try:
+            tool_calls = source.additional_kwargs['function_call']
+            # tool_calls = {'name': 'web_search', 'arguments': '{"query": "How to respond when someone asks \'how are you today?\'"}'}
+        except:
+            tool_calls = []
+            print("---ROUTE QUESTION TO LLM---")
+            return "llm_fallback" 
+        if len(tool_calls) == 0:
+            print("---Router Could Not Decide Where To GO (len[tool_calls]) == 0), SO ROUTE QUESTION TO LLM ---")
+            return "llm_fallback"
 
-    # Choose datasource
-    datasource = tool_calls[0]["name"]
+        # Choose datasource
+        datasource = tool_calls["name"]
+
+    else:        
+        try:
+            tool_calls = source.tool_calls
+        except:
+            tool_calls = []
+            print("---ROUTE QUESTION TO LLM---")
+            return "llm_fallback" 
+        if len(tool_calls) == 0:
+            print("---Router Could Not Decide Where To GO (len[tool_calls]) == 0), SO ROUTE QUESTION TO LLM ---")
+            return "llm_fallback"
+
+        # Choose datasource
+        datasource = tool_calls[0]["name"]
+
+
     if datasource == 'web_search':
         print("---ROUTE QUESTION TO WEB SEARCH---")
         return "web_search"
@@ -502,7 +557,15 @@ def grade_generation_v_documents_and_question(state:State):
     question = state["question"]
     documents = state["documents"]
     generation = state["generation"]
- 
+
+    print(f"{len(documents[0].page_content)=}")
+
+    doc_num = len(documents)
+    token_len = int(1000/doc_num)
+    for i in range(doc_num):
+        content = documents[i].page_content[-token_len:]
+        documents[i].page_content = content
+     
     # Check hallucination / answer_is_supported_by_documents    
     try:
         score = answer_is_supported_by_documents_grader.invoke({"documents": documents, "generation": generation})
@@ -628,7 +691,7 @@ test_app = workflow.compile()
 test_app.get_graph().print_ascii()  #Visualize this graph in ascii
 
 # Run With Memory
-def run_graph_workflow(question:str,config = {"recursion_limit":25,"configurable": {"thread_id": "111"}}):
+def run_graph_workflow(question:str,config = {"recursion_limit":25,"configurable": {"thread_id": "UserName_SessionID"}}):
     memory = SqliteSaver.from_conn_string("checkpoints.sqlite")
     app = workflow.compile(checkpointer=memory)   
 
@@ -663,7 +726,7 @@ def run_graph_workflow(question:str,config = {"recursion_limit":25,"configurable
         result = f'出现了错误，你可以重新输入问题"{question}"再尝试几次。以下是错误的详细信息:{e}'
     return result
 # aRun
-async def arun_graph_workflow(question:str,config = {"recursion_limit":25,"configurable": {"thread_id": "22"}}):
+async def arun_graph_workflow(question:str,config = {"recursion_limit":25,"configurable": {"thread_id": "-999"}}):
     async_memory = AsyncSqliteSaver.from_conn_string("checkpoints.async_sqlite")
     app = workflow.compile(checkpointer=async_memory)
 
