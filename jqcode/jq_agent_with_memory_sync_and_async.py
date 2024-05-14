@@ -694,6 +694,8 @@ async def arun_graph_workflow(question:str,config = {"recursion_limit":25,"confi
 
 if __name__ == '__main__':
 
+    # WARNING 05-13 17:46:33 scheduler.py:619] Input prompt (74314 tokens) is too long and exceeds limit of 4096
+
     questions = ["What are the types of agent memory?","What player are the Bears expected to draft first in the 2024 NFL draft?","合肥是一个什么样的城市？","Hello, how are you today?"]
     questions_test_memory = ["我叫张结魁","你知道我叫什么吗?"]
     value=run_graph_workflow(questions[-1])

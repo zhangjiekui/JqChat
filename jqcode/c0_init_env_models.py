@@ -103,6 +103,15 @@ def get_es_connection():
     print('-------可以通过Kibana URL查看:| http://127.0.0.1:5601 | -------')
     return es_connection
 
+def get_all_knowledge_base(es_connection=get_es_connection(),exclude_system_indices=True):
+    all_indices = es_connection.indices.get_alias(index="*")
+    if exclude_system_indices:
+        all_indices = [index_name for index_name in all_indices if not index_name.startswith('.')]
+    for index_name in all_indices:
+        print(index_name)
+    return all_indices
+
+
 hybrid=False
 strategy=ElasticsearchStore.ApproxRetrievalStrategy(hybrid=hybrid)
 def get_es_searchstore(embedding=None,es_connection=None,index_name='test',strategy=strategy):
@@ -148,6 +157,8 @@ if __name__ == '__main__':
     # litellm --model ollama_chat/llama3:70b-instruct
     es_searchstore = get_es_searchstore()
 
+    knowledge_base_list = get_all_knowledge_base()
+
     
 
     open_ai = get_openai()
@@ -155,6 +166,12 @@ if __name__ == '__main__':
     langchain_chat_model = get_langchain_chat_model()
     embed_model,reranker,embedding_model_8k = get_emb_8k_rerank_model()
     es_connection = get_es_connection()
+
+    all_indices = es_connection.indices.get_alias(index="*")
+    for index in all_indices:
+      print(index)
+
+
     from langchain_core.messages import HumanMessage,SystemMessage
     res = langchain_chat_model.invoke([SystemMessage('请使用中文回答我！'), HumanMessage('你好')])
     print(res)
