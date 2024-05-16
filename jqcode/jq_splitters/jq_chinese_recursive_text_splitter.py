@@ -94,7 +94,7 @@ class ChineseRecursiveTextSplitter(RecursiveCharacterTextSplitter):
 
     def __init__(
             self,
-            chunk_size: int = 1000,
+            chunk_size: int = 500,
             chunk_overlap: float = 0.2,
             separators: Optional[List[str]] = None,
             keep_separator: bool = True,
