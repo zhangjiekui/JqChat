@@ -5,7 +5,7 @@ from functools import partial
 from typing import List, Optional, Any, Callable,Union
 from transformers import AutoTokenizer
 from langchain.text_splitter import RecursiveCharacterTextSplitter
-from langchain.embeddings import HuggingFaceEmbeddings,HuggingFaceBgeEmbeddings
+from langchain_community.embeddings import HuggingFaceEmbeddings,HuggingFaceBgeEmbeddings
 
 from jqcode.jq_utils.logger import jqkj_logger
 from jqcode.jq_config import general_config
@@ -38,22 +38,7 @@ def _split_text_with_regex_from_end(
 
 class _JqkjTokenizerWrapper():
     def __init__(self, embeding_model: Union[HuggingFaceEmbeddings, HuggingFaceBgeEmbeddings,str] = embed_model):
-        kwargs = {
-            'padding':False, 
-            'truncation':False, 
-            'add_special_tokens':False,
-            'is_split_into_words':False,
-            'pad_to_multiple_of':None,
-            'return_tensors' : 'np',
-            'return_token_type_ids': 'False',
-            'return_attention_mask': False,
-            'return_overflowing_tokens':False,
-            'return_special_tokens_mask':False,
-            'return_offsets_mapping': False,
-            'return_length': False,
-            'max_length': 2**32,
-            'verbose': general_config.VERBOSE,
-        }
+
         assert embeding_model, 'embeding_model_instance不能为空'
         if isinstance(embeding_model,(HuggingFaceEmbeddings,HuggingFaceBgeEmbeddings)):
             self.model_name_or_path = embeding_model.model_name
@@ -64,18 +49,12 @@ class _JqkjTokenizerWrapper():
             self.tokenizer = AutoTokenizer.from_pretrained(embeding_model)
         else:
             raise Exception('_JqkjTokenizerWrapper初始化失败，参数必须是Union[HuggingFaceEmbeddings, HuggingFaceBgeEmbeddings,str]')
-        self.partial_tokenize_func = partial(self.tokenizer.encode,**kwargs)
+        # self.partial_tokenize_func = partial(self.tokenizer.encode,**kwargs)
 
-
+    _max_length_equal_32_bit_integer: int = 2**32
     def tokenize(self, text: str) -> List[int]: 
-        tokens = self.partial_tokenize_func(text)
-        tokens = tokens.tolist()[0]
-        # while isinstance(tokens[0],list):
-        #     if len(tokens[0]) == 0:
-        #         return tokens
-        #     else:
-        #         tokens = tokens[0]
-        return tokens
+        token_ids_with_start_and_end_token_ids = self.tokenizer.encode(text,max_length=self._max_length_equal_32_bit_integer,truncation="do_not_truncate")
+        return token_ids_with_start_and_end_token_ids
     
     def de_tokenize(self,ids: List[int]) -> str:
         return self.tokenizer.decode(ids)
@@ -89,11 +68,9 @@ class _JqkjTokenizerWrapper():
 
 
 class ChineseRecursiveTextSplitter(RecursiveCharacterTextSplitter):
-    _tokenizer = _JqkjTokenizerWrapper()
-    _len_func = _tokenizer.tokens_len
-
     def __init__(
             self,
+            model_name: Union[HuggingFaceEmbeddings, HuggingFaceBgeEmbeddings,str] = embed_model,
             chunk_size: int = 500,
             chunk_overlap: float = 0.2,
             separators: Optional[List[str]] = None,
@@ -101,7 +78,7 @@ class ChineseRecursiveTextSplitter(RecursiveCharacterTextSplitter):
             is_separator_regex: bool = True,
             add_start_index: bool = True,
             strip_whitespace: bool = True,
-            length_function: Callable[[str], int] = _len_func,            
+            length_function: Callable[[str], int] = None,            
             **kwargs: Any,
     ) -> None:
         """Create a new TextSplitter."""
@@ -115,7 +92,7 @@ class ChineseRecursiveTextSplitter(RecursiveCharacterTextSplitter):
                 f"Got a larger chunk overlap ({chunk_overlap}) than or equal to chunk size "
                 f"({chunk_size}), should be smaller."
             )
-        super().__init__(chunk_size=chunk_size,chunk_overlap=chunk_overlap,add_start_index=add_start_index,keep_separator=keep_separator, strip_whitespace=strip_whitespace, length_function = length_function,**kwargs)
+        self.tokenizer_wrapper = _JqkjTokenizerWrapper(embeding_model=embed_model)        
         self._separators = separators or [
             "\n\n",
             "\n",
@@ -127,6 +104,8 @@ class ChineseRecursiveTextSplitter(RecursiveCharacterTextSplitter):
             " " # 有些可能没有符号分割的，如方法名列表，考虑用空格分
         ]
         self._is_separator_regex = is_separator_regex
+
+        super().__init__(chunk_size=chunk_size,chunk_overlap=chunk_overlap,add_start_index=add_start_index,keep_separator=keep_separator, strip_whitespace=strip_whitespace, length_function = self.tokenizer_wrapper.tokens_len,**kwargs)
 
     def _split_text(self, text: str, separators: List[str]) -> List[str]:
         """Split incoming text and return chunks."""
@@ -175,8 +154,12 @@ def _test__JqkjTokenizerWrapper():
     tokenizer_wrapper = _JqkjTokenizerWrapper()
     tokens = tokenizer_wrapper(text)
     print(tokens)
+    print(tokenizer_wrapper.de_tokenize(tokens))
     print(tokenizer_wrapper.tokenizer.convert_ids_to_tokens(tokens))
     print(tokenizer_wrapper.tokenizer.decode(tokens))
+    
+
+    # de_tokenize
 
     tiktoken_enc = tiktoken.get_encoding("cl100k_base")
     tokens2 = tiktoken_enc.encode(text)
@@ -197,7 +180,7 @@ def _test_JqkjChineseRecursiveTextSplitter():
     for inum, text in enumerate(ls):
         chunks = text_splitter.split_text(text)
         for i_num_chunk, chunk in enumerate(chunks):
-            print(f'    ====#{inum+1}.{i_num_chunk+1},字符长度{len(chunk)}，tokens长度{text_splitter._tokenizer.tokens_len(chunk)}\n',chunk)
+            print(f'    ====#{inum+1}.{i_num_chunk+1},字符长度{len(chunk)}，tokens长度{text_splitter.tokenizer_wrapper.tokens_len(chunk)}\n',chunk)
         print('=============================================================')
 
     # documents = text_splitter.create_documents(ls)
@@ -205,15 +188,15 @@ def _test_JqkjChineseRecursiveTextSplitter():
     #     print(doc)
             
     text = '中国对外贸易形势报告（75页）'
-    ids = text_splitter._tokenizer(text)
-    id = text_splitter._tokenizer("") #检查空字符串，正确返回[]
+    ids = text_splitter.tokenizer_wrapper(text)
+    id = text_splitter.tokenizer_wrapper("") #检查空字符串，正确返回[]
     print(ids)
     print(len(ids))
-    l = text_splitter._tokenizer.tokens_len(text)
+    l = text_splitter.tokenizer_wrapper.tokens_len(text)
     print(l)
-    print(text_splitter._tokenizer.de_tokenize(ids))
+    print(text_splitter.tokenizer_wrapper.de_tokenize(ids))
     for i,id in enumerate(ids):
-        print(i,id,text_splitter._tokenizer.de_tokenize(id))
+        print(i,id,text_splitter.tokenizer_wrapper.de_tokenize(id))
 
 if __name__ == "__main__":
     _test__JqkjTokenizerWrapper()
@@ -224,9 +207,55 @@ if __name__ == "__main__":
         chunk_size=100,
         chunk_overlap=0.2
     )
-    chunks = text_splitter.split_text(text)
+
+
+    code = """
+        class ChineseRecursiveTextSplitter(RecursiveCharacterTextSplitter):
+            _tokenizer = _JqkjTokenizerWrapper()
+            _len_func = _tokenizer.tokens_len
+
+            def __init__(
+                    self,
+                    chunk_size: int = 1000,
+                    chunk_overlap: Union[int,float] = 0.2,
+                    separators: Optional[List[str]] = None,
+                    keep_separator: bool = True,
+                    is_separator_regex: bool = True,
+                    add_start_index: bool = True,
+                    strip_whitespace: bool = True,
+                    length_function: Callable[[str], int] = _len_func,            
+                    **kwargs: Any,
+            ) -> None:
+                'Create a new TextSplitter.'
+                if isinstance(chunk_overlap, float):
+                    if not 0.0 < chunk_overlap < 1.0:
+                        raise ValueError(f"Chunk overlap ratio/percent must between (0.0, 1.0), but got a value of {chunk_overlap}")                
+                    chunk_overlap = math.floor(chunk_size * chunk_overlap)
+
+                if chunk_overlap >= chunk_size:
+                    raise ValueError(
+                        f"Got a larger chunk overlap ({chunk_overlap}) than or equal to chunk size "
+                        f"({chunk_size}), should be smaller."
+                    )
+                super().__init__(chunk_size=chunk_size,chunk_overlap=chunk_overlap,add_start_index=add_start_index,keep_separator=keep_separator, strip_whitespace=strip_whitespace, length_function = length_function,**kwargs)
+                self._separators = separators or [
+                    "\n\n",
+                    "\n",
+                    "。|！|？",
+                    "\.\s|\!\s|\?\s",
+                    "；|;\s",
+                    "”|》\s",
+                    "，|,|、\s" #还不能删除逗号作为分隔符，否则有些句子无法分割
+                    " " # 有些可能没有符号分割的，如方法名列表，考虑用空格分
+                ]
+                self._is_separator_regex = is_separator_regex
+"""
+
+    chunks = text_splitter.split_text(code)
     inum =0
+    print('=============================================================')
     for chunk in chunks:
-        inum+=1
-        print(f'    ====#{inum},字符长度{len(chunk)}，tokens长度{text_splitter._tokenizer.tokens_len(chunk)}\n',chunk)
+        # inum+=1
+        # print(f'    ====#{inum},字符长度{len(chunk)}，tokens长度{text_splitter._tokenizer.tokens_len(chunk)}\n',chunk)
+        print(text_splitter.tokenizer_wrapper.tokens_len(chunk))
     print('=============================================================')
