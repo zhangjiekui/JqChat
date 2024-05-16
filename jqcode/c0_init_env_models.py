@@ -17,13 +17,17 @@ from langchain_experimental.llms.ollama_functions import OllamaFunctions
 from dotenv import load_dotenv
 
 def load_project_env(): 
+    print('\n\n')
+    print('=*'*20)
     root_dir = pathlib.Path(__file__).resolve().parent.parent
     env_dir = root_dir/'.env'
     dotenv_loaded = load_dotenv(env_dir)
     if dotenv_loaded:
-        print("load_dotenv('.env')成功！")
+        print("=*=* load_dotenv('.env')成功！")
     else:
-        print("load_dotenv('.env')失败，请检查！")
+        print("=*=* load_dotenv('.env')失败，请检查！")
+    print('=*'*20)
+    print('\n\n')
 
 load_project_env()
 

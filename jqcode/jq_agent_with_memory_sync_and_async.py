@@ -24,7 +24,7 @@ from langchain_community.tools.tavily_search import TavilySearchResults ### Sear
 from jqcode.c0_init_env_models import get_langchain_chat_model,get_langchain_chat_ollama_functions,USING_OLLAMA_FUNCTIONS,USING_OLLAMA_LITELLM
 from jqcode.c0_init_env_models import get_emb_8k_rerank_model
 from jqcode.c0_init_env_models import get_es_connection, get_es_searchstore, get_es_searchstore_index_documents
-from jqcode.web_search_engine import get_web_search_documents,is_query_chinese
+from jqcode.jq_web_search_engine import get_web_search_documents,is_query_chinese
 
 # Set UP: LLM, embeddings,web_search_tool
 
@@ -432,21 +432,9 @@ def web_search(state:State):
     print("---WEB SEARCH---")
     question = state["question"]
     # Web search
-    chinese = is_query_chinese(question)
-    if chinese:#中文，优先使用搜索引擎
-        try:
-            docs = get_web_search_documents(question)
-            web_results = "\n".join([d.page_content for d in docs])
-        except:
-            docs = web_search_tool.invoke({"query": question})
-            web_results = "\n".join([d["content"] for d in docs]) 
-    else:# 非中文，优先使用web_search_tool（TavilySearchResults）
-        try:
-            docs = web_search_tool.invoke({"query": question})
-            web_results = "\n".join([d["content"] for d in docs])
-        except:
-            docs = get_web_search_documents(question)
-            web_results = "\n".join([d.page_content for d in docs])
+    docs = get_web_search_documents(question)
+    web_results = "\n".join([d.page_content for d in docs])
+
     # todo: 需对doc进行split和检索（embedding和/或rerank） 
     web_search_message = ToolMessage(content=web_results,name='web_search',tool_call_id='0')
     web_results_document = Document(page_content=web_results)
