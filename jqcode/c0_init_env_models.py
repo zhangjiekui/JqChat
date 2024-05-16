@@ -15,20 +15,23 @@ from langchain_community.chat_models import ChatOllama
 from langchain_experimental.llms.ollama_functions import OllamaFunctions
 
 from dotenv import load_dotenv
- 
-root_dir = pathlib.Path(__file__).resolve().parent.parent
-env_dir = root_dir/'.env'
-dotenv_loaded = load_dotenv(env_dir)
-if dotenv_loaded:
-    print("load_dotenv('.env')成功！")
-else:
-    print("load_dotenv('.env')失败，请检查！")
-# https://python.langchain.com/v0.1/docs/integrations/chat/ollama_functions/
+
+def load_project_env(): 
+    root_dir = pathlib.Path(__file__).resolve().parent.parent
+    env_dir = root_dir/'.env'
+    dotenv_loaded = load_dotenv(env_dir)
+    if dotenv_loaded:
+        print("load_dotenv('.env')成功！")
+    else:
+        print("load_dotenv('.env')失败，请检查！")
+
+load_project_env()
 
 base_url=os.getenv("OPENAI_API_BASE",'http://10.1.150.105:4000/v1')
 api_key =os.getenv("OPENAI_API_KEY",'NotNeeded')
 api_type =os.getenv("OPENAI_API_TYPE",'open_ai')
 llm_model_name = os.getenv("LLM_MODEL_NAME",'gpt-4')
+# https://python.langchain.com/v0.1/docs/integrations/chat/ollama_functions/
 USING_OLLAMA_FUNCTIONS = os.getenv("USING_OLLAMA_FUNCTIONS",'false')
 USING_OLLAMA_LITELLM = False
 prefix = 'ollama_chat/'
@@ -129,7 +132,9 @@ def get_es_connection():
     print('-------可以通过Kibana URL查看:| http://127.0.0.1:5601 | -------')
     return es_connection
 
-def get_all_knowledge_base(es_connection=get_es_connection(),exclude_system_indices=True):
+def get_all_knowledge_base(es_connection=None,exclude_system_indices=True):
+    if not es_connection:
+        es_connection=get_es_connection()
     all_indices = es_connection.indices.get_alias(index="*")
     if exclude_system_indices:
         all_indices = [index_name for index_name in all_indices if not index_name.startswith('.')]

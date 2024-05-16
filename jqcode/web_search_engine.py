@@ -2,7 +2,6 @@ import os
 import re
 import requests
 from bs4 import BeautifulSoup
-from urllib.parse import urljoin
 from fake_useragent import UserAgent
 
 from langchain_core.documents import Document
@@ -12,12 +11,15 @@ from langchain_community.document_loaders import AsyncHtmlLoader
 from langchain_community.document_loaders import NewsURLLoader #需导入结巴分词的词典，严重拖慢速度
 from langchain_community.document_loaders import PlaywrightURLLoader
 from langchain_community.document_transformers import Html2TextTransformer
-from jqcode.c0_init_env_models import get_es_connection, get_es_searchstore, get_es_searchstore_index_documents
+from langchain_community.tools.tavily_search import TavilySearchResults
 
 from func_timeout import func_set_timeout, FunctionTimedOut
 
 import urllib3
+from urllib.parse import urljoin
 urllib3.disable_warnings()
+
+from jqcode.c0_init_env_models import load_project_env
 
 timeout_value = 60
 USING_JINA_AI_READER = os.getenv("USING_JINA_AI_READER",True)
@@ -28,28 +30,29 @@ filter_out_host = ['github.com','google.com','huggingface.co'] #这些网站的�
 html2text = Html2TextTransformer()
 
 try:
-    ua = UserAgent(browsers=['edge', 'chrome'])
+    ua = UserAgent()
     user_agents = ua.random
 except:
     print('使用fake_useragent获取user_agents失败，请检查!只好使用预定义的user_agents，但反爬虫机制的存在，成功获取搜索结果的概率会降低！')
     user_agents = 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/108.0.0.0 Safari/537.36 Edg/108.0.1462.76'
 
-def convert_search_query(query):
+def convert_search_query(query,join_character='+'):
+    '''
+    join_character:
+        取值：‘+’ （默认），其他情况下传入None
+        使用Baidu、Bing搜索引擎时，需要用 ‘+’ 连接搜索关键词 （代替空格）
+        但使用TavilySearch时，不需要 ‘+’ 
+    '''
     query = query.strip()
     query = re.sub(r' +', ' ', query)
-    query_terms = query.strip().split(' ')
-    query = '+'.join(query_terms)
+    if join_character:
+        query_terms = query.strip().split(' ')
+        query = join_character.join(query_terms)
     return query
-# print(convert_search_query('   合肥大蜀山     科学岛   '))
-
 
 def is_query_chinese(query):
     pattern = re.compile(r'[\u4e00-\u9fa5]')
     return bool(re.search(pattern, query))
-# print(is_query_chinese('   合肥大蜀山     科学岛   '))
-# print(is_query_chinese('   text/html,application/xhtml+xml   '))
-# print(is_query_chinese('   text/html,application/xhtml+xml 详细信息  '))
-
 
 class BaiduSearch:
     def __init__(self):
@@ -124,6 +127,7 @@ class JinaSearch:
     def __init__(self,):
         self.HEADERS =  {"x-respond-with": "html"}
         self.url = 'https://r.jina.ai/'
+
     def search(self,query,search_engine_url):
         valid_links_without_repeated = []
         session = requests.Session()
@@ -151,34 +155,35 @@ class JinaSearch:
             return valid_links_without_repeated
 
 
-
+@func_set_timeout(timeout_value)
 def get_search_result_links(query): 
     baidu = BaiduSearch()
     bing =  BingSearch()
     jina =  JinaSearch()
+    urls = []
     if is_query_chinese(query):        
         urls = baidu.search(query)
-        url_num = len(urls)
+        url_num = len(urls) if urls else 0
         print(f'Baidu搜索到 {url_num} 条相关内容！')
         if url_num == 0:           
             urls=bing.search(query)
-            url_num = len(urls)
+            url_num = len(urls) if urls else 0
             print(f'Bing搜索到 {url_num} 条相关内容！')
         if url_num == 0: 
             urls=jina.search(query,baidu.url)
-            url_num = len(urls)
+            url_num = len(urls) if urls else 0
             print(f'Jina+Baidu搜索到 {url_num} 条相关内容！')
     else:
         urls=bing.search(query)
-        url_num = len(urls)
+        url_num = len(urls) if urls else 0
         print(f'Bing搜索到 {url_num} 条相关内容！')
         if url_num == 0:
             urls = baidu.search(query)
-            url_num = len(urls)
+            url_num = len(urls) if urls else 0
             print(f'Baidu搜索到 {url_num} 条相关内容！')
         if url_num == 0: 
             urls=jina.search(query,bing.url)
-            url_num = len(urls)
+            url_num = len(urls) if urls else 0
             print(f'Jina+Bing搜索到 {url_num} 条相关内容！')
     if urls:
         # print(urls)
@@ -187,7 +192,7 @@ def get_search_result_links(query):
         print('没有搜索到任何相关内容！')
         return []
 
-@func_set_timeout(timeout_value*2)
+@func_set_timeout(timeout_value)
 def get_webpages_texts_by_langchain_document_loader_from_urls(urls,document_loader_class=AsyncHtmlLoader, max_doc_nums=4):
     if document_loader_class==NewsURLLoader:
         loader = document_loader_class(urls,text_mode=True,nlp=True,continue_on_failure=True)
@@ -286,14 +291,11 @@ def get_search_result_documents(urls,query,document_loader_class=AsyncHtmlLoader
                     if url_getted:
                         urls_getted.append(url_getted)
                 _urls = list(set(urls) - set(urls_getted)) 
-                print('       =========================================')
-                print('       ---------------urls----------------------')
-                print(       len(urls))
-                print(       '-------------urls_getted-----------------')
-                print(       len(urls_getted))
-                print(       '----------------_urls--------------------')
-                print(       len(_urls))
-                print('=========================================')
+                print('================================================')
+                print(f'       -------urls:{len(urls)}')
+                print(f'       -------urls_getted:{len(urls_getted)}')
+                print(f'       -------_urls:{len(_urls)}')
+                print('================================================')
 
 
                 print(f"继续尝试使用jina_reader获取{len(_urls)=}个网页内容")
@@ -310,23 +312,73 @@ def get_search_result_documents(urls,query,document_loader_class=AsyncHtmlLoader
     #     # 只保留page_content长度>50的
     #     docs = [doc for doc in docs if len(doc.page_content.strip())>50]
     return docs
-   
+
+def get_tavily_search_result_documents(query,max_doc_nums=4):
+    
+    tavily_search = TavilySearchResults(max_results=max_doc_nums)
+    docs = tavily_search.invoke({"query": query})
+    documents = [Document(page_content=doc['content'], metadata={"source": doc['url']}) for doc in docs]
+    return documents
+
+# 最终的方法调用，建议用户只调用该方法
+# 根据query，返回最多max_doc_nums个结果文档，返回结果类型为:list[langchain_core.documents.base.Document]
 def get_web_search_documents(query,max_doc_nums=4):
     docs = []
-    if len(query) == 0:
-        print(f"提交到Web_Search的query({query=})长度为空！直接返回空列表。")
-        return docs
+    if not query:
+        print(f"提交到Web_Search的query为空！直接返回空列表。")
+        return docs   
+    
+    tavily_search_query = convert_search_query(query,join_character=None) 
+
+    if not is_query_chinese(query):#直接调用TavilySearchResults获得搜索结果，List[Document]
+        try:           
+           print(f'{tavily_search_query=}')
+           docs = get_tavily_search_result_documents(tavily_search_query,max_doc_nums=max_doc_nums)
+           print(f'非中文，使用tavily_search,获取到{len(docs)}个文档。')
+           return docs
+        except Exception as e:
+            print('直接调用TavilySearchResults获得搜索结果失败！')
+            print(f"失败的原因为：{e}")  
+
     query = convert_search_query(query)
-    urls = get_search_result_links(query)    
+    
+    # 获取搜索引擎结果列表URLs
+    urls = None
+    try:
+        urls = get_search_result_links(query)
+    except Exception as e:
+        print('搜索引擎获取URLs结果失败！')
+        print(f"失败的原因为：{e}")  
+
+    # 根据获取到的搜索引擎结果列表URLs，提取网页文档结果
+    docs = None
     if urls:
-        docs = get_search_result_documents(urls,query,max_doc_nums=max_doc_nums)
-    return docs
+        try:
+            docs = get_search_result_documents(urls,query,max_doc_nums=max_doc_nums)
+            return docs
+        except Exception as e:
+            print('搜索网页文档结果失败！')
+            print(f"失败的原因为：{e}")  
+    
+    #如果前面未能获取到实际的结果文档，（即使是中文搜索）最后也转向使用TavilySearchResults
+    if not docs:
+        try:           
+           print(f'{tavily_search_query=}')
+           docs = get_tavily_search_result_documents(tavily_search_query,max_doc_nums=max_doc_nums)
+           print(f'中文query，但由于使用Baidu、Bing、Jina未能获得最终网页文档结果。转向使用tavily_search,获取到{len(docs)}个文档。')
+           return docs
+        except Exception as e:
+            print('直接调用TavilySearchResults获得搜索结果失败！')
+            print(f"失败的原因为：{e}")  
+    
 
 if __name__ == "__main__":
-    queries = ['who is playing in the super bowl','中国科学技术大学','how python install langchain langgraph package','合肥大蜀山和科学岛','合肥八中 校区数量']
+    queries = ['who is playing in the super bowl','中国科学技术大学','how python install langchain langgraph package','合肥大蜀山和科学岛','合肥大蜀山 科学岛','合肥八中 校区数量','   合肥八中   校区数量   ']
     for query in queries:
+        print('~~'*20)
+        print('~~'*20)
+        print(f'原始query={query}')
         docs = get_web_search_documents(query)
         print(f"获取到{len(docs)=}个网页文档")
-        # for doc in docs:
-        #     # print(doc.page_content[:50])
-        #     print(type(doc))
+        for doc in docs:
+            print(f"文档的类型为{type(docs[0])}")
