@@ -748,38 +748,77 @@ async def arun_graph_workflow(question:str,config = {"recursion_limit":25,"confi
         result = f'出现了错误，你可以重新输入问题{question}再尝试几次。以下是错误的详细信息:{e}'
     return result
 
+# aRun coro
+def arun_coro_graph_workflow(question:str,config = {"recursion_limit":25,"configurable": {"thread_id": "-999"}}):
+    async_memory = AsyncSqliteSaver.from_conn_string("checkpoints.async_sqlite")
+    app = workflow.compile(checkpointer=async_memory)
 
+    print('=*='*20)
+    print(f"In Agent 'arun_coro_graph_workflow'：{question=}")
+    inputs = {"question": question, "messages": [("human", question)]}
+    try:
+        coro = app.ainvoke(inputs, config)
+        value = asyncio.run(coro)
+
+        try:
+            print("In Agent 'arun_coro_graph_workflow', answer:")
+            result = value["generation"]
+            print(result)
+        except Exception as e:
+            print(e) 
+            raise e               
+            
+    except GraphRecursionError:
+        print("!!!!!!GraphRecursionError: Graph recursion limit reached.!!!!!!")
+        result = 'GraphRecursionError'
+    except Exception as e:
+        
+        print(f"!!!!!!Error: {e}.!!!!!!")
+        result = f'出现了错误，你可以重新输入问题{question}再尝试几次。以下是错误的详细信息:{e}'
+    return result
 
 if __name__ == '__main__':
 
     # WARNING 05-13 17:46:33 scheduler.py:619] Input prompt (74314 tokens) is too long and exceeds limit of 4096
 
-    questions = ["What are the types of agent memory?","What player are the Bears expected to draft first in the 2024 NFL draft?","合肥是一个什么样的城市？","Hello, how are you today?"]
-    questions_test_memory = ["我叫张结魁，你叫什么呀？我们做好朋友吧","你还记得我叫什么吗?"]
-    value=run_graph_workflow(questions[-1])
-    print(value)
-
+       
+    print('\n\n')
+    print("~~~~~~~~~~~~~~~~~~~~~~~~~~~"*5) 
     print("~~~~test_memory~~~~"*5)
+    print("~~~~~~~~~~~~~~~~~~~~~~~~~~~"*5)
+    questions_test_memory = ["你知道我叫什么吗？","我叫张结魁，你叫什么呀？我们做好朋友吧","你还记得我叫什么吗?"] 
     for question in questions_test_memory:
         value=run_graph_workflow(question)
         print(value)
 
-
+    questions = ["What are the types of agent memory?","What player are the Bears expected to draft first in the 2024 NFL draft?","合肥是一个什么样的城市？","Hello, how are you today?"]
+    print('\n\n')
+    print("~~~~~~~~~~~~~~~~~~~~~~~~~~~"*5) 
     print("$$$$run_graph_workflow$$$$"*5)
+    print("~~~~~~~~~~~~~~~~~~~~~~~~~~~"*5) 
     for question in questions:
         value=run_graph_workflow(question)
         print(value)
     print("~~~~~~~~~~~~~~~~~~~~~~~~~~~"*5)
 
+    print('\n\n')
+    print("~~~~~~~~~~~~~~~~~~~~~~~~~~~"*5) 
+    print("A&A&arun_graph_workflowA&A&"*5)
+    print("~~~~~~~~~~~~~~~~~~~~~~~~~~~"*5) 
+    for question in questions:
+        # coro = arun_graph_workflow(question)
+        value=asyncio.run(arun_graph_workflow(question))
+        print(value)
+    print('END:A&A&arun_graph_workflowA&A&')
 
-    # print("A&A&arun_graph_workflowA&A&"*5)
-    # print("~~~~~~~~~~~~~~~~~~~~~~~~~~~"*5) 
-    # for question in questions:
-    #     coro = arun_graph_workflow(question)
-    #     value=asyncio.run(coro)
-    #     # print(value)
-    # print('END PROGRAM')
-
+    print('\n\n')
+    print("~~~~~~~~~~~~~~~~~~~~~~~~~~~"*5) 
+    print("B&B&arun_coro_graph_workflowB&B&"*5)
+    print("~~~~~~~~~~~~~~~~~~~~~~~~~~~"*5) 
+    for question in questions:
+        result = arun_coro_graph_workflow(question)
+        print(result)
+    print('END:B&B&arun_coro_graph_workflowB&B&')
 
 
 

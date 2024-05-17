@@ -277,7 +277,6 @@ def get_search_result_documents(urls,query,document_loader_class=AsyncHtmlLoader
         docs = get_webpages_texts_by_langchain_document_loader_from_urls(urls,document_loader_class=document_loader_class, max_doc_nums=max_doc_nums)
     except FunctionTimedOut as e:
         print(f'直接获取URLs网页超时！只获取到{len(docs)}个文档。')
-
     except Exception as e:
         print(f'直接获取URLs网页内容失败！只获取到{len(docs)}个文档。')
 
@@ -343,22 +342,34 @@ def get_web_search_documents(query,max_doc_nums=4):
     query = convert_search_query(query)
     
     # 获取搜索引擎结果列表URLs
-    urls = None
+    urls = []
     try:
-        urls = get_search_result_links(query)
+        urls = get_search_result_links(query)    
+    except FunctionTimedOut as e:
+        print(f'获取搜索引擎URLs列表超时！')
+        print(f"失败的原因为：{e}") 
     except Exception as e:
         print('搜索引擎获取URLs结果失败！')
         print(f"失败的原因为：{e}")  
-
+    finally:
+        print(f'获取到{len(urls)}=个urls')
+        print(f"Finally:继续向下执行！") 
+       
     # 根据获取到的搜索引擎结果列表URLs，提取网页文档结果
     docs = None
     if urls:
         try:
             docs = get_search_result_documents(urls,query,max_doc_nums=max_doc_nums)
-            return docs
+            return docs        
+        except FunctionTimedOut as e:
+            print(f'搜索网页文档结果超时！')
+            print(f"失败的原因为：{e}") 
         except Exception as e:
             print('搜索网页文档结果失败！')
-            print(f"失败的原因为：{e}")  
+            print(f"失败的原因为：{e}") 
+        finally:
+            print(f'获取到{len(docs)}=个docs')
+            print(f"Finally:继续向下执行！")             
     
     #如果前面未能获取到实际的结果文档，（即使是中文搜索）最后也转向使用TavilySearchResults
     if not docs:
@@ -369,8 +380,9 @@ def get_web_search_documents(query,max_doc_nums=4):
            return docs
         except Exception as e:
             print('直接调用TavilySearchResults获得搜索结果失败！')
-            print(f"失败的原因为：{e}")  
-    
+            print(f"失败的原因为：{e}")
+        finally:
+            return docs if docs else []     
 
 if __name__ == "__main__":
     queries = ['who is playing in the super bowl','中国科学技术大学','how python install langchain langgraph package','合肥大蜀山和科学岛','合肥大蜀山 科学岛','合肥八中 校区数量','   合肥八中   校区数量   ']
