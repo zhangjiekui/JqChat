@@ -16,7 +16,7 @@ from flask_cors import CORS
 from flask import Flask, request, jsonify, send_from_directory, Response
 
 from jqchat.kernel_program.main import APP_PORT as KERNEL_APP_PORT
-from jqcode.c0_init_env_models import get_openai,get_openai_client,llm_model_name,api_key
+from jqcode.jq_agent.c0_init_env_models import get_openai,get_openai_client,llm_model_name,api_key
 from jqcode.jq_agent_with_memory import arun_graph_workflow, coding_relevance_grader
 
 #todo 保留openai只是暂时不想改代码

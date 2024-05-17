@@ -15,7 +15,7 @@ from jqcode.jq_config import general_config
 logger = jqkj_logger(__file__).get_logger()
 general_config.VERBOSE = True
 
-from jqcode.c0_init_env_models import get_emb_8k_rerank_model
+from jqcode.jq_agent.c0_init_env_models import get_emb_8k_rerank_model
 embed_model,embedding_model_8k,reranker = get_emb_8k_rerank_model()
 
 def _split_text_with_regex_from_end(

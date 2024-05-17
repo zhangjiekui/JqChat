@@ -19,7 +19,7 @@ import urllib3
 from urllib.parse import urljoin
 urllib3.disable_warnings()
 
-from jqcode.c0_init_env_models import load_project_env
+from jqcode.jq_agent.c0_init_env_models import load_project_env
 
 timeout_value = 60
 USING_JINA_AI_READER = os.getenv("USING_JINA_AI_READER",True)

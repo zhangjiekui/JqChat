@@ -20,8 +20,8 @@ from langchain_community.document_loaders import WebBaseLoader
 from langchain.prompts import PromptTemplate
 from langchain_community.chat_models import ChatOllama
 from langchain_core.output_parsers import JsonOutputParser
-from jqcode.c0_init_env_models import get_emb_8k_rerank_model
-from jqcode.c0_init_env_models import get_es_connection, get_es_searchstore_index_documents,get_es_searchstore_from_documents
+from jqcode.jq_agent.c0_init_env_models import get_emb_8k_rerank_model
+from jqcode.jq_agent.c0_init_env_models import get_es_connection, get_es_searchstore_index_documents,get_es_searchstore_from_documents
 
 ### Search
 web_search_tool = TavilySearchResults(k=3)

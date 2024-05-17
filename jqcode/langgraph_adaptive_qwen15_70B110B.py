@@ -14,9 +14,9 @@ from langchain_core.pydantic_v1 import BaseModel, Field
 from langchain.text_splitter import RecursiveCharacterTextSplitter
 from langchain_community.document_loaders import WebBaseLoader
 from langchain_community.tools.tavily_search import TavilySearchResults ### Search
-from jqcode.c0_init_env_models import get_langchain_chat_model
-from jqcode.c0_init_env_models import get_emb_8k_rerank_model
-from jqcode.c0_init_env_models import get_es_connection, get_es_searchstore_index_documents,get_es_searchstore_from_documents
+from jqcode.jq_agent.c0_init_env_models import get_langchain_chat_model
+from jqcode.jq_agent.c0_init_env_models import get_emb_8k_rerank_model
+from jqcode.jq_agent.c0_init_env_models import get_es_connection, get_es_searchstore_index_documents,get_es_searchstore_from_documents
 from langchain_community.chat_models import ChatOllama
 
 # Set UP: LLM, embeddings,web_search_tool

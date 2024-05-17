@@ -21,10 +21,10 @@ from langchain.text_splitter import RecursiveCharacterTextSplitter
 from langchain_community.document_loaders import WebBaseLoader
 from langchain_community.tools.tavily_search import TavilySearchResults ### Search
 # from langchain_community.chat_models import ChatOllama
-from jqcode.c0_init_env_models import get_langchain_chat_model,get_langchain_chat_ollama_functions,USING_OLLAMA_FUNCTIONS,USING_OLLAMA_LITELLM
-from jqcode.c0_init_env_models import get_emb_8k_rerank_model
-from jqcode.c0_init_env_models import get_es_connection, get_es_searchstore, get_es_searchstore_index_documents
-from jqcode.jq_web_search_engine import get_web_search_documents,is_query_chinese
+from jqcode.jq_agent.c0_init_env_models import get_langchain_chat_model,get_langchain_chat_ollama_functions,USING_OLLAMA_FUNCTIONS,USING_OLLAMA_LITELLM
+from jqcode.jq_agent.c0_init_env_models import get_emb_8k_rerank_model
+from jqcode.jq_agent.c0_init_env_models import get_es_connection, get_es_searchstore, get_es_searchstore_index_documents
+from jqcode.jq_agent.tools.jq_web_search_engine import get_web_search_documents,is_query_chinese
 
 # Set UP: LLM, embeddings,web_search_tool
 
@@ -707,7 +707,7 @@ def run_graph_workflow(question:str,config = {"recursion_limit":25,"configurable
         try:
             print("In Agent 'run_graph_workflow', answer:")
             result = event["generation"]
-            # print(result)
+            print(result)
             
         except Exception as e:
             print(e) 
@@ -789,7 +789,7 @@ if __name__ == '__main__':
     questions_test_memory = ["你知道我叫什么吗？","我叫张结魁，你叫什么呀？我们做好朋友吧","你还记得我叫什么吗?"] 
     for question in questions_test_memory:
         value=run_graph_workflow(question)
-        print(value)
+        # print(value)
 
     questions = ["What are the types of agent memory?","What player are the Bears expected to draft first in the 2024 NFL draft?","合肥是一个什么样的城市？","Hello, how are you today?"]
     print('\n\n')
@@ -798,7 +798,7 @@ if __name__ == '__main__':
     print("~~~~~~~~~~~~~~~~~~~~~~~~~~~"*5) 
     for question in questions:
         value=run_graph_workflow(question)
-        print(value)
+        # print(value)
     print("~~~~~~~~~~~~~~~~~~~~~~~~~~~"*5)
 
     print('\n\n')
@@ -808,7 +808,7 @@ if __name__ == '__main__':
     for question in questions:
         # coro = arun_graph_workflow(question)
         value=asyncio.run(arun_graph_workflow(question))
-        print(value)
+        # print(value)
     print('END:A&A&arun_graph_workflowA&A&')
 
     print('\n\n')
@@ -817,7 +817,7 @@ if __name__ == '__main__':
     print("~~~~~~~~~~~~~~~~~~~~~~~~~~~"*5) 
     for question in questions:
         result = arun_coro_graph_workflow(question)
-        print(result)
+        # print(result)
     print('END:B&B&arun_coro_graph_workflowB&B&')
 
 

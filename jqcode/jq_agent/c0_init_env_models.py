@@ -19,7 +19,7 @@ from dotenv import load_dotenv
 def load_project_env(): 
     print('\n\n')
     print('=*'*20)
-    root_dir = pathlib.Path(__file__).resolve().parent.parent
+    root_dir = pathlib.Path(__file__).resolve().parent.parent.parent
     env_dir = root_dir/'.env'
     dotenv_loaded = load_dotenv(env_dir)
     if dotenv_loaded:
