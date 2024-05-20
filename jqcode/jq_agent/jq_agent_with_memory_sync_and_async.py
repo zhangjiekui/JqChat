@@ -120,7 +120,7 @@ class code_execution(BaseModel):
     """
     query: str = Field(description="The query to use when asking for running/executing a code snippet.")
 
-tools=[web_search, vectorstore, code_generation, code_execution, direct_response] + excutable_tools
+tools=[web_search, vectorstore, code_generation, code_execution, direct_response]
 # res1 = structured_llm_router.invoke("请使用python生成代码，绘制y=sin(x)的曲线图，并保存所绘图形，提供下载链接")
 # print(res1)
 # res2 = structured_llm_router.invoke("请使用python生成代码，绘制和保存y=sin(x)的曲线图，并实际运行/执行代码，提供下载链接")
@@ -140,7 +140,8 @@ else:
     tool_names=", ".join([tool['function']['name'] for tool in structured_llm_router.kwargs['tools']])
     
 # print(tool_names)
-preamble_llm_router = """You are an expert at answer the user's question: (1)answer user directly if you do know how to response; (2)routing the user question to 'tool_assistant' to get flight number, write and execute python code to answer questions; or (3)routing the user question to a tool if you don't know how to answer the questions. You have access to the following tools: """ + tool_names 
+# preamble_llm_router = """You are an expert at answer the user's question: (1)answer user directly if you do know how to response; (2)routing to 'tool_assistant' to get flight number, write and execute python code to answer questions; or (3)routing the user question to a tool if you don't know how to answer the questions. You have access to the following tools: """ + tool_names 
+preamble_llm_router = f"""You are a master, you are equipped with various tools can: search web, retrieve documnets vectorstore, execute code......,  Response to user's question by calling one or more tools among of the following tools: {tool_names}. """   
 # print(preamble_llm_router)
 
 # Prompt
@@ -152,6 +153,9 @@ route_prompt = ChatPromptTemplate.from_messages(
 )
 
 question_router = route_prompt | structured_llm_router
+
+llm_for_excutable_tools = llm_excutable_tools.bind_tools(tools=excutable_tools)
+tool_router = route_prompt | llm_for_excutable_tools
 # res2 = question_router.invoke("请使用python生成代码，绘制和保存y=sin(x)的曲线图，并实际运行/执行代码，提供下载链接")
 # print(res2)
 
@@ -356,7 +360,7 @@ def llm_fallback(state:State):
         if isinstance(m,AIMessage):
             if len(m.tool_calls)>0:
                 _tools = "、".join([tool_call["name"] for tool_call in m.tool_calls])
-                _str+=f"using tools:{_tools}"
+                _str+=f"Using Tools:{_tools}"
             else:
                 content = m.content
                 _str+=content
@@ -367,7 +371,7 @@ def llm_fallback(state:State):
         messages_content.append(_str)
     
     messages_content_without_repeated = sorted(set(messages_content),key=messages_content.index)                        
-    context_str = ''.join(messages_content_without_repeated)
+    context_str = ';'.join(messages_content_without_repeated)
     print(f'{len(context_str)=}')
 
     context_str = context_str[-1000:]
@@ -467,24 +471,26 @@ class ToolAssistant:
         self.runnable = runnable
 
     def __call__(self, state: State, config: RunnableConfig):
-        while True:
-            passenger_id = config.get("passenger_id", None)
-            question = state["question"]
-            result = self.runnable.invoke({"question":question})
-            # If the LLM happens to return an empty response, we will re-prompt it
-            # for an actual response.
-            if not result.tool_calls and (
-                not result.content
-                or isinstance(result.content, list)
-                and not result.content[0].get("text")
-            ):
-                messages = state["messages"] + [("user", "Respond with a real output.")]
-                state = {**state, "messages": messages}
-            else:
-                break
+        
+        passenger_id = config.get("passenger_id", None)
+        question = state["question"]
+        result = self.runnable.invoke({"question":question})
+        tool_calls = result.tool_calls
+        # If the LLM happens to return an empty response, we will re-prompt it
+        # for an actual response.
+        if not tool_calls and (
+            not result.content
+            or isinstance(result.content, list)
+            and not result.content[0].get("text")
+        ):
+            messages = state["messages"] + [("user", "Respond with a real output.")]
+            state = {**state, "messages": messages}
+        if tool_calls:
+            tools = "、".join([tool_call["name"] for tool_call in tool_calls])
+            print(f"UsingTool: {tools}")
         return {"messages": result}
     
-tool_assistant = ToolAssistant(question_router)
+tool_assistant = ToolAssistant(tool_router)
 
 def route_question(state:State):
     """
@@ -669,15 +675,28 @@ def grade_generation_v_documents_and_question(state:State):
 # Flow
 workflow = StateGraph(State)
 # Entry_Point 
-workflow.set_conditional_entry_point(
+workflow.add_node('tool_assistant',tool_assistant) 
+workflow.set_entry_point("tool_assistant")
+
+workflow.add_node('tool_execution',excutable_tool_node)
+workflow.add_conditional_edges(
+    "tool_assistant",
+    tools_condition,
+    # "action" calls one of our tools. END causes the graph to terminate (and respond to the user)
+    {"action": "tool_execution", END: "question_router"},
+)
+workflow.add_edge("tool_execution", "llm_fallback")
+
+workflow.add_node('question_router',question_router)
+workflow.add_conditional_edges(
+    "question_router",
     route_question,
     {
         "llm_fallback": "llm_fallback",
         "web_search": "web_search",
         "vectorstore": "retrieve",
         "code_generation": "code_generation",
-        "code_execution": "code_execution",
-        "tool_assistant":"tool_assistant",        
+        "code_execution": "code_execution",     
     },
 )
 # Define the nodes
@@ -689,8 +708,8 @@ workflow.add_node("grade_documents", grade_documents) # grade documents
 workflow.add_node("generate", generate) 
 workflow.add_node("code_generation", code_generation) 
 workflow.add_node("code_execution", code_execution)
-workflow.add_node('tool_assistant',tool_assistant) 
-workflow.add_node('tool_execution',excutable_tool_node)
+
+
 workflow.add_node("llm_fallback", llm_fallback) # llm
 
 # define the edges
@@ -702,8 +721,8 @@ workflow.add_edge("code_execution", "llm_fallback")
 # workflow.add_conditional_edges("tool_assistant", tools_condition, {"action":"tool_execution", "__end__": "llm_fallback"})
 # workflow.add_edge("tool_execution", "tool_assistant")
 
-workflow.add_edge("tool_assistant","tool_execution" )
-workflow.add_edge("tool_execution", "llm_fallback")
+# workflow.add_edge("tool_assistant","tool_execution" )
+# workflow.add_edge("tool_execution", "llm_fallback")
 
 
 
@@ -826,15 +845,15 @@ def arun_coro_graph_workflow(question:str,config = {"recursion_limit":25,"config
 if __name__ == '__main__':
 
     # WARNING 05-13 17:46:33 scheduler.py:619] Input prompt (74314 tokens) is too long and exceeds limit of 4096
-    tool_question = ["请查询今天从合肥到上海的航班","请用python_repl_tool来编码计算the 10th fibonacci number并执行和输出结果"]
+    tool_question = ["请调用工具get_flight_number来查询今天从合肥到上海的航班","请调用工具python_repl_tool来编码计算the 10th fibonacci number并执行和输出结果"]
     print('\n\n')
     print("~~~~~~~~~~~~~~~~~~~~~~~~~~~"*5) 
-    print("~~~~test_memory~~~~"*5)
+    print("~~~~test_tools~~~~"*5)
     print("~~~~~~~~~~~~~~~~~~~~~~~~~~~"*5)
-    questions_test_memory = ["你知道我叫什么吗？","我叫张结魁，你叫什么呀？我们做好朋友吧","你还记得我叫什么吗?"] 
     for question in tool_question:
         value=run_graph_workflow(question)
-       
+
+# """       
     print('\n\n')
     print("~~~~~~~~~~~~~~~~~~~~~~~~~~~"*5) 
     print("~~~~test_memory~~~~"*5)
@@ -873,7 +892,7 @@ if __name__ == '__main__':
         # print(result)
     print('END:B&B&arun_coro_graph_workflowB&B&')
 
-
+# """
 
 
 
