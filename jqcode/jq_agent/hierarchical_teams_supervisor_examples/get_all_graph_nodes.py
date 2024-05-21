@@ -1,0 +1,13 @@
+
+
+
+from typing import List,Union
+from langgraph.graph import StateGraph
+from jqcode.jq_agent.hierarchical_teams_supervisor_examples.super_graph import super_graph
+from jqcode.jq_agent.hierarchical_teams_supervisor_examples.sub_graphs.research_sub_graph import research_graph
+from jqcode.jq_agent.hierarchical_teams_supervisor_examples.sub_graphs.writing_sub_graph import authoring_graph
+from jqcode.jq_agent.hierarchical_teams_supervisor_examples.graph_create_utils import get_graph_nodes
+
+graphs = [super_graph, research_graph, authoring_graph]
+all_members = get_graph_nodes(graphs)
+print(all_members)

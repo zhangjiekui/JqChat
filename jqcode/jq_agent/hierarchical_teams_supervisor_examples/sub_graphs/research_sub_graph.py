@@ -10,7 +10,7 @@ from langchain_core.messages import AIMessage, BaseMessage, HumanMessage
 from langgraph.graph.message import add_messages
 
 from jqcode.jq_agent.c0_init_env_models import get_langchain_chat_model
-from jqcode.jq_agent.hierarchical_teams_supervisor_examples.graph_create_utils import create_team_supervisor, create_agent, agent_node, sub_graph_enter_chain
+from jqcode.jq_agent.hierarchical_teams_supervisor_examples.graph_create_utils import create_team_supervisor, create_agent, agent_node, sub_graph_enter_chain, get_graph_nodes
 
 llm = get_langchain_chat_model()
 
@@ -89,5 +89,7 @@ chain = research_graph.compile()
 # The following functions interoperate between the top level graph state
 # and the state of the research sub-graph
 # this makes it so that the states of each graph don't get intermixed
-
-research_chain = functools.partial(sub_graph_enter_chain, members=research_graph.nodes) | chain
+members = get_graph_nodes(research_graph)
+# print(members)
+# ['Search', 'Web Scraper']
+research_chain = functools.partial(sub_graph_enter_chain, members=members) | chain

@@ -17,7 +17,7 @@ from langgraph.graph.message import add_messages
 from langgraph.graph import END, StateGraph
 
 from jqcode.jq_agent.c0_init_env_models import get_langchain_chat_model
-from jqcode.jq_agent.hierarchical_teams_supervisor_examples.graph_create_utils import create_team_supervisor, create_agent, agent_node
+from jqcode.jq_agent.hierarchical_teams_supervisor_examples.graph_create_utils import create_team_supervisor, create_agent, agent_node, get_graph_nodes
 from jqcode.jq_agent.hierarchical_teams_supervisor_examples.sub_graphs.research_sub_graph import research_chain
 from jqcode.jq_agent.hierarchical_teams_supervisor_examples.sub_graphs.writing_sub_graph import authoring_chain
 
@@ -69,4 +69,8 @@ super_graph.add_conditional_edges(
     },
 )
 super_graph.set_entry_point("supervisor")
-super_graph = super_graph.compile()
+# members = get_graph_nodes(super_graph)
+# print(members)
+# ['Research team', 'Paper writing team']
+super_graph_compiled = super_graph.compile()
+# 
