@@ -37,26 +37,35 @@ def agent_node(state, agent, name):
     result = agent.invoke(state)
     return {"messages": [HumanMessage(content=result["output"], name=name)]}
 
-def convert_tool_calls_list_into_dict(tool_calls_list: List[dict]) -> dict:
+def supervisor_post_process(tool_calls_list: List[dict]) -> dict:
     next=None
+    print(f"{len(tool_calls_list)=}")
     if tool_calls_list:
         tool_call_dict = tool_calls_list[0]
-        tool_call_dict_args = tool_call_dict['args']
-        next = tool_call_dict_args.get('next',None)
-        if not next:
-            next = tool_call_dict.get('type',None)
-    if next:
-        print(next)
-    else:
-        print(f"空NEXT={next}，转向FINISH")
-        next = 'FINISH'        
+        called_tool_name = tool_call_dict.get('type',None)
+        if called_tool_name == 'route': #调用的是supervisor_rout
+            tool_call_dict_args = tool_call_dict['args']
+            next = tool_call_dict_args.get('next',None)
+
+        else: #调用的是实际的工具
+            next = called_tool_name #调用的是子图中的工具
+            if not next:
+                next = 'FINISH' 
+                print(f"【NEXT】为空，人为转向‘FINISH’")
+    if not next:
+        next = "DEFAULT"
+        print(f"ToolCall返回的【NEXT】为空，人为设为‘DEFAULT’，可在总图和各子图中增加‘DEFAULT’的节点路由设置")
+
+    print(f"【NEXT】转向图或图节点：{next}")
     return {"next":next}
     
 
 def create_team_supervisor(llm: ChatOpenAI, system_prompt, members) -> str:
     """An LLM-based router."""
     options = ["FINISH"] + members
-    function_def = {
+    supervisor_rout_tool = {
+        "type": "function",
+        "function":{
         "name": "route",
         "description": "Select the next role.",
         "parameters": {
@@ -65,12 +74,11 @@ def create_team_supervisor(llm: ChatOpenAI, system_prompt, members) -> str:
             "properties": {
                 "next": {
                     "title": "Next",
-                    "anyOf": [
-                        {"enum": options},
-                    ],
+                    "anyOf": [{"enum": options}]
                 },
             },
             "required": ["next"],
+        }
         },
     }
     prompt = ChatPromptTemplate.from_messages(
@@ -87,9 +95,23 @@ def create_team_supervisor(llm: ChatOpenAI, system_prompt, members) -> str:
     
     return (
         prompt
-        | llm.bind_tools(tools=[function_def], tool_choice="route")
+        | llm.bind_tools(tools=[supervisor_rout_tool], tool_choice="route")
         | JsonOutputToolsParser()
-        | convert_tool_calls_list_into_dict
-        # | llm.bind_functions(functions=[function_def], function_call="route")
-        # | convert_message_into_dict
+        | supervisor_post_process
     )
+
+
+def sub_graph_enter_chain(message_and_next:dict, members: List[str]):
+    results = {}
+    try:
+        message = message_and_next['content']
+        next = message_and_next['next']
+        results = {
+            "messages": [HumanMessage(content=message)],
+            "next":next,
+            "team_members": ", ".join(members)
+        }
+    except:
+        print(type(message))
+        print(message)
+    return results

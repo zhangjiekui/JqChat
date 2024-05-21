@@ -12,7 +12,7 @@ from typing_extensions import TypedDict
 from langgraph.graph import END, StateGraph
 from langgraph.graph.message import add_messages
 from jqcode.jq_agent.c0_init_env_models import get_langchain_chat_model
-from jqcode.jq_agent.hierarchical_teams_supervisor_examples.graph_create_utils import create_team_supervisor, create_agent, agent_node
+from jqcode.jq_agent.hierarchical_teams_supervisor_examples.graph_create_utils import create_team_supervisor, create_agent, agent_node,sub_graph_enter_chain
 
 llm = get_langchain_chat_model()
 
@@ -29,6 +29,7 @@ def create_outline(
     with (WORKING_DIRECTORY / file_name).open("w") as file:
         for i, point in enumerate(points):
             file.write(f"{i + 1}. {point}\n")
+    print(f"Outline saved to {WORKING_DIRECTORY / file_name}")   
     return f"Outline saved to {file_name}"
 
 
@@ -54,6 +55,7 @@ def write_document(
     """Create and save a text document."""
     with (WORKING_DIRECTORY / file_name).open("w") as file:
         file.write(content)
+    print(f"Document saved to {WORKING_DIRECTORY / file_name}")    
     return f"Document saved to {file_name}"
 
 
@@ -80,7 +82,7 @@ def edit_document(
 
     with (WORKING_DIRECTORY / file_name).open("w") as file:
         file.writelines(lines)
-
+    print(f"Document saved to {WORKING_DIRECTORY / file_name}")   
     return f"Document edited and saved to {file_name}"
 
 
@@ -109,7 +111,6 @@ class DocWritingState(TypedDict):
     next: str
     # This tracks the shared directory state
     current_files: str
-
 
 # This will be run before each worker agent begins work
 # It makes it so they are more aware of the current state
@@ -201,6 +202,7 @@ authoring_graph.add_conditional_edges(
         "NoteTaker": "NoteTaker",
         "ChartGenerator": "ChartGenerator",
         "FINISH": END,
+        "DEFAULT":END, # "DEFAULT"设置
     },
 )
 
@@ -211,16 +213,10 @@ authoring_graph_compiled = authoring_graph.compile()
 # The following functions interoperate between the top level graph state
 # and the state of the research sub-graph
 # this makes it so that the states of each graph don't get intermixed
-def enter_chain(message: str, members: List[str]):
-    results = {
-        "messages": [HumanMessage(content=message)],
-        "team_members": ", ".join(members),
-    }
-    return results
 
 
 # We reuse the enter/exit functions to wrap the graph
 authoring_chain = (
-    functools.partial(enter_chain, members=authoring_graph.nodes)
+    functools.partial(sub_graph_enter_chain, members=authoring_graph.nodes)
     | authoring_graph_compiled
 )

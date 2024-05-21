@@ -10,7 +10,7 @@ from langchain_core.messages import AIMessage, BaseMessage, HumanMessage
 from langgraph.graph.message import add_messages
 
 from jqcode.jq_agent.c0_init_env_models import get_langchain_chat_model
-from jqcode.jq_agent.hierarchical_teams_supervisor_examples.graph_create_utils import create_team_supervisor, create_agent, agent_node
+from jqcode.jq_agent.hierarchical_teams_supervisor_examples.graph_create_utils import create_team_supervisor, create_agent, agent_node, sub_graph_enter_chain
 
 llm = get_langchain_chat_model()
 
@@ -43,9 +43,6 @@ class ResearchTeamState(TypedDict):
     # that will update this every time it makes a decision
     next: str
 
-
-
-
 search_agent = create_agent(
     llm,
     [tavily_tool],
@@ -62,8 +59,8 @@ research_node = functools.partial(agent_node, agent=research_agent, name="Web Sc
 
 supervisor_agent = create_team_supervisor(
     llm,
-    "You are a supervisor tasked with managing a conversation between the"
-    " following workers:  Search, Web Scraper. Given the following user request,"
+    "You are a researcher leader and supervisor tasked with managing a conversation between the"
+    " following workers:  Search, Web Scraper, the workers can search and get web content.  Given the following user request,"
     " respond with the worker to act next. Each worker will perform a"
     " task and respond with their results and status. When finished,"
     " respond with FINISH.",
@@ -81,7 +78,7 @@ research_graph.add_edge("Web Scraper", "supervisor")
 research_graph.add_conditional_edges(
     "supervisor",
     lambda x: x["next"],
-    {"Search": "Search", "Web Scraper": "Web Scraper", "FINISH": END},
+    {"Search": "Search", "Web Scraper": "Web Scraper", "FINISH": END, "DEFAULT":END, }, # "DEFAULT"设置
 )
 
 
@@ -92,13 +89,5 @@ chain = research_graph.compile()
 # The following functions interoperate between the top level graph state
 # and the state of the research sub-graph
 # this makes it so that the states of each graph don't get intermixed
-def enter_chain(message_and_next:dict):
-    content = message_and_next['content']
-    next = message_and_next['next']
-    results = {
-        "messages": [HumanMessage(content=content)],
-        "next":next
-    }
-    return results
 
-research_chain = enter_chain | chain
+research_chain = functools.partial(sub_graph_enter_chain, members=research_graph.nodes) | chain

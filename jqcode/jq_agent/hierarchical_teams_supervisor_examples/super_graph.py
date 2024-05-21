@@ -63,6 +63,7 @@ super_graph.add_conditional_edges(
     lambda x: x["next"],
     {
         "Paper writing team": "Paper writing team",
+        "DEFAULT":"Paper writing team", # "DEFAULT"设置
         "Research team": "Research team",
         "FINISH": END,
     },
