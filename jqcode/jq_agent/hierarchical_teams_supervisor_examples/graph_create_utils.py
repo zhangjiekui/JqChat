@@ -103,6 +103,8 @@ def supervisor_post_process(tool_calls_list: List[dict]) -> dict:
         from jqcode.jq_agent.hierarchical_teams_supervisor_examples.get_all_graph_nodes import all_members
     except:
         all_members = ['Research team', 'Paper writing team', 'Search', 'Web Scraper', 'DocWriter', 'NoteTaker', 'ChartGenerator']
+
+    all_members = ['FINISH',"DEFAULT"] + all_members
     next=None
     print(f"{len(tool_calls_list)=}")
     if tool_calls_list:
