@@ -64,14 +64,14 @@ def get_openai_client():
     print(f'当前使用的模型base_url为:OpenAI, {openai_client.base_url}')
     return openai_client
 
-def get_langchain_chat_model():
+def get_langchain_chat_model(temperature=0.0, max_tokens=5000):
     chat_model = ChatOpenAI(
         model_name=llm_model_name,
         openai_api_base=base_url,    
         openai_api_key= api_key,
         streaming=True,
-        temperature=0.0,
-        max_tokens=5000
+        temperature=temperature,
+        max_tokens=max_tokens
     )#.bind(response_format={"type": "json_object"})
 
     print(f'当前使用的模型为:Langchain ChatOpenAI, {chat_model.model_name}, API_URL为{chat_model.openai_api_base}')

@@ -12,9 +12,9 @@ from typing_extensions import TypedDict
 from langgraph.graph import END, StateGraph
 from langgraph.graph.message import add_messages
 from jqcode.jq_agent.c0_init_env_models import get_langchain_chat_model
-from jqcode.jq_agent.hierarchical_teams_supervisor_examples.graph_create_utils import create_team_supervisor, create_agent, agent_node,sub_graph_enter_chain, get_graph_nodes
+from jqcode.jq_agent.hierarchical_teams_supervisor_examples.graph_create_utils import create_team_supervisor, create_agent, agent_node,sub_graph_enter_chain, get_graph_nodes,llm
 
-llm = get_langchain_chat_model()
+# llm = get_langchain_chat_model()
 
 _TEMP_DIRECTORY = TemporaryDirectory()
 WORKING_DIRECTORY = Path(_TEMP_DIRECTORY.name)
@@ -172,7 +172,7 @@ chart_generating_node = functools.partial(
 
 doc_writing_supervisor = create_team_supervisor(
     llm,
-    "You are a supervisor tasked with managing a conversation between the"
+    "记住，我为你提供了可以可靠上网、执行python代码和绘制图表的工具和环境！You are a supervisor tasked with managing a conversation between the"
     " following workers:  {team_members}. Given the following user request,"
     " respond with the worker to act next. Each worker will perform a"
     " task and respond with their results and status. When finished,"
@@ -202,7 +202,7 @@ authoring_graph.add_conditional_edges(
         "NoteTaker": "NoteTaker",
         "ChartGenerator": "ChartGenerator",
         "FINISH": END,
-        "DEFAULT":END, # "DEFAULT"设置
+        "DEFAULT":"DocWriter", # "DEFAULT"设置
     },
 )
 

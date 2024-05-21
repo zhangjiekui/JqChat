@@ -10,12 +10,12 @@ from langchain_core.messages import AIMessage, BaseMessage, HumanMessage
 from langgraph.graph.message import add_messages
 
 from jqcode.jq_agent.c0_init_env_models import get_langchain_chat_model
-from jqcode.jq_agent.hierarchical_teams_supervisor_examples.graph_create_utils import create_team_supervisor, create_agent, agent_node, sub_graph_enter_chain, get_graph_nodes
+from jqcode.jq_agent.hierarchical_teams_supervisor_examples.graph_create_utils import create_team_supervisor, create_agent, agent_node, sub_graph_enter_chain, get_graph_nodes,llm
 
-llm = get_langchain_chat_model()
+
 
 # Research team tools
-tavily_tool = TavilySearchResults(max_results=5)
+tavily_tool = TavilySearchResults(max_results=2)
 @tool
 def scrape_webpages(urls: List[str]) -> str:
     """Use requests and bs4 to scrape the provided web pages for detailed information."""
@@ -46,7 +46,7 @@ class ResearchTeamState(TypedDict):
 search_agent = create_agent(
     llm,
     [tavily_tool],
-    "You are a research assistant who can search for up-to-date info using the tavily search engine.",
+    "You are a research assistant who can search for up-to-date info using the tavily search engine.请根据用户问题生成或重写得到合适的查询关键词",
 )
 search_node = functools.partial(agent_node, agent=search_agent, name="Search")
 
@@ -59,7 +59,7 @@ research_node = functools.partial(agent_node, agent=research_agent, name="Web Sc
 
 supervisor_agent = create_team_supervisor(
     llm,
-    "You are a researcher leader and supervisor tasked with managing a conversation between the"
+    "记住，我为你提供了可以可靠上网、执行python代码和绘制图表的工具和环境！You are a researcher leader and supervisor tasked with managing a conversation between the"
     " following workers:  Search, Web Scraper, the workers can search and get web content.  Given the following user request,"
     " respond with the worker to act next. Each worker will perform a"
     " task and respond with their results and status. When finished,"

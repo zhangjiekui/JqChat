@@ -11,7 +11,21 @@ git commit -a
 ```sh
 git push
 ```
-
+### Xinference LLM
+## 当前使用版本
+原版/最新版是xinference 0.11.1 (2024-05-21)
+## 更新镜像版本
+docker pull xprobe/xinference:latest
+## 运行
+```
+docker run \
+--shm-size=64g \
+--name xinferencev101 -d -p 9997:9997 -e XINFERENCE_MODEL_SRC=modelscope \
+-v /home/jqsoft/.xinference:/root/.xinference \
+-v /home/jqsoft/.cache/huggingface:/root/.cache/huggingface \
+-v /home/jqsoft/.cache/modelscope:/root/.cache/modelscope \
+--gpus all xprobe/xinference:latest xinference-local -H 0.0.0.0 --log-level debug
+```
 ## Installation
 
 ubuntu上推荐下面的安装和运行方法:

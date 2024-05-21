@@ -2,12 +2,16 @@ from typing import List,Union
 from langchain_openai import ChatOpenAI
 from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
 from langchain_core.messages import BaseMessage, HumanMessage,SystemMessage,ToolMessage,AIMessage
-from langchain.output_parsers.openai_tools import JsonOutputToolsParser
+
+
 
 # create_tool_calling_agent是Langchain(v0.1.16)最新推出的统一的ToolAgent接口！
 from langchain.agents import AgentExecutor, create_tool_calling_agent
-from langchain.output_parsers.openai_functions import JsonOutputFunctionsParser
+from langchain.output_parsers.openai_tools import JsonOutputToolsParser
+from langchain.agents.output_parsers.tools import ToolsAgentOutputParser
+
 from langgraph.graph import StateGraph
+from jqcode.jq_agent.c0_init_env_models import get_langchain_chat_model
 
 def create_agent(
     llm: ChatOpenAI,
@@ -36,6 +40,9 @@ def create_agent(
 
 def agent_node(state, agent, name):
     result = agent.invoke(state)
+    print("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~agent执行结果~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~")
+    print(result["output"])
+    print("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~")
     return {"messages": [HumanMessage(content=result["output"], name=name)]}
 
 def create_team_supervisor(llm: ChatOpenAI, system_prompt, members) -> str:
@@ -108,17 +115,23 @@ def supervisor_post_process(tool_calls_list: List[dict]) -> dict:
     next=None
     print(f"{len(tool_calls_list)=}")
     if tool_calls_list:
-        tool_call_dict = tool_calls_list[0]
-        called_tool_name = tool_call_dict.get('type',None)
-        if called_tool_name == 'route': #调用的是supervisor_rout
-            tool_call_dict_args = tool_call_dict['args']
-            next = tool_call_dict_args.get('next',None)
+        tool_call_dict = tool_calls_list[0]       
 
-        else: #调用的是实际的工具
-            next = called_tool_name #调用的是子图中的工具
-            if not next:
-                next = 'FINISH' 
-                print(f"【NEXT】为空，人为转向‘FINISH’")
+        tool_call_dict_args = tool_call_dict['args']
+        next = tool_call_dict_args.get('next',None)
+        
+        if next not in all_members: # 优先获取的next值不正确
+            called_tool_name = tool_call_dict.get('type',None)
+            print(f"ToolCalls返回的【NEXT】值{next}不正确，尝试工具名{called_tool_name}")
+            
+            next = called_tool_name # 尝试工具名
+
+    if tool_calls_list:
+        if not next:
+            print(f"ToolCalls返回形式正确：\n{tool_call_dict}\n")
+            print(f"但未能从ToolCall获取到的【NEXT】值")
+            pass
+
     if not next:
         next = "DEFAULT"
         print(f"ToolCalls返回的【NEXT】为空，人为设为‘DEFAULT’，可在总图和各子图中增加‘DEFAULT’的节点路由设置")
@@ -144,5 +157,9 @@ def get_graph_nodes(graphs:Union[StateGraph,List[StateGraph]]) -> list:
     else:
         members = _get_graph_nodes(graphs)
     return members
+
+llm = get_langchain_chat_model(
+        temperature=0.7,
+        max_tokens=5000)
 
 

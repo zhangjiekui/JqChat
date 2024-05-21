@@ -16,16 +16,16 @@ from langgraph.graph.message import add_messages
 
 from langgraph.graph import END, StateGraph
 
-from jqcode.jq_agent.c0_init_env_models import get_langchain_chat_model
-from jqcode.jq_agent.hierarchical_teams_supervisor_examples.graph_create_utils import create_team_supervisor, create_agent, agent_node, get_graph_nodes
+
+from jqcode.jq_agent.hierarchical_teams_supervisor_examples.graph_create_utils import create_team_supervisor, create_agent, agent_node, get_graph_nodes,llm
 from jqcode.jq_agent.hierarchical_teams_supervisor_examples.sub_graphs.research_sub_graph import research_chain
 from jqcode.jq_agent.hierarchical_teams_supervisor_examples.sub_graphs.writing_sub_graph import authoring_chain
 
 # 一、创建总图
-llm = get_langchain_chat_model()
+# llm = get_langchain_chat_model()
 supervisor_node = create_team_supervisor(
     llm,
-    "You are a supervisor tasked with managing a conversation between the"
+    "记住，我为你提供了可以可靠上网、执行python代码和绘制图表的工具和环境！You are a supervisor tasked with managing a conversation between the"
     " following teams: {team_members}. Given the following user request,"
     " respond with the worker to act next. Each worker will perform a"
     " task and respond with their results and status. When finished,"
