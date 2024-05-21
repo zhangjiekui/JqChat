@@ -19,6 +19,7 @@ docker pull xprobe/xinference:latest
 ## 运行
 ```
 docker run \
+--context_length=50000 \ 
 --shm-size=64g \
 --name xinferencev101 -d -p 9997:9997 -e XINFERENCE_MODEL_SRC=modelscope \
 -v /home/jqsoft/.xinference:/root/.xinference \
@@ -26,6 +27,7 @@ docker run \
 -v /home/jqsoft/.cache/modelscope:/root/.cache/modelscope \
 --gpus all xprobe/xinference:latest xinference-local -H 0.0.0.0 --log-level debug
 ```
+context_length: 一个可选的整数，模型支持的最大上下文长度，包括输入和输出长度。如果未定义，默认值为2048个token（约1,500个词）。
 ## Installation
 
 ubuntu上推荐下面的安装和运行方法:
