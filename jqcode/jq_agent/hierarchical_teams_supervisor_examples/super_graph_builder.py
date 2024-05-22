@@ -21,7 +21,7 @@ from langgraph.graph import END, StateGraph
 # from jqcode.jq_agent.hierarchical_teams_supervisor_examples.graph_create_utils import create_team_supervisor,supervisor_post_process, create_agent, agent_node, get_graph_nodes,llm
 # from jqcode.jq_agent.hierarchical_teams_supervisor_examples.sub_graphs.research_sub_graph import research_chain
 # from jqcode.jq_agent.hierarchical_teams_supervisor_examples.sub_graphs.writing_sub_graph import authoring_chain
-from graph_create_utils import create_team_supervisor, create_agent, agent_node, get_graph_nodes,llm
+from graph_create_utils import create_team_supervisor, create_agent, agent_node, get_graph_nodes,get_custom_supervisor_node,get_last_state,llm
 from hierarchical_teams_supervisor_examples.sub_graphs.research_sub_graph import research_chain
 from hierarchical_teams_supervisor_examples.sub_graphs.writing_sub_graph import authoring_chain
 
@@ -43,8 +43,7 @@ class SuperState(TypedDict):
     response_message:str ="FIRST"
     next: str
     retry_n_times:int = 0
-def get_last_state(state: SuperState) -> dict:
-    return state
+
 
 def get_last_message(state: SuperState) -> dict:
     return state
@@ -71,49 +70,6 @@ def get_last_message(state: SuperState) -> dict:
 
         # return {"messages": [message],"retry_n_times":retry_n_times}
 
-def supervisor_post_process_node(toolcalls_and_state:dict) -> dict:
-    from get_all_graph_nodes import all_members
-    next = None
-    tool_call_parsed_message =  None
-
-
-    state = toolcalls_and_state["state"]
-    message = state["messages"][-1]
-    tool_calls_list = toolcalls_and_state['toolcalls']
-    if tool_calls_list:
-        tool_call_dict = tool_calls_list[0]       
-
-        tool_call_dict_args = tool_call_dict['args']
-        next = tool_call_dict_args.get('next',None)
-        if next not in all_members: 
-            next = None            
-            tool_call_parsed_message = f"""工具调用返回的Json格式正确，但next参数值{next}不正确，必须是以下列表取值之一[{",".join(all_members)}]"""
-            print(tool_call_parsed_message)
-    else:
-        next = None            
-        tool_call_parsed_message = f"未返回有效的工具调用Json格式数据，请重试，务必返回有效的工具调用Json格式数据"
-        print(tool_call_parsed_message)
-    
-    if next:
-        return {"messages":state["messages"],'next':next}
-    else:
-        retry_n_times = 4
-        for i in range(retry_n_times):
-            _message = f'用户问题为:“{message.content}”\n 错误信息为:{tool_call_parsed_message}'
-            retry_result = supervisor_node.invoke([_message])
-            tool_calls_list = retry_result[0]
-            if tool_calls_list:
-                tool_call_dict_args = tool_calls_list['args']
-                next = tool_call_dict_args.get('next',None)
-                if next not in all_members: 
-                    next = None            
-                    tool_call_parsed_message = f"""工具调用返回的Json格式正确，但next参数值{next}不正确，必须是以下列表取值之一[{",".join(all_members)}]"""
-                    print(tool_call_parsed_message)
-                else:
-                    return {"messages":state["messages"],'next':next}
-    
-    print(f"无法正常导航到下一节点，已重试{retry_n_times}次，只好退出！")
-    sys.exit()
 
     
     
@@ -145,7 +101,10 @@ supervisor_template_with_toolcalls_and_state_runnable = {
 # Define the super graph.
 super_graph = StateGraph(SuperState)
 # First add the nodes, which will do the work
-super_graph.add_node("supervisor", get_last_state | supervisor_template_with_toolcalls_and_state_runnable | supervisor_post_process_node)
+# super_graph.add_node("supervisor", get_last_state | supervisor_template_with_toolcalls_and_state_runnable | supervisor_post_process_node)
+custom_supervisor_node = get_custom_supervisor_node(supervisor_node)
+super_graph.add_node("supervisor", custom_supervisor_node)
+
 super_graph.add_node("Research team", get_last_message | research_chain | join_graph)
 super_graph.add_node(
     "Paper writing team", get_last_message | authoring_chain | join_graph

@@ -1,10 +1,12 @@
+import sys
+import functools
 from typing import List,Union, TypedDict
 # from typing import Any, Callable, List, Optional
 from langchain_openai import ChatOpenAI
 from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
 from langchain_core.messages import BaseMessage, HumanMessage,SystemMessage,ToolMessage,AIMessage
 
-
+from langchain_core.runnables import Runnable,RunnablePassthrough,RunnableLambda
 
 # create_tool_calling_agent是Langchain(v0.1.16)最新推出的统一的ToolAgent接口！
 from langchain.agents import AgentExecutor, create_tool_calling_agent
@@ -106,6 +108,65 @@ def sub_graph_enter_chain(message_and_next:dict, members: List[str]):
     # 手动调用 /home/jqsoft/AgentRagChatCI/AgentRagChatCI-0.0.1/jqcode/jq_agent/hierarchical_teams_supervisor_examples/get_all_graph_nodes.py
     # 获得all_members = ['Research team', 'Paper writing team', 'Search', 'Web Scraper', 'DocWriter', 'NoteTaker', 'ChartGenerator']
 # 但可以使用延迟导入（lazy import）来避免循环依赖。可以将导入语句放在需要使用的时候再进行，而不是在模块的顶部导入。这样可以在遇到循环依赖时，绕过导入问题。
+def get_last_state(state) -> dict:
+    return state
+
+def get_custom_supervisor_node(supervisor_node):
+
+    supervisor_template_with_toolcalls_and_state_runnable = {
+        "state": RunnablePassthrough(),
+        "toolcalls":supervisor_node
+    } | RunnablePassthrough()
+
+    patial_supervisor_post_process_node =functools.partial(supervisor_post_process_node,supervisor_node=supervisor_node)
+    custom_supervisor_node = get_last_state | supervisor_template_with_toolcalls_and_state_runnable | patial_supervisor_post_process_node
+    return custom_supervisor_node
+
+
+
+def supervisor_post_process_node(toolcalls_and_state:dict,supervisor_node) -> dict:
+    from get_all_graph_nodes import all_members
+    next = None
+    tool_call_parsed_message =  None
+
+
+    state = toolcalls_and_state["state"]
+    message = state["messages"][-1]
+    tool_calls_list = toolcalls_and_state['toolcalls']
+    if tool_calls_list:
+        tool_call_dict = tool_calls_list[0]       
+
+        tool_call_dict_args = tool_call_dict['args']
+        next = tool_call_dict_args.get('next',None)
+        if next not in all_members: 
+            next = None            
+            tool_call_parsed_message = f"""工具调用返回的Json格式正确，但next参数值{next}不正确，必须是以下列表取值之一[{",".join(all_members)}]"""
+            print(tool_call_parsed_message)
+    else:
+        next = None            
+        tool_call_parsed_message = f"未返回有效的工具调用Json格式数据，请重试，务必返回有效的工具调用Json格式数据"
+        print(tool_call_parsed_message)
+    
+    if next:
+        return {"messages":state["messages"],'next':next}
+    else:
+        retry_n_times = 4
+        for i in range(retry_n_times):
+            _message = f'用户问题为:“{message.content}”\n 错误信息为:{tool_call_parsed_message}'
+            retry_result = supervisor_node.invoke([_message])
+            tool_calls_list = retry_result[0]
+            if tool_calls_list:
+                tool_call_dict_args = tool_calls_list['args']
+                next = tool_call_dict_args.get('next',None)
+                if next not in all_members: 
+                    next = None            
+                    tool_call_parsed_message = f"""工具调用返回的Json格式正确，但next参数值{next}不正确，必须是以下列表取值之一[{",".join(all_members)}]"""
+                    print(tool_call_parsed_message)
+                else:
+                    return {"messages":state["messages"],'next':next}
+    
+    print(f"无法正常导航到下一节点，已重试{retry_n_times}次，只好退出！")
+    sys.exit()
 
 def _supervisor_post_process(tool_calls_list: List[dict]) -> dict:
     try:

@@ -10,7 +10,10 @@ from langchain_core.messages import AIMessage, BaseMessage, HumanMessage
 from langgraph.graph.message import add_messages
 
 from jqcode.jq_agent.c0_init_env_models import get_langchain_chat_model
-from jqcode.jq_agent.hierarchical_teams_supervisor_examples.graph_create_utils import create_team_supervisor, create_agent, agent_node, sub_graph_enter_chain, get_graph_nodes,llm
+from jqcode.jq_agent.hierarchical_teams_supervisor_examples.graph_create_utils import create_team_supervisor, create_agent, agent_node, sub_graph_enter_chain, get_graph_nodes
+from jqcode.jq_agent.hierarchical_teams_supervisor_examples.graph_create_utils import supervisor_post_process_node,get_last_state, get_custom_supervisor_node,llm
+
+from langchain_core.runnables import Runnable,RunnablePassthrough,RunnableLambda
 
 
 
@@ -66,11 +69,21 @@ supervisor_agent = create_team_supervisor(
     " respond with FINISH.",
     ["Search", "Web Scraper"],
 )
+def get_last_state(state: ResearchTeamState) -> dict:
+    return state
+
+supervisor_template_with_toolcalls_and_state_runnable = {
+    "state": RunnablePassthrough(),
+    "toolcalls":supervisor_agent
+} | RunnablePassthrough()
 
 research_graph = StateGraph(ResearchTeamState)
 research_graph.add_node("Search", search_node)
 research_graph.add_node("Web Scraper", research_node)
-research_graph.add_node("supervisor", supervisor_agent)
+# research_graph.add_node("supervisor", supervisor_agent) todo
+
+custom_supervisor_node = get_custom_supervisor_node(supervisor_agent)
+research_graph.add_node("supervisor", custom_supervisor_node)
 
 # Define the control flow
 research_graph.add_edge("Search", "supervisor")
