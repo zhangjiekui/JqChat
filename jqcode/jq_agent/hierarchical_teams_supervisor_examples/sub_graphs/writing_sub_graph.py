@@ -202,7 +202,7 @@ authoring_graph.add_conditional_edges(
         "NoteTaker": "NoteTaker",
         "ChartGenerator": "ChartGenerator",
         "FINISH": END,
-        "DEFAULT":"DocWriter", # "DEFAULT"设置
+        "SELF":"DocWriter", # "SELF"设置
     },
 )
 

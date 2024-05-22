@@ -78,7 +78,7 @@ research_graph.add_edge("Web Scraper", "supervisor")
 research_graph.add_conditional_edges(
     "supervisor",
     lambda x: x["next"],
-    {"Search": "Search", "Web Scraper": "Web Scraper", "FINISH": END, "DEFAULT":END, }, # "DEFAULT"设置
+    {"Search": "Search", "Web Scraper": "Web Scraper", "FINISH": END, "SELF":END, }, # "SELF"设置
 )
 
 
