@@ -12,21 +12,42 @@ git commit -a
 git push
 ```
 ## Xinference LLM
-### 当前使用版本
+### Docker
+#### 当前使用版本
 原版/最新版是xinference 0.11.1 (2024-05-21)
-### 更新镜像版本
+#### 更新镜像版本
 docker pull xprobe/xinference:latest
-### 运行
+#### Docker运行
 ```
-docker run --shm-size=64g --name xinferencev111 -d -p 9997:9997 -e XINFERENCE_MODEL_SRC=modelscope -v /home/jqsoft/.xinference:/root/.xinference -v /home/jqsoft/.cache/huggingface:/root/.cache/huggingface -v /home/jqsoft/.cache/modelscope:/root/.cache/modelscope -e CONTEXT_LENGTH=50000 -e NUM_GPUS=4 --gpus all xprobe/xinference:latest xinference-local -H 0.0.0.0 --log-level debug
+docker run --shm-size=64g --name xinferencev111 -d -p 9997:9997 -e XINFERENCE_MODEL_SRC=modelscope -e HF_ENDPOINT=https://hf-mirror.com -v /home/jqsoft/.xinference:/root/.xinference -v /home/jqsoft/.cache/huggingface:/root/.cache/huggingface -v /home/jqsoft/.cache/modelscope:/root/.cache/modelscope -e CONTEXT_LENGTH=10000 -e NUM_GPUS=4 --gpus all xprobe/xinference:latest xinference-local -H 0.0.0.0 --log-level debug 
 ```
-## 参数
-### context_length: 
-一个可选的整数，模型支持的最大上下文长度，包括输入和输出长度。如果未定义，默认值为2048个token（约1,500个词）。
-### max_model_len
+##### 参数
+###### context_length【qwen1.5的72B Int4 gptq/awq 对应的设置context_length=10000】: 一个可选的整数，模型支持的最大上下文长度，包括输入和输出长度。如果未定义，默认值为2048个token（约1,500个词）。
+###### 模型下载地址相关：-e XINFERENCE_MODEL_SRC=modelscope -e HF_ENDPOINT=https://hf-mirror.com
+
+### 模型 【进入Docker Shell运行】
+
+【qwen1.5的72B Int4 gptq/awq 对应的max_seq_len=10000 & gpu_memory_utilization=0.90，否则显存不足】
+【qwen1.5的72B Int4 gptq/awq 上面Docker运行对应的设置context_length=10000】
+
+#### qwen1.5 72B INT4 gptq
+
+```
+CUDA_VISIBLE_DEVICES=0,1,2,3 xinference launch --model-engine vllm --model-name qwen1.5-chat --size-in-billions 72  --model-format gptq --quantization Int4 --gpu_memory_utilization 0.90 --tensor_parallel_size 4 --max_model_len 10000 --n-gpu 4
+```
+#### qwen1.5 72B INT4 awq
+【qwen1.5的72B Int4 awq 对应的max_seq_len=10000 & gpu_memory_utilization=0.90，否则显存不足】
+```
+CUDA_VISIBLE_DEVICES=0,1,2,3 xinference launch --model-engine vllm --model-name qwen1.5-chat --size-in-billions 72  --model-format awq --quantization Int4 --gpu_memory_utilization 0.90 --tensor_parallel_size 4 --max_model_len 10000 --n-gpu 4 
+```
+##### 参数
+
+###### max_model_len
 容器启动日志中
 Loading qwen1.5-chat with following model config：'max_model_len': 4096
-### max_seq_len & gpu_memory_utilization
+
+max_model_len默认值4096，可能会报错误： Input prompt (4108 tokens) is too long and exceeds limit of 4096
+###### max_seq_len & gpu_memory_utilization 【qwen1.5的72B INT4 对应的max_seq_len=10000 & gpu_memory_utilization=0.90，否则显存不足】
 Initializing an LLM engine： max_seq_len=4096
 RayWorkerVllm：If you are running out of memory, consider decreasing `gpu_memory_utilization` or enforcing eager mode. You can also reduce the `max_num_seqs` as needed to decrease memory usage.
 ## Installation
