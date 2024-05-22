@@ -4,13 +4,16 @@ import "./Sidebar.css";
 
 export default function Sidebar(props: {
   models: Array<{ name: string; displayName: string }>;
+  docs:Array<string>;
   selectedModel: string;
   onSelectModel: any;
+  selectedDoc:any;
+  onSelectedDoc:any;
   setOpenAIKey: any;
   openAIKey: string;
 }) {
   const handleOpenAIButtonClick = () => {
-    const key = prompt("Please enter your OpenAI key", props.openAIKey);
+    const key = prompt("请输入您的OpenAI密钥", props.openAIKey);
     if (key != null) {
       props.setOpenAIKey(key);
     }
@@ -19,15 +22,27 @@ export default function Sidebar(props: {
     <>
       <div className="sidebar">
         <div className="logo">
-            <AssistantIcon /> GPT-Code UI
-
-            <div className='github'>
-                <a href='https://github.com/ricklamers/gpt-code-ui'>Open Source - v{import.meta.env.VITE_APP_VERSION}</a>
-            </div>
+            <AssistantIcon /> 聊天及代码机器人
         </div>
         <div className="settings">
-            <label className="header">Settings</label>
-            <label>Model</label>
+            <label className="header">设置</label>
+            <label>知识库</label>
+            <select
+            value={props.selectedDoc}
+            onChange={(event) => props.onSelectedDoc(event.target.value)}
+            >
+              <option key="" value="">
+                    ---请选择---
+                </option>
+            {props.docs.map((key) => {
+                return (
+                <option key={key} value={key}>
+                    {key}
+                </option>
+                );
+            })}
+            </select>
+            <label>模型</label>
             <select
             value={props.selectedModel}
             onChange={(event) => props.onSelectModel(event.target.value)}
@@ -40,8 +55,8 @@ export default function Sidebar(props: {
                 );
             })}
             </select>
-            <label>Credentials</label>
-            <button onClick={handleOpenAIButtonClick}>Set OpenAI key</button>
+            <label>证书</label>
+            <button onClick={handleOpenAIButtonClick}>设置OpenAI密钥</button>
         </div>
       </div>
     </>

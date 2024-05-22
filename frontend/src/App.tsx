@@ -11,10 +11,24 @@ export type MessageDict = {
   role: string;
   type: string;
 };
+const uuid=() =>{  
+  var uuidValue = "", k, randomValue;  
+  for (k = 0; k < 32;k++) {  
+    randomValue = Math.random() * 16 | 0;  
+  
+    if (k == 8 || k == 12 || k == 16 || k == 20) {  
+      uuidValue += "-"  
+    }  
+    uuidValue += (k == 12 ? 4 : (k == 16 ? (randomValue & 3 | 8) : randomValue)).toString(16);  
+  }  
+  return uuidValue;  
+}  
+
+
 
 function App() {
   const COMMANDS = ["reset"];
-
+  const user=uuid();
   let [MODELS, setModels] = useState([{displayName: "GPT-3.5", name: "gpt-3.5-turbo"}]);
 
   useEffect(() => {
@@ -30,23 +44,42 @@ function App() {
 
     getModels();
  }, []);
+//请求知识库
+ let [DOCS,setDocs] =useState([""]);
+ useEffect(() => {
+  const getDocs = async () => {
+    try {
+      const response = await fetch(`${Config.WEB_ADDRESS}/docs`);
+      const json = await response.json();
+      setDocs(Object.keys(json));
+    } catch (e) {
+      console.error(e);
+    };
+  };
+
+  getDocs();
+}, []);
 
   let [selectedModel, setSelectedModel] = useLocalStorage<string>(
     "model",
     MODELS[0].name
   );
-
+  //选择知识库
+  let [selectedDoc, setSelectedDoc] = useLocalStorage<string>(
+    "doc",
+    DOCS[0]
+  );
   let [openAIKey, setOpenAIKey] = useLocalStorage<string>("OpenAIKey", "");
 
   let [messages, setMessages] = useState<Array<MessageDict>>(
     Array.from([
       {
-        text: "Hello! I am a Code and Chat assistant. Ask me to do something for you! Pro tip: you can upload a file and I'll be able to use it.",
+        text: "你好，我是一名代码和聊天助理。让我为你做点什么！专业提示：你可以上传一个文件，我就可以使用它了",
         role: "generator",
         type: "message",
       },
       {
-        text: "If I get stuck just type 'reset' and I'll restart the kernel. ",
+        text: "如果长时间未回复，只需键入“reset”，我就会重新启动内核. ",
         role: "generator",
         type: "message",
       },
@@ -77,7 +110,7 @@ function App() {
 
   const handleCommand = (command: string) => {
     if (command == "reset") {
-      addMessage({ text: "Restarting the kernel.", type: "message", role: "system" });
+      addMessage({ text: "重启内核中...", type: "message", role: "system" });
 
       fetch(`${Config.API_ADDRESS}/restart`, {
         method: "POST",
@@ -114,15 +147,13 @@ function App() {
           prompt: userInput,
           model: selectedModel,
           openAIKey: openAIKey,
+          doc:selectedDoc,
+          user:user,
+
         }),
       });
-
       const data = await response.json();
-      const code = data.code;
-     
-
-      
-
+      const code = data.code;     
       if (response.status != 200) {
         setWaitingForSystem(WaitingStates.Idle);
         return;
@@ -172,6 +203,8 @@ function App() {
               ${result.value}`,
             model: selectedModel,
             openAIKey: openAIKey,
+            doc:selectedDoc,
+            user:user,
           }),
         });
 
@@ -298,6 +331,7 @@ function App() {
       <div className="app">
         <Sidebar
           models={MODELS}
+          docs={DOCS}
           selectedModel={selectedModel}
           onSelectModel={(val: string) => {
             setSelectedModel(val);
@@ -305,6 +339,10 @@ function App() {
           openAIKey={openAIKey}
           setOpenAIKey={(val: string) => {
             setOpenAIKey(val);
+          }}
+          selectedDoc={selectedDoc}
+          onSelectedDoc={(val: string) =>{
+              setSelectedDoc(val);
           }}
         />
         <div className="main">
