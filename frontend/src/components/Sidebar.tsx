@@ -34,10 +34,10 @@ export default function Sidebar(props: {
               <option key="" value="">
                     ---请选择---
                 </option>
-            {props.docs.map((key) => {
+            {props.docs.map((key,value) => {
                 return (
-                <option key={key} value={key}>
-                    {key}
+                <option key={key} value={value}>
+                    {value}
                 </option>
                 );
             })}

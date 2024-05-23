@@ -339,7 +339,10 @@ def agent_entry():
     print(f'(IN Web) User Question: {user_prompt}')
     model = llm_model_name
     user_openai_key = api_key
-
+    #获取用户随机ID
+    user_id=request.json.get('user',None)
+    #获得文档ID
+    doc_id=request.json.get('doc',None);
     # user_openai_key = request.json.get('openAIKey', api_key)
     # model = request.json.get('model', llm_model_name)
 
