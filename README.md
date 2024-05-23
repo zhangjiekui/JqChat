@@ -50,6 +50,20 @@ max_model_len默认值4096，可能会报错误： Input prompt (4108 tokens) is
 ###### max_seq_len & gpu_memory_utilization 【qwen1.5的72B INT4 对应的max_seq_len=10000 & gpu_memory_utilization=0.90，否则显存不足】
 Initializing an LLM engine： max_seq_len=4096
 RayWorkerVllm：If you are running out of memory, consider decreasing `gpu_memory_utilization` or enforcing eager mode. You can also reduce the `max_num_seqs` as needed to decrease memory usage.
+
+#### linux系统环境变量
+
+```
+export CUDA_VISIBLE_DEVICES='0,1,2,3'
+export LM_USE_MODELSCOPE=True
+export XINFERENCE_DISABLE_VLLM=0
+export VLLM_USE_MODELSCOPE=True
+export HF_ENDPOINT=https://hf-mirror.com
+export OLLAMA_MODEL_DIR=/data/ollama_modles
+export RAY_DEDUP_LOGS=0
+export XINFERENCE_MODEL_SRC=modelscope
+```
+
 ## Installation
 
 ubuntu上推荐下面的安装和运行方法:
