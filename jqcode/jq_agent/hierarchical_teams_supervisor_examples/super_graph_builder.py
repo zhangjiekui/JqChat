@@ -26,7 +26,8 @@ from hierarchical_teams_supervisor_examples.sub_graphs.research_sub_graph import
 from hierarchical_teams_supervisor_examples.sub_graphs.writing_sub_graph import authoring_chain
 
 # 一、创建总图
-# llm = get_langchain_chat_model()
+
+members = ["Research team", "Paper writing team"]
 supervisor_node = create_team_supervisor(
     llm,
     "记住，我为你提供了可以可靠上网、执行python代码和绘制图表的工具和环境！You are a supervisor tasked with managing a conversation between the"
@@ -34,7 +35,7 @@ supervisor_node = create_team_supervisor(
     " respond with the worker to act next. Each worker will perform a"
     " task and respond with their results and status. When finished,"
     " respond with FINISH.",
-    ["Research team", "Paper writing team"],
+    members,
 )
 
 # Top-level graph state
@@ -44,71 +45,19 @@ class SuperState(TypedDict):
     next: str
     retry_n_times:int = 0
 
-
-def get_last_message(state: SuperState) -> dict:
-    return state
-    # response_message = state["response_message"]
-    
-    # if response_message is None or response_message=="FIRST":#刚进入super_graph的首次执行
-    #     return {"messages": state["messages"], "retry_n_times":0}
-    
-    # message = state["messages"][-1]
-    # if response_message == 'SUCCESS':
-    #     return {"content":message.content,'next':state["next"], "retry_n_times":0}
-    # else:
-    #     _content = f'上次用户问题为:“{message.content}”\n但你未能正确回应用户问题，错误信息为:{response_message}请重新回应'
-    #     message.content = _content
-    #     retry_n_times =  state.get("retry_n_times",0)
-    #     retry_n_times = retry_n_times+1 if retry_n_times else 1
-    #     if retry_n_times>1:
-    #         pass
-    #     state["retry_n_times"] = retry_n_times
-    #     print(f"{retry_n_times=}")
-    #     if retry_n_times>3:
-    #         print(f"无法正常导航到下一节点，已重试{retry_n_times}次，只好退出！")
-            # sys.exit()
-
-        # return {"messages": [message],"retry_n_times":retry_n_times}
-
-
-    
-    
-
 def join_graph(response: dict):
     return {"messages": [response["messages"][-1]],"response_message":None}
 
 
-# supervisor_template_with_toolcalls_and_state = f"""
-# state: {get_last_message}
-# toolcalls:f{supervisor_node};
-# """
-# prompt = ChatPromptTemplate.from_template(supervisor_template_with_toolcalls_and_state)
-
-
-# supervisor_chain = "toolcalls": | {"toolcalls": RunnablePassthrough(), "state": get_last_message} | supervisor_post_process
-
-# supervisor_chain_RunnableLambda = RunnableLambda(get_last_message) | {
-
-# }
-
-supervisor_template_with_toolcalls_and_state_runnable = {
-    "state": RunnablePassthrough(),
-    "toolcalls":supervisor_node
-} | RunnablePassthrough()
-
-# supervisor_template_with_toolcalls_and_state_runnable.invoke({"messages": [HumanMessage(content="Hello")]})
-
 # Define the super graph.
 super_graph = StateGraph(SuperState)
 # First add the nodes, which will do the work
-# super_graph.add_node("supervisor", get_last_state | supervisor_template_with_toolcalls_and_state_runnable | supervisor_post_process_node)
-custom_supervisor_node = get_custom_supervisor_node(supervisor_node)
+
+custom_supervisor_node = get_custom_supervisor_node(supervisor_node, members)
 super_graph.add_node("supervisor", custom_supervisor_node)
 
-super_graph.add_node("Research team", get_last_message | research_chain | join_graph)
-super_graph.add_node(
-    "Paper writing team", get_last_message | authoring_chain | join_graph
-)
+super_graph.add_node("Research team", get_last_state | research_chain | join_graph)
+super_graph.add_node("Paper writing team", get_last_state | authoring_chain | join_graph)
 
 
 # Define the graph connections, which controls how the logic
@@ -120,7 +69,6 @@ super_graph.add_conditional_edges(
     lambda x: x["next"],
     {
         "Paper writing team": "Paper writing team",
-        "SELF":"supervisor", # "SELF"设置
         "Research team": "Research team",
         "FINISH": END,
     },

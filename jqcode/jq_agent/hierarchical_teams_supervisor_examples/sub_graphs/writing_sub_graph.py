@@ -13,7 +13,7 @@ from langgraph.graph import END, StateGraph
 from langgraph.graph.message import add_messages
 from jqcode.jq_agent.c0_init_env_models import get_langchain_chat_model
 from jqcode.jq_agent.hierarchical_teams_supervisor_examples.graph_create_utils import create_team_supervisor, create_agent, agent_node,sub_graph_enter_chain, get_graph_nodes,llm
-from jqcode.jq_agent.hierarchical_teams_supervisor_examples.graph_create_utils import supervisor_post_process_node,get_last_state
+from jqcode.jq_agent.hierarchical_teams_supervisor_examples.graph_create_utils import get_custom_supervisor_node,get_last_state
 # llm = get_langchain_chat_model()
 
 _TEMP_DIRECTORY = TemporaryDirectory()
@@ -169,7 +169,7 @@ context_aware_chart_generating_agent = prelude | chart_generating_agent
 chart_generating_node = functools.partial(
     agent_node, agent=context_aware_note_taking_agent, name="ChartGenerator"
 )
-
+members = ["DocWriter", "NoteTaker", "ChartGenerator"]
 doc_writing_supervisor = create_team_supervisor(
     llm,
     "记住，我为你提供了可以可靠上网、执行python代码和绘制图表的工具和环境！You are a supervisor tasked with managing a conversation between the"
@@ -177,7 +177,7 @@ doc_writing_supervisor = create_team_supervisor(
     " respond with the worker to act next. Each worker will perform a"
     " task and respond with their results and status. When finished,"
     " respond with FINISH.",
-    ["DocWriter", "NoteTaker", "ChartGenerator"],
+    members,
 )
 
 # Create the graph here:
@@ -186,7 +186,9 @@ authoring_graph = StateGraph(DocWritingState)
 authoring_graph.add_node("DocWriter", doc_writing_node)
 authoring_graph.add_node("NoteTaker", note_taking_node)
 authoring_graph.add_node("ChartGenerator", chart_generating_node)
-authoring_graph.add_node("supervisor", doc_writing_supervisor)
+# authoring_graph.add_node("supervisor", doc_writing_supervisor)
+custom_doc_writing_supervisor = get_custom_supervisor_node(doc_writing_supervisor, members)
+authoring_graph.add_node("supervisor", custom_doc_writing_supervisor)
 
 # Add the edges that always occur
 authoring_graph.add_edge("DocWriter", "supervisor")
@@ -202,7 +204,6 @@ authoring_graph.add_conditional_edges(
         "NoteTaker": "NoteTaker",
         "ChartGenerator": "ChartGenerator",
         "FINISH": END,
-        "SELF":"DocWriter", # "SELF"设置
     },
 )
 
@@ -218,7 +219,7 @@ authoring_graph_compiled = authoring_graph.compile()
 # We reuse the enter/exit functions to wrap the graph
 
 
-members = get_graph_nodes(authoring_graph)
+# members = get_graph_nodes(authoring_graph)
 # print(members)
 # ['DocWriter', 'NoteTaker', 'ChartGenerator']
 authoring_chain = (
