@@ -58,7 +58,7 @@ def create_team_supervisor(llm: ChatOpenAI, system_prompt, members) -> str:
         "name": "route",
         "description": "Select the next role.",
         "parameters": {
-            "title": "routeSchema",
+            # "title": "routeSchema",
             "type": "object",
             "properties": {
                 "next": {
@@ -85,9 +85,10 @@ def create_team_supervisor(llm: ChatOpenAI, system_prompt, members) -> str:
     return (
         prompt
         | llm.bind_tools(tools=[supervisor_rout_tool], tool_choice="route")
-        | JsonOutputToolsParser()
+        # | JsonOutputToolsParser()
         # | supervisor_post_process
     )
+
 
 
 def sub_graph_enter_chain(message_and_next:dict, members: List[str]):
@@ -163,12 +164,14 @@ def supervisor_post_process_node(toolcalls_and_state:dict,supervisor_node, membe
 
 
     
-    tool_calls_list = toolcalls_and_state['toolcalls']
+    tool_calls_list = toolcalls_and_state['toolcalls'].tool_calls
 
     # tool_calls_list = [{'args': {'next': '中国科学技术大学的简要介绍'}, 'type': 'Search'}]
     print('~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~')
     print("导航输出的原始工具列表")
     print(tool_calls_list)
+    if tool_calls_list:
+        pass
     print('~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~')
     next, tool_call_parsed_message = _parse_next(tool_calls_list,members)    
     if next:
@@ -178,7 +181,7 @@ def supervisor_post_process_node(toolcalls_and_state:dict,supervisor_node, membe
         return {"messages":state["messages"],'next':next,"question":question}
     
     else:
-        
+
 
         if question == message.content:
             tools_response_messages = messages[1:]
@@ -199,7 +202,7 @@ def supervisor_post_process_node(toolcalls_and_state:dict,supervisor_node, membe
             print('~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~')
             print(f"导航[第{i+1}次重试]的问题及附加反馈信息为：")
             print(_message)
-            retry_result = supervisor_node.invoke([_message])            
+            retry_result = supervisor_node.invoke([_message]) .tool_calls           
             print('~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~')
             print(f"输出的工具列表：")
             print(retry_result)
@@ -234,11 +237,11 @@ def _parse_next(tool_calls_list, members):
     tool_call_parsed_message = ''
     next = None
     _next = None
-    tool_call_type = None
+    tool_call_name = None
 
     if tool_calls_list:
         tool_call_dict = tool_calls_list[0]       
-        tool_call_type = tool_call_dict['type']
+        tool_call_name = tool_call_dict['name']
         tool_call_args = tool_call_dict['args']
 
         if 'next' in tool_call_args:
@@ -247,7 +250,7 @@ def _parse_next(tool_calls_list, members):
             if next in members:
                 return next,tool_call_parsed_message
             else:
-                if tool_call_type=='route':
+                if tool_call_name=='route':
                     if not next:                    
                             tool_call_parsed_message = f"""工具调用返回的Json格式正确，但next参数值{next}为空"""
                             print(tool_call_parsed_message)
@@ -256,17 +259,17 @@ def _parse_next(tool_calls_list, members):
                         tool_call_parsed_message = f"""工具调用返回的Json格式正确，但next参数值{next}不正确，必须是以下列表取值之一[{",".join(members)}]"""
                         print(tool_call_parsed_message)
 
-        next = tool_call_type if tool_call_type else None
+        next = tool_call_name if tool_call_name else None
         if next in members:
             return next,tool_call_parsed_message
         else:
             next = None
-            tool_call_parsed_message = f"""工具调用返回的Json格式正确，但返回的工具名称(type)不对，必须是以下列表取值之一[{",".join(members)}]"""
+            tool_call_parsed_message = f"""工具调用返回的Json格式正确，但返回的工具名称(name)不对，必须是以下列表取值之一[{",".join(members)}]"""
 
-        print(f'供调试观察的信息：Next={_next},tool_call_type={tool_call_type}')    
+        print(f'供调试观察的信息：Next={_next},tool_call_name={tool_call_name}')    
     else:        
         next = None            
-        tool_call_parsed_message = f"未返回有效的工具调用列表。请重试，务必返回有效的工具调用Json格式数据"
+        tool_call_parsed_message = f"未返回有效的工具调用列表。请重试，务必返回一个有效的工具（Tool）/函数（Function）调用"
         print(tool_call_parsed_message)
         
     return next,tool_call_parsed_message
@@ -288,7 +291,7 @@ def get_graph_nodes(graphs:Union[StateGraph,List[StateGraph]]) -> list:
     return members
 
 llm = get_langchain_chat_model(
-        temperature=0.9,
+        temperature=0.1,
         max_tokens=10000)
 
 

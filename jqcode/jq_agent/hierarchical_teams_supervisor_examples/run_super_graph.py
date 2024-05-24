@@ -16,7 +16,8 @@ question ="请搜索中国科学技术大学的信息，并写一份中国科学
 for s in super_graph_compiled.stream(
     {"messages": [HumanMessage(content=question)],"question":question},
     {"recursion_limit": 150},
+    debug = False
 ):
     if "__end__" not in s:
-        print(s)
+        # print(s)
         print("---")
