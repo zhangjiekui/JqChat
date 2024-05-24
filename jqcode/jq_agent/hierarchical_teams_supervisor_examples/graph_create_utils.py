@@ -37,7 +37,8 @@ def create_agent(
         ]
     )
     agent = create_tool_calling_agent(llm, tools, prompt)
-    executor = AgentExecutor(agent=agent, tools=tools, verbose=True, handle_parsing_errors=True,return_intermediate_steps=True)
+    executor = AgentExecutor(agent=agent, tools=tools, handle_parsing_errors=True)
+    # executor = AgentExecutor(agent=agent, tools=tools, verbose=True, handle_parsing_errors=True,return_intermediate_steps=True)
     return executor
 
 
@@ -112,48 +113,91 @@ def sub_graph_enter_chain(message_and_next:dict, members: List[str]):
 def get_last_state(state) -> dict:
     return state
 
-def get_custom_supervisor_node(supervisor_node, members):
+def get_custom_supervisor_node(supervisor_node, members, graph_name):
 
     supervisor_template_with_toolcalls_and_state_runnable = {
         "state": RunnablePassthrough(),
         "toolcalls":supervisor_node
     } | RunnablePassthrough()
 
-    patial_supervisor_post_process_node =functools.partial(supervisor_post_process_node,supervisor_node=supervisor_node, members=members)
+    patial_supervisor_post_process_node =functools.partial(supervisor_post_process_node,supervisor_node=supervisor_node, members=members, graph_name=graph_name)
     custom_supervisor_node = get_last_state | supervisor_template_with_toolcalls_and_state_runnable | patial_supervisor_post_process_node
     return custom_supervisor_node
 
 
 
-def supervisor_post_process_node(toolcalls_and_state:dict,supervisor_node, members) -> dict:
+def supervisor_post_process_node(toolcalls_and_state:dict,supervisor_node, members, graph_name) -> dict:
+
     next = None
     tool_call_parsed_message =  None
 
+
     if 'FINISH' not in members:
         members = members + ['FINISH']
- 
+
     state = toolcalls_and_state["state"]
     messages = state["messages"]
     message = state["messages"][-1]
-    question = message.content
-    tools_response = '||'.join([m.content for m in messages[1:]])
-    str_messages_with_history = f"""用户原始问题为:{question}\n中间工具返回信息为:{tools_response}\n"""
+
+    print('*****************'*5)
+    print(f"Enter in {graph_name},{len(messages)=}")
+    print('*****************'*2)
+
+    question = state.get("question",None)
+    if question is None:
+        print('state["question"]不存在！')
+        question = message.content
+
+    if question != messages[0].content:
+        print(f'{question=}')
+        print(f'{messages[0].content=}')
+
+
+
+        
+        
+
+    if question is None:
+        print('question为空！')
+        raise Exception('question为空！')    
+
+
+    
     tool_calls_list = toolcalls_and_state['toolcalls']
+
+    # tool_calls_list = [{'args': {'next': '中国科学技术大学的简要介绍'}, 'type': 'Search'}]
     print('~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~')
     print("导航输出的原始工具列表")
     print(tool_calls_list)
     print('~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~')
-    next, tool_call_parsed_message = _parse_next(tool_calls_list,members)
-    
+    next, tool_call_parsed_message = _parse_next(tool_calls_list,members)    
     if next:
-        return {"messages":state["messages"],'next':next}
+        print('*****************')
+        print(f"Current in {graph_name}, Next to {next}")
+        print('*****************'*5)
+        return {"messages":state["messages"],'next':next,"question":question}
+    
     else:
-        retry_n_times = 4
+        
+
+        if question == message.content:
+            tools_response_messages = messages[1:]
+        else:
+            tools_response_messages = messages
+        str_messages_with_history = f"""用户原始问题为:{question}"""
+        if tools_response_messages:
+            if isinstance(tools_response_messages,list):
+                tools_response = '||'.join([m.content for m in tools_response_messages])   
+            else:
+                tools_response = tools_response_messages
+            tools_response = tools_response.replace(question,'') # 移除原始问题    
+
+            str_messages_with_history += f"""\n中间工具返回信息为:{tools_response}"""
+        retry_n_times = 3
         for i in range(retry_n_times):
-            _message = f'“{str_messages_with_history}” 错误信息为:{tool_call_parsed_message}'
+            _message = f'{str_messages_with_history} \n错误信息为:{tool_call_parsed_message}'
             print('~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~')
-            print(f"导航[第{i+1}次重试]")
-            print("问题及附加反馈信息：")
+            print(f"导航[第{i+1}次重试]的问题及附加反馈信息为：")
             print(_message)
             retry_result = supervisor_node.invoke([_message])            
             print('~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~')
@@ -162,17 +206,36 @@ def supervisor_post_process_node(toolcalls_and_state:dict,supervisor_node, membe
             print('~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~')
             next, tool_call_parsed_message = _parse_next(retry_result,members)
             if next:
-                return {"messages":state["messages"],'next':next}
+                print('*****************')
+                print(f"Current in {graph_name}, Next to {next}")
+                print('*****************'*5)                
+                return {"messages":state["messages"],'next':next,"question":question}
     
-    print(f"无法正常导航到下一节点，已重试{retry_n_times}次，被迫导向‘FINISH’！")
-    if len(messages)>=3:
-        next = "Paper writing team"
+    print(f"无法正常导航到下一节点，已重试{retry_n_times}次！启用自定义规则")
+
+
+    if graph_name=='super_graph':
+        ms_num = len(messages)
+        if ms_num<3:
+            next = "Research team"
+
+        elif ms_num<6:
+            next = "Paper writing team"
+        else:
+            next = "FINISH"
     else:
         next = "FINISH"
-    return {"messages":state["messages"],'next': "FINISH"}
+    print('*****************')
+    print(f"Current in {graph_name}, Next to {next}")
+    print('*****************'*5)
+    return {"messages":state["messages"],'next': next,"question":question}
 
 def _parse_next(tool_calls_list, members):
     tool_call_parsed_message = ''
+    next = None
+    _next = None
+    tool_call_type = None
+
     if tool_calls_list:
         tool_call_dict = tool_calls_list[0]       
         tool_call_type = tool_call_dict['type']
@@ -180,21 +243,32 @@ def _parse_next(tool_calls_list, members):
 
         if 'next' in tool_call_args:
             next = tool_call_args['next']
-            if tool_call_type=='route':
-                if not next:                    
-                        tool_call_parsed_message = f"""工具调用返回的Json格式正确，但next参数值{next}为空"""
+            _next = tool_call_args['next']
+            if next in members:
+                return next,tool_call_parsed_message
+            else:
+                if tool_call_type=='route':
+                    if not next:                    
+                            tool_call_parsed_message = f"""工具调用返回的Json格式正确，但next参数值{next}为空"""
+                            print(tool_call_parsed_message)
+                    else:
+                        next = None            
+                        tool_call_parsed_message = f"""工具调用返回的Json格式正确，但next参数值{next}不正确，必须是以下列表取值之一[{",".join(members)}]"""
                         print(tool_call_parsed_message)
-                elif next not in members: 
-                    next = None            
-                    tool_call_parsed_message = f"""工具调用返回的Json格式正确，但next参数值{next}不正确，必须是以下列表取值之一[{",".join(members)}]"""
-                    print(tool_call_parsed_message)
+
+        next = tool_call_type if tool_call_type else None
+        if next in members:
+            return next,tool_call_parsed_message
         else:
-            next = tool_call_type if tool_call_type in members else None
-            
+            next = None
+            tool_call_parsed_message = f"""工具调用返回的Json格式正确，但返回的工具名称(type)不对，必须是以下列表取值之一[{",".join(members)}]"""
+
+        print(f'供调试观察的信息：Next={_next},tool_call_type={tool_call_type}')    
     else:        
         next = None            
         tool_call_parsed_message = f"未返回有效的工具调用列表。请重试，务必返回有效的工具调用Json格式数据"
         print(tool_call_parsed_message)
+        
     return next,tool_call_parsed_message
 
 def get_graph_nodes(graphs:Union[StateGraph,List[StateGraph]]) -> list:
@@ -214,7 +288,7 @@ def get_graph_nodes(graphs:Union[StateGraph,List[StateGraph]]) -> list:
     return members
 
 llm = get_langchain_chat_model(
-        temperature=0.7,
-        max_tokens=5000)
+        temperature=0.9,
+        max_tokens=10000)
 
 

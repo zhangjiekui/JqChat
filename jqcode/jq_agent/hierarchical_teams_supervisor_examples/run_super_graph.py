@@ -14,7 +14,7 @@ question = "Write a brief research report on the North American sturgeon. Includ
 # # question ="请首先搜索安徽晶奇公司的相关信息，并根据这些信息写一份安徽晶奇公司的简要介绍。"
 question ="请搜索中国科学技术大学的信息，并写一份中国科学技术大学的简要介绍材料。"
 for s in super_graph_compiled.stream(
-    {"messages": [HumanMessage(content=question)]},
+    {"messages": [HumanMessage(content=question)],"question":question},
     {"recursion_limit": 150},
 ):
     if "__end__" not in s:

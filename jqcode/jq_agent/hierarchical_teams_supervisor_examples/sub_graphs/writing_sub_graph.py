@@ -111,6 +111,7 @@ class DocWritingState(TypedDict):
     next: str
     # This tracks the shared directory state
     current_files: str
+    question:str
 
 # This will be run before each worker agent begins work
 # It makes it so they are more aware of the current state
@@ -172,7 +173,7 @@ chart_generating_node = functools.partial(
 members = ["DocWriter", "NoteTaker", "ChartGenerator"]
 doc_writing_supervisor = create_team_supervisor(
     llm,
-    "记住，我为你提供了可以可靠上网、执行python代码和绘制图表的工具和环境！You are a supervisor tasked with managing a conversation between the"
+    " You are a supervisor tasked with managing a conversation between the"
     " following workers:  {team_members}. Given the following user request,"
     " respond with the worker to act next. Each worker will perform a"
     " task and respond with their results and status. When finished,"
@@ -182,21 +183,21 @@ doc_writing_supervisor = create_team_supervisor(
 
 # Create the graph here:
 # Note that we have unrolled the loop for the sake of this doc
-authoring_graph = StateGraph(DocWritingState)
-authoring_graph.add_node("DocWriter", doc_writing_node)
-authoring_graph.add_node("NoteTaker", note_taking_node)
-authoring_graph.add_node("ChartGenerator", chart_generating_node)
+writing_graph = StateGraph(DocWritingState)
+writing_graph.add_node("DocWriter", doc_writing_node)
+writing_graph.add_node("NoteTaker", note_taking_node)
+writing_graph.add_node("ChartGenerator", chart_generating_node)
 # authoring_graph.add_node("supervisor", doc_writing_supervisor)
-custom_doc_writing_supervisor = get_custom_supervisor_node(doc_writing_supervisor, members)
-authoring_graph.add_node("supervisor", custom_doc_writing_supervisor)
+custom_doc_writing_supervisor = get_custom_supervisor_node(doc_writing_supervisor, members, graph_name = 'writing_graph')
+writing_graph.add_node("supervisor", custom_doc_writing_supervisor)
 
 # Add the edges that always occur
-authoring_graph.add_edge("DocWriter", "supervisor")
-authoring_graph.add_edge("NoteTaker", "supervisor")
-authoring_graph.add_edge("ChartGenerator", "supervisor")
+writing_graph.add_edge("DocWriter", "supervisor")
+writing_graph.add_edge("NoteTaker", "supervisor")
+writing_graph.add_edge("ChartGenerator", "supervisor")
 
 # Add the edges where routing applies
-authoring_graph.add_conditional_edges(
+writing_graph.add_conditional_edges(
     "supervisor",
     lambda x: x["next"],
     {
@@ -207,8 +208,8 @@ authoring_graph.add_conditional_edges(
     },
 )
 
-authoring_graph.set_entry_point("supervisor")
-authoring_graph_compiled = authoring_graph.compile()
+writing_graph.set_entry_point("supervisor")
+writing_graph_compiled = writing_graph.compile()
 
 
 # The following functions interoperate between the top level graph state
@@ -224,5 +225,5 @@ authoring_graph_compiled = authoring_graph.compile()
 # ['DocWriter', 'NoteTaker', 'ChartGenerator']
 authoring_chain = (
     functools.partial(sub_graph_enter_chain, members=members)
-    | authoring_graph_compiled
+    | writing_graph_compiled
 )

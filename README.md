@@ -1,6 +1,7 @@
-
 ## Git同步
+
 ### 本地
+
 ```sh
 cd /home/jqsoft/AgentRagChatCI/AgentRagChatCI-0.0.1
 git add .
@@ -8,26 +9,40 @@ git commit -a
 ```
 
 ### 同步
+
 ```sh
 git push
 ```
+
 ## Xinference LLM
+
 ### Docker
+
 #### 当前使用版本
+
 原版/最新版是xinference 0.11.1 (2024-05-21)
+
 #### 更新镜像版本
+
 docker pull xprobe/xinference:latest
+
 #### Docker运行
+
 ```
 docker run --shm-size=64g --name xinferencev111 -d -p 9997:9997 -e XINFERENCE_MODEL_SRC=modelscope -e HF_ENDPOINT=https://hf-mirror.com -v /home/jqsoft/.xinference:/root/.xinference -v /home/jqsoft/.cache/huggingface:/root/.cache/huggingface -v /home/jqsoft/.cache/modelscope:/root/.cache/modelscope -e CONTEXT_LENGTH=10000 -e NUM_GPUS=4 --gpus all xprobe/xinference:latest xinference-local -H 0.0.0.0 --log-level debug 
 ```
+
 ##### 参数
+
 ###### context_length【qwen1.5的72B Int4 gptq/awq 对应的设置context_length=10000】: 一个可选的整数，模型支持的最大上下文长度，包括输入和输出长度。如果未定义，默认值为2048个token（约1,500个词）。
+
 ###### 模型下载地址相关：-e XINFERENCE_MODEL_SRC=modelscope -e HF_ENDPOINT=https://hf-mirror.com
 
 ### 模型 【进入Docker Shell运行】
 
-【qwen1.5的72B Int4 gptq/awq 对应的max_seq_len=10000 & gpu_memory_utilization=0.90，否则显存不足】
+【qwen1.5的72B Int4 gptq/awq  对应的**max_seq_len=10000 & gpu_memory_utilization=0.90**】
+
+【qwen1.5的110B Int4 gptq/awq 对应的**max_seq_len=10000 & gpu_memory_utilization=0.95**】
 【qwen1.5的72B Int4 gptq/awq 上面Docker运行对应的设置context_length=10000】
 
 #### qwen1.5 72B INT4 gptq
@@ -35,19 +50,26 @@ docker run --shm-size=64g --name xinferencev111 -d -p 9997:9997 -e XINFERENCE_MO
 ```
 CUDA_VISIBLE_DEVICES=0,1,2,3 xinference launch --model-engine vllm --model-name qwen1.5-chat --size-in-billions 72  --model-format gptq --quantization Int4 --gpu_memory_utilization 0.90 --tensor_parallel_size 4 --max_model_len 10000 --n-gpu 4
 ```
+
 #### qwen1.5 72B INT4 awq
+
 【qwen1.5的72B Int4 awq 对应的max_seq_len=10000 & gpu_memory_utilization=0.90，否则显存不足】
+
 ```
 CUDA_VISIBLE_DEVICES=0,1,2,3 xinference launch --model-engine vllm --model-name qwen1.5-chat --size-in-billions 72  --model-format awq --quantization Int4 --gpu_memory_utilization 0.90 --tensor_parallel_size 4 --max_model_len 10000 --n-gpu 4 
 ```
+
 ##### 参数
 
 ###### max_model_len
+
 容器启动日志中
 Loading qwen1.5-chat with following model config：'max_model_len': 4096
 
 max_model_len默认值4096，可能会报错误： Input prompt (4108 tokens) is too long and exceeds limit of 4096
+
 ###### max_seq_len & gpu_memory_utilization 【qwen1.5的72B INT4 对应的max_seq_len=10000 & gpu_memory_utilization=0.90，否则显存不足】
+
 Initializing an LLM engine： max_seq_len=4096
 RayWorkerVllm：If you are running out of memory, consider decreasing `gpu_memory_utilization` or enforcing eager mode. You can also reduce the `max_num_seqs` as needed to decrease memory usage.
 
@@ -64,9 +86,21 @@ export RAY_DEDUP_LOGS=0
 export XINFERENCE_MODEL_SRC=modelscope
 ```
 
+#### pip / conda源
+
+```
+pip config set global.index-url https://mirrors.aliyun.com/pypi/simple/
+
+conda config --add channels https://mirrors.aliyun.com/anaconda/pkgs/main/
+conda config --add channels https://mirrors.aliyun.com/anaconda/pkgs/free/
+conda config --set show_channel_urls yes
+
+```
+
 ## Installation
 
 ubuntu上推荐下面的安装和运行方法:
+
 ```
 ### 安装：
 git clone https://github.com/zhangjiekui/JqChat.git
@@ -79,7 +113,6 @@ jqchat
 直接运行JqChat\main.py
 ```
 
-
 ## 安装常用库包
 
 In order to make basic dependencies available it's recommended to run the following `pip` install
@@ -89,8 +122,11 @@ in the Python environment that is used in the shell where you run `jqchat`:
 ### todo:需要更新版本
 pip install "numpy>=1.24,<1.25" "dateparser>=1.1,<1.2" "pandas>=1.5,<1.6" "geopandas>=0.13,<0.14" "tabulate>=0.9.0<1.0" "PyPDF2>=3.0,<3.1" "pdfminer>=20191125,<20191200" "pdfplumber>=0.9,<0.10" "matplotlib>=3.7,<3.8"
 ```
+
 ## 常见问题解决
+
 ### matplotlib绘图中文和负号显示问题
+
 ```
 1、参考https://blog.csdn.net/m0_52650517/article/details/120590020
         import matplotlib
@@ -106,11 +142,12 @@ pip install "numpy>=1.24,<1.25" "dateparser>=1.1,<1.2" "pandas>=1.5,<1.6" "geopa
         rm -rf *.*
 ```
 
-
 ## User interface
+
 <img src="https://github.com/ricklamers/gpt-code-ui/assets/1309307/c29c504a-a7ed-4ae0-9360-d7224bc3e3d6" alt="GPT-Code logo" width="100%" />
- 
+
 ## Features
+
 - File upload
 - File download
 - Context awareness (it can refer to your previous messages)
@@ -119,21 +156,26 @@ pip install "numpy>=1.24,<1.25" "dateparser>=1.1,<1.2" "pandas>=1.5,<1.6" "geopa
 - Model switching (GPT-3.5 and GPT-4)
 
 ## Misc.
+
 ### Using .env for OpenAI key and `OPENAI_API_BASE` for local model api
+
 You can put a .env in the working directory to load the `OPENAI_API_KEY` and `OPENAI_API_BASE` environment variable.
 Set `OPENAI_API_BASE` to change the OpenAI API endpoint that's being used (note this environment variable includes the protocol `http://10.1.150.105:9997/v1`).
 
 ### Configurables
+
 Set the `API_PORT`, `WEB_PORT`, `SNAKEMQ_PORT` variables to override the defaults.
 
-
 ### Docker
+
 [localagi](https://github.com/localagi) took the effort of bundling the Python package in a Docker container. Check it out here: [gpt-code-ui-docker](https://github.com/localagi/gpt-code-ui-docker).
 
 ## Reference Project
+
 <img src="https://github.com/ricklamers/gpt-code-ui/assets/1309307/9ad4061d-2e26-4407-9431-109b650fb022" alt="GPT-Code logo" width=240 />
 
 ### gpt-code-ui
+
 github code: https://github.com/ricklamers/gpt-code-ui
 
 An open source implementation of OpenAI's ChatGPT [Code interpreter](https://openai.com/blog/chatgpt-plugins#code-interpreter).
