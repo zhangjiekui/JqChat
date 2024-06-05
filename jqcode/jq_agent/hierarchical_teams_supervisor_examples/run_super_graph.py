@@ -1,7 +1,7 @@
 import sys
-project_root_path = '/home/jqsoft/AgentRagChatCI/AgentRagChatCI-0.0.1'
-p1 = '/home/jqsoft/AgentRagChatCI/AgentRagChatCI-0.0.1/jqcode'
-p2 = '/home/jqsoft/AgentRagChatCI/AgentRagChatCI-0.0.1/jqcode/jq_agent'
+project_root_path = '/data/projects/JqChat'
+p1 = '/data/projects/JqChat/jqcode'
+p2 = '/data/projects/JqChat/jqcode/jq_agent'
 for p in [project_root_path, p1, p2]:
     sys.path.append(p)
 

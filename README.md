@@ -3,7 +3,7 @@
 ### 本地
 
 ```sh
-cd /home/jqsoft/AgentRagChatCI/AgentRagChatCI-0.0.1
+cd /data/projects/JqChat
 git add .
 git commit -a
 ```

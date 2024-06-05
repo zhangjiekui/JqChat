@@ -291,7 +291,8 @@ def get_graph_nodes(graphs:Union[StateGraph,List[StateGraph]]) -> list:
     return members
 
 llm = get_langchain_chat_model(
-        temperature=0.1,
-        max_tokens=10000)
+        temperature=0.0,
+        max_tokens=10000,
+        streaming=True)
 
 

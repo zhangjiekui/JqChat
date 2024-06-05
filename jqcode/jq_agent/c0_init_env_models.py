@@ -64,7 +64,7 @@ def get_openai_client():
     print(f'当前使用的模型base_url为:OpenAI, {openai_client.base_url}')
     return openai_client
 
-def get_langchain_chat_model(temperature=0.0, max_tokens=5000):
+def get_langchain_chat_model(temperature=0.0, max_tokens=10000, streaming=True):
     chat_model = ChatOpenAI(
         model_name=llm_model_name,
         openai_api_base=base_url,    
