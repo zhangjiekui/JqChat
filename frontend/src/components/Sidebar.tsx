@@ -22,7 +22,7 @@ export default function Sidebar(props: {
     <>
       <div className="sidebar">
         <div className="logo">
-            <AssistantIcon /> 聊天及代码机器人
+            <AssistantIcon /> 医疗卫生知识BOT
         </div>
         <div className="settings">
             <label className="header">设置</label>
@@ -42,8 +42,8 @@ export default function Sidebar(props: {
                 );
             })}
             </select>
-            <label>模型</label>
-            <select
+            <label hidden="true">模型</label>
+            <select hidden="true"
             value={props.selectedModel}
             onChange={(event) => props.onSelectModel(event.target.value)}
             >
@@ -55,8 +55,8 @@ export default function Sidebar(props: {
                 );
             })}
             </select>
-            <label>证书</label>
-            <button onClick={handleOpenAIButtonClick}>设置OpenAI密钥</button>
+            <label  hidden="true">证书</label>
+            <button  hidden="true" onClick={handleOpenAIButtonClick}>设置OpenAI密钥</button>
         </div>
       </div>
     </>

@@ -74,7 +74,7 @@ function App() {
   let [messages, setMessages] = useState<Array<MessageDict>>(
     Array.from([
       {
-        text: "你好，我是一名代码和聊天助理。让我为你做点什么！专业提示：你可以上传一个文件，我就可以使用它了",
+        text: "你好，我是一名行业知识助理。让我为你做点什么！专业提示：你可以上传一个文件，我就可以使用它了",
         role: "generator",
         type: "message",
       },
