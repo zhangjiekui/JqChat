@@ -94,9 +94,9 @@ function Message(props: {
 
 
 export enum WaitingStates {
-  GeneratingCode = "Excuting Agent",
-  RunningCode = "Running code",
-  UploadingFile = "Uploading file",
+  GeneratingCode = "执行中...",
+  RunningCode = "执行代码",
+  UploadingFile = "上传中...",
   Idle = "Idle",
 }
 

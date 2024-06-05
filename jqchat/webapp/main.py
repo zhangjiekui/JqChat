@@ -18,6 +18,7 @@ from flask import Flask, request, jsonify, send_from_directory, Response
 from jqchat.kernel_program.main import APP_PORT as KERNEL_APP_PORT
 from jqcode.jq_agent.c0_init_env_models import get_openai,get_openai_client,llm_model_name,api_key
 from jqcode.jq_agent_with_memory import arun_graph_workflow, coding_relevance_grader
+from jqcode.jq_agent.c0_init_env_models import get_all_knowledge_base
 
 #todo 保留openai只是暂时不想改代码
 openai = get_openai()
@@ -278,6 +279,10 @@ def index():
 def models():
     return jsonify(AVAILABLE_MODELS)
 
+#获取知识库列表
+@app.route("/docs")
+def docs():
+    return  jsonify(get_all_knowledge_base(None,True))
 
 @app.route('/api/<path:path>', methods=["GET", "POST"])
 def proxy_kernel_manager(path):
@@ -334,7 +339,10 @@ def agent_entry():
     print(f'(IN Web) User Question: {user_prompt}')
     model = llm_model_name
     user_openai_key = api_key
-
+    #获取用户随机ID
+    user_id=request.json.get('user',None)
+    #获得文档ID
+    doc_id=request.json.get('doc',None);
     # user_openai_key = request.json.get('openAIKey', api_key)
     # model = request.json.get('model', llm_model_name)
 
@@ -375,11 +383,17 @@ def generate_chat():
     user_prompt = request.json.get('prompt', '')
     user_openai_key = request.json.get('openAIKey', None)
     model = request.json.get('model', None)
+    #获取用户随机ID
+    user_id=request.json.get('user',None)
+    #获得文档ID
+    doc_id=request.json.get('doc',None);
+
     print('CHAT_TEXT: ' + user_prompt)
     loop = asyncio.new_event_loop()
     asyncio.set_event_loop(loop)
 
     text, status = loop.run_until_complete(
+        #TODO:需要此处增加传入的user_id和doc_id
         get_chat(user_prompt, user_openai_key, model))
     loop.close()
 

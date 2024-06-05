@@ -8,7 +8,7 @@ kernel_connection_file.json
 *.egg-info/
 venv
 .venv
-__pycache__/
+jqchat/__pycache__/
 
 # IDE
 .vscode/
@@ -16,5 +16,7 @@ __pycache__/
 # Logs
 *.log
 
-dist/
+frontend/dist/
 build/
+frontend/node_modules/
+frontend/.swc/
