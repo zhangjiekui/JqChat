@@ -23,9 +23,9 @@ def load_project_env():
     env_dir = root_dir/'.env'
     dotenv_loaded = load_dotenv(env_dir)
     if dotenv_loaded:
-        print("=*=* load_dotenv('.env')成功！")
+        print(f"=*=* load_dotenv('{env_dir}')成功！")
     else:
-        print("=*=* load_dotenv('.env')失败，请检查！")
+        print(f"=*=* load_dotenv('{env_dir}')失败，请检查！")
     print('=*'*20)
     print('\n\n')
 

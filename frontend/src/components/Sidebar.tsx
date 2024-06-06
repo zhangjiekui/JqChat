@@ -42,8 +42,8 @@ export default function Sidebar(props: {
                 );
             })}
             </select>
-            <label hidden="true">模型</label>
-            <select hidden="true"
+            <label hidden>模型</label>
+            <select hidden
             value={props.selectedModel}
             onChange={(event) => props.onSelectModel(event.target.value)}
             >
@@ -55,8 +55,8 @@ export default function Sidebar(props: {
                 );
             })}
             </select>
-            <label  hidden="true">证书</label>
-            <button  hidden="true" onClick={handleOpenAIButtonClick}>设置OpenAI密钥</button>
+            <label  hidden>证书</label>
+            <button  hidden onClick={handleOpenAIButtonClick}>设置OpenAI密钥</button>
         </div>
       </div>
     </>

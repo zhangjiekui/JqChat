@@ -20,5 +20,13 @@ jqchat/webapp/main.py
 jqchat/webapp/test_litellm.py
 jqchat/webapp/static/index.html
 jqchat/webapp/static/assets/assistant.svg
-jqchat/webapp/static/assets/index-052298ca.js
 jqchat/webapp/static/assets/index-0d7e582a.css
+jqchat/webapp/static/assets/index-cd3e61c3.js
+jqcode/__init__.py
+jqcode/langgraph_adaptive_qwen15_70B.py
+jqcode/langgraph_adaptive_qwen15_70B110B.py
+jqcode/langgraph_adaptive_qwen15_70B110B_cleaned.py
+jqcode/langgraph_adaptive_rag_cohere.py
+jqcode/langgraph_rag_agent_llama3_local.py
+jqcode/retriver.py
+jqcode/web_search_engine_with_print_for_test.py

@@ -17,7 +17,7 @@ from flask import Flask, request, jsonify, send_from_directory, Response
 
 from jqchat.kernel_program.main import APP_PORT as KERNEL_APP_PORT
 from jqcode.jq_agent.c0_init_env_models import get_openai,get_openai_client,llm_model_name,api_key
-from jqcode.jq_agent_with_memory import arun_graph_workflow, coding_relevance_grader
+from jqcode.jq_agent.jq_agent_with_memory_sync_and_async import arun_graph_workflow, run_graph_workflow, coding_relevance_grader
 from jqcode.jq_agent.c0_init_env_models import get_all_knowledge_base
 
 #todo 保留openai只是暂时不想改代码
@@ -364,6 +364,7 @@ def agent_entry():
 
     else:
         text = loop.run_until_complete(arun_graph_workflow(question=user_prompt))
+        # text = await loop.run_until_complete(run_graph_workflow(question=user_prompt))
 
     print('~~'*30)
     if code:
