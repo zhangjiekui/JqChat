@@ -20,6 +20,7 @@ from urllib.parse import urljoin
 urllib3.disable_warnings()
 
 from jqcode.jq_agent.c0_init_env_models import load_project_env
+from langchain_core.tools import tool
 
 timeout_value = 60
 USING_JINA_AI_READER = os.getenv("USING_JINA_AI_READER",True)
@@ -383,6 +384,24 @@ def get_web_search_documents(query,max_doc_nums=4):
             print(f"失败的原因为：{e}")
         finally:
             return docs if docs else []     
+        
+# Clean
+def replace_multiple_newlines(text):
+    return re.sub(r'\n+', '\n', text)        
+
+@tool
+def search_and_scrape(query:str) -> str :
+    """会智能选择使用Baidu、Bing检索query,然后爬取urls结果，或直接利用TavilySearch获取query的网络查询结果，返回清洗过的文本"""
+    docs = get_web_search_documents(query,max_doc_nums=2)
+    docs_content = "\n\n".join(
+        [
+            f'\n{doc.page_content}\n'
+            for doc in docs
+        ]
+    )
+    docs_content = replace_multiple_newlines(docs_content)
+    print(f'search_and_scrape返回的文本长度为：{len(docs_content)}')
+    return docs_content
 
 if __name__ == "__main__":
     queries = ['who is playing in the super bowl','中国科学技术大学','how python install langchain langgraph package','合肥大蜀山和科学岛','合肥大蜀山 科学岛','合肥八中 校区数量','   合肥八中   校区数量   ']
