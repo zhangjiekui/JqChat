@@ -1,5 +1,7 @@
 from datetime import date, datetime
-from langchain.agents import Tool,tool,load_tools,get_all_tool_names
+from langchain.agents import Tool,tool
+
+from langchain_community.agent_toolkits.load_tools import load_tools,get_all_tool_names
 from langchain_experimental.tools import PythonREPLTool
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_core.runnables import Runnable, RunnableConfig, RunnableLambda
@@ -16,7 +18,7 @@ from jqcode.jq_agent.c0_init_env_models import get_langchain_chat_model
 @tool
 def get_flight_number(dep:str,des:str,date:date) -> str:
     """根据输入的出发地(dep),目的地(des),日期(date),返回航班号。重要:当前日期是{current_date}，日期(date)只接受python datetime.date类型输入。如果日期是不确定的描述，如明天、后天等，可以先使用工具'python_repl_tool'进行计算，并且返回python datetime.date类型结果，具体格式示例如下：2024-04-03。"""
-    result = f"晶奇航空666[{date}]"
+    result = f"晶奇航空666【{date}】"
     print(f"GetFlightNumberTool Result: {result}")
     return result
 current_date = str(datetime.now().date())

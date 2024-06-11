@@ -205,7 +205,7 @@ prompt = lambda x: ChatPromptTemplate.from_messages(
 )
 
 # RAG Chain
-rag_chain = prompt | llm | StrOutputParser()
+rag_node = prompt | llm | StrOutputParser()
 
 ### LLM Generate/Fallback
 # Preamble
@@ -354,11 +354,13 @@ def generate(state:RagSubgraphState):
     print("---GENERATE---")
     question = state["question"]
     documents = state["documents"]
+    messages = state["messages"]
     if not isinstance(documents, list):
       documents = [documents]
 
     # RAG generation
-    generation = rag_chain.invoke({"documents": documents, "question": question})
+    generation = rag_node.invoke({"documents": documents, "question": question, "messages":messages})
+    print(generation)
     generation_message = ToolMessage(content=generation,name='generation',tool_call_id='0')
     return {"documents": documents, "question": question, "generation": generation, "messages":generation_message}
 

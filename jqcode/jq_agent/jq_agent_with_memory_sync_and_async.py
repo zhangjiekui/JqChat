@@ -31,9 +31,9 @@ from jqcode.jq_agent.tools.jq_functions_and_tools import primary_tool_assistant_
 from jqcode.jq_agent.tools.jq_retriever import retriever
 
 # Set UP: LLM, embeddings,web_search_tool
-
-if USING_OLLAMA_FUNCTIONS.lower()=='true':
-    USING_OLLAMA_FUNCTIONS = True
+if isinstance(USING_OLLAMA_FUNCTIONS,str):
+    if USING_OLLAMA_FUNCTIONS.lower()=='true':
+        USING_OLLAMA_FUNCTIONS = True
 
 else:
     USING_OLLAMA_FUNCTIONS = False

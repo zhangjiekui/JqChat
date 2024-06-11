@@ -149,9 +149,9 @@ def supervisor_post_process_node(toolcalls_and_state:dict,supervisor_node, membe
         print('state["question"]不存在！')
         question = message.content
 
-    if question != messages[0].content:
+    if question != messages[-1].content:
         print(f'{question=}')
-        print(f'{messages[0].content=}')
+        print(f'{messages[-1].content=}')
 
 
 

@@ -46,7 +46,10 @@ def agent_node(state, agent, name):
     print(f"~~~~~~~~~~~~~~~~~~~~~~~agent tool[{name}]执行结果~~~~~~~~~~~~~~~~~~~~~~")
     print(result["output"])
     print("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~")
-    return {"messages": [HumanMessage(content=result["output"], name=name)]}
+    from jq_excutable_tool_agent_subgraph import members
+    if name in members:
+        return {"messages": [ToolMessage(content=result["output"], name=name,tool_call_id='-1')],"next":"FINISH"}
+    return {"messages": [ToolMessage(content=result["output"], name=name,tool_call_id='-1')]}
 
 def create_graph_supervisor(llm: ChatOpenAI, system_prompt, members) -> str:
     """An LLM-based router."""
@@ -100,8 +103,9 @@ def sub_graph_enter_chain(message_and_next:dict, members: List[str]):
             "graph_members": ", ".join(members)
         }
     except:
-        print(type(messages))
-        print(messages)
+        # print(type(messages))
+        # print(messages)
+        results = message_and_next
     return results
 
 def get_last_state(state) -> dict:
@@ -139,16 +143,19 @@ def supervisor_post_process_node(toolcalls_and_state:dict,supervisor_node, membe
         print('state["question"]不存在！')
         question = message.content
 
-    if question != messages[0].content:
+    if question != messages[-1].content:
         print(f'{question=}')
-        print(f'{messages[0].content=}')        
+        print(f'{messages[-1].content=}')        
         
 
     if question is None:
         print('question为空！')
         raise Exception('question为空！')    
 
-
+    next = state.get("next",None)
+    if next=="FINISH":
+        print('next=="FINISH"，直接返回')
+        return {"messages":state["messages"],'next': next,"question":question}
     
     tool_calls_list = toolcalls_and_state['toolcalls'].tool_calls
 
@@ -180,7 +187,7 @@ def supervisor_post_process_node(toolcalls_and_state:dict,supervisor_node, membe
             tools_response = tools_response.replace(question,'') # 移除原始问题    
 
             str_messages_with_history += f"""\n中间工具返回信息为:{tools_response}"""
-        retry_n_times = 3
+        retry_n_times = 1
         for i in range(retry_n_times):
             _message = f'{str_messages_with_history} \n错误信息为:{tool_call_parsed_message}'
             print('~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~')
@@ -204,7 +211,8 @@ def supervisor_post_process_node(toolcalls_and_state:dict,supervisor_node, membe
 
     if graph_name=='super_graph':
         ms_num = len(messages)
-        if ms_num<3:
+        last_message = messages[-1]
+        if ms_num<3 or isinstance(last_message,HumanMessage):
             next = "Rag"
         else:
             next = "FINISH"

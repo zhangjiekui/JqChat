@@ -361,7 +361,8 @@ def get_web_search_documents(query,max_doc_nums=4):
     if urls:
         try:
             docs = get_search_result_documents(urls,query,max_doc_nums=max_doc_nums)
-            return docs        
+            if docs:
+                return docs        
         except FunctionTimedOut as e:
             print(f'搜索网页文档结果超时！')
             print(f"失败的原因为：{e}") 

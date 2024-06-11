@@ -19,6 +19,7 @@ from jqchat.kernel_program.main import APP_PORT as KERNEL_APP_PORT
 from jqcode.jq_agent.c0_init_env_models import get_openai,get_openai_client,llm_model_name,api_key
 from jqcode.jq_agent.jq_agent_with_memory_sync_and_async import arun_graph_workflow, run_graph_workflow, coding_relevance_grader
 from jqcode.jq_agent.c0_init_env_models import get_all_knowledge_base
+from jqcode.jq_agent.run_super_graph import arun_super_graph
 
 #todo 保留openai只是暂时不想改代码
 openai = get_openai()
@@ -358,18 +359,20 @@ def agent_entry():
     asyncio.set_event_loop(loop)
 
     code, text, status = None, None, 200
+    text = arun_super_graph(question=user_prompt)
 
-    if is_coding == 'yes':
-        code, text, status = loop.run_until_complete(get_code(user_prompt, user_openai_key, model))
+    # if is_coding == 'yes':
+    #     code, text, status = loop.run_until_complete(get_code(user_prompt, user_openai_key, model))
 
-    else:
-        text = loop.run_until_complete(arun_graph_workflow(question=user_prompt))
-        # text = await loop.run_until_complete(run_graph_workflow(question=user_prompt))
+    # # else:
+    # #     # text = loop.run_until_complete(arun_graph_workflow(question=user_prompt))
+    # #     # text = loop.run_until_complete(arun_super_graph(question=user_prompt))
+    # #     text = arun_super_graph(question=user_prompt)
 
-    print('~~'*30)
-    if code:
-        print('ai_code:')
-        print(code)
+    # print('~~'*30)
+    # if code:
+    #     print('ai_code:')
+    #     print(code)
     loop.close()
     print('~~'*30)
     print('=='*30)

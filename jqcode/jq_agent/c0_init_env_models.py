@@ -37,6 +37,11 @@ api_type =os.getenv("OPENAI_API_TYPE",'open_ai')
 llm_model_name = os.getenv("LLM_MODEL_NAME",'gpt-4')
 # https://python.langchain.com/v0.1/docs/integrations/chat/ollama_functions/
 USING_OLLAMA_FUNCTIONS = os.getenv("USING_OLLAMA_FUNCTIONS",'false')
+if USING_OLLAMA_FUNCTIONS.lower() == 'false' :
+    USING_OLLAMA_FUNCTIONS = False
+else:
+    USING_OLLAMA_FUNCTIONS = True
+
 USING_OLLAMA_LITELLM = False
 prefix = 'ollama_chat/'
 

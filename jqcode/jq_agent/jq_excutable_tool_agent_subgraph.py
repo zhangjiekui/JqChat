@@ -31,14 +31,14 @@ flight_agent = create_agent(
     [get_flight_number],
     "You are a research flight assistant, 根据输入的出发地(dep),目的地(des),日期(date),查询返回航班号",
 )
-flight_node = functools.partial(agent_node, agent=flight_agent, name="Flight")
+flight_node = functools.partial(agent_node, agent=flight_agent, name="get_flight_number")
 
 python_repl_agent = create_agent(
     llm,
     [python_repl_tool],
     "You are a Python assistant. Use this to execute Input(query:str) python commands."
 )
-python_repl_node = functools.partial(agent_node, agent=python_repl_agent, name="PythonRepl")
+python_repl_node = functools.partial(agent_node, agent=python_repl_agent, name="python_repl_tool")
 
 # members = ["Flight", "PythonRepl"]
 members = ["get_flight_number", "python_repl_tool"]
