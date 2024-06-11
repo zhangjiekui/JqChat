@@ -175,7 +175,7 @@ if __name__ == '__main__':
     print("~~~~~~~~~~~~~~~~~~~~~~~~~~~"*5) 
     print("~~~~test_memory~~~~"*5)
     print("~~~~~~~~~~~~~~~~~~~~~~~~~~~"*5)
-    questions_test_memory = ["你知道我叫什么吗？","我叫张结魁，你叫什么呀？我们做好朋友吧","你还记得我叫什么吗?"] 
+    questions_test_memory = ["你知道我叫什么吗？","我叫张结魁，你叫什么呀？我们做好朋友吧","?"] 
     for question in questions_test_memory:
         print(arun_super_graph(question))
 
