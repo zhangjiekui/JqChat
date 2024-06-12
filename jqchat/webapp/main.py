@@ -359,7 +359,9 @@ def agent_entry():
     asyncio.set_event_loop(loop)
 
     code, text, status = None, None, 200
-    text = arun_super_graph(question=user_prompt)
+    config = {"recursion_limit":25,"configurable": {"thread_id": user_id}}
+    print(f"{config=}")
+    text = arun_super_graph(question=user_prompt,config=config)
 
     # if is_coding == 'yes':
     #     code, text, status = loop.run_until_complete(get_code(user_prompt, user_openai_key, model))
