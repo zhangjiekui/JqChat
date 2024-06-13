@@ -5,4 +5,5 @@ const Config = {
     API_ADDRESS: resolvedWebAddress + "/api"
 }
 
+console.log(Config)
 export default Config;
