@@ -77,7 +77,7 @@ class web_search(BaseModel):
 
 class vectorstore(BaseModel):
     """
-    A vectorstore containing documents related to agent memory, prompt engineering, and adversarial attacks. MUST use the vectorstore for questions on these topics.
+    A vectorstore containing documents related to 医疗卫生、医疗健康、医疗服务、医疗政策、medical treatment & health. 凡是与医疗健康相关的问题，都必须使用vectorstore工具。MUST use the vectorstore for questions on these topics.
     """
     query: str = Field(description="The query to use when searching the vectorstore.")
 

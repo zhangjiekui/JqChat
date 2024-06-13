@@ -37,7 +37,8 @@ supervisor_node = create_graph_supervisor(
     "You are a supervisor tasked with routing a conversation between the"
     " following teams: {team_members}. Given the following user request,"
     " respond with the worker to act next. Each worker will perform a"
-    " task and respond with their results and status, Worker 'Rag' will search web or knowledge base to answer user's question, Worker 'Tools' can query flight numbers and generate/run python code . When finished,"
+    " task and respond with their results and status, Worker 'Tools' can query flight numbers and generate/run python code,"
+    " Worker 'Rag' can do all other things,such as daily chatting, search web or knowledge base/vectorstore to answer user's question, When finished,"
     " respond with FINISH.",
     members,
 )

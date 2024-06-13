@@ -208,7 +208,54 @@ if __name__ == '__main__':
     from langchain_core.messages import HumanMessage,SystemMessage
     res = langchain_chat_model.invoke([SystemMessage('请使用中文回答我！'), HumanMessage('你好')])
     print(res)
-    
+
+    ### Build An Index
+    index_name='health'
+    urls = [
+        "https://www.gov.cn/zhengce/content/202406/content_6955904.htm",
+        "https://www.gov.cn/zhengce/2023-03/23/content_5748063.htm",
+        "https://www.gov.cn/zhengce/zhengceku/202305/content_6883704.htm",
+        "https://new.qq.com/rain/a/20220916A0213800",
+        "https://www.gov.cn/zhengce/content/2022-05/20/content_5691424.htm",
+        "https://www.cn-healthcare.com/articlewm/20220211/content-1313937.html",
+        "https://www3.weforum.org/docs/WEF_Global_Health_and_Healthcare_Strategic_Outlook_2023_CN.pdf",
+        "https://www2.deloitte.com/content/dam/Deloitte/cn/Documents/life-sciences-health-care/deloitte-cn-lshc-2023-global-health-care-outlook-zh-230316.pdf",
+        "https://www2.deloitte.com/content/dam/Deloitte/cn/Documents/life-sciences-health-care/cn-lshc-china-lshc-industry-survey-2024-zh-240314.pdf",
+        "https://www.gov.cn/zhengce/2012-12/26/content_2618554.htm"
+    ]
+
+    knowledge_base_list = get_all_knowledge_base(es_connection) 
+    print(f"插入{index_name}前的{knowledge_base_list=}")
+    if es_connection.indices.exists(index=index_name):
+        print(f"已存在index='{index_name}'！跳过插入索引的环节。")
+    else:
+        import re
+        from langchain_community.document_loaders import WebBaseLoader
+        from langchain.text_splitter import RecursiveCharacterTextSplitter
+        # Clean
+        def replace_multiple_newlines(text):
+            return re.sub(r'\n+', '\n', text)
+
+
+        docs = [WebBaseLoader(url).load() for url in urls]
+        docs_list = [item for sublist in docs for item in sublist]
+   
+
+        docs_list_cleaned = []
+        for doc in docs_list:
+            doc.page_content = replace_multiple_newlines(doc.page_content)
+            docs_list_cleaned.append(doc)
+
+        # Split
+        text_splitter = RecursiveCharacterTextSplitter.from_tiktoken_encoder(
+            chunk_size=512, chunk_overlap=0
+        )
+        doc_splits = text_splitter.split_documents(docs_list_cleaned)
+
+        # Add to vectorstore
+        vectorstore = get_es_searchstore_index_documents(documents=doc_splits, es_connection=es_connection,embedding=embed_model,index_name=index_name)
+        print(f"插入{index_name}后的{knowledge_base_list=}")
+
 
     '''
 docker run --shm-size=64g --name xinference103 -d -p 9997:9997 -e XINFERENCE_MODEL_SRC=modelscope -v /home/jqsoft/.xinference:/root/.xinference -v /home/jqsoft/.cache/huggingface:/root/.cache/huggingface -v /home/jqsoft/.cache/modelscope:/root/.cache/modelscope --gpus all xprobe/xinference:latest xinference-local -H 0.0.0.0 --log-level debug

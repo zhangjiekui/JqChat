@@ -31,6 +31,28 @@ git commit -a
 git push
 ```
 
+## linux系统环境变量
+
+```
+export CUDA_VISIBLE_DEVICES='0,1,2,3'
+export LM_USE_MODELSCOPE=True
+export XINFERENCE_DISABLE_VLLM=0
+export VLLM_USE_MODELSCOPE=True
+export HF_ENDPOINT=https://hf-mirror.com
+export OLLAMA_MODEL_DIR=/data/ollama_modles
+export RAY_DEDUP_LOGS=0
+export XINFERENCE_MODEL_SRC=modelscope
+```
+## pip / conda源
+
+```
+pip config set global.index-url https://mirrors.aliyun.com/pypi/simple/
+
+conda config --add channels https://mirrors.aliyun.com/anaconda/pkgs/main/
+conda config --add channels https://mirrors.aliyun.com/anaconda/pkgs/free/
+conda config --set show_channel_urls yes
+
+```
 ## Xinference LLM
 
 ### Docker
@@ -90,31 +112,54 @@ max_model_len默认值4096，可能会报错误： Input prompt (4108 tokens) is
 Initializing an LLM engine： max_seq_len=4096
 RayWorkerVllm：If you are running out of memory, consider decreasing `gpu_memory_utilization` or enforcing eager mode. You can also reduce the `max_num_seqs` as needed to decrease memory usage.
 
-#### linux系统环境变量
+## HF模型下载方法：
 
+在目标文件夹下/data/models：
+1、安装hfd.sh
 ```
-export CUDA_VISIBLE_DEVICES='0,1,2,3'
-export LM_USE_MODELSCOPE=True
-export XINFERENCE_DISABLE_VLLM=0
-export VLLM_USE_MODELSCOPE=True
-export HF_ENDPOINT=https://hf-mirror.com
-export OLLAMA_MODEL_DIR=/data/ollama_modles
-export RAY_DEDUP_LOGS=0
-export XINFERENCE_MODEL_SRC=modelscope
+wget https://hf-mirror.com/hfd/hfd.sh
+chmod a+x hfd.sh
 ```
-
-#### pip / conda源
-
+2、安装aria2
 ```
-pip config set global.index-url https://mirrors.aliyun.com/pypi/simple/
-
-conda config --add channels https://mirrors.aliyun.com/anaconda/pkgs/main/
-conda config --add channels https://mirrors.aliyun.com/anaconda/pkgs/free/
-conda config --set show_channel_urls yes
-
+apt install aria2
 ```
 
-## Installation
+3、下载模型（含用户名和hf token,hf token可能需要在HF站点重新获取更新）
+```
+./hfd.sh jinaai/jina-embeddings-v2-base-zh --tool aria2c -x 4 --hf_username nwzjk --hf_token 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
+
+./hfd.sh maidalun1020/bce-embedding-base_v1 --tool aria2c -x 4 --hf_username nwzjk --hf_token hf_BmTHDRaTNXlDfQiVTfPZBCMlcbaDVqHlX
+
+./hfd.sh maidalun1020/bce-reranker-base_v1 --tool aria2c -x 4 --hf_username nwzjk --hf_token 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
+```
+
+## Elasticsearch https://www.elastic.co/guide/en/elasticsearch/reference/current/docker.html
+### 
+```
+docker network create elastic
+sysctl -w vm.max_map_count=262144
+docker run --name es105 --net elastic -p 9200:9200 -it -m 2GB docker.elastic.co/elasticsearch/elasticsearch:8.14.0
+```
+### 复制elastic user password and an enrollment token for Kibana.
+#### elastic user
+elastic
+#### elastic user password ：
+esnNFWQbCIspxTPGwOom
+#### enrollment token for Kibana：
+eyJ2ZXIiOiI4LjE0LjAiLCJhZHIiOlsiMTcyLjE4LjAuMjo5MjAwIl0sImZnciI6ImQ1N2U2MTk5ZDFhMTE1ZmMzZTBkZjEzNGQ0NzA0Yjk3Y2Q0NzA1NWFkYmQxNjFhNDQxOWQzZTY4MWMwNTBmMzciLCJrZXkiOiIyQUhINjQ4QmQtWTAwMy14bl9wVDp2ZVRzUVhyOVJzQ08tNTlXNDh0OGlRIn0=
+#### HTTP CA certificate SHA-256 fingerprint:
+d57e6199d1a115fc3e0df134d4704b97cd47055adbd161a4419d3e681c050f37
+
+docker run -e "ENROLLMENT_TOKEN=<token>" docker.elastic.co/elasticsearch/elasticsearch:8.14.0
+
+重新生成elastic user password and an enrollment token for Kibana.
+```
+docker exec -it es105 /usr/share/elasticsearch/bin/elasticsearch-reset-password -u elastic
+docker exec -it es105 /usr/share/elasticsearch/bin/elasticsearch-create-enrollment-token -s kibana
+```
+
+## 本项目的Installation
 
 ubuntu上推荐下面的安装和运行方法:
 
