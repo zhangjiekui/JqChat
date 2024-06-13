@@ -51,7 +51,8 @@ function App() {
     try {
       const response = await fetch(`${Config.WEB_ADDRESS}/docs`);
       const json = await response.json();
-      setDocs(Object.keys(json));
+     // setDocs(Object.keys(json));
+     setDocs(json)
     } catch (e) {
       console.error(e);
     };
