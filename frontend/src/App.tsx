@@ -24,11 +24,11 @@ const uuid=() =>{
   return uuidValue;  
 }  
 
-
+const user=uuid();
 
 function App() {
   const COMMANDS = ["reset"];
-  const user=uuid();
+ 
   let [MODELS, setModels] = useState([{displayName: "GPT-3.5", name: "gpt-3.5-turbo"}]);
 
   useEffect(() => {
