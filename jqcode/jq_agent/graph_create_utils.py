@@ -134,6 +134,8 @@ def supervisor_post_process_node(toolcalls_and_state:dict,supervisor_node, membe
     state = toolcalls_and_state["state"]
     navigated_sub_nodes = state.get("navigated_sub_nodes",[])
     print(f"supervisor_post_process_node中获取到的navigated_sub_nodes:{navigated_sub_nodes}")
+    navigated_question_and_tool = state.get("navigated_question_and_tool", None) # {question:tool_name}
+    print(f"supervisor_post_process_node中获取到的navigated_question_and_tool:{navigated_question_and_tool}")
     if not navigated_sub_nodes:
         navigated_sub_nodes = []
     messages = state["messages"]
@@ -186,10 +188,7 @@ def supervisor_post_process_node(toolcalls_and_state:dict,supervisor_node, membe
                 print(f"Current in {graph_name}, Next to: {next}")
                 return {"messages":messages,'next':next,"question":question,"navigated_sub_nodes":navigated_sub_nodes}
         elif graph_name=='tool_sub_graph':
-            navigated_question_and_tool = state.get("navigated_question_and_tool", None) # {question:tool_name}
-            print(f"supervisor_post_process_node中获取到的navigated_question_and_tool:{navigated_question_and_tool}")
             print(f"IN tool_sub_graph: '{question}' Next to: {next}")
-
             if navigated_question_and_tool:
                 navigated_tool_name = navigated_question_and_tool.get(question, None)
                 print(f"'{question}' already navigated_tool_name:{navigated_tool_name}")

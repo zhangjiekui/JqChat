@@ -89,7 +89,6 @@ def arun_super_graph(question:str,config = {"recursion_limit":25,"configurable":
 
         coro = super_graph_compiled_async.ainvoke(inputs, config)
         value = asyncio.run(coro)
-        print(value.keys())
         condidate_keys = ['supervisor']
         
         for key in condidate_keys:
@@ -110,7 +109,9 @@ def arun_super_graph(question:str,config = {"recursion_limit":25,"configurable":
                     _index0 = result.rindex('\nFinal Answer:')
                     _index1 = result.rindex('\nAction:')
                     result = result[_index0:_index1].replace('\nFinal Answer:','')
-
+                elif '\nFinal Answer:' in result:
+                    _index0 = result.rindex('\nFinal Answer:')
+                    result = result[_index0:].replace('\nFinal Answer:','')
 
                 print(f"最后答案：{result}")
                 print("~~~输出最终执行结果~~~")
