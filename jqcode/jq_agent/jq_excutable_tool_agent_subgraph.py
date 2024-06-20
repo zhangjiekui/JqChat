@@ -17,6 +17,8 @@ class ToolSubgraphState(TypedDict):
     next: str
     navigated_sub_nodes: List[str]
     question:str
+    navigated_question_and_tool:dict ## {question:tool_name}
+
 
 
 supervisor_agent = create_graph_supervisor(

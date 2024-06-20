@@ -111,6 +111,8 @@ def sub_graph_enter_chain(message_and_next:dict, members: List[str]):
 def get_last_state(state) -> dict:
     navigated_sub_nodes = state.get("navigated_sub_nodes",[])
     print(f"get_last_state中获取到的navigated_sub_nodes:{navigated_sub_nodes}")
+    navigated_question_and_tool = state.get("navigated_question_and_tool", None) # {question:tool_name}
+    print(f"get_last_state中获取到的navigated_question_and_tool:{navigated_question_and_tool}")
     return state
 
 def get_custom_supervisor_node(supervisor_node, members, graph_name):
@@ -183,22 +185,40 @@ def supervisor_post_process_node(toolcalls_and_state:dict,supervisor_node, membe
                 navigated_sub_nodes.append(next)
                 print(f"Current in {graph_name}, Next to: {next}")
                 return {"messages":messages,'next':next,"question":question,"navigated_sub_nodes":navigated_sub_nodes}
+        elif graph_name=='tool_sub_graph':
+            navigated_question_and_tool = state.get("navigated_question_and_tool", None) # {question:tool_name}
+            print(f"supervisor_post_process_node中获取到的navigated_question_and_tool:{navigated_question_and_tool}")
+            print(f"IN tool_sub_graph: '{question}' Next to: {next}")
+
+            if navigated_question_and_tool:
+                navigated_tool_name = navigated_question_and_tool.get(question, None)
+                print(f"'{question}' already navigated_tool_name:{navigated_tool_name}")
+                if next==navigated_tool_name:
+                    print(f"Current in {graph_name}, Next to: {next}")
+                    print(f"But question '{question}' has already handled by '{navigated_tool_name}',now should not Next to '{next}' again")
+                    print(f"So let next='FINISH'")
+                    next="FINISH"
+                    print(f"Current in {graph_name}, Next to: {next}")
+                    return {"messages":messages,'next':next,"question":question,"navigated_question_and_tool":{}}
+
+            # 不满足上面的条件
+            return {"messages":messages,'next':next,"question":question,"navigated_question_and_tool":{question:next}}
         else:
-            return {"messages":messages,'next':next,"question":question}
+            return {"messages":messages,'next':next,"question":question,"navigated_question_and_tool":{}}
 
     else:
         if graph_name=='super_graph':
             print(f"Current in {graph_name}, {graph_name} outputed next: {next} is None")
-            _navigated_sub_node=set(members).intersection(set(navigated_sub_nodes))
-            # print(f"_navigated_sub_node:{_navigated_sub_node}")
-            if _navigated_sub_node:
-                print(f"But _navigated_sub_node:{_navigated_sub_node} 已经存在")                
+            navigated_sub_node=set(members).intersection(set(navigated_sub_nodes))
+            # print(f"navigated_sub_node:{navigated_sub_node}")
+            if navigated_sub_node:
+                print(f"But navigated_sub_node:{navigated_sub_node} 已经存在")                
                 print(f"So let next='FINISH'")
                 next="FINISH"
                 print(f"Current in {graph_name}, Next to: {next}")
                 return {"messages":messages,'next':next,"question":question,"navigated_sub_nodes":[]}
             else:
-               print(f"But navigated_sub_node:{_navigated_sub_node} 为空")
+               print(f"But navigated_sub_node:{navigated_sub_node} 为空")
                print(f"So let next='Rag'")
                next="Rag"
                print(f"Current in {graph_name}, Next to: {next}")

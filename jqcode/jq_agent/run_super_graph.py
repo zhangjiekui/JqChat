@@ -96,11 +96,11 @@ def arun_super_graph(question:str,config = {"recursion_limit":25,"configurable":
             if key in value.keys():
                 value = value.get('supervisor',None)
         next = value.get('next',None)
-        print(next)
+        # print(next)
         messages = value.get('messages',None)
         last_message = messages[-1]
-        print(type(last_message))
-        print(f"{last_message.content=}")        
+        # print(type(last_message))
+        # print(f"{last_message.content=}")        
         if next == "FINISH":
             if isinstance(last_message,(ToolMessage,AIMessage)):
                 print("~~~输出最终执行结果~~~")
