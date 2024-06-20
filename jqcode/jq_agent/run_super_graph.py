@@ -102,12 +102,17 @@ def arun_super_graph(question:str,config = {"recursion_limit":25,"configurable":
         print(type(last_message))
         print(f"{last_message.content=}")        
         if next == "FINISH":
-
             if isinstance(last_message,(ToolMessage,AIMessage)):
                 print("~~~输出最终执行结果~~~")
                 print(f"用户问题：{value['question']}")
                 result = last_message.content
-                print(f"最后答案：{last_message.content}")
+                if '\nFinal Answer:' in result and '\nAction:' in result:
+                    _index0 = result.rindex('\nFinal Answer:')
+                    _index1 = result.rindex('\nAction:')
+                    result = result[_index0:_index1].replace('\nFinal Answer:','')
+
+
+                print(f"最后答案：{result}")
                 print("~~~输出最终执行结果~~~")
                 # asyncio.get_running_loop().stop()
                 return result

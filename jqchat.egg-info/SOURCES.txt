@@ -21,7 +21,7 @@ jqchat/webapp/test_litellm.py
 jqchat/webapp/static/index.html
 jqchat/webapp/static/assets/assistant.svg
 jqchat/webapp/static/assets/index-0d7e582a.css
-jqchat/webapp/static/assets/index-acf339d3.js
+jqchat/webapp/static/assets/index-37af0b7b.js
 jqcode/__init__.py
 jqcode/langgraph_adaptive_qwen15_70B.py
 jqcode/langgraph_adaptive_qwen15_70B110B.py

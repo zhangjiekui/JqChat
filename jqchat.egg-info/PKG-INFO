@@ -2,18 +2,11 @@ Metadata-Version: 2.1
 Name: jqchat
 Version: 0.0.1
 Summary: Agent Based Rag&Chat&CodeInterpreter with Interactive UI
+Home-page: UNKNOWN
+License: UNKNOWN
+Platform: UNKNOWN
 Description-Content-Type: text/markdown
 License-File: LICENSE
-Requires-Dist: langchain>=0.1.16
-Requires-Dist: openai>=1.2
-Requires-Dist: ipykernel<7,>=6
-Requires-Dist: snakemq<2,>=1
-Requires-Dist: requests<3,>=2
-Requires-Dist: Flask<4,>=3
-Requires-Dist: flask-cors<5,>=4
-Requires-Dist: python-dotenv<2,>=1
-Requires-Dist: pandas<3,>=2
-Requires-Dist: matplotlib<4,>=3
 
 ## Git同步
 
@@ -247,3 +240,5 @@ Simply ask the OpenAI model to do something and it will generate & execute the c
 Read the [blog post](https://ricklamers.io/posts/gpt-code) to find out more. This is the tech architecture:
 
 <img src="https://github.com/zhangjiekui/AgentRagChatCI/blob/main/frontend/public/assets/tech-architecture-diagram.png" alt="Tech Architecture Diagram" width=600 />
+
+

@@ -1,10 +1,10 @@
-langchain>=0.1.16
-openai>=1.2
-ipykernel<7,>=6
-snakemq<2,>=1
-requests<3,>=2
 Flask<4,>=3
 flask-cors<5,>=4
-python-dotenv<2,>=1
-pandas<3,>=2
+ipykernel<7,>=6
+langchain>=0.1.16
 matplotlib<4,>=3
+openai>=1.2
+pandas<3,>=2
+python-dotenv<2,>=1
+requests<3,>=2
+snakemq<2,>=1

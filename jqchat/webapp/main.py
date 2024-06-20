@@ -334,6 +334,8 @@ def inject_context():
 @app.route('/generate', methods=['POST'])
 # def generate_code():
 def agent_entry():
+    print('============================================================')
+    print('============================================================')
     print('触发python_backend......jqchat/webapp/main.py#L257')
     user_prompt = request.json.get('prompt', '')
     print('=='*30)
@@ -348,15 +350,15 @@ def agent_entry():
     # model = request.json.get('model', llm_model_name)
 
 
-    response =  coding_relevance_grader.invoke({"question": user_prompt})
-    print(f"判断：Whether question '{user_prompt}' is related to [Code/Data/File]? 判断结果：{response=}")
-    try:
-        is_coding = response.k
-    except:
-        is_coding = 'No'
+    # response =  coding_relevance_grader.invoke({"question": user_prompt})
+    # print(f"判断：Whether question '{user_prompt}' is related to [Code/Data/File]? 判断结果：{response=}")
+    # try:
+    #     is_coding = response.k
+    # except:
+    #     is_coding = 'No'
 
-    loop = asyncio.new_event_loop()
-    asyncio.set_event_loop(loop)
+    # loop = asyncio.new_event_loop()
+    # asyncio.set_event_loop(loop)
 
     code, text, status = None, None, 200
     config = {"recursion_limit":25,"configurable": {"thread_id": user_id}}
@@ -375,7 +377,7 @@ def agent_entry():
     # if code:
     #     print('ai_code:')
     #     print(code)
-    loop.close()
+    # loop.close()
     print('~~'*30)
     print('=='*30)
     # Append all messages to the message buffer for later use

@@ -15,6 +15,10 @@ from langchain_community.chat_models import ChatOllama
 from langchain_experimental.llms.ollama_functions import OllamaFunctions
 
 from dotenv import load_dotenv
+os.environ['LANGCHAIN_TRACING_V2'] = 'true'
+os.environ['LANGCHAIN_ENDPOINT'] = 'https://api.smith.langchain.com'
+os.environ['LANGCHAIN_API_KEY'] = "ls__fe150087fa0643f28b3eae3a07d57529"
+os.environ['TAVILY_API_KEY'] = "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"
 
 def load_project_env(): 
     print('\n\n')
@@ -35,6 +39,9 @@ base_url=os.getenv("OPENAI_API_BASE",'http://10.1.150.105:4000/v1')
 api_key =os.getenv("OPENAI_API_KEY",'NotNeeded')
 api_type =os.getenv("OPENAI_API_TYPE",'open_ai')
 llm_model_name = os.getenv("LLM_MODEL_NAME",'gpt-4')
+
+LANGCHAIN_TRACING_V2 = os.environ['LANGCHAIN_TRACING_V2']
+print(f'{LANGCHAIN_TRACING_V2=}')
 # https://python.langchain.com/v0.1/docs/integrations/chat/ollama_functions/
 USING_OLLAMA_FUNCTIONS = os.getenv("USING_OLLAMA_FUNCTIONS",'false')
 if USING_OLLAMA_FUNCTIONS.lower() == 'false' :

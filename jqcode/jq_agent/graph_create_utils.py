@@ -24,7 +24,7 @@ def create_agent(
     """Create a function-calling agent and add it to the graph."""
     system_prompt += "\nWork autonomously according to your specialty, using the tools available to you."
     " Do not ask for clarification."
-    " You are chosen for a reason! You are one of the following graph members: {graph_members}."
+    # " You are chosen for a reason! You are one of the following graph members: {graph_members}."
     prompt = ChatPromptTemplate.from_messages(
         [
             (
@@ -109,6 +109,8 @@ def sub_graph_enter_chain(message_and_next:dict, members: List[str]):
     return results
 
 def get_last_state(state) -> dict:
+    navigated_sub_nodes = state.get("navigated_sub_nodes",[])
+    print(f"get_last_state中获取到的navigated_sub_nodes:{navigated_sub_nodes}")
     return state
 
 def get_custom_supervisor_node(supervisor_node, members, graph_name):
@@ -123,17 +125,18 @@ def get_custom_supervisor_node(supervisor_node, members, graph_name):
     return custom_supervisor_node
 
 def supervisor_post_process_node(toolcalls_and_state:dict,supervisor_node, members, graph_name) -> dict:
-
-    next = None
+    retry_n_times = 1
     tool_call_parsed_message =  None
-
     if 'FINISH' not in members:
-        members = members + ['FINISH']
-
+        members_with_finish = members + ['FINISH']
     state = toolcalls_and_state["state"]
+    navigated_sub_nodes = state.get("navigated_sub_nodes",[])
+    print(f"supervisor_post_process_node中获取到的navigated_sub_nodes:{navigated_sub_nodes}")
+    if not navigated_sub_nodes:
+        navigated_sub_nodes = []
     messages = state["messages"]
-    message = state["messages"][-1]
-
+    message = messages[-1]
+    toolcalls_message = toolcalls_and_state["toolcalls"]
     print('*****************'*5)
     print(f"Enter in {graph_name},{len(messages)=}")
     print('*****************'*2)
@@ -142,38 +145,73 @@ def supervisor_post_process_node(toolcalls_and_state:dict,supervisor_node, membe
     if question is None:
         print('state["question"]不存在！')
         question = message.content
-
-    if question != messages[-1].content:
-        print(f'{question=}')
-        print(f'{messages[-1].content=}')        
-        
-
     if question is None:
         print('question为空！')
         raise Exception('question为空！')    
+   
+    # if next=="FINISH":
+    #     print('next=="FINISH"，直接返回')
+    #     print(f"return_state_messages:\n{messages}") # todo
+    #     return {"messages":messages,'next': next,"question":question}
+    #tool_calls_list = [{'args': {'next': '中国科学技术大学的简要介绍'}, 'type': 'Search'}]    
+    tool_calls_list = toolcalls_message.tool_calls
 
-    next = state.get("next",None)
-    if next=="FINISH":
-        print('next=="FINISH"，直接返回')
-        return {"messages":state["messages"],'next': next,"question":question}
-    
-    tool_calls_list = toolcalls_and_state['toolcalls'].tool_calls
 
-    # tool_calls_list = [{'args': {'next': '中国科学技术大学的简要介绍'}, 'type': 'Search'}]
     print('~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~')
-    print("导航输出的原始工具列表")
-    print(tool_calls_list)
-    if tool_calls_list:
-        pass
+    print(f"导航输出的原始工具列表:{tool_calls_list}")
     print('~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~')
-    next, tool_call_parsed_message = _parse_next(tool_calls_list,members)    
+    next, tool_call_parsed_message = _parse_next(tool_calls_list,members_with_finish)    
     if next:
-        print('*****************')
-        print(f"Current in {graph_name}, Next to {next}")
         print('*****************'*5)
-        return {"messages":state["messages"],'next':next,"question":question}
-    
+        print(f"Current in {graph_name}, {graph_name} outputed next: {next}")
+        print('*****************'*5)
+        if graph_name=='super_graph':
+            if next=='FINISH' and len(navigated_sub_nodes)==0:
+                print(f"The output next '{next}', next=='FINISH', but 'len(navigated_sub_nodes)==0',we have not answer the question"  )
+                print(f"So let next='Rag'")
+                next="Rag"
+                print(f"Current in {graph_name}, Next to: {next}")
+                navigated_sub_nodes.append(next)
+                return {"messages":messages,'next':next,"question":question,"navigated_sub_nodes":navigated_sub_nodes}  
+            if next in navigated_sub_nodes:
+                print(f"The output next '{next}' is in navigated_sub_nodes '{navigated_sub_nodes}'")
+                print(f"So let next='FINISH'")
+                next="FINISH"
+                print(f"Current in {graph_name}, Next to: {next}")
+                return {"messages":messages,'next':next,"question":question,"navigated_sub_nodes":[]}
+            else:
+                navigated_sub_nodes.append(next)
+                print(f"Current in {graph_name}, Next to: {next}")
+                return {"messages":messages,'next':next,"question":question,"navigated_sub_nodes":navigated_sub_nodes}
+        else:
+            return {"messages":messages,'next':next,"question":question}
+
     else:
+        if graph_name=='super_graph':
+            print(f"Current in {graph_name}, {graph_name} outputed next: {next} is None")
+            _navigated_sub_node=set(members).intersection(set(navigated_sub_nodes))
+            # print(f"_navigated_sub_node:{_navigated_sub_node}")
+            if _navigated_sub_node:
+                print(f"But _navigated_sub_node:{_navigated_sub_node} 已经存在")                
+                print(f"So let next='FINISH'")
+                next="FINISH"
+                print(f"Current in {graph_name}, Next to: {next}")
+                return {"messages":messages,'next':next,"question":question,"navigated_sub_nodes":[]}
+            else:
+               print(f"But navigated_sub_node:{_navigated_sub_node} 为空")
+               print(f"So let next='Rag'")
+               next="Rag"
+               print(f"Current in {graph_name}, Next to: {next}")
+               navigated_sub_nodes.append(next)
+               return {"messages":messages,'next':next,"question":question,"navigated_sub_nodes":navigated_sub_nodes}
+        else:
+            print(f"Current in {graph_name}, {graph_name} outputed next: {next} is None")
+            print(f"But we are already in {graph_name}")                
+            print(f"So let next='FINISH'")
+            next="FINISH"
+            return {"messages":messages,'next':next,"question":question}    
+
+        print(f"Current in {graph_name}, {graph_name} outputed next: {next} is None, and Not in 'super_graph', we have to retry......")
         if question == message.content:
             tools_response_messages = messages[1:]
         else:
@@ -187,24 +225,24 @@ def supervisor_post_process_node(toolcalls_and_state:dict,supervisor_node, membe
             tools_response = tools_response.replace(question,'') # 移除原始问题    
 
             str_messages_with_history += f"""\n中间工具返回信息为:{tools_response}"""
-        retry_n_times = 1
+        
         for i in range(retry_n_times):
             _message = f'{str_messages_with_history} \n错误信息为:{tool_call_parsed_message}'
             print('~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~')
             print(f"导航[第{i+1}次重试]的问题及附加反馈信息为：")
             print(_message)
-            retry_result = supervisor_node.invoke({"messages":[HumanMessage(content=_message)],"team_members":members}) .tool_calls
+            retry_result = supervisor_node.invoke({"messages":[HumanMessage(content=_message)],"team_members":members_with_finish}) .tool_calls
             # retry_result = supervisor_node.invoke([_message]) .tool_calls           
             print('~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~')
             print(f"输出的工具列表：")
             print(retry_result)
             print('~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~')
-            next, tool_call_parsed_message = _parse_next(retry_result,members)
+            next, tool_call_parsed_message = _parse_next(retry_result,members_with_finish)
             if next:
                 print('*****************')
                 print(f"Current in {graph_name}, Next to {next}")
                 print('*****************'*5)                
-                return {"messages":state["messages"],'next':next,"question":question}
+                return {"messages":messages,'next':next,"question":question}
     
     print(f"无法正常导航到下一节点，已重试{retry_n_times}次！启用自定义规则")
 
@@ -221,7 +259,7 @@ def supervisor_post_process_node(toolcalls_and_state:dict,supervisor_node, membe
     print('*****************')
     print(f"Current in {graph_name}, Next to {next}")
     print('*****************'*5)
-    return {"messages":state["messages"],'next': next,"question":question}
+    return {"messages":messages,'next': next,"question":question}
 
 def _parse_next(tool_calls_list, members):
     tool_call_parsed_message = ''
@@ -260,7 +298,7 @@ def _parse_next(tool_calls_list, members):
     else:        
         next = None            
         tool_call_parsed_message = f"未返回有效的工具调用列表。请重试，务必返回一个有效的工具（Tool）/函数（Function）调用"
-        print(tool_call_parsed_message)
+        # print(tool_call_parsed_message)
         
     return next,tool_call_parsed_message
 """

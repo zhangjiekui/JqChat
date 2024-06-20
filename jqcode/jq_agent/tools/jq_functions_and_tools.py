@@ -25,9 +25,9 @@ current_date = str(datetime.now().date())
 get_flight_number.description= get_flight_number.description.replace("{current_date}",current_date)
 
 # 使用python_repl并包装成Agent工具 【代码执行层面】
-print('---------------------------------------------------------')
-python_repl = PythonREPLTool()
-print(python_repl.run("print('---------------------------------------------------------')")) #先运行一遍，后面似乎就不再会输出警告信息: Python REPL can execute arbitrary code. Use with caution.
+# print('---------------------------------------------------------')
+# python_repl = PythonREPLTool()
+# print(python_repl.run("print('---------------------------------------------------------')")) #先运行一遍，后面似乎就不再会输出警告信息: Python REPL can execute arbitrary code. Use with caution.
 
 @tool
 def python_repl_tool(query:str) -> str: 

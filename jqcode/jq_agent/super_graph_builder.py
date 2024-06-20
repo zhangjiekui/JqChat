@@ -37,8 +37,8 @@ supervisor_node = create_graph_supervisor(
     "You are a supervisor tasked with routing a conversation between the"
     " following teams: {team_members}. Given the following user request,"
     " respond with the worker to act next. Each worker will perform a"
-    " task and respond with their results and status, Worker 'Tools' can query flight numbers and generate/run python code,"
-    " Worker 'Rag' can do all other things,such as daily chatting, search web or knowledge base/vectorstore to answer user's question, When finished,"
+    " task and respond with their results and status, Worker 'Tools' Only responsible for tool calls，such as query flight numbers and generate/run python code,"
+    " while Worker 'Rag' responsible for all other things, such as daily greetings and chatting, search web or knowledge base/vectorstore to answer user's question, When finished,"
     " respond with FINISH.",
     members,
 )
@@ -49,6 +49,7 @@ class SuperState(TypedDict):
     question:str
     next: str
     team_members: List[str]
+    navigated_sub_nodes: List[str]
 
 
 def join_graph(response: dict):

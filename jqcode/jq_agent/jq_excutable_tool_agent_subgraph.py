@@ -15,6 +15,7 @@ class ToolSubgraphState(TypedDict):
     # Used to route work. The supervisor calls a function
     # that will update this every time it makes a decision
     next: str
+    navigated_sub_nodes: List[str]
     question:str
 
 

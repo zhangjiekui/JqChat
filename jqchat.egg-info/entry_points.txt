@@ -1,2 +1,3 @@
 [console_scripts]
 jqchat = jqchat.main:main
+

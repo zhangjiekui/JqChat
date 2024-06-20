@@ -39,10 +39,28 @@ conda config --set show_channel_urls yes
 ## Xinference LLM
 
 ### Docker
+{
+    "runtimes": {
+        "nvidia": {
+            "args": [],
+            "path": "nvidia-container-runtime"
+        }
+    },
+    "registry-mirrors": [
+      "https://docker.m.daocloud.io",
+      "https://docker.nju.edu.cn",
+      "https://5vkaailq.mirror.aliyuncs.com",
+      "http://hub-mirror.c.163.com",
+      "https://docker.mirrors.ustc.edu.cn"
+    ]
+}
+
 
 #### 当前使用版本
 
-原版/最新版是xinference 0.11.1 (2024-05-21)
+直接运行：XINFERENCE_HOME=/data/xinference xinference-local -H 0.0.0.0 --log-level debug 
+
+原版/最新版是xinference 0.12.1 (2024-06-18)
 
 #### 更新镜像版本
 
@@ -52,6 +70,8 @@ docker pull xprobe/xinference:latest
 
 ```
 docker run --shm-size=64g --name xinferencev111 -d -p 9997:9997 -e XINFERENCE_MODEL_SRC=modelscope -e HF_ENDPOINT=https://hf-mirror.com -v /home/jqsoft/.xinference:/root/.xinference -v /home/jqsoft/.cache/huggingface:/root/.cache/huggingface -v /home/jqsoft/.cache/modelscope:/root/.cache/modelscope -e CONTEXT_LENGTH=10000 -e NUM_GPUS=4 --gpus all xprobe/xinference:latest xinference-local -H 0.0.0.0 --log-level debug 
+
+docker run --shm-size=64g --name xinferencev121 -d -p 9997:9997 -e XINFERENCE_MODEL_SRC=modelscope -e HF_ENDPOINT=https://hf-mirror.com -v /root/.xinference:/root/.xinference -v /root/.cache/huggingface:/root/.cache/huggingface -v /root/.cache/modelscope:/root/.cache/modelscope -e CONTEXT_LENGTH=10000 -e NUM_GPUS=4 --gpus all xprobe/xinference:latest xinference-local -H 0.0.0.0 --log-level debug
 ```
 
 ##### 参数

@@ -51,6 +51,7 @@ class RagSubgraphState(TypedDict):
     """
     team_members: List[str]
     next: str
+    navigated_sub_nodes: List[str]
     tool_members: List[str]
     question : str
     generation : str
@@ -331,6 +332,7 @@ def llm_fallback(state:RagSubgraphState):
     
     messages_content_without_repeated = sorted(set(messages_content),key=messages_content.index)                        
     context_str = ';'.join(messages_content_without_repeated)
+    print(f'{context_str=}')
     print(f'{len(context_str)=}')
 
     context_str = context_str[-1000:]
@@ -339,7 +341,7 @@ def llm_fallback(state:RagSubgraphState):
 
     generation = llm_chain.invoke({"question": question,"context":context_str})
     ai_message = AIMessage(content=generation)
-    return {"messages": ai_message, "generation": generation}
+    return {"messages": ai_message, "generation": generation, "navigated_sub_nodes":["Rag"]}
 
 def generate(state:RagSubgraphState):
     """
@@ -488,19 +490,11 @@ def route_question(state:RagSubgraphState):
     elif datasource == 'code_execution':
         print("---ROUTE QUESTION TO CODE EXECUTION---")
         return "code_execution"
-    elif datasource in excutable_tool_names:
-        print("---ROUTE QUESTION TO TOOL ASSISTANT---")
-
-
-        # upadated_messages_source = add_messages(state["messages"],[source])
-        # tool_excute_result = excutable_tool_node.invoke({"messages":upadated_messages_source})
-        # upadated_messages_result = add_messages(upadated_messages_source,tool_excute_result['messages'])
-        # state["messages"] = upadated_messages_result
-        # print(tool_excute_result)
-
-        return "tool_assistant"
-
+    elif datasource == 'direct_response':
+        print("---ROUTE QUESTION TO LLM---")
+        return "llm_fallback"
     else: 
+        print(f"---返回的导航字段为:{datasource}，该字段不在导航列表内，ROUTE QUESTION TO LLM---")
         print("---ROUTE QUESTION TO LLM---")
         return "llm_fallback"
 
