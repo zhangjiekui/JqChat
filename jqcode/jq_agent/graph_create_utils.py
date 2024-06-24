@@ -15,6 +15,7 @@ from langchain.agents.output_parsers.tools import ToolsAgentOutputParser
 
 from langgraph.graph import StateGraph
 from jqcode.jq_agent.c0_init_env_models import get_langchain_chat_model
+from jqcode.jq_agent.c0_init_env_models import filter_and_get_messages_relevant_to_query
 
 def create_agent(
     llm: ChatOpenAI,
@@ -113,6 +114,20 @@ def get_last_state(state) -> dict:
     print(f"get_last_state中获取到的navigated_sub_nodes:{navigated_sub_nodes}")
     navigated_question_and_tool = state.get("navigated_question_and_tool", None) # {question:tool_name}
     print(f"get_last_state中获取到的navigated_question_and_tool:{navigated_question_and_tool}")
+
+    # if navigated_question_and_tool is None:
+    #     if "Tools" in navigated_sub_nodes:
+    #         pass
+
+
+    messages = state.get("messages",[])
+    print(f'原始的消息数量={len(messages)}')
+    query =  state.get("question",None)
+    filtered_messages = filter_and_get_messages_relevant_to_query(query,messages)
+    print(f'过滤后的消息数量={len(filtered_messages)}')
+    state["messages"] = filtered_messages
+    filtered_state_messages = state.get("messages",[])
+    print(f'state中过滤后的消息数量={len(filtered_state_messages)}')
     return state
 
 def get_custom_supervisor_node(supervisor_node, members, graph_name):
@@ -164,7 +179,8 @@ def supervisor_post_process_node(toolcalls_and_state:dict,supervisor_node, membe
     print('~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~')
     print(f"导航输出的原始工具列表:{tool_calls_list}")
     print('~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~')
-    next, tool_call_parsed_message = _parse_next(tool_calls_list,members_with_finish)    
+    next, tool_call_parsed_message = _parse_next(tool_calls_list,members_with_finish)  
+    # todo: 需增加最后消息不是HumanMessage并且content真正存在才能在总图中让NEXT = "FINISH" 
     if next:
         print('*****************'*5)
         print(f"Current in {graph_name}, {graph_name} outputed next: {next}")
@@ -179,8 +195,18 @@ def supervisor_post_process_node(toolcalls_and_state:dict,supervisor_node, membe
                 return {"messages":messages,'next':next,"question":question,"navigated_sub_nodes":navigated_sub_nodes}  
             if next in navigated_sub_nodes:
                 print(f"The output next '{next}' is in navigated_sub_nodes '{navigated_sub_nodes}'")
-                print(f"So let next='FINISH'")
-                next="FINISH"
+                if isinstance(message,(ToolMessage,AIMessage)) and message.content:                    
+                    print(f"The last_message is '{type(message)}'属于(ToolMessage,AIMessage)")
+                    print(f"并且message.content已存在，如下: '{message.content}' ")
+                    print(f"So let next='FINISH'")
+                    next="FINISH"
+                else:
+                    print(f"但是，以下条件没有同时满足:")
+                    print(f"The last_message is '{type(message)}'属于(ToolMessage,AIMessage)")
+                    print(f"并且message.content已存在，如下: '{message.content}' ")
+                    print(f"So let next='Rag'")
+                    next="Rag"
+
                 print(f"Current in {graph_name}, Next to: {next}")
                 return {"messages":messages,'next':next,"question":question,"navigated_sub_nodes":[]}
             else:
@@ -207,13 +233,22 @@ def supervisor_post_process_node(toolcalls_and_state:dict,supervisor_node, membe
 
     else:
         if graph_name=='super_graph':
-            print(f"Current in {graph_name}, {graph_name} outputed next: {next} is None")
+            print(f"Current in {graph_name}, {graph_name} outputed next: {next}")
             navigated_sub_node=set(members).intersection(set(navigated_sub_nodes))
             # print(f"navigated_sub_node:{navigated_sub_node}")
             if navigated_sub_node:
-                print(f"But navigated_sub_node:{navigated_sub_node} 已经存在")                
-                print(f"So let next='FINISH'")
-                next="FINISH"
+                print(f"But navigated_sub_node:{navigated_sub_node} 已经存在")
+                if isinstance(message,(ToolMessage,AIMessage)) and message.content:
+                    print(f"The last_message is '{type(message)}'属于(ToolMessage,AIMessage)")
+                    print(f"并且message.content已存在，如下: '{message.content}' ")
+                    print(f"So let next='FINISH'")
+                    next="FINISH"
+                else:
+                    print(f"但是，以下条件没有同时满足:")
+                    print(f"The last_message is '{type(message)}'属于(ToolMessage,AIMessage)")
+                    print(f"并且message.content已存在，如下: '{message.content}' ")                
+                    print(f"So let next='Rag'")
+                    next="Rag"
                 print(f"Current in {graph_name}, Next to: {next}")
                 return {"messages":messages,'next':next,"question":question,"navigated_sub_nodes":[]}
             else:

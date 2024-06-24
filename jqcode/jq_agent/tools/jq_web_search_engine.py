@@ -353,7 +353,7 @@ def get_web_search_documents(query,max_doc_nums=4):
         print('搜索引擎获取URLs结果失败！')
         print(f"失败的原因为：{e}")  
     finally:
-        print(f'获取到{len(urls)}=个urls')
+        print(f'获取到{len(urls)}个urls')
         print(f"Finally:继续向下执行！") 
        
     # 根据获取到的搜索引擎结果列表URLs，提取网页文档结果

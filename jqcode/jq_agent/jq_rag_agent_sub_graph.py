@@ -1,6 +1,6 @@
 # https://langchain-ai.github.io/langgraph/tutorials/introduction/
 # https://github.com/langchain-ai/langgraph/blob/main/examples/persistence.ipynb
-import re
+import re,os
 import asyncio
 import pprint
 from langchain.schema import Document
@@ -22,7 +22,7 @@ from langchain_community.document_loaders import WebBaseLoader
 from langchain_community.tools.tavily_search import TavilySearchResults ### Search
 # from langchain_community.chat_models import ChatOllama
 from jqcode.jq_agent.c0_init_env_models import get_langchain_chat_model,get_langchain_chat_ollama_functions,USING_OLLAMA_FUNCTIONS,USING_OLLAMA_LITELLM
-from jqcode.jq_agent.c0_init_env_models import get_emb_8k_rerank_model
+from jqcode.jq_agent.c0_init_env_models import get_emb_8k_rerank_model,split_and_get_chunks_relevant_from_documents
 from jqcode.jq_agent.c0_init_env_models import get_es_connection, get_es_searchstore, get_es_searchstore_index_documents
 from jqcode.jq_agent.tools.jq_web_search_engine import get_web_search_documents,is_query_chinese
 from copy import deepcopy
@@ -36,7 +36,7 @@ from langgraph.graph import END, StateGraph
 from langchain_core.messages import AIMessage, BaseMessage, HumanMessage
 from langgraph.graph.message import add_messages
 import functools
-
+from jqcode.jq_agent.c0_init_env_models import filter_and_get_messages_relevant_to_query
 ### GraphState
 class RagSubgraphState(TypedDict):
     """|
@@ -72,7 +72,7 @@ class direct_response(BaseModel):
 
 class web_search(BaseModel):
     """
-    The internet. Use web_search for questions that are related to anything else than agent memory , prompt engineering, and adversarial attacks.
+    The internet. Use web_search for questions that are related to anything else than agent memory , prompt engineering, and adversarial attacks, 特别是2024年及以后相关的问题及发生的事情.
     """
     query: str = Field(description="The query to use when searching the internet.")
 
@@ -119,7 +119,7 @@ print(tool_names)
 member_names =", ".join(members)
 print(member_names)
 # preamble_llm_router = """You are an expert at answer the user's question: (1)answer user directly if you do know how to response; (2)routing to 'tool_assistant' to get flight number, write and execute python code to answer questions; or (3)routing the user question to a tool if you don't know how to answer the questions. You have access to the following tools: """ + tool_names 
-preamble_llm_router = f"""You are a master, you are equipped with various tools can: search web, retrieve documnets vectorstore, execute code......,  Response to user's question by calling one or more tools among of the following tools: {tool_names}. """   
+preamble_llm_router = f"""You are a tool master/router, you are equipped with various tools can: search web, retrieve documnets vectorstore, execute code......,  Response to user's question by calling one or more tools among of the following tools: {tool_names}. """   
 # print(preamble_llm_router)
 
 # Prompt
@@ -192,7 +192,7 @@ retrieval_document_relevance_grader = retrieval_document_relevance_prompt | stru
 
 ### RAG Generate
 # Preamble
-preamble_rag = """You are an assistant for question-answering tasks. Use the following pieces of retrieved context to answer the question. If you don't know the answer, just say that you don't know. Use three sentences maximum and keep the answer concise."""
+preamble_rag = """You are an assistant for question-answering tasks. Use the following pieces of retrieved context to answer the question. Be sure you have enough tools/information/contexts to generate a resonable question. And you MUST answer the question, NEVER care about the year/time or tool limitations"""
 
 # Prompt
 prompt = lambda x: ChatPromptTemplate.from_messages(
@@ -312,10 +312,14 @@ def llm_fallback(state:RagSubgraphState):
     """
     print("---LLM Fallback---")
     question = state["question"]
+    messages = state["messages"]
     # messages_content = [f'[{m.type}]{";".join([m.tool_call["name"] for tool_call in m.tool_calls]) if hasattr(m,"tool_calls") and m.tool_calls else m.content}' for m in state["messages"]]
     
     messages_content = []
-    for m in state["messages"]:
+    filtered_messages = filter_and_get_messages_relevant_to_query(question,messages)
+
+
+    for m in filtered_messages:
         _str = f'[{m.type}]'
         if isinstance(m,AIMessage):
             if len(m.tool_calls)>0:
@@ -335,7 +339,7 @@ def llm_fallback(state:RagSubgraphState):
     print(f'{context_str=}')
     print(f'{len(context_str)=}')
 
-    context_str = context_str[-1000:]
+    context_str = context_str[-2000:]
     print(f'截断后的{len(context_str)=}')
 
 
@@ -359,6 +363,9 @@ def generate(state:RagSubgraphState):
     messages = state["messages"]
     if not isinstance(documents, list):
       documents = [documents]
+    print("documents的内容：")
+    for d in documents:
+        print(d.page_content)
 
     # RAG generation
     generation = rag_node.invoke({"documents": documents, "question": question, "messages":messages})
@@ -414,9 +421,24 @@ def web_search(state:RagSubgraphState):
 
     print("---WEB SEARCH---")
     question = state["question"]
+    try:
+        query_generated = os.environ['web_search_query']
+        os.environ['web_search_query'] = ''
+        if os.environ['web_search_query']:
+            print(f"os.environ['web_search_query']必须置为'',但现在的值为{os.environ['web_search_query']} ")
+            raise Exception
+        if not query_generated:
+            query_generated = llm_chain.invoke({"question": question,"context":'请生成合适并且简洁的搜索引擎查询关键词,不需要任何额外的解释或内容'})
+    except:
+        query_generated = question
+    print(f'{question=}')
+    print(f'{query_generated=}')
+
+
     # Web search
-    docs = get_web_search_documents(question)
-    web_results = "\n".join([d.page_content for d in docs])
+    docs = get_web_search_documents(query_generated)
+    chunks_relevant = split_and_get_chunks_relevant_from_documents(query=question,docs_list=docs) #get embedding retriever and reranker results
+    web_results = "\n".join([d.page_content for d in chunks_relevant])
 
     # todo: 需对doc进行split和检索（embedding和/或rerank） 
     web_search_message = ToolMessage(content=web_results,name='web_search',tool_call_id='0')
@@ -480,7 +502,11 @@ def route_question(state:RagSubgraphState):
 
     if datasource == 'web_search':
         print("---ROUTE QUESTION TO WEB SEARCH---")
-        return "web_search"
+        try:
+            os.environ['web_search_query'] = tool_calls[0]["args"]['query']
+        except:
+            pass       
+        return "web_search" 
     elif datasource == 'vectorstore':
         print("---ROUTE QUESTION TO RAG---")
         return "vectorstore"
@@ -543,7 +569,7 @@ def grade_generation_v_documents_and_question(state:RagSubgraphState):
     print(f"{len(documents[0].page_content)=}")
 
     doc_num = len(documents)
-    token_len = int(1000/doc_num)
+    token_len = int(2000/doc_num)
     for i in range(doc_num):
         content = documents[i].page_content[-token_len:]
         documents[i].page_content = content
@@ -756,25 +782,26 @@ def arun_coro_graph_workflow(question:str,config = {"recursion_limit":25,"config
 if __name__ == '__main__':
 
     # WARNING 05-13 17:46:33 scheduler.py:619] Input prompt (74314 tokens) is too long and exceeds limit of 4096
-    tool_question = ["请调用工具get_flight_number来查询今天从合肥到上海的航班","请调用工具python_repl_tool来编码计算the 10th fibonacci number并执行和输出结果"]
-    print('\n\n')
-    print("~~~~~~~~~~~~~~~~~~~~~~~~~~~"*5) 
-    print("~~~~test_tools~~~~"*5)
-    print("~~~~~~~~~~~~~~~~~~~~~~~~~~~"*5)
-    for question in tool_question:
-        value=run_graph_workflow(question)
+#     tool_question = ["请调用工具get_flight_number来查询今天从合肥到上海的航班","请调用工具python_repl_tool来编码计算the 10th fibonacci number并执行和输出结果"]
+#     print('\n\n')
+#     print("~~~~~~~~~~~~~~~~~~~~~~~~~~~"*5) 
+#     print("~~~~test_tools~~~~"*5)
+#     print("~~~~~~~~~~~~~~~~~~~~~~~~~~~"*5)
+#     for question in tool_question:
+#         value=run_graph_workflow(question)
 
-# """       
-    print('\n\n')
-    print("~~~~~~~~~~~~~~~~~~~~~~~~~~~"*5) 
-    print("~~~~test_memory~~~~"*5)
-    print("~~~~~~~~~~~~~~~~~~~~~~~~~~~"*5)
-    questions_test_memory = ["你知道我叫什么吗？","我叫张结魁，你叫什么呀？我们做好朋友吧","你还记得我叫什么吗?"] 
-    for question in questions_test_memory:
-        value=run_graph_workflow(question)
-        # print(value)
+# # """       
+#     print('\n\n')
+#     print("~~~~~~~~~~~~~~~~~~~~~~~~~~~"*5) 
+#     print("~~~~test_memory~~~~"*5)
+#     print("~~~~~~~~~~~~~~~~~~~~~~~~~~~"*5)
+#     questions_test_memory = ["你知道我叫什么吗？","我叫张结魁，你叫什么呀？我们做好朋友吧","你还记得我叫什么吗?"] 
+#     for question in questions_test_memory:
+#         value=run_graph_workflow(question)
+#         # print(value)
 
     questions = ["What are the types of agent memory?","What player are the Bears expected to draft first in the 2024 NFL draft?","合肥是一个什么样的城市？","Hello, how are you today?"]
+    questions = ["合肥科学岛？","Hello, how are you today?"]
     print('\n\n')
     print("~~~~~~~~~~~~~~~~~~~~~~~~~~~"*5) 
     print("$$$$run_graph_workflow$$$$"*5)

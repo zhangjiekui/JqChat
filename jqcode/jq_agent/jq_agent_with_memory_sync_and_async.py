@@ -339,7 +339,7 @@ def llm_fallback(state:State):
     context_str = ';'.join(messages_content_without_repeated)
     print(f'{len(context_str)=}')
 
-    context_str = context_str[-1000:]
+    context_str = context_str[-2000:]
     print(f'截断后的{len(context_str)=}')
 
 

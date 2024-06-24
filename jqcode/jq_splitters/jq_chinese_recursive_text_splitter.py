@@ -15,9 +15,6 @@ from jqcode.jq_config import general_config
 logger = jqkj_logger(__file__).get_logger()
 general_config.VERBOSE = True
 
-from jqcode.jq_agent.c0_init_env_models import get_emb_8k_rerank_model
-embed_model,embedding_model_8k,reranker = get_emb_8k_rerank_model()
-
 def _split_text_with_regex_from_end(
         text: str, separator: str, keep_separator: bool
 ) -> List[str]:
@@ -37,9 +34,12 @@ def _split_text_with_regex_from_end(
     return [s for s in splits if s != ""]
 
 class _JqkjTokenizerWrapper():
-    def __init__(self, embeding_model: Union[HuggingFaceEmbeddings, HuggingFaceBgeEmbeddings,str] = embed_model):
-
+    def __init__(self, embeding_model: Union[HuggingFaceEmbeddings, HuggingFaceBgeEmbeddings,str] = None):
+        if embeding_model is None:
+            from jqcode.jq_agent.c0_init_env_models import get_emb_8k_rerank_model
+            embeding_model,embedding_model_8k,reranker = get_emb_8k_rerank_model()
         assert embeding_model, 'embeding_model_instance不能为空'
+
         if isinstance(embeding_model,(HuggingFaceEmbeddings,HuggingFaceBgeEmbeddings)):
             self.model_name_or_path = embeding_model.model_name
             self.tokenizer = embeding_model.client.tokenizer
@@ -70,7 +70,7 @@ class _JqkjTokenizerWrapper():
 class ChineseRecursiveTextSplitter(RecursiveCharacterTextSplitter):
     def __init__(
             self,
-            model_name: Union[HuggingFaceEmbeddings, HuggingFaceBgeEmbeddings,str] = embed_model,
+            model_name: Union[HuggingFaceEmbeddings, HuggingFaceBgeEmbeddings,str] = None,
             chunk_size: int = 500,
             chunk_overlap: float = 0.2,
             separators: Optional[List[str]] = None,
@@ -92,7 +92,7 @@ class ChineseRecursiveTextSplitter(RecursiveCharacterTextSplitter):
                 f"Got a larger chunk overlap ({chunk_overlap}) than or equal to chunk size "
                 f"({chunk_size}), should be smaller."
             )
-        self.tokenizer_wrapper = _JqkjTokenizerWrapper(embeding_model=embed_model)        
+        self.tokenizer_wrapper = _JqkjTokenizerWrapper(embeding_model=None)        
         self._separators = separators or [
             "\n\n",
             "\n",

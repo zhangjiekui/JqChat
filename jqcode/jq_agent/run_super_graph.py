@@ -37,6 +37,7 @@ for question in qs:
     for s in super_graph_compiled.stream(
         {"messages": [HumanMessage(content=question)],"question":question},
         config = {"recursion_limit":25,"configurable": {"thread_id": "userid-session_id"}},
+        stream_mode="values",
         debug = False
     ):
         # if "__end__" not in s:
@@ -80,20 +81,19 @@ def arun_super_graph(question:str,config = {"recursion_limit":25,"configurable":
     print(f"In Agent 'arun_graph_workflow'：{question=}")
     if question=="你知道我叫什么吗？":
         pass
-    inputs = {"messages": [HumanMessage(content=question)],"question":question,"next":None}
+    inputs = {"messages": [HumanMessage(content=question)],"question":question,"next":None,"navigated_sub_nodes":None,"navigated_question_and_tool":None}
 
     result = None
     
     try:
         # value = await super_graph_compiled_async.ainvoke(inputs, config)
 
-        coro = super_graph_compiled_async.ainvoke(inputs, config)
+        coro = super_graph_compiled_async.ainvoke(inputs, config,stream_mode="values")
         value = asyncio.run(coro)
-        condidate_keys = ['supervisor']
-        
-        for key in condidate_keys:
-            if key in value.keys():
-                value = value.get('supervisor',None)
+        # condidate_keys = ['supervisor']        
+        # for key in condidate_keys:
+        #     if key in value.keys():
+        #         value = value.get('supervisor',None)
         next = value.get('next',None)
         # print(next)
         messages = value.get('messages',None)
@@ -164,28 +164,28 @@ def arun_super_graph(question:str,config = {"recursion_limit":25,"configurable":
 
 if __name__ == '__main__':
 
-    # WARNING 05-13 17:46:33 scheduler.py:619] Input prompt (74314 tokens) is too long and exceeds limit of 4096
-    tool_question = ["请调用工具get_flight_number来查询今天从合肥到上海的航班","请调用工具python_repl_tool来编码计算the 10th fibonacci number并执行和输出结果"]
-    print('\n\n')
-    print("~~~~~~~~~~~~~~~~~~~~~~~~~~~"*5) 
-    print("~~~~test_tools~~~~"*5)
-    print("~~~~~~~~~~~~~~~~~~~~~~~~~~~"*5)
-    for question in tool_question:
-        # result=asyncio.run(arun_super_graph(question))
-        # print(result)
-        # print(asyncio.run(arun_super_graph(question)))
-        print(arun_super_graph(question))
+#     # WARNING 05-13 17:46:33 scheduler.py:619] Input prompt (74314 tokens) is too long and exceeds limit of 4096
+#     tool_question = ["请调用工具get_flight_number来查询今天从合肥到上海的航班","请调用工具python_repl_tool来编码计算the 10th fibonacci number并执行和输出结果"]
+#     print('\n\n')
+#     print("~~~~~~~~~~~~~~~~~~~~~~~~~~~"*5) 
+#     print("~~~~test_tools~~~~"*5)
+#     print("~~~~~~~~~~~~~~~~~~~~~~~~~~~"*5)
+#     for question in tool_question:
+#         # result=asyncio.run(arun_super_graph(question))
+#         # print(result)
+#         # print(asyncio.run(arun_super_graph(question)))
+#         print(arun_super_graph(question))
 
-# """       
-    print('\n\n')
-    print("~~~~~~~~~~~~~~~~~~~~~~~~~~~"*5) 
-    print("~~~~test_memory~~~~"*5)
-    print("~~~~~~~~~~~~~~~~~~~~~~~~~~~"*5)
-    questions_test_memory = ["你知道我叫什么吗？","我叫张结魁，你叫什么呀？我们做好朋友吧","?"] 
-    for question in questions_test_memory:
-        print(arun_super_graph(question))
+# # """       
+#     print('\n\n')
+#     print("~~~~~~~~~~~~~~~~~~~~~~~~~~~"*5) 
+#     print("~~~~test_memory~~~~"*5)
+#     print("~~~~~~~~~~~~~~~~~~~~~~~~~~~"*5)
+#     questions_test_memory = ["你知道我叫什么吗？","我叫张结魁，你叫什么呀？我们做好朋友吧","?"] 
+#     for question in questions_test_memory:
+#         print(arun_super_graph(question))
 
-    questions = ["What are the types of agent memory?","What player are the Bears expected to draft first in the 2024 NFL draft?","合肥是一个什么样的城市？","Hello, how are you today?"]
+    questions = ["请帮我搜索获取，并按时间线梳理总结我国医疗健康相关的政策内容","合肥是一个什么样的城市？","What are the types of agent memory?","What player are the Bears expected to draft first in the 2024 NFL draft?","Hello, how are you today?"]
     print('\n\n')
     print("~~~~~~~~~~~~~~~~~~~~~~~~~~~"*5) 
     print("$$$$run_graph_workflow$$$$"*5)
