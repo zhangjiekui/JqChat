@@ -6,6 +6,8 @@ import pathlib
 from typing import Annotated, List, TypedDict
 
 import openai
+import langchain
+langchain.verbose = True
 from openai import OpenAI
 from langchain_openai import ChatOpenAI
 from BCEmbedding.tools.langchain import BCERerank
@@ -24,9 +26,10 @@ from langchain_core.messages import BaseMessage
 from langchain_community.vectorstores import FAISS
 from langchain_community.vectorstores.utils import DistanceStrategy
 from langchain.retrievers import ContextualCompressionRetriever
-
+from langchain_core.messages import BaseMessage, HumanMessage,SystemMessage,ToolMessage,AIMessage
+from langchain.callbacks.base import BaseCallbackHandler
 from jqcode.jq_splitters.jq_chinese_recursive_text_splitter import ChineseRecursiveTextSplitter
-
+from langchain_core.callbacks import StdOutCallbackHandler
 from dotenv import load_dotenv
 os.environ['LANGCHAIN_TRACING_V2'] = 'true'
 os.environ['LANGCHAIN_ENDPOINT'] = 'https://api.smith.langchain.com'
@@ -95,6 +98,7 @@ def get_langchain_chat_model(temperature=0.0, max_tokens=10000, streaming=True):
         openai_api_base=base_url,    
         openai_api_key= api_key,
         streaming=True,
+        verbose=True,
         temperature=temperature,
         max_tokens=max_tokens
     )#.bind(response_format={"type": "json_object"})
@@ -116,11 +120,8 @@ def get_langchain_chat_ollama_functions():
     print(f'当前使用的模型为:Langchain OllamaFunctions, {litellm_model.model}, API_URL为{litellm_model.base_url}')
     return litellm_model
 
-# litellm_model = get_langchain_litellm_model()
-# pass
-
 # todo: embedding_model_8k with langchain
-def get_emb_8k_rerank_model(model_name=embedding_model_name, device = ['cpu','cpu','cpu'],final_docs_num_reranked=4): #device = ['cuda:1','cuda:2''cuda:3']
+def _get_emb_8k_rerank_model(model_name=embedding_model_name, device = ['cpu','cpu','cpu'],final_docs_num_reranked=4): #device = ['cuda:1','cuda:2''cuda:3']
     if 'bge' in embedding_model_name: 
         # 有query_instruction https://github.com/langchain-ai/langchain/blob/ee94ef55ee6ab064da08340817955f821dfa6261/libs/langchain/langchain/embeddings/huggingface.py#L187
         from langchain_community.embeddings import HuggingFaceBgeEmbeddings as HuggingFaceEmbeddings
@@ -144,13 +145,21 @@ def get_emb_8k_rerank_model(model_name=embedding_model_name, device = ['cpu','cp
     print(f'{embedding_model_name_8k=}初始化成功！{embedding_model_8k.max_seq_length=}，可根据实际需要进行修改。')
     return embed_model,embedding_model_8k,reranker
 
-embed_model,embedding_model_8k,reranker = get_emb_8k_rerank_model()   
+embed_model,embedding_model_8k,reranker = _get_emb_8k_rerank_model()
+
+def get_emb_8k_rerank_model(model_name=embedding_model_name, device = ['cpu','cpu','cpu'],final_docs_num_reranked=4):
+    global embed_model
+    global embedding_model_8k
+    global reranker
+    if not (embed_model and  embedding_model_8k and  reranker):
+        embed_model,embedding_model_8k,reranker = _get_emb_8k_rerank_model(model_name=model_name, device = device,final_docs_num_reranked=final_docs_num_reranked)
+    return embed_model,embedding_model_8k,reranker
+
+
 chinese_text_splitter = ChineseRecursiveTextSplitter(chunk_size=500,chunk_overlap=0.2,model_name=embed_model)
 # Clean
 def replace_multiple_newlines(text):
     return re.sub(r'\n+', '\n', text)
-
-
 
 def split_and_get_chunks_relevant_from_documents(query:str, docs_list:List[Document]=None,text_splitter=chinese_text_splitter,reranker=reranker,
                                                  if_reranking:bool=True,retriever_docs_num=10,final_docs_num=4,score_threshold=0.3):
@@ -171,8 +180,8 @@ def split_and_get_chunks_relevant_from_documents(query:str, docs_list:List[Docum
     return chunks_relevant
 
 # https://github.com/langchain-ai/langgraph/blob/main/examples/managing-conversation-history.ipynb
-def filter_and_get_messages_relevant_to_query(query:str,messages_list:List[BaseMessage],text_splitter=chinese_text_splitter,score_threshold=0.3,retriever_docs_num=10,max_token_num=2000):
-    
+def filter_and_get_messages_relevant_to_query(query:str,messages_list:List[BaseMessage],text_splitter=chinese_text_splitter,reranker=reranker,
+                                                 if_reranking:bool=True,retriever_docs_num=10,final_docs_num=4,score_threshold=0.3):
     unique_messages_list = []
     messages_content_set = set()
     messages_list.reverse()
@@ -180,21 +189,35 @@ def filter_and_get_messages_relevant_to_query(query:str,messages_list:List[BaseM
         if message.content not in  messages_content_set:
             unique_messages_list.append(message)
             messages_content_set.add(message.content)
-    unique_messages_list.reverse()
-
-
+    unique_messages_list.reverse()    
     docs_from_messages = [Document(page_content=message.content,metadata={"message_index":message_index}) for message_index, message in enumerate(unique_messages_list)]
+    
+    chunks_relevant = split_and_get_chunks_relevant_from_documents(query, docs_from_messages,text_splitter=text_splitter,reranker=reranker,
+                                                                   if_reranking=if_reranking,retriever_docs_num=retriever_docs_num, final_docs_num=final_docs_num,score_threshold=score_threshold)
+    
+    
     text_chunks = text_splitter.split_documents(docs_from_messages)
     retriever = FAISS.from_documents(text_chunks, embed_model, distance_strategy=DistanceStrategy.MAX_INNER_PRODUCT).as_retriever(search_type="similarity", search_kwargs={"score_threshold": score_threshold, "k": retriever_docs_num})
-    chunks_relevant = retriever.invoke(query)
+    chunks_relevant2 = retriever.invoke(query)
+
     sorted_chunks_relevant = sorted(chunks_relevant, key=lambda x: (x.metadata['message_index'], x.metadata['start_index']))
     messages_relevant = []
+
+    print("+++++++++++过滤后保留的消息++++++++++++++++++++++过滤后保留的消息++++++++++++++++++++++过滤后保留的消息+++++++++++")   
     for chunk_relevant in sorted_chunks_relevant:
         index = chunk_relevant.metadata['message_index']
         # unique_messages_list[index].content = chunk_relevant.page_content #不能改变内容（即不能使用分块后的内容，否则可能无法获取完整的答案）
         message_relevant = unique_messages_list[index]
         if message_relevant not in messages_relevant:
+            relevance_score = chunk_relevant.metadata.get('relevance_score',None)
+            print("--------------------------------")            
+            # if isinstance(message_relevant,ToolMessage):
+            #     if message_relevant.name == 'web_search':
+            #         pass
             messages_relevant.append(message_relevant)
+            message_relevant.pretty_print()
+            print(f"^^^^^^^^^上条Message的{relevance_score=}^^^^^^^^^")
+    print("+++++++++++过滤后保留的消息++++++++++++++++++++++过滤后保留的消息++++++++++++++++++++++过滤后保留的消息+++++++++++")
     messages_list.reverse() # 前面messages_list顺序翻转了，所以这里还要翻转回来
     last_message = messages_list[-1]
     if messages_relevant[-1]!=last_message: 
@@ -267,6 +290,36 @@ def get_es_searchstore_from_documents(documents,embedding,es_connection,index_na
     es_searchstore.index_name=index_name
     return es_searchstore
 
+
+class MyCustomHandler(BaseCallbackHandler):
+    def on_chat_model_start(self,serialized, messages: List[List[BaseMessage]], *args, **kwargs):
+        print("<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<")
+        print(f"Input Messages:")
+        for ms in messages:
+            for m in ms:
+                m.pretty_print()
+        print("<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<\n")
+
+    def on_llm_end(self, response,*args, **kwargs):
+        print("\n>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>")
+        print(f"Output Generations:")
+        for g in response.generations:
+            print(g[0].text)
+        print(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>")
+
+custom_handler = MyCustomHandler()
+std_out_handler = StdOutCallbackHandler()
+def get_custom_handler():
+    global custom_handler
+    global std_out_handler
+    if not custom_handler:
+        custom_handler = MyCustomHandler()
+    if not std_out_handler:
+        std_out_handler = StdOutCallbackHandler()
+    return [custom_handler]
+
+
+
 if __name__ == '__main__':
     # qwen:110b-chat-v1.5-q4_K_M
     # litellm --model ollama_chat/llama3:70b-instruct
@@ -313,14 +366,8 @@ if __name__ == '__main__':
     if es_connection.indices.exists(index=index_name):
         print(f"已存在index='{index_name}'！跳过插入索引的环节。")
     else:
-
-
-
-
         docs = [WebBaseLoader(url).load() for url in urls]
         docs_list = [item for sublist in docs for item in sublist]
-   
-
         docs_list_cleaned = []
         for doc in docs_list:
             doc.page_content = replace_multiple_newlines(doc.page_content)

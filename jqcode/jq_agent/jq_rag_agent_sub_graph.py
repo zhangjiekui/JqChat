@@ -24,7 +24,8 @@ from langchain_community.tools.tavily_search import TavilySearchResults ### Sear
 from jqcode.jq_agent.c0_init_env_models import get_langchain_chat_model,get_langchain_chat_ollama_functions,USING_OLLAMA_FUNCTIONS,USING_OLLAMA_LITELLM
 from jqcode.jq_agent.c0_init_env_models import get_emb_8k_rerank_model,split_and_get_chunks_relevant_from_documents
 from jqcode.jq_agent.c0_init_env_models import get_es_connection, get_es_searchstore, get_es_searchstore_index_documents
-from jqcode.jq_agent.tools.jq_web_search_engine import get_web_search_documents,is_query_chinese
+from jqcode.jq_agent.c0_init_env_models import filter_and_get_messages_relevant_to_query, get_custom_handler
+from jqcode.jq_agent.tools.jq_web_search_engine import get_web_search_documents,is_query_chinese,get_tavily_search_result_documents
 from copy import deepcopy
 from jqcode.jq_agent.graph_create_utils import create_graph_supervisor, create_agent, agent_node, sub_graph_enter_chain
 from jqcode.jq_agent.tools.jq_functions_and_tools import primary_tool_assistant_prompt, excutable_tool_node, excutable_tools,excutable_tool_names
@@ -36,7 +37,11 @@ from langgraph.graph import END, StateGraph
 from langchain_core.messages import AIMessage, BaseMessage, HumanMessage
 from langgraph.graph.message import add_messages
 import functools
-from jqcode.jq_agent.c0_init_env_models import filter_and_get_messages_relevant_to_query
+from flask import Flask, render_template_string
+
+
+handlers = get_custom_handler()
+invoke_llm_config = {'callbacks' : handlers}
 ### GraphState
 class RagSubgraphState(TypedDict):
     """|
@@ -198,10 +203,8 @@ preamble_rag = """You are an assistant for question-answering tasks. Use the fol
 prompt = lambda x: ChatPromptTemplate.from_messages(
     [
         SystemMessage(preamble_rag),
-        HumanMessage(
-            f"Question: {x['question']} \nAnswer: ",
-            additional_kwargs={"documents": x["documents"]},
-        )
+        HumanMessage(f'Question: {x["question"]}\nContext: {"||".join(d.page_content for d in x["documents"])}\nAnswer:',
+                     additional_kwargs={"documents": x["documents"]})
     ]
 )
 
@@ -292,7 +295,7 @@ def retrieve(state:RagSubgraphState):
     question = state["question"]
 
     # Retrieval
-    documents = retriever.invoke(question)
+    documents = retriever.invoke(question,config=invoke_llm_config)
     # retrieve_results = "\n".join([d["content"] for d in documents])
     # 因为retrieve_results必去grade_documents节点过滤[workflow.add_edge("retrieve", "grade_documents")]，
     # 所以此次不添加retrieve_message，而是到grade_documents节点，仅保留过滤后的
@@ -343,7 +346,7 @@ def llm_fallback(state:RagSubgraphState):
     print(f'截断后的{len(context_str)=}')
 
 
-    generation = llm_chain.invoke({"question": question,"context":context_str})
+    generation = llm_chain.invoke({"question": question,"context":context_str},config=invoke_llm_config)
     ai_message = AIMessage(content=generation)
     return {"messages": ai_message, "generation": generation, "navigated_sub_nodes":["Rag"]}
 
@@ -363,13 +366,29 @@ def generate(state:RagSubgraphState):
     messages = state["messages"]
     if not isinstance(documents, list):
       documents = [documents]
-    print("documents的内容：")
-    for d in documents:
-        print(d.page_content)
+    # print("documents的内容：")
+    # for d in documents:
+    #     print(d.page_content)
 
     # RAG generation
-    generation = rag_node.invoke({"documents": documents, "question": question, "messages":messages})
-    print(generation)
+    referens = []
+    _sources =[d.metadata.get("source",None) for d in documents]
+    sources = set([s for s in _sources if s])
+    referens = list(sources)
+    if referens:
+        referens_str = "   【参考文档为】:\n"
+        for i,r in enumerate(referens):
+            referens_str += f"    [{i+1}] <a href={r}>{r}</a>\n"
+
+        os.environ["REFERENCE"] = referens_str
+        print(f'{referens_str=}')
+    # else:
+    #    os.environ["REFERENCE"] = '' 
+
+
+
+    generation = rag_node.invoke({"documents": documents, "question": question, "messages":messages},config=invoke_llm_config)
+    # print(generation)
     generation_message = ToolMessage(content=generation,name='generation',tool_call_id='0')
     return {"documents": documents, "question": question, "generation": generation, "messages":generation_message}
 
@@ -392,7 +411,7 @@ def grade_documents(state:RagSubgraphState):
     filtered_docs = []
     for d in documents:
         try:
-            score = retrieval_document_relevance_grader.invoke({"question": question, "document": d.page_content})
+            score = retrieval_document_relevance_grader.invoke({"question": question, "document": d.page_content},config=invoke_llm_config)
             grade = score.k
             if grade == "yes":
                 print("---GRADE: DOCUMENT RELEVANT---")
@@ -428,7 +447,7 @@ def web_search(state:RagSubgraphState):
             print(f"os.environ['web_search_query']必须置为'',但现在的值为{os.environ['web_search_query']} ")
             raise Exception
         if not query_generated:
-            query_generated = llm_chain.invoke({"question": question,"context":'请生成合适并且简洁的搜索引擎查询关键词,不需要任何额外的解释或内容'})
+            query_generated = llm_chain.invoke({"question": question,"context":'请生成合适并且简洁的搜索引擎查询关键词,不需要任何额外的解释或内容'},config=invoke_llm_config)
     except:
         query_generated = question
     print(f'{question=}')
@@ -437,12 +456,56 @@ def web_search(state:RagSubgraphState):
 
     # Web search
     docs = get_web_search_documents(query_generated)
-    chunks_relevant = split_and_get_chunks_relevant_from_documents(query=question,docs_list=docs) #get embedding retriever and reranker results
-    web_results = "\n".join([d.page_content for d in chunks_relevant])
+    chunks_relevant = split_and_get_chunks_relevant_from_documents(query=question,docs_list=docs,) #get embedding retriever and reranker results
+    referens = []
+    if chunks_relevant:
+        web_results = "\n".join([d.page_content for d in chunks_relevant])
+        _sources =[d.metadata.get("source",None) for d in chunks_relevant]
+        sources = set([s for s in _sources if s])
+        print("相关的【网页标题】网址为:") 
+               
+        for s in sources:
+            title = "TavilySearchResult无标题"
+            for web_result in chunks_relevant:
+                if s == web_result.metadata.get("source",None):
+                    title = web_result.metadata.get("title","TavilySearchResult无标题")
+                    break
+            print(f'【{title}】{s}')
+            referens.append(s)
+    else:
+        docs = get_tavily_search_result_documents(query_generated)
+        web_results = "\n".join([d.page_content for d in docs])
+        _sources =[d.metadata.get("source",None) for d in docs]
+        sources = set([s for s in _sources if s])
+        print("相关的【网页标题】网址为:")        
+        for s in sources:
+            title = "TavilySearchResult无标题"
+            for web_result in chunks_relevant:
+                if s == web_result.metadata.get("source",None):
+                    title = web_result.metadata.get("title","TavilySearchResult无标题")
+                    break
+            print(f'【{title}】{s}')
+            referens.append(s)
+    if referens:
+        referens_str = "   【参考网址为】:\n"
+        for i,r in enumerate(referens):
+            referens_str += f"    [{i+1}] <a href={r}>{r}</a>\n"
+            
+        os.environ["REFERENCE"] = referens_str
+        print(f'{referens_str=}')
+    # else:
+    #    os.environ["REFERENCE"] = '' 
+
+    if len(web_results)>500:
+        web_results_summary = llm_chain.invoke({"question": f"请根据问题‘{question}’，提炼和归纳总结‘Context’的内容，去除与问题不相关的信息","context":web_results},config=invoke_llm_config)
+        # print("对搜索结果的原始内容进行提炼和归纳总结，去除不相关的信息后得到的结果web_results_summary:\n")
+        # print(web_results_summary)
+    else:
+        web_results_summary = web_results
 
     # todo: 需对doc进行split和检索（embedding和/或rerank） 
-    web_search_message = ToolMessage(content=web_results,name='web_search',tool_call_id='0')
-    web_results_document = Document(page_content=web_results)
+    web_search_message = ToolMessage(content=web_results_summary,name='web_search',tool_call_id='0')
+    web_results_document = Document(page_content=web_results_summary)
     return {"documents": web_results_document, "question_searched":{question:True},"messages":web_search_message}
 
 def code_generation(state:RagSubgraphState):
@@ -465,8 +528,8 @@ def route_question(state:RagSubgraphState):
     question = state["question"]
 
      # 更新消息列表
-    source = question_router.invoke({"question": question})
-    print(source)
+    source = question_router.invoke({"question": question},config=invoke_llm_config)
+    # print(source)
     print(f"---ROUTE DESTINATION---")
     
     # Fallback to LLM
@@ -476,7 +539,7 @@ def route_question(state:RagSubgraphState):
             # tool_calls = {'name': 'web_search', 'arguments': '{"query": "How to respond when someone asks \'how are you today?\'"}'}
         except:
             tool_calls = []
-            print("---ROUTE QUESTION TO LLM---")
+            print("---ROUTE QUESTION TO LLM_FALLBACK---")
             return "llm_fallback" 
         if len(tool_calls) == 0:
             print("---Router Could Not Decide Where To GO (len[tool_calls]) == 0), SO ROUTE QUESTION TO LLM ---")
@@ -566,17 +629,19 @@ def grade_generation_v_documents_and_question(state:RagSubgraphState):
     documents = state["documents"]
     generation = state["generation"]
 
-    print(f"{len(documents[0].page_content)=}")
+    # print(f"{len(documents[0].page_content)=}")
 
-    doc_num = len(documents)
-    token_len = int(2000/doc_num)
-    for i in range(doc_num):
-        content = documents[i].page_content[-token_len:]
-        documents[i].page_content = content
+    # doc_num = len(documents)
+    # token_len = int(2000/doc_num)
+    # for i in range(doc_num):
+    #     content = documents[i].page_content[-token_len:]
+    #     documents[i].page_content = content
      
     # Check hallucination / answer_is_supported_by_documents    
     try:
-        score = answer_is_supported_by_documents_grader.invoke({"documents": documents, "generation": generation})
+        documents_contents = [d.page_content for d in documents]
+        documents_contents_str = "\n".join(documents_contents)
+        score = answer_is_supported_by_documents_grader.invoke({"documents": documents_contents_str, "generation": generation},config=invoke_llm_config)
         grade = score.k
     except Exception as e:
         grade = "yes" # 继续按正常往下执行！
@@ -591,7 +656,7 @@ def grade_generation_v_documents_and_question(state:RagSubgraphState):
         print("---GRADE GENERATION vs QUESTION---")       
         
         try:
-            score = answer_grader.invoke({"question": question,"generation": generation})
+            score = answer_grader.invoke({"question": question,"generation": generation},config=invoke_llm_config)
             grade = score.k
         except Exception as e:
             grade = "yes" # 继续按正常往下执行！
@@ -671,7 +736,7 @@ rag_sub_graph.add_conditional_edges(
     grade_generation_v_documents_and_question,
     {
         # "not supported": "generate", # Hallucinations: re-generate 
-        "not supported": END, # todo
+        "not supported": "llm_fallback", # todo
         "not useful": "web_search", # Fails to answer question: fall-back to web-search 
         "useful": END,
     },
@@ -681,7 +746,7 @@ rag_sub_graph.add_edge("llm_fallback", END)
 # Compile and Visualize
 rag_compiled = rag_sub_graph.compile()
 # The following functions interoperate between the top level graph state
-# and the state of the research sub-graph
+# and the state of the research sub-graph2
 # this makes it so that the states of each graph don't get intermixed
 rag_chain = functools.partial(sub_graph_enter_chain, members=members) | rag_compiled
 

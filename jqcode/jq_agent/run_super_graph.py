@@ -1,4 +1,4 @@
-import sys
+import sys,os
 project_root_path = '/data/projects/JqChat'
 p1 = '/data/projects/JqChat/jqcode'
 p2 = '/data/projects/JqChat/jqcode/jq_agent'
@@ -112,10 +112,19 @@ def arun_super_graph(question:str,config = {"recursion_limit":25,"configurable":
                 elif '\nFinal Answer:' in result:
                     _index0 = result.rindex('\nFinal Answer:')
                     result = result[_index0:].replace('\nFinal Answer:','')
-
+                
+                referens_str = os.getenv("REFERENCE", '')
+                os.environ["REFERENCE"]= ''
+                if referens_str:
+                    result += f'\n\n{referens_str}'
+                
+                # _file = r'/data/projects/app_code.log'
+                # <a href='/download?file=INSERT_FILENAME_HERE'>Download file</a>              
+                # result += f"    [0] <a href={_file}>{_file}</a>\n"
                 print(f"最后答案：{result}")
                 print("~~~输出最终执行结果~~~")
                 # asyncio.get_running_loop().stop()
+
                 return result
             else:
                 pass

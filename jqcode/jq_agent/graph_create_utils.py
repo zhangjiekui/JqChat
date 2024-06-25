@@ -114,20 +114,22 @@ def get_last_state(state) -> dict:
     print(f"get_last_state中获取到的navigated_sub_nodes:{navigated_sub_nodes}")
     navigated_question_and_tool = state.get("navigated_question_and_tool", None) # {question:tool_name}
     print(f"get_last_state中获取到的navigated_question_and_tool:{navigated_question_and_tool}")
-
-    # if navigated_question_and_tool is None:
-    #     if "Tools" in navigated_sub_nodes:
-    #         pass
-
-
     messages = state.get("messages",[])
-    print(f'原始的消息数量={len(messages)}')
-    query =  state.get("question",None)
-    filtered_messages = filter_and_get_messages_relevant_to_query(query,messages)
-    print(f'过滤后的消息数量={len(filtered_messages)}')
-    state["messages"] = filtered_messages
-    filtered_state_messages = state.get("messages",[])
-    print(f'state中过滤后的消息数量={len(filtered_state_messages)}')
+    if (messages_num:=len(messages))>4:
+        print(f'原始的消息数量={messages_num}')
+        query =  state.get("question",None)
+        filtered_messages = filter_and_get_messages_relevant_to_query(query,messages)
+
+        for m in messages:
+            if m not in filtered_messages:
+                 m.pretty_print()
+        print("-----------过滤后去掉的消息-----------")
+
+
+        print(f'过滤后的消息数量={len(filtered_messages)}')
+        state["messages"] = filtered_messages
+        filtered_state_messages = state.get("messages",[])
+        print(f'state中过滤后的消息数量={len(filtered_state_messages)}')
     return state
 
 def get_custom_supervisor_node(supervisor_node, members, graph_name):

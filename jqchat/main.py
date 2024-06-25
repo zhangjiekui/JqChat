@@ -51,11 +51,9 @@ def print_banner():
         print("=================已启动完成，下面是运行信息=================")
         print("=="*30)  
 
-def main():
-    
+def main():   
 
     setup_logging()
-
     webapp_process = Process(target=run_webapp)
     kernel_program_process = Process(target=run_kernel_program)
 

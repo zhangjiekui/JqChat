@@ -323,6 +323,27 @@ def get_tavily_search_result_documents(query,max_doc_nums=4):
 # 最终的方法调用，建议用户只调用该方法
 # 根据query，返回最多max_doc_nums个结果文档，返回结果类型为:list[langchain_core.documents.base.Document]
 def get_web_search_documents(query,max_doc_nums=4):
+    docs = _get_web_search_documents(query,max_doc_nums=max_doc_nums)
+    for doc in docs:        
+        page_content = doc.page_content
+
+        webpage_title = ""
+        webpage_description = ""
+        metadata = doc.metadata
+        if metadata:
+            webpage_title = metadata.get("title","")
+            if webpage_title:
+               webpage_title = "【标题】" + webpage_title + " " 
+            webpage_description = metadata.get("description","")
+            if webpage_description:
+               webpage_description = " " + "【描述】" + webpage_description  
+        if page_content:
+           if (webpage_title or webpage_description):
+                page_content = "【内容】" + page_content       
+                doc.page_content = webpage_title + page_content + webpage_description
+    return docs
+
+def _get_web_search_documents(query,max_doc_nums=4):
     docs = []
     if not query:
         print(f"提交到Web_Search的query为空！直接返回空列表。")
@@ -330,11 +351,12 @@ def get_web_search_documents(query,max_doc_nums=4):
     
     tavily_search_query = convert_search_query(query,join_character=None) 
 
-    if not is_query_chinese(query):#直接调用TavilySearchResults获得搜索结果，List[Document]
+    # if not is_query_chinese(query):#非中文直接调用TavilySearchResults获得搜索结果，List[Document]
+    if True:#全部直接调用TavilySearchResults获得搜索结果，List[Document]
         try:           
            print(f'{tavily_search_query=}')
            docs = get_tavily_search_result_documents(tavily_search_query,max_doc_nums=max_doc_nums)
-           print(f'非中文，使用tavily_search,获取到{len(docs)}个文档。')
+           print(f'使用tavily_search,获取到{len(docs)}个文档。')
            return docs
         except Exception as e:
             print('直接调用TavilySearchResults获得搜索结果失败！')
