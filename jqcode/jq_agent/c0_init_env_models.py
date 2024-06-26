@@ -134,6 +134,8 @@ def _get_emb_8k_rerank_model(model_name=embedding_model_name, device = ['cpu','c
         model_kwargs=embedding_model_kwargs,
         encode_kwargs=embedding_encode_kwargs,
     )
+    emb = embed_model.embed_query("初始化成功！")
+    print(emb)
     print(f'{embedding_model_name=}初始化成功！')
 
     reranker_args = {'model': rerank_model_name, 'top_n': final_docs_num_reranked, 'device': device[1]}
@@ -316,7 +318,7 @@ def get_custom_handler():
         custom_handler = MyCustomHandler()
     if not std_out_handler:
         std_out_handler = StdOutCallbackHandler()
-    return [custom_handler]
+    return [custom_handler,std_out_handler]
 
 
 

@@ -38,7 +38,15 @@ conda config --set show_channel_urls yes
 ```
 ## Xinference LLM
 
-### Docker
+#### 当前使用版本
+原版/最新版是xinference 0.12.1 (2024-06-18)
+
+### 本地Pip安装运行：
+XINFERENCE_HOME=/data/xinference xinference-local -H 0.0.0.0 --log-level debug 
+
+### Docker运行
+
+#### Docker参数配置
 {
     "runtimes": {
         "nvidia": {
@@ -54,13 +62,6 @@ conda config --set show_channel_urls yes
       "https://docker.mirrors.ustc.edu.cn"
     ]
 }
-
-
-#### 当前使用版本
-
-直接运行：XINFERENCE_HOME=/data/xinference xinference-local -H 0.0.0.0 --log-level debug 
-
-原版/最新版是xinference 0.12.1 (2024-06-18)
 
 #### 更新镜像版本
 
