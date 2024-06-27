@@ -134,9 +134,9 @@ def _get_emb_8k_rerank_model(model_name=embedding_model_name, device = ['cpu','c
         model_kwargs=embedding_model_kwargs,
         encode_kwargs=embedding_encode_kwargs,
     )
-    emb = embed_model.embed_query("初始化成功！")
-    print(emb)
-    print(f'{embedding_model_name=}初始化成功！')
+    # emb = embed_model.embed_query("初始化成功！")
+    # print(emb)
+    print(f'{embedding_model_name=}初始化成功！维度为768')
 
     reranker_args = {'model': rerank_model_name, 'top_n': final_docs_num_reranked, 'device': device[1]}
     reranker = BCERerank(**reranker_args)
@@ -240,7 +240,7 @@ def get_es_connection():
     print('-------Elasticsearch Connection详细信息-------')
     print(es_connection.info())
     print('-------Elasticsearch Connection详细信息-------')
-    print('-------可以通过Kibana URL查看:| http://127.0.0.1:5601 | -------')
+    print('-------可以通过Kibana URL查看:| http://127.0.0.1:5601 | http://10.1.150.105:5601 |-------')
     return es_connection
 
 def get_all_knowledge_base(es_connection=None,exclude_system_indices=True):
@@ -339,7 +339,8 @@ if __name__ == '__main__':
     es_connection = get_es_connection()
     es_searchstore = get_es_searchstore()
 
-    knowledge_base_list = get_all_knowledge_base(es_connection)    
+    knowledge_base_list = get_all_knowledge_base(es_connection) 
+    print(knowledge_base_list)   
 
     open_ai = get_openai()
     openai_client = get_openai_client()
@@ -349,18 +350,18 @@ if __name__ == '__main__':
     print(res)
 
     ### Build An Index
-    index_name='health'
+    index_name='temp'
     urls = [
         "https://www.gov.cn/zhengce/content/202406/content_6955904.htm",
-        "https://www.gov.cn/zhengce/2023-03/23/content_5748063.htm",
-        "https://www.gov.cn/zhengce/zhengceku/202305/content_6883704.htm",
-        "https://new.qq.com/rain/a/20220916A0213800",
-        "https://www.gov.cn/zhengce/content/2022-05/20/content_5691424.htm",
-        "https://www.cn-healthcare.com/articlewm/20220211/content-1313937.html",
-        "https://www3.weforum.org/docs/WEF_Global_Health_and_Healthcare_Strategic_Outlook_2023_CN.pdf",
-        "https://www2.deloitte.com/content/dam/Deloitte/cn/Documents/life-sciences-health-care/deloitte-cn-lshc-2023-global-health-care-outlook-zh-230316.pdf",
-        "https://www2.deloitte.com/content/dam/Deloitte/cn/Documents/life-sciences-health-care/cn-lshc-china-lshc-industry-survey-2024-zh-240314.pdf",
-        "https://www.gov.cn/zhengce/2012-12/26/content_2618554.htm"
+        # "https://www.gov.cn/zhengce/2023-03/23/content_5748063.htm",
+        # "https://www.gov.cn/zhengce/zhengceku/202305/content_6883704.htm",
+        # "https://new.qq.com/rain/a/20220916A0213800",
+        # "https://www.gov.cn/zhengce/content/2022-05/20/content_5691424.htm",
+        # "https://www.cn-healthcare.com/articlewm/20220211/content-1313937.html",
+        # "https://www3.weforum.org/docs/WEF_Global_Health_and_Healthcare_Strategic_Outlook_2023_CN.pdf",
+        # "https://www2.deloitte.com/content/dam/Deloitte/cn/Documents/life-sciences-health-care/deloitte-cn-lshc-2023-global-health-care-outlook-zh-230316.pdf",
+        # "https://www2.deloitte.com/content/dam/Deloitte/cn/Documents/life-sciences-health-care/cn-lshc-china-lshc-industry-survey-2024-zh-240314.pdf",
+        # "https://www.gov.cn/zhengce/2012-12/26/content_2618554.htm"
     ]
 
     knowledge_base_list = get_all_knowledge_base(es_connection) 

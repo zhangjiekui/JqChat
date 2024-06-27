@@ -17,9 +17,11 @@ from flask import Flask, request, jsonify, send_from_directory, Response
 
 from jqchat.kernel_program.main import APP_PORT as KERNEL_APP_PORT
 from jqcode.jq_agent.c0_init_env_models import get_openai,get_openai_client,llm_model_name,api_key
-from jqcode.jq_agent.jq_agent_with_memory_sync_and_async import arun_graph_workflow, run_graph_workflow, coding_relevance_grader
 from jqcode.jq_agent.c0_init_env_models import get_all_knowledge_base
+from jqcode.jq_agent.graph_create_utils import user_question_is_related_to_coding_or_data_analyzing,llm
 from jqcode.jq_agent.run_super_graph import arun_super_graph
+
+# HAS_DATA_FILE_UPLOADED = os.environ.get("HAS_DATA_FILE_UPLOADED", False)
 
 #todo 保留openai只是暂时不想改代码
 openai = get_openai()
@@ -87,10 +89,7 @@ def allowed_file(filename):
 
 
 def inspect_file(filename: str) -> str:
-
-
     _, ext = os.path.splitext(filename)
-
     try:
         df = READER_MAP[ext.lower()](filename)
         return f'The file contains the following columns: {", ".join(df.columns)}'
@@ -99,7 +98,7 @@ def inspect_file(filename: str) -> str:
     except Exception:
         return ''  # file reading failed. - Don't want to know why.
 
-system_prompt=f"""Act as a data analyst hereby referred to as EXPERT with ten years of experience in the domain of data anylasis. Your role is to help inexperienced people explore/analyse data. Be sure to help the user understand what to focus on and give suggestions on where it would make sense to dig deeper.
+system_prompt=f"""请尽量使用中文来回答问题。Act as a data analyst hereby referred to as EXPERT with ten years of experience in the domain of data anylasis. Your role is to help inexperienced people explore/analyse data. Be sure to help the user understand what to focus on and give suggestions on where it would make sense to dig deeper.
     If generating Python code, follow the instructions under [GENERATE_PYTHON_INSTRUCTIONS].
         First, think step by step what you want to do and write it down in English.
         Then generate valid Python code in a code block 
@@ -131,6 +130,7 @@ system_prompt=f"""Act as a data analyst hereby referred to as EXPERT with ten ye
     """
 
 # todo:需同步更新readme中安装的软件包和这里的版本描述
+usual_imports = """import numpy as np \nimport pandas as pd\nimport seaborn as sns\nimport matplotlib.pyplot as plt\n"""
 async def get_code(user_prompt, user_openai_key=api_key, model=llm_model_name):
 
     user_code_prompt = f"""First, here is a history of what I asked you to do earlier. 
@@ -168,6 +168,7 @@ async def get_code(user_prompt, user_openai_key=api_key, model=llm_model_name):
 
     try:
         result_GPT = openai_client.chat.completions.create(**arguments)
+        # result_GPT = llm.invoke()
 
         if 'error' in result_GPT:
             raise openai.APIError(code=result_GPT.error.code, message=result_GPT.error.message)
@@ -196,8 +197,13 @@ async def get_code(user_prompt, user_openai_key=api_key, model=llm_model_name):
             single_match = re.search(r'`(.+?)`', text, re.DOTALL)
             if single_match:
                 return single_match.group(1).strip()
-
-    return extract_code(content), content.strip(), 200
+    text = content.strip()
+    code = extract_code(text)
+    # if code:
+    #     code = usual_imports + code
+    # else:
+    #     code = "print('未生成code')"
+    return code, text , 200
 
 
 async def get_chat(user_prompt, user_openai_key=api_key, model=llm_model_name):
@@ -251,7 +257,8 @@ async def get_chat(user_prompt, user_openai_key=api_key, model=llm_model_name):
 
     except AttributeError:
         return None, f"Malformed answer from API: {content}", 500
-    return content, 200
+    
+    return content, "Success", 200
 
 # We know this Flask app is for local use. So we can disable the verbose Werkzeug logger
 log = logging.getLogger('werkzeug')
@@ -289,11 +296,23 @@ def docs():
 def proxy_kernel_manager(path):
     if request.method == "POST":
         print('starting code execution')
-        resp = requests.post(
-            f'http://localhost:{KERNEL_APP_PORT}/{path}', json=request.get_json())
-        
         requestjson = request.get_json()
-        print(f"""started code execution with status: {resp.status_code} {requestjson}""")
+        code = requestjson.get('command',None)
+        if code:
+            code = usual_imports + code
+            requestjson = {'command': code}
+            print('在代码实际执行之前,增加导入常用的程序包，如numpy，pandas，seaborn，matplotlib.pyplot等')
+        else:
+            code = print('未生成实际代码')
+            requestjson = {'command': code}
+
+        print(f"""started code execution with code:""")
+        print('~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~')
+        print(code)
+        print('~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~')
+        resp = requests.post(f'http://localhost:{KERNEL_APP_PORT}/{path}', json=requestjson)        
+        # print(f"""started code execution with status: {resp.status_code} """)
+        
     else:
         resp = requests.get(f'http://localhost:{KERNEL_APP_PORT}/{path}')
 
@@ -336,7 +355,7 @@ def inject_context():
 def agent_entry():
     print('============================================================')
     print('============================================================')
-    print('触发python_backend......jqchat/webapp/main.py#L257')
+    print('触发python_backend......jqchat/webapp/main.py#L335')
     user_prompt = request.json.get('prompt', '')
     print('=='*30)
     print(f'(IN Web) User Question: {user_prompt}')
@@ -346,38 +365,30 @@ def agent_entry():
     user_id=request.json.get('user',None)
     #获得文档ID
     doc_id=request.json.get('doc',None);
-    # user_openai_key = request.json.get('openAIKey', api_key)
-    # model = request.json.get('model', llm_model_name)
 
-
-    # response =  coding_relevance_grader.invoke({"question": user_prompt})
-    # print(f"判断：Whether question '{user_prompt}' is related to [Code/Data/File]? 判断结果：{response=}")
-    # try:
-    #     is_coding = response.k
-    # except:
-    #     is_coding = 'No'
-
-    # loop = asyncio.new_event_loop()
-    # asyncio.set_event_loop(loop)
+    loop = asyncio.new_event_loop()
+    asyncio.set_event_loop(loop)
 
     code, text, status = None, None, 200
     config = {"recursion_limit":25,"configurable": {"thread_id": user_id}}
     print(f"{config=}")
-    text = arun_super_graph(question=user_prompt,config=config)
+    is_coding_related = user_question_is_related_to_coding_or_data_analyzing(question=user_prompt)
+    
+    HAS_DATA_FILE_UPLOADED = os.environ.get("HAS_DATA_FILE_UPLOADED", False)
+    if HAS_DATA_FILE_UPLOADED and is_coding_related:
+        code, text, status = loop.run_until_complete(get_code(user_prompt, user_openai_key, model))
+    else:
+        text, with_exception = arun_super_graph(question=user_prompt,config=config)
+        if with_exception:
+            if is_coding_related:
+                print('前面程序运行或判断出现了问题，下面试图使用Python代码方式来解决......')
+                code, text, status = loop.run_until_complete(get_code(user_prompt, user_openai_key, model))
 
-    # if is_coding == 'yes':
-    #     code, text, status = loop.run_until_complete(get_code(user_prompt, user_openai_key, model))
-
-    # # else:
-    # #     # text = loop.run_until_complete(arun_graph_workflow(question=user_prompt))
-    # #     # text = loop.run_until_complete(arun_super_graph(question=user_prompt))
-    # #     text = arun_super_graph(question=user_prompt)
-
-    # print('~~'*30)
-    # if code:
-    #     print('ai_code:')
-    #     print(code)
-    # loop.close()
+    print('~~'*30)
+    if code:
+        print('生成的Python代码为:')
+        print(code)
+    loop.close()
     print('~~'*30)
     print('=='*30)
     # Append all messages to the message buffer for later use
@@ -386,11 +397,11 @@ def agent_entry():
     return jsonify({'code': code, 'text': text}), status
 
 @app.route('/chat', methods=['POST'])
-def generate_chat():
+def generate_chat(model=llm_model_name):
     #all of this comes from the system, not the user!
     user_prompt = request.json.get('prompt', '')
     user_openai_key = request.json.get('openAIKey', None)
-    model = request.json.get('model', None)
+    # model = request.json.get('model', None)
     #获取用户随机ID
     user_id=request.json.get('user',None)
     #获得文档ID
@@ -400,17 +411,21 @@ def generate_chat():
     loop = asyncio.new_event_loop()
     asyncio.set_event_loop(loop)
 
-    text, status = loop.run_until_complete(
+    text, exeption_message, status = loop.run_until_complete(
         #TODO:需要此处增加传入的user_id和doc_id
         get_chat(user_prompt, user_openai_key, model))
     loop.close()
+    if text is None:
+        print(exeption_message)
+        text = exeption_message
 
-    print('CHAT_TEXT: ' + text)
 
     # Append all messages to the message buffer for later use
-    message_buffer.append('USER: ' + user_prompt + "\n\n")
-    print(f"""RETURNING TO UI: ${status}""")
+    user_prompt = 'USER: ' + user_prompt + "\n\n"
+    message_buffer.append(user_prompt)
+    # print(f"""RETURNING TO UI: ${status}""")
     return jsonify({'text': text}), status
+    # return jsonify({'text': user_prompt + text}), status
 
 @app.route('/upload', methods=['POST'])
 def upload_file():
@@ -426,6 +441,8 @@ def upload_file():
         file_target = os.path.join(app.config['UPLOAD_FOLDER'], file.filename)
         file.save(file_target)
         file_info = inspect_file(file_target)
+        os.environ["HAS_DATA_FILE_UPLOADED"] = 'True'
+        message_buffer.append(f"已上传保存的文件名为{file.filename},请在分析过程中使用这个数据文件" + "\n\n")
         return jsonify({'message': f'File {file.filename} uploaded successfully.\n{file_info}'}), 200
     else:
         return jsonify({'error': 'File type not allowed'}), 400

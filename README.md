@@ -13,6 +13,11 @@ git commit -a
 ```sh
 git push
 ```
+### 端口占用释放
+```
+sudo lsof -i :{port}
+sudo kill -9 {pid}
+```
 
 ## linux系统环境变量
 
@@ -162,7 +167,9 @@ docker run -e "ENROLLMENT_TOKEN=<token>" docker.elastic.co/elasticsearch/elastic
 docker exec -it es105 /usr/share/elasticsearch/bin/elasticsearch-reset-password -u elastic
 docker exec -it es105 /usr/share/elasticsearch/bin/elasticsearch-create-enrollment-token -s kibana
 ```
-
+## Kibana https://www.elastic.co/guide/en/kibana/current/docker.html
+docker pull docker.elastic.co/kibana/kibana:8.14.0
+docker run --name kib01 --net elastic -p 5601:5601 docker.elastic.co/kibana/kibana:8.14.0
 ## 本项目的Installation
 
 ubuntu上推荐下面的安装和运行方法:

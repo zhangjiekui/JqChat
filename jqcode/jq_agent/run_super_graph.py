@@ -84,18 +84,11 @@ def arun_super_graph(question:str,config = {"recursion_limit":25,"configurable":
     inputs = {"messages": [HumanMessage(content=question)],"question":question,"next":None,"navigated_sub_nodes":None,"navigated_question_and_tool":None}
 
     result = None
-    
-    try:
-        # value = await super_graph_compiled_async.ainvoke(inputs, config)
 
+    try:
         coro = super_graph_compiled_async.ainvoke(inputs, config,stream_mode="values")
         value = asyncio.run(coro)
-        # condidate_keys = ['supervisor']        
-        # for key in condidate_keys:
-        #     if key in value.keys():
-        #         value = value.get('supervisor',None)
         next = value.get('next',None)
-        # print(next)
         messages = value.get('messages',None)
         last_message = messages[-1]
         # print(type(last_message))
@@ -123,52 +116,15 @@ def arun_super_graph(question:str,config = {"recursion_limit":25,"configurable":
                 # result += f"    [0] <a href={_file}>{_file}</a>\n"
                 print(f"最后答案：{result}")
                 print("~~~输出最终执行结果~~~")
-                # asyncio.get_running_loop().stop()
-
-                return result
-            else:
-                pass
-    # except:
-    #     pass   
-    # try:
-    #     result = None
-    #     while not result:
-    #         value = await super_graph_compiled_async.ainvoke(inputs, config)           
-
-    #         try:
-    #             print(value.keys())
-    #             condidate_keys = ['supervisor']
-                
-    #             for key in condidate_keys:
-    #                 if key in value.keys():
-    #                     value = value.get('supervisor',None)
-    #             next = value.get('next',None)
-    #             if next == "FINISH":
-    #                 messages = value.get('messages',None)
-    #                 last_message = messages[-1]
-    #                 if isinstance(last_message,(ToolMessage,AIMessage)):
-    #                     print("~~~输出最终执行结果~~~")
-    #                     print(f"用户问题：{value['question']}")
-    #                     result = last_message.content
-    #                     print(f"最后答案：{last_message.content}")
-    #                     print("~~~输出最终执行结果~~~")
-    #                     return result
-    #         except:
-    #             pass
-
-    #     except Exception as e:
-    #         print(e) 
-    #         raise e               
-            
-    except GraphRecursionError:
-        print("!!!!!!GraphRecursionError: Graph recursion limit reached.!!!!!!")
-        result = 'GraphRecursionError'
-        return result
-    except Exception as e:
-        
+                return result, False
+    except GraphRecursionError as e:
+        print("!!!!!!{e}.!!!!!!")
+        result = 'GraphRecursionError: Graph recursion limit reached.'
+        return result,True
+    except Exception as e:        
         print(f"!!!!!!Error: {e}.!!!!!!")
-        result = f'出现了错误，你可以重新输入问题{question}再尝试几次。以下是错误的详细信息:{e}'
-        return result
+        result = f'出现了错误，错误的详细信息:{e}'
+        return result,True
 
 
 if __name__ == '__main__':

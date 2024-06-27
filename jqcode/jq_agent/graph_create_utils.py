@@ -5,7 +5,7 @@ from typing import List,Union, TypedDict
 from langchain_openai import ChatOpenAI
 from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
 from langchain_core.messages import BaseMessage, HumanMessage,SystemMessage,ToolMessage,AIMessage
-
+from langchain_core.pydantic_v1 import BaseModel, Field
 from langchain_core.runnables import Runnable,RunnablePassthrough,RunnableLambda
 
 # create_tool_calling_agent是Langchain(v0.1.16)最新推出的统一的ToolAgent接口！
@@ -170,11 +170,7 @@ def supervisor_post_process_node(toolcalls_and_state:dict,supervisor_node, membe
         print('question为空！')
         raise Exception('question为空！')    
    
-    # if next=="FINISH":
-    #     print('next=="FINISH"，直接返回')
-    #     print(f"return_state_messages:\n{messages}") # todo
-    #     return {"messages":messages,'next': next,"question":question}
-    #tool_calls_list = [{'args': {'next': '中国科学技术大学的简要介绍'}, 'type': 'Search'}]    
+    is_coding_related = user_question_is_related_to_coding_or_data_analyzing(question=question)
     tool_calls_list = toolcalls_message.tool_calls
 
 
@@ -187,7 +183,7 @@ def supervisor_post_process_node(toolcalls_and_state:dict,supervisor_node, membe
         print('*****************'*5)
         print(f"Current in {graph_name}, {graph_name} outputed next: {next}")
         print('*****************'*5)
-        if graph_name=='super_graph':
+        if graph_name=='super_graph':                
             if next=='FINISH' and len(navigated_sub_nodes)==0:
                 print(f"The output next '{next}', next=='FINISH', but 'len(navigated_sub_nodes)==0',we have not answer the question"  )
                 print(f"So let next='Rag'")
@@ -216,6 +212,9 @@ def supervisor_post_process_node(toolcalls_and_state:dict,supervisor_node, membe
                 print(f"Current in {graph_name}, Next to: {next}")
                 return {"messages":messages,'next':next,"question":question,"navigated_sub_nodes":navigated_sub_nodes}
         elif graph_name=='tool_sub_graph':
+            if is_coding_related:
+                if next not in ['get_flight_number']:
+                    raise Exception('该问题与Python代码、数据分析相关，此处抛出异常，好跳转到相关模块执行！')
             print(f"IN tool_sub_graph: '{question}' Next to: {next}")
             if navigated_question_and_tool:
                 navigated_tool_name = navigated_question_and_tool.get(question, None)
@@ -238,6 +237,9 @@ def supervisor_post_process_node(toolcalls_and_state:dict,supervisor_node, membe
             print(f"Current in {graph_name}, {graph_name} outputed next: {next}")
             navigated_sub_node=set(members).intersection(set(navigated_sub_nodes))
             # print(f"navigated_sub_node:{navigated_sub_node}")
+            if is_coding_related:
+                print(f'该问题与Python代码、数据分析相关，但NEXT= “{next}”，所以此处抛出异常，好跳转到相关模块执行！')
+                raise Exception('该问题与Python代码、数据分析相关，此处抛出异常，好跳转到相关模块执行！') 
             if navigated_sub_node:
                 print(f"But navigated_sub_node:{navigated_sub_node} 已经存在")
                 if isinstance(message,(ToolMessage,AIMessage)) and message.content:
@@ -382,3 +384,37 @@ llm = get_langchain_chat_model(
         streaming=True)
 
 
+### Coding Grader
+# Coding Grader Data model
+class GradeCodingRelavance(BaseModel):
+    """Binary classification for a user question is relevant to code generating/executing,data file processing or data exploring/analyzing."""
+    k: str = Field(description="Whether a user question is relevant to [code generating/executing,data file processing and data exploring/analyzing], k must be 'yes' or 'no'")
+# Code Generating/Code Executing Relavance Grader Prompt
+preamble_coding_relevant_grader = """You are a grader assessing relevance of a user question to [code generating/executing,data file processing or data exploring/analyzing]. Response me with a simple JSON string can be directly consumed by  ‘json.loads’ method, must be ‘{{"k":"yes"}}’ or  ‘{{"k":"no"}}’,'yes' means a user question is related to code generating/executing,data file processing or data exploring/analyzing.No preamble or explaination."""
+structured_llm_coding_relevant_grader = llm.with_structured_output(GradeCodingRelavance,method='json_mode')
+coding_relevance_prompt = ChatPromptTemplate.from_messages(
+    [
+        ("system",preamble_coding_relevant_grader),
+        ("human", "User question: {question}")
+    ]
+)
+# Coding Relavance Grader
+coding_relevance_grader = coding_relevance_prompt | structured_llm_coding_relevant_grader
+
+def user_question_is_related_to_coding_or_data_analyzing(question:str):
+    response =  coding_relevance_grader.invoke({"question": question})
+    print(f"判断：Whether question '{question}' is related to [Codeing/Data File/Analyzing]? 判断结果：{response=}")
+    try:
+        result_str = response.k
+        if result_str.lower() == 'yes':
+            return True
+        else:
+            return False
+    except:
+        print('“coding_relevance_grader”无法正常返回判断结果，所以人为返回False')
+        return False
+
+if __name__ == "__main__":
+    qustion = "请使用Python生成代码，计算1到100的和，并返回计算结果"
+    result = user_question_is_related_to_coding_or_data_analyzing(qustion)
+    print(result)

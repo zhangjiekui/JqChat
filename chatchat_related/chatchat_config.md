@@ -50,7 +50,7 @@ chatchat-config model --default_llm_model qwen2-instruct
 ## 配置ElasticSearch
 #### 安装对应版本的elasticsearch及必要的包
 ```
-pip install elasticsearch==8.13.2
+pip install elasticsearch==8.14.0
 pip install transformers
 ```
 #### 修改配置文件

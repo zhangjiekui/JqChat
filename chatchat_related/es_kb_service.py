@@ -21,7 +21,7 @@ logger = logging.getLogger()
 ELASTIC_PASSWORD='esnNFWQbCIspxTPGwOom'
 CERT_FINGERPRINT='d57e6199d1a115fc3e0df134d4704b97cd47055adbd161a4419d3e681c050f37'
 ES_URL ="https://10.1.150.105:9200"
-index_name = 'chatchat4'
+# index_name = 'chatchat4'
 dims_length = 768
 class ESKBService(KBService):
     def do_init(self):
@@ -54,14 +54,8 @@ class ESKBService(KBService):
         try:
             # 首先尝试通过es_client_python创建
             self.dims_length=dims_length
-            self.index_name= index_name
             print(f'{self.dims_length=}')
-            print(f'{self.index_name=}')
-
-
-
-
-            
+            print(f'{self.index_name=}')            
             print('mappings......')
             mappings = {
                 "properties": {
@@ -78,11 +72,12 @@ class ESKBService(KBService):
                 index=self.index_name, mappings=mappings
             )
         except BadRequestError as e:
-            logger.error("创建索引失败,重新")
-            logger.error(e)
+            logger.warning("创建索引失败,重新")
+            logger.warning(e)
 
         try:
             # langchain ES 连接、创建索引
+            print('尝试langchain ES 连接、创建索引')
             params = dict(
                 es_connection = self.es_client_python,
                 index_name=self.index_name,
@@ -94,9 +89,11 @@ class ESKBService(KBService):
                     "timeout": 600,
                 },
             )
-            if self.user != "" and self.password != "":
-                params.update(es_user=self.user, es_password=self.password)
+            # if self.user != "" and self.password != "":
+            #     params.update(es_user=self.user, es_password=self.password)
             self.db = ElasticsearchStore(**params)
+            if self.db:
+                print('尝试langchain ES 连接、创建索引:self.db连接成功')
         except ConnectionError:
             logger.error("### 初始化 Elasticsearch 失败！")
             raise ConnectionError
@@ -109,7 +106,7 @@ class ESKBService(KBService):
                 index_name=self.index_name, dims_length=self.dims_length
             )
         except Exception as e:
-            logger.error("创建索引失败...")
+            logger.error("通过self.db._create_index_if_not_exists创建索引失败...")
             logger.error(e)
             # raise e
 
@@ -235,6 +232,7 @@ class ESKBService(KBService):
 
 
 if __name__ == "__main__":
+    index_name = 'samples'
     esKBService = ESKBService(index_name)
     # esKBService.clear_vs()
     # esKBService.create_kb()
