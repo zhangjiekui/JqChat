@@ -23,7 +23,7 @@ from langgraph.checkpoint.aiosqlite import AsyncSqliteSaver
 # from jqcode.jq_agent.hierarchical_teams_supervisor_examples.sub_graphs.research_sub_graph import research_chain
 # from jqcode.jq_agent.hierarchical_teams_supervisor_examples.sub_graphs.writing_sub_graph import authoring_chain
 from graph_create_utils import create_graph_supervisor, create_agent, agent_node, get_custom_supervisor_node,get_last_state,llm
-from jq_rag_agent_sub_graph import rag_chain, RagSubgraphState,rag_sub_graph
+from jq_rag_agent_sub_graph import rag_chain, RagSubgraphState,rag_sub_graph,llm_chain
 from jq_excutable_tool_agent_subgraph import tool_chain, ToolSubgraphState, tool_subgraph 
 
 
@@ -47,6 +47,7 @@ supervisor_node = create_graph_supervisor(
 class SuperState(TypedDict):
     messages: Annotated[List[BaseMessage], add_messages]
     question:str
+    question_rewrited:str
     next: str
     team_members: List[str]
     navigated_sub_nodes: List[str]

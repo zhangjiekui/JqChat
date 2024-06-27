@@ -487,7 +487,7 @@ def web_search(state:RagSubgraphState):
             print(f'【{title}】{s}')
             referens.append(s)
     if referens:
-        referens_str = "   【参考网址为】:\n"
+        referens_str = "   【参考网页为】:\n"
         for i,r in enumerate(referens):
             referens_str += f"    [{i+1}] <a href={r}>{r}</a>\n"
             

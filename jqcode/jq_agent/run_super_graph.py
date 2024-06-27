@@ -151,6 +151,7 @@ if __name__ == '__main__':
 #         print(arun_super_graph(question))
 
     questions = ["请帮我搜索获取，并按时间线梳理总结我国医疗健康相关的政策内容","合肥是一个什么样的城市？","What are the types of agent memory?","What player are the Bears expected to draft first in the 2024 NFL draft?","Hello, how are you today?"]
+    questions = ["安徽晶奇网络科技股份有限公司的详细董事、独立董事名单","监事名单呢？"]
     print('\n\n')
     print("~~~~~~~~~~~~~~~~~~~~~~~~~~~"*5) 
     print("$$$$run_graph_workflow$$$$"*5)
