@@ -185,48 +185,44 @@ def split_and_get_chunks_relevant_from_documents(query:str, docs_list:List[Docum
 
 # https://github.com/langchain-ai/langgraph/blob/main/examples/managing-conversation-history.ipynb
 def filter_and_get_messages_relevant_to_query(query:str,messages_list:List[BaseMessage],text_splitter=chinese_text_splitter,reranker=reranker,
-                                                 if_reranking:bool=True,retriever_docs_num=10,final_docs_num=4,score_threshold=0.3):
-    unique_messages_list = []
-    messages_content_set = set()
-    messages_list.reverse()
-    for message in messages_list:
-        if message.content not in  messages_content_set:
-            unique_messages_list.append(message)
-            messages_content_set.add(message.content)
-    unique_messages_list.reverse()    
-    docs_from_messages = [Document(page_content=message.content,metadata={"message_index":message_index}) for message_index, message in enumerate(unique_messages_list)]
-    
-    chunks_relevant = split_and_get_chunks_relevant_from_documents(query, docs_from_messages,text_splitter=text_splitter,reranker=reranker,
-                                                                   if_reranking=if_reranking,retriever_docs_num=retriever_docs_num, final_docs_num=final_docs_num,score_threshold=score_threshold)
-    
-    
-    text_chunks = text_splitter.split_documents(docs_from_messages)
-    retriever = FAISS.from_documents(text_chunks, embed_model, distance_strategy=DistanceStrategy.MAX_INNER_PRODUCT).as_retriever(search_type="similarity", search_kwargs={"score_threshold": score_threshold, "k": retriever_docs_num})
-    chunks_relevant2 = retriever.invoke(query)
+                                                 if_reranking:bool=True,retriever_docs_num=10,final_docs_num=6 ,score_threshold=0.3,reserve_last_n_messages = 6):
+    if len(messages_list) > reserve_last_n_messages:
+        unique_messages_list = []
+        messages_content_set = set()
+        messages_list.reverse()
+        for message in messages_list[reserve_last_n_messages:]:
+            if message.content not in  messages_content_set:
+                unique_messages_list.append(message)
+                messages_content_set.add(message.content)
+        unique_messages_list.reverse()    
+        docs_from_messages = [Document(page_content=message.content,metadata={"message_index":message_index}) for message_index, message in enumerate(unique_messages_list)]
+        
+        chunks_relevant = split_and_get_chunks_relevant_from_documents(query, docs_from_messages,text_splitter=text_splitter,reranker=reranker,
+                                                                    if_reranking=if_reranking,retriever_docs_num=retriever_docs_num, final_docs_num=final_docs_num,score_threshold=score_threshold)
 
-    sorted_chunks_relevant = sorted(chunks_relevant, key=lambda x: (x.metadata['message_index'], x.metadata['start_index']))
-    messages_relevant = []
+        sorted_chunks_relevant = sorted(chunks_relevant, key=lambda x: (x.metadata['message_index'], x.metadata['start_index']))
+        messages_relevant = []
 
-    print("+++++++++++过滤后保留的消息++++++++++++++++++++++过滤后保留的消息++++++++++++++++++++++过滤后保留的消息+++++++++++")   
-    for chunk_relevant in sorted_chunks_relevant:
-        index = chunk_relevant.metadata['message_index']
-        # unique_messages_list[index].content = chunk_relevant.page_content #不能改变内容（即不能使用分块后的内容，否则可能无法获取完整的答案）
-        message_relevant = unique_messages_list[index]
-        if message_relevant not in messages_relevant:
-            relevance_score = chunk_relevant.metadata.get('relevance_score',None)
-            print("--------------------------------")            
-            # if isinstance(message_relevant,ToolMessage):
-            #     if message_relevant.name == 'web_search':
-            #         pass
-            messages_relevant.append(message_relevant)
-            message_relevant.pretty_print()
-            print(f"^^^^^^^^^上条Message的{relevance_score=}^^^^^^^^^")
-    print("+++++++++++过滤后保留的消息++++++++++++++++++++++过滤后保留的消息++++++++++++++++++++++过滤后保留的消息+++++++++++")
-    messages_list.reverse() # 前面messages_list顺序翻转了，所以这里还要翻转回来
-    last_message = messages_list[-1]
-    if messages_relevant[-1]!=last_message: 
-        messages_relevant.append(last_message)
-    return messages_relevant
+        print(f"++++++++++++++++++++++++++++++++++++++++++++【过滤后保留的+最近的条{reserve_last_n_messages}】消息++++++++++++++++++++++++++++++++++++++++++++")   
+        for chunk_relevant in sorted_chunks_relevant:
+            index = chunk_relevant.metadata['message_index']
+            # unique_messages_list[index].content = chunk_relevant.page_content #不能改变内容（即不能使用分块后的内容，否则可能无法获取完整的答案）
+            message_relevant = unique_messages_list[index]
+            if message_relevant not in messages_relevant:
+                relevance_score = chunk_relevant.metadata.get('relevance_score',None)
+                print("--------------------------------")            
+                messages_relevant.append(message_relevant)
+                message_relevant.pretty_print()
+                print(f"^^^^^^^^^上条Message的{relevance_score=}^^^^^^^^^")
+        print("++++++++++++++++++++++++++++++++++++++++++++【过滤后保留的+最近的条{reserve_last_n_messages}】消息++++++++++++++++++++++++++++++++++++++++++++")   
+        messages_list.reverse() # 前面messages_list顺序翻转了，所以这里还要翻转回来
+        last_n_messages = messages_list[-reserve_last_n_messages:]
+        for last_message in last_n_messages:
+            if  last_message not in messages_relevant:
+                messages_relevant.append(last_message)
+        return messages_relevant
+    else:
+        return messages_list
 
 
 def get_es_connection(): 
