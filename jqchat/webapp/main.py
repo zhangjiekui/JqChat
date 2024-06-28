@@ -17,9 +17,13 @@ from flask import Flask, request, jsonify, send_from_directory, Response
 
 from jqchat.kernel_program.main import APP_PORT as KERNEL_APP_PORT
 from jqcode.jq_agent.c0_init_env_models import get_openai,get_openai_client,llm_model_name,api_key
-from jqcode.jq_agent.c0_init_env_models import get_all_knowledge_base
+from jqcode.jq_agent.c0_init_env_models import get_all_knowledge_base, filter_and_get_messages_relevant_to_query
 from jqcode.jq_agent.graph_create_utils import user_question_is_related_to_coding_or_data_analyzing,llm
-from jqcode.jq_agent.run_super_graph import arun_super_graph
+from jqcode.jq_agent.run_super_graph import super_graph_compiled_async,arun_super_graph
+from jqcode.jq_agent.jq_rag_agent_sub_graph import llm_chain,invoke_llm_config
+from langchain_core.pydantic_v1 import BaseModel, Field
+from langchain_core.prompts import ChatPromptTemplate
+from langchain_core.messages import HumanMessage,SystemMessage,ToolMessage,AIMessage
 
 # HAS_DATA_FILE_UPLOADED = os.environ.get("HAS_DATA_FILE_UPLOADED", False)
 
@@ -63,6 +67,22 @@ class LimitedLengthString:
         result = ''.join(self.data)
         return result[-self.maxlen:]
 
+class QuestionReWrite(BaseModel):
+    """结合上下文context部分考虑重写原始问题，使得原始问题更加明确，仅仅需要返回问题本身，不要有任何额外的解释或内容：（1）如果原始问题中不明确的实体指代,如该公司，他，这个地方等，请重写原始问题，用明确的实体替换不明确的指代，但不要有任何的拓展；（2）否则，请直接返回原始问题本身。"""
+    # k: str = Field(description="是否需要重写问题, k的值必须是'yes' or 'no'，'yes'表示需要重写")
+    q: str = Field(description='返回格式必须为{"q":$question}:$question代表原始问题或重写后的问题内容，不要有任何额外的解释或内容')
+
+question_rewrite_system_prompt = "结合上下文context部分考虑重写原始问题，使得原始问题更加明确，仅仅需要返回问题本身，不要有任何额外的解释或内容：（1）如果原始问题中不明确的实体指代,如该公司，他，这个地方等，请重写原始问题，用明确的实体替换不明确的指代，但不要有任何的拓展；（2）否则，请直接返回原始问题本身。"
+question_rewrite_prompt = lambda x: ChatPromptTemplate.from_messages(
+    [
+        SystemMessage(question_rewrite_system_prompt),
+        HumanMessage(
+            f"'Context':\n{x['context']}\n'EndOfContext' \nQuestion: {x['question']} \nAnswer: "
+        )
+    ]
+)
+question_rewrite_llm = llm.with_structured_output(QuestionReWrite,method="function_calling")
+question_rewrite_chain = question_rewrite_prompt | question_rewrite_llm
 
 message_buffer = LimitedLengthString()
 READER_MAP = {
@@ -350,6 +370,7 @@ def inject_context():
     return jsonify({"result": "success"})
 
 
+
 @app.route('/generate', methods=['POST'])
 # def generate_code():
 def agent_entry():
@@ -371,14 +392,50 @@ def agent_entry():
 
     code, text, status = None, None, 200
     config = {"recursion_limit":25,"configurable": {"thread_id": user_id}}
-    print(f"{config=}")
+
+    initial_graph_state = asyncio.run(super_graph_compiled_async.aget_state(config=config)).values
+    messages = initial_graph_state.get('messages',[])
+    
+    n_last_messages_num = 3
+    if len(messages)>n_last_messages_num:
+        n_last_messages = messages[-n_last_messages_num:]
+    else:
+        n_last_messages = messages
+
+    print(f"进入改写环节前的user_prompt={user_prompt}")
+    original_question = user_prompt
+    if n_last_messages:
+        history_messages_contents = [m.content for m in n_last_messages]
+        history_messages_context = '||'.join(history_messages_contents)
+        rewrited_question = ''
+        try:
+            result = question_rewrite_chain.invoke({"question": f"用户原始问题为：“{user_prompt}”","context":history_messages_context},config=invoke_llm_config)
+            print(f'question_rewrite_chain {result=}')
+            rewrited_question = result.q
+
+        except Exception as e:
+            print(f"question_rewrite_chain执行出现错误:{e},但忽略")
+            # prompt = "请结合下面的context部分考虑重写原始问题，使得原始问题更加明确，仅仅需要返回问题本身，不要有任何额外的解释或内容：（1）如果原始问题中不明确的实体指代,如该公司，他，这个地方等，请重写原始问题，用明确的实体替换不明确的指代，但不要有任何的拓展；（2）否则，请直接返回原始问题本身。"
+            # rewrited_question = llm_chain.invoke({"question": f"用户原始问题为：“{user_prompt}”\n{prompt}","context":history_messages_context},config=invoke_llm_config)
+        print(f"改写后得到的rewrited_question={rewrited_question}")
+        if rewrited_question:
+            user_prompt = rewrited_question   
+
+        print(f"original_question={original_question}")
+        print(f'history_messages_context={history_messages_context}')
+        print(f"rewrited_question={user_prompt}")
+
+    rewrited_feedback = ""
+    if user_prompt != original_question:
+        rewrited_feedback = f'【提示：对您的原始问题进行了改写：{original_question}  ==》 {user_prompt}】\n\n'
+
     is_coding_related = user_question_is_related_to_coding_or_data_analyzing(question=user_prompt)
     
     HAS_DATA_FILE_UPLOADED = os.environ.get("HAS_DATA_FILE_UPLOADED", False)
     if HAS_DATA_FILE_UPLOADED and is_coding_related:
         code, text, status = loop.run_until_complete(get_code(user_prompt, user_openai_key, model))
     else:
-        text, with_exception = arun_super_graph(question=user_prompt,config=config)
+        text, with_exception = arun_super_graph(question=user_prompt,config=config,super_graph_compiled_async=super_graph_compiled_async)
         if with_exception:
             if is_coding_related:
                 print('前面程序运行或判断出现了问题，下面试图使用Python代码方式来解决......')
@@ -393,6 +450,9 @@ def agent_entry():
     print('=='*30)
     # Append all messages to the message buffer for later use
     message_buffer.append(user_prompt + "\n\n")
+
+    if rewrited_feedback:
+        text = rewrited_feedback + text
 
     return jsonify({'code': code, 'text': text}), status
 

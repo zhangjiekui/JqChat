@@ -128,20 +128,20 @@ def get_last_state(state) -> dict:
         state["messages"] = filtered_messages
         # filtered_state_messages = state.get("messages",[])
         # print(f'state中过滤后的消息数量={len(filtered_state_messages)}')
-        try:            
-            question_rewrited = state.get("question_rewrited",'')
-            if not question_rewrited:
-                from jq_rag_agent_sub_graph import llm_chain,invoke_llm_config
-                messages_contents = [m.content for m in filtered_messages]
-                history_context = '||'.join(messages_contents)
-                prompt = "请结合上下文考虑原始问题是否需要重写。（1）如果原始问题中不明确的指代，请重写原始问题，去除不明确的指代，使得原始问题更加明确，但不要有任何的拓展；（2）否则，请直接返回原始问题。【要求：仅返回原始问题或重写后的问题内容，不要有任何额解释或额外的内容】"
-                question_rewrited = llm_chain.invoke({"question": f"用户原始问题为“{original_question}”，{prompt}","context":history_context},config=invoke_llm_config)
-                state['question'] = question_rewrited
-                state['question_rewrited'] = question_rewrited
-            print(f'{original_question=}')
-            print(f'{question_rewrited=}')
-        except Exception as e:
-            print(f'重写问题时，出现了错误{e}，忽略该错误，继续执行......')
+        # try:            
+        #     question_rewrited = state.get("question_rewrited",'')
+        #     if not question_rewrited:
+        #         from jq_rag_agent_sub_graph import llm_chain,invoke_llm_config
+        #         messages_contents = [m.content for m in filtered_messages]
+        #         history_context = '||'.join(messages_contents)
+        #         prompt = "请结合上下文考虑原始问题是否需要重写。（1）如果原始问题中不明确的指代，请重写原始问题，去除不明确的指代，使得原始问题更加明确，但不要有任何的拓展；（2）否则，请直接返回原始问题。【要求：仅返回原始问题或重写后的问题本身，不要有任何额解释或额外的内容】"
+        #         question_rewrited = llm_chain.invoke({"question": f"用户原始问题为“{original_question}”，{prompt}","context":history_context},config=invoke_llm_config)
+        #         state['question'] = question_rewrited
+        #         state['question_rewrited'] = question_rewrited
+        #     print(f'{original_question=}')
+        #     print(f'{question_rewrited=}')
+        # except Exception as e:
+        #     print(f'重写问题时，出现了错误{e}，忽略该错误，继续执行......')
     return state
 
 def get_custom_supervisor_node(supervisor_node, members, graph_name):

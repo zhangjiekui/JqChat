@@ -30,7 +30,7 @@ from langchain_core.messages import BaseMessage, HumanMessage,SystemMessage,Tool
 from langchain.callbacks.base import BaseCallbackHandler
 from jqcode.jq_splitters.jq_chinese_recursive_text_splitter import ChineseRecursiveTextSplitter
 from langchain_core.callbacks import StdOutCallbackHandler
-from dotenv import load_dotenv
+from dotenv import load_dotenv, find_dotenv
 os.environ['LANGCHAIN_TRACING_V2'] = 'true'
 os.environ['LANGCHAIN_ENDPOINT'] = 'https://api.smith.langchain.com'
 os.environ['LANGCHAIN_API_KEY'] = "ls__fe150087fa0643f28b3eae3a07d57529"
@@ -39,8 +39,10 @@ os.environ['TAVILY_API_KEY'] = "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"
 def load_project_env(): 
     print('\n\n')
     print('=*'*20)
-    root_dir = pathlib.Path(__file__).resolve().parent.parent.parent
-    env_dir = root_dir/'.env'
+    env_dir = find_dotenv()
+    print(f"项目.env文件路径：{env_dir}")
+    # root_dir = pathlib.Path(__file__).resolve().parent.parent.parent
+    # env_dir = root_dir/'.env'
     dotenv_loaded = load_dotenv(env_dir)
     if dotenv_loaded:
         print(f"=*=* load_dotenv('{env_dir}')成功！")

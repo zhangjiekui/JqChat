@@ -73,9 +73,27 @@ for question in qs:
 # async def main():
 #     asyncio.create_task(long_running_task())
 # async def arun_super_graph(question:str,config = {"recursion_limit":25,"configurable": {"thread_id": "userid-sessionid_981"}}):
-def arun_super_graph(question:str,config = {"recursion_limit":25,"configurable": {"thread_id": "userid-sessionid_97877"}}):
-    async_memory = AsyncSqliteSaver.from_conn_string("checkpoints.async_sqlite")
-    super_graph_compiled_async = super_graph.compile(checkpointer=async_memory)
+
+
+async_memory = AsyncSqliteSaver.from_conn_string("checkpoints.async_sqlite")
+super_graph_compiled_async = super_graph.compile(checkpointer=async_memory)
+def arun_super_graph(question:str,config = {"recursion_limit":25,"configurable": {"thread_id": "userid-sessionid_97877"}},super_graph_compiled_async=super_graph_compiled_async):
+    
+    # # """Get the current state of the graph."""
+    # initial_state = asyncio.run(super_graph_compiled_async.aget_state(config=config))
+    # # """Get the history of the state of the graph."""
+    # # initial_state_history = asyncio.run(super_graph_compiled_async.aget_state_history(config=config))
+
+    # print(initial_state)
+
+   
+    # async def aget_state_history_result():        
+    #     async_state_history = super_graph_compiled_async.aget_state_history(config)
+    #     prior_state=None
+    #     async for state in async_state_history:
+    #         print(state)
+    #         prior_state = state
+    # asyncio.run(aget_state_history_result())
 
     print('=*='*20)
     print(f"In Agent 'arun_graph_workflow'：{question=}")
