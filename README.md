@@ -89,8 +89,8 @@ docker run --shm-size=64g --name xinferencev121 -d -p 9997:9997 -e XINFERENCE_MO
 ###### 模型下载地址相关：-e XINFERENCE_MODEL_SRC=modelscope -e HF_ENDPOINT=https://hf-mirror.com
 
 ### 模型 【进入Docker Shell运行】
-【qwen2  的72B Int4 gptq/awq  对应的**max_seq_len=32000 & gpu_memory_utilization=0.90**】
-
+【qwen2  的72B Int4 gptq/awq  对应的**max_seq_len=32000 & gpu_memory_utilization=0.90**】,gptq准确率和推理效率都更优
+![alt text](image.png)
 【qwen1.5的72B Int4 gptq/awq  对应的**max_seq_len=10000 & gpu_memory_utilization=0.90**】
 【qwen1.5的110B Int4 gptq/awq 对应的**max_seq_len=10000 & gpu_memory_utilization=0.95**】
 【qwen1.5的72B Int4 gptq/awq 上面Docker运行对应的设置context_length=10000】
