@@ -45,7 +45,7 @@ conda config --set show_channel_urls yes
 
 #### 当前使用版本
 原版/最新版是xinference 0.12.3 (2024-06-28)
-
+注意【qwen2  的72B Int4 gptq/awq  对应的**max_seq_len=32000 & gpu_memory_utilization=0.90,gptq准确率和推理效率都更优**】
 ### 本地Pip安装运行
 ```
 workon xinfer
