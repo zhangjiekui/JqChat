@@ -1,3 +1,5 @@
+# source: https://learn.deeplearning.ai/courses/ai-agents-in-langgraph/lesson/3/langgraph-components
+print('参考：https://learn.deeplearning.ai/courses/ai-agents-in-langgraph/lesson/3/langgraph-components')
 from langgraph.graph import StateGraph, END
 from typing import TypedDict, Annotated
 import operator
@@ -20,8 +22,7 @@ print(tool.name)
 
 class GraphAgentState(TypedDict):
     messages: Annotated[list[AnyMessage], add_messages]
-    #  Annotated[list, add_messages]
-    added_messages: Annotated[list[AnyMessage], add_messages]
+
 
 class GraphAgent:
     def __init__(self,llm_model:ChatOpenAI, tools:list, system_prompt:str,config= {"recursion_limit":25,"configurable": {"thread_id": "UserName_SessionID"}}) -> None:
@@ -34,7 +35,7 @@ class GraphAgent:
         self.config = config
         self.memory = SqliteSaver.from_conn_string("checkpoints.sqlite")
         self.graph = self.graph_definition()
-        self.state = self.graph.get_state(config=self.config)
+        self.state = self.graph.get_state(config=self.config).values
         
     
     def graph_definition(self,):
@@ -83,6 +84,11 @@ If you need to look up some information before asking a follow up question, you 
 
 
 abot = GraphAgent(llm_model=None, tools=[tool], system_prompt=prompt)
+# print(abot.state)
+messages = abot.state.get('messages',None)
+if messages:
+    for m in messages:
+        m.pretty_print()
 user_questions = [
     "What is the weather in SF and LA?",
     "Who won the super bowl in 2024? In what state is the winning team headquarters located?What is the GDP of that state? Answer each question.",
@@ -95,4 +101,4 @@ for user_question in user_questions:
     print(f"AI：{result['messages'][-1].content}")
     print('================='*10)
 
-    
+# source: https://learn.deeplearning.ai/courses/ai-agents-in-langgraph/lesson/3/langgraph-components    

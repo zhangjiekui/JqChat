@@ -44,12 +44,13 @@ conda config --set show_channel_urls yes
 ## Xinference LLM
 
 #### 当前使用版本
-原版/最新版是xinference 0.12.1 (2024-06-18)
+原版/最新版是xinference 0.12.3 (2024-06-28)
 
-### 本地Pip安装运行：
+### 本地Pip安装运行
+```
 workon xinfer
 XINFERENCE_HOME=/data/xinference xinference-local -H 0.0.0.0 --log-level debug 
-
+```
 ### Docker运行
 
 #### Docker参数配置
