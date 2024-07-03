@@ -376,9 +376,10 @@ def generate(state:RagSubgraphState):
     sources = set([s for s in _sources if s])
     referens = list(sources)
     if referens:
-        referens_str = "   【参考文档为】:\n"
+        referens_str = "   【参考文档为】:  \n"
         for i,r in enumerate(referens):
-            referens_str += f"    [{i+1}] <a href={r}>{r}</a>\n"
+            # referens_str += f"    [{i+1}] <a href={r}>{r}</a>\n"
+            referens_str += f"    {i+1}. [{r}]({r})  \n"
 
         os.environ["REFERENCE"] = referens_str
         print(f'{referens_str=}')
@@ -487,9 +488,10 @@ def web_search(state:RagSubgraphState):
             print(f'【{title}】{s}')
             referens.append(s)
     if referens:
-        referens_str = "   【参考网页为】:\n"
+        referens_str = "   【参考网页为】:  \n"
         for i,r in enumerate(referens):
-            referens_str += f"    [{i+1}] <a href={r}>{r}</a>\n"
+            # referens_str += f"    [{i+1}] <a href={r}>{r}</a>\n"
+            referens_str += f"    {i+1}. [{r}]({r})  \n"
             
         os.environ["REFERENCE"] = referens_str
         print(f'{referens_str=}')
