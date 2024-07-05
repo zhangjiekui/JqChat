@@ -36,7 +36,7 @@ from docx.document import Document as DocxDocument
 
 from llama_index.core.readers.base import BaseReader
 from llama_index.core import Document as LmDocument
-from llama_index.core import SimpleDirectoryReader
+from llama_index.legacy.readers.file.base import SimpleDirectoryReader
 from llama_index.legacy.readers.file.base import DEFAULT_FILE_READER_CLS
 from llama_index.core.readers.file.base import default_file_metadata_func
 
@@ -489,9 +489,9 @@ if __name__ == "__main__":
     #                                    fr'd:/JqkjKB/jqkjfiles/outputs/outputfiles/converted_docx/baichuan.docx',
     #                                    ])
     
-    documents0 = _test_JqkjDocxReader([
-                                    fr'/data/projects/JqChat/jqcode/jq_readers/_testinputdocs/UserGuide_new.docx',
-                                    ])
+    # documents0 = _test_JqkjDocxReader([
+    #                                 fr'/data/projects/JqChat/jqcode/jq_readers/_testinputdocs/UserGuide_new.docx',
+    #                                 ])
 
 
     documents1,documents2 = _test_JqkjSimpleDirectoryReader()
