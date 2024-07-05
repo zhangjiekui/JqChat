@@ -312,6 +312,9 @@ def models():
 def docs():
     return  jsonify(get_all_knowledge_base(None,True))
 
+
+
+
 @app.route('/api/<path:path>', methods=["GET", "POST"])
 def proxy_kernel_manager(path):
     if request.method == "POST":
