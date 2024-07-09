@@ -10,11 +10,11 @@ from langchain_community.vectorstores.elasticsearch import (
     ElasticsearchStore,
 )
 
-from chatchat.configs import KB_ROOT_PATH, kbs_config
-from chatchat.server.file_rag.utils import get_Retriever
-from chatchat.server.knowledge_base.kb_service.base import KBService, SupportedVSType
-from chatchat.server.knowledge_base.utils import KnowledgeFile
-from chatchat.server.utils import get_Embeddings
+from jqcode.jq_knowledge_manegement.chatchat.configs import KB_ROOT_PATH, kbs_config
+from jqcode.jq_knowledge_manegement.chatchat.server.file_rag.utils import get_Retriever
+from jqcode.jq_knowledge_manegement.chatchat.server.knowledge_base.kb_service.base import KBService, SupportedVSType
+from jqcode.jq_knowledge_manegement.chatchat.server.knowledge_base.utils import KnowledgeFile
+from jqcode.jq_knowledge_manegement.chatchat.server.utils import get_Embeddings
 
 logger = logging.getLogger()
 

@@ -51,7 +51,7 @@ logger = jqkj_logger(__file__).get_logger()
 
 class JqkjDocxReader(BaseReader):
     """Docx parser."""
-    def __init__(self):
+    def __init__(self,file_path:str=None):
         super().__init__()
         logger.warning(f'JqkjDocxReader:返回的text只是为了兼容llama_index的Reader要求，简单获取的。原始的doc/tree对象存放到了（llama_index）LmDocument document对象的metadata字典中，以便获取做进一步的精细化处理')
         try:
@@ -62,6 +62,11 @@ class JqkjDocxReader(BaseReader):
                 "`pip install python-docx`"
             )
         self.DocumentFunc = DocxDocumentFunc
+        self.file_path = Path(file_path)
+
+    def load(self, extra_info: Optional[Dict] = None) -> List[LmDocument]:
+        """Parse docx file."""
+        return self.load_data(file_path = self.file_path,extra_info= extra_info)
 
     def load_data(self, file_path: Path, extra_info: Optional[Dict] = None) -> List[LmDocument]:
         """Parse docx file."""
@@ -169,14 +174,6 @@ class JqkjDocxReader(BaseReader):
                 text = f"<table column_names={col_text}/>" #th: column_name
                 df,vf_string = self.read_docx_table(block)
                 df_table_list.append(df)
-
-                # vf =  StringIO()
-                # vf.write(vf_string)
-                # vf.seek(0)
-                # df = pd.read_csv(vf)
-
- 
-                
 
                 current_depth = parent_node.depth+1
                 level = current_depth
