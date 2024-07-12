@@ -1,4 +1,4 @@
-from typing import Iterator
+from typing import Iterator, List, Optional, Union
 
 from docx import Document as DocxDocument
 from llama_index.core.schema import Document as LmDocument
@@ -143,7 +143,7 @@ def print_n_nodes(node:Node,n=50):
             print(f"{prefix}{n.numbering}_{n.text[:10]} :[{n.style}]")
 
 
-def jieba_pre_process(text:[[str], list[str]]):
+def jieba_pre_process(text:Optional[Union[str, List[str]]]):
     logger.debug(f"JiebaInput:{text}")
     _cut_results = []
     if isinstance(text, str):

@@ -195,8 +195,6 @@ def get_loader(loader_name: str, file_path: str, loader_kwargs: Dict = None):
                     "chatchat.server.file_rag.document_loaders"
                 )
 
-
-
             else:
                 document_loaders_module = importlib.import_module(
                     "langchain_community.document_loaders"
@@ -227,6 +225,11 @@ def get_loader(loader_name: str, file_path: str, loader_kwargs: Dict = None):
             loader_kwargs.setdefault("jq_schema", ".")
             loader_kwargs.setdefault("text_content", False)
         elif loader_name == "JSONLinesLoader":
+            loader_kwargs.setdefault("jq_schema", ".")
+            loader_kwargs.setdefault("text_content", False)
+
+        # 新增
+        elif loader_name == "JqkjDocxReader":
             loader_kwargs.setdefault("jq_schema", ".")
             loader_kwargs.setdefault("text_content", False)
 

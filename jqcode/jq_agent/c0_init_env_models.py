@@ -28,7 +28,7 @@ from langchain_community.vectorstores.utils import DistanceStrategy
 from langchain.retrievers import ContextualCompressionRetriever
 from langchain_core.messages import BaseMessage, HumanMessage,SystemMessage,ToolMessage,AIMessage
 from langchain.callbacks.base import BaseCallbackHandler
-from jqcode.jq_splitters.jq_chinese_recursive_text_splitter import ChineseRecursiveTextSplitter
+from jqcode.jq_splitters.backend_splitter_utils.jq_chinese_recursive_text_splitter import ChineseRecursiveTextSplitter
 from langchain_core.callbacks import StdOutCallbackHandler
 from dotenv import load_dotenv, find_dotenv
 os.environ['LANGCHAIN_TRACING_V2'] = 'true'
@@ -94,7 +94,7 @@ def get_openai_client():
     print(f'当前使用的模型base_url为:OpenAI, {openai_client.base_url}')
     return openai_client
 
-def get_langchain_chat_model(temperature=0.0, max_tokens=10000, streaming=True):
+def get_langchain_chat_model(temperature=0.0, max_tokens=300000, streaming=True):
     chat_model = ChatOpenAI(
         model_name=llm_model_name,
         openai_api_base=base_url,    

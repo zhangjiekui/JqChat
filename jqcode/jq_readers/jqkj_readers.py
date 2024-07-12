@@ -40,9 +40,9 @@ from llama_index.legacy.readers.file.base import SimpleDirectoryReader
 from llama_index.legacy.readers.file.base import DEFAULT_FILE_READER_CLS
 from llama_index.core.readers.file.base import default_file_metadata_func
 
-from jqcode.jq_readers.jqkj_doc_pdf2docx_converter import convert_doc_pdf2docx_using_WinWord
-from jqcode.jq_readers.jqkj_doc_tree_utils import find_nearest_parent_but_not_TableOrImageNode,TreeNodeType
-from jqcode.jq_readers.jqkj_doc_tree_utils import compare_with_zip_docx2img,get_paras_in_table
+from jqcode.jq_readers.backend_reader_utils.jqkj_doc_pdf2docx_converter import convert_doc_pdf2docx_using_WinWord
+from jqcode.jq_readers.backend_reader_utils.jqkj_doc_tree_utils import find_nearest_parent_but_not_TableOrImageNode,TreeNodeType
+from jqcode.jq_readers.backend_reader_utils.jqkj_doc_tree_utils import compare_with_zip_docx2img,get_paras_in_table
 
 from jqcode.jq_utils.logger import jqkj_logger
 logger = jqkj_logger(__file__).get_logger()
@@ -62,7 +62,8 @@ class JqkjDocxReader(BaseReader):
                 "`pip install python-docx`"
             )
         self.DocumentFunc = DocxDocumentFunc
-        self.file_path = Path(file_path)
+        if file_path:
+            self.file_path = Path(file_path)
 
     def load(self, extra_info: Optional[Dict] = None) -> List[LmDocument]:
         """Parse docx file."""
