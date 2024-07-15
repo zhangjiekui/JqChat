@@ -17,6 +17,12 @@ from llama_index.core.node_parser.node_utils import IdFuncCallable, build_nodes_
 from llama_index.core.node_parser.interface import MetadataAwareTextSplitter
 
 from langchain import schema
+from langchain.retrievers import EnsembleRetriever
+from langchain_community.retrievers import BM25Retriever as LC_BM25Retriever
+from langchain.retrievers import ContextualCompressionRetriever
+from langchain.chains import RetrievalQA
+from jqcode.jq_agent.c0_init_env_models import get_emb_8k_rerank_model,get_langchain_chat_model, get_es_searchstore_index_documents
+from jqcode.jq_splitters.backend_splitter_utils.jq_sentence_transformers_tokentextsplitter import SentenceTransformersTokenTextSplitter
 
 
 
@@ -381,7 +387,14 @@ class JqkjDocTreeTokenTextSplitter(MetadataAwareTextSplitter):
         lm_base_node.metadata["file_path"] = file_path_txt
         lm_base_node.metadata["file_path_docx_jq"] = file_path_docx
 
-        llama_index_nodes = [TextNode(text=chunk) for chunk in chunks_saved]           
+        _metadata = lm_base_node.metadata
+        del _metadata['file_doc_object_jq']
+        del _metadata['file_doc_tree_jq']
+        del _metadata['df_table_list_jq']
+
+
+        llama_index_nodes = [TextNode(text=chunk,metadata = _metadata ,excluded_embed_metadata_keys=lm_base_node.excluded_embed_metadata_keys,excluded_llm_metadata_keys=lm_base_node.excluded_llm_metadata_keys) for chunk in chunks_saved]
+
         return llama_index_nodes
 
 
@@ -569,12 +582,12 @@ class JqkjDocTreeTokenTextSplitter(MetadataAwareTextSplitter):
         return chunks
     
 if __name__ == "__main__":
-    from langchain.retrievers import EnsembleRetriever
-    from langchain_community.retrievers import BM25Retriever as LC_BM25Retriever
-    from langchain.retrievers import ContextualCompressionRetriever
-    from langchain.chains import RetrievalQA
-    from jqcode.jq_agent.c0_init_env_models import get_emb_8k_rerank_model,get_langchain_chat_model
-    from jqcode.jq_splitters.backend_splitter_utils.jq_sentence_transformers_tokentextsplitter import SentenceTransformersTokenTextSplitter
+    # from langchain.retrievers import EnsembleRetriever
+    # from langchain_community.retrievers import BM25Retriever as LC_BM25Retriever
+    # from langchain.retrievers import ContextualCompressionRetriever
+    # from langchain.chains import RetrievalQA
+    # from jqcode.jq_agent.c0_init_env_models import get_emb_8k_rerank_model,get_langchain_chat_model, get_es_searchstore_index_documents
+    # from jqcode.jq_splitters.backend_splitter_utils.jq_sentence_transformers_tokentextsplitter import SentenceTransformersTokenTextSplitter
     embed_model,embedding_model_8k,reranker = get_emb_8k_rerank_model()
     llm = get_langchain_chat_model()
 
@@ -640,13 +653,14 @@ if __name__ == "__main__":
     # print(reranked_nodes)
 
     lc_all_text_splits = [i.text for i in nodes]
-    lc_documents = [schema.Document(page_content=text_split) for text_split in lc_all_text_splits]
-    from langchain_community.vectorstores import FAISS
-    vectorstore = FAISS.from_documents(documents=lc_documents, embedding=embed_model)
+    lc_documents = [schema.Document(page_content=node.text,metadata=node.metadata) for node in nodes]
+    # from langchain_community.vectorstores import FAISS
+    # vectorstore = FAISS.from_documents(documents=lc_documents, embedding=embed_model)
 
-    
+    vectorstore = get_es_searchstore_index_documents(documents=lc_documents, embedding=embed_model,index_name="test_doc_tree_reader",source_id_key='file_path')
     retriever = vectorstore.as_retriever(search_type="similarity", search_kwargs={"k":top_n})
-    bm25_retriever = LC_BM25Retriever.from_texts(lc_all_text_splits,preprocess_func=jieba_pre_process)  
+    # bm25_retriever = LC_BM25Retriever.from_texts(lc_all_text_splits,preprocess_func=jieba_pre_process)
+    bm25_retriever = LC_BM25Retriever.from_documents(lc_documents,preprocess_func=jieba_pre_process)  
     bm25_retriever.k = top_n
 
     # 初始化集成检索器  

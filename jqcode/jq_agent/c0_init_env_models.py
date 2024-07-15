@@ -31,7 +31,8 @@ from langchain_community.vectorstores.utils import DistanceStrategy
 from langchain.retrievers import ContextualCompressionRetriever
 from langchain_core.messages import BaseMessage, HumanMessage,SystemMessage,ToolMessage,AIMessage
 from langchain.callbacks.base import BaseCallbackHandler
-from jqcode.jq_splitters.backend_splitter_utils.jq_chinese_recursive_text_splitter import ChineseRecursiveTextSplitter
+# from jqcode.jq_splitters.backend_splitter_utils.jq_chinese_recursive_text_splitter import ChineseRecursiveTextSplitter
+# from jqcode.jq_splitters.jq_docx_tree_text_splitter import JqkjDocTreeTokenTextSplitter
 from langchain_core.callbacks import StdOutCallbackHandler
 from dotenv import load_dotenv, find_dotenv
 os.environ['LANGCHAIN_TRACING_V2'] = 'true'
@@ -222,17 +223,22 @@ def get_emb_8k_rerank_model(model_name=embedding_model_name, device = ['cpu','cp
     return embed_model,embedding_model_8k,reranker
 
 
-chinese_text_splitter = ChineseRecursiveTextSplitter(chunk_size=500,chunk_overlap=0.2,model_name=embed_model)
+# chinese_text_splitter = ChineseRecursiveTextSplitter(chunk_size=500,chunk_overlap=0.2,model_name=embed_model)
+# jq_doc_tree_splitter = JqkjDocTreeTokenTextSplitter(chunk_size=500,chunk_overlap=0.2)
 # Clean
 def replace_multiple_newlines(text):
     return re.sub(r'\n+', '\n', text)
 
-def split_and_get_chunks_relevant_from_documents(query:str, docs_list:List[Document]=None,text_splitter=chinese_text_splitter,reranker=reranker,
+def split_and_get_chunks_relevant_from_documents(query:str, docs_list:List[Document]=None,text_splitter=None,reranker=reranker,
                                                  if_reranking:bool=True,retriever_docs_num=10,final_docs_num=4,score_threshold=0.3):
     docs_list_cleaned = []
     for doc in docs_list:
         doc.page_content = replace_multiple_newlines(doc.page_content)
         docs_list_cleaned.append(doc)
+    if not text_splitter:
+        from jqcode.jq_splitters.backend_splitter_utils.jq_chinese_recursive_text_splitter import ChineseRecursiveTextSplitter
+        text_splitter = ChineseRecursiveTextSplitter(chunk_size=500,chunk_overlap=0.2,model_name=embed_model)
+    
     text_chunks = text_splitter.split_documents(docs_list_cleaned)
     
     if if_reranking:
@@ -246,7 +252,7 @@ def split_and_get_chunks_relevant_from_documents(query:str, docs_list:List[Docum
     return chunks_relevant
 
 # https://github.com/langchain-ai/langgraph/blob/main/examples/managing-conversation-history.ipynb
-def filter_and_get_messages_relevant_to_query(query:str,messages_list:List[BaseMessage],text_splitter=chinese_text_splitter,reranker=reranker,
+def filter_and_get_messages_relevant_to_query(query:str,messages_list:List[BaseMessage],text_splitter=None,reranker=reranker,
                                                  if_reranking:bool=True,retriever_docs_num=10,final_docs_num=6 ,score_threshold=0.3,reserve_last_n_messages = 6):
     if len(messages_list) > reserve_last_n_messages:
         unique_messages_list = []
@@ -258,7 +264,10 @@ def filter_and_get_messages_relevant_to_query(query:str,messages_list:List[BaseM
                 messages_content_set.add(message.content)
         unique_messages_list.reverse()    
         docs_from_messages = [Document(page_content=message.content,metadata={"message_index":message_index}) for message_index, message in enumerate(unique_messages_list)]
-        
+        if not text_splitter:
+            from jqcode.jq_splitters.backend_splitter_utils.jq_chinese_recursive_text_splitter import ChineseRecursiveTextSplitter
+            text_splitter = ChineseRecursiveTextSplitter(chunk_size=500,chunk_overlap=0.2,model_name=embed_model)
+
         chunks_relevant = split_and_get_chunks_relevant_from_documents(query, docs_from_messages,text_splitter=text_splitter,reranker=reranker,
                                                                     if_reranking=if_reranking,retriever_docs_num=retriever_docs_num, final_docs_num=final_docs_num,score_threshold=score_threshold)
 
@@ -325,7 +334,9 @@ def get_es_searchstore(embedding=None,es_connection=None,index_name='test',strat
 # 方式一，使用LangChain indexing API，防止重复插入
 # https://python.langchain.com/docs/modules/data_connection/indexing 
 
-def get_es_searchstore_index_documents(documents,embedding,es_connection,index_name,cleanup="incremental",clear_before_add_index=True,strategy=strategy):
+def get_es_searchstore_index_documents(documents,embedding,index_name,es_connection=None,cleanup="incremental",clear_before_add_index=True,strategy=strategy,source_id_key="source"):
+    if not es_connection:
+        es_connection=get_es_connection()
     es_searchstore = ElasticsearchStore(es_connection=es_connection, index_name=index_name, embedding=embedding,strategy=strategy)
     namespace = f"elasticsearch/{index_name}"
     record_manager = SQLRecordManager(namespace, db_url="sqlite:///record_manager_cache.sql")
@@ -333,20 +344,22 @@ def get_es_searchstore_index_documents(documents,embedding,es_connection,index_n
     
     def _clear():
         """Hacky helper method to clear content. See the `full` mode section to to understand why it works."""
-    clear_result_report = index([], record_manager, es_searchstore, cleanup="full", source_id_key="source")
+    clear_result_report = index([], record_manager, es_searchstore, cleanup="full", source_id_key=source_id_key)
     print(f'Clear_Result report of "index_documents_to_es_searchstore":{clear_result_report}')
 
     if clear_before_add_index:
         _clear()
     es_searchstore.index_name=index_name
-    index_result_report=index(documents, record_manager, es_searchstore, cleanup=cleanup, source_id_key="source")
+    index_result_report=index(documents, record_manager, es_searchstore, cleanup=cleanup, source_id_key=source_id_key)
     print(f'Index_Result report of "index_documents_to_es_searchstore":{index_result_report}')
 
     es_searchstore.client.indices.refresh(index=index_name)
     return es_searchstore
 
 # 方式二：常见的在教程中见到的
-def get_es_searchstore_from_documents(documents,embedding,es_connection,index_name,strategy=strategy):
+def get_es_searchstore_from_documents(documents,embedding,index_name,es_connection=None,strategy=strategy):
+    if not es_connection:
+        es_connection=get_es_connection()
     es_searchstore = ElasticsearchStore.from_documents(documents=documents,embedding=embedding,es_connection=es_connection,index_name=index_name,strategy=strategy)
     es_searchstore.client.indices.refresh(index=index_name)
     es_searchstore.index_name=index_name
