@@ -5,8 +5,8 @@ from functools import partial
 from typing import List, Optional, Any, Callable,Union
 from transformers import AutoTokenizer
 from langchain.text_splitter import RecursiveCharacterTextSplitter
-from langchain_community.embeddings import HuggingFaceEmbeddings,HuggingFaceBgeEmbeddings
-
+from langchain_community.embeddings import HuggingFaceBgeEmbeddings
+from langchain_huggingface import HuggingFaceEmbeddings
 from jqcode.jq_utils.logger import jqkj_logger
 from jqcode.jq_config import general_config
 

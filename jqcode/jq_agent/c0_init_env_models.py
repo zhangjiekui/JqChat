@@ -3,11 +3,12 @@ import os
 import re
 import pathlib
 
-from typing import Annotated, List, TypedDict
-
+from typing import Annotated, List, TypedDict, Optional, Sequence
+from langchain.callbacks.manager import Callbacks
 import openai
 import langchain
-langchain.verbose = True
+langchain.verbose = False
+from langchain.pydantic_v1 import Extra
 from openai import OpenAI
 from langchain_openai import ChatOpenAI
 from BCEmbedding.tools.langchain import BCERerank
@@ -19,6 +20,8 @@ from langchain_elasticsearch import ElasticsearchStore
 from langchain.indexes import SQLRecordManager, index
 from langchain_elasticsearch.chat_history import ElasticsearchChatMessageHistory
 from langchain_community.chat_models import ChatOllama
+from langchain.retrievers.document_compressors.base import BaseDocumentCompressor
+from sentence_transformers import SentenceTransformer,CrossEncoder
 from langchain_experimental.llms.ollama_functions import OllamaFunctions
 from langchain_community.document_loaders import WebBaseLoader
 from langchain.text_splitter import RecursiveCharacterTextSplitter
@@ -122,13 +125,72 @@ def get_langchain_chat_ollama_functions():
     print(f'当前使用的模型为:Langchain OllamaFunctions, {litellm_model.model}, API_URL为{litellm_model.base_url}')
     return litellm_model
 
+
+# 留着备用
+# Visualized-BGE： https://github.com/FlagOpen/FlagEmbedding/tree/master/FlagEmbedding/visual 
+class BgeRerank(BaseDocumentCompressor):
+    """Document compressor that uses `BAAI/bge-reranker`."""
+
+    model_name:str = "BAAI/bge-reranker-large"
+    """Model name to use for reranking."""
+    top_n: int = 10
+    """Number of documents to return."""
+    model:CrossEncoder = CrossEncoder(model_name)
+    """CrossEncoder instance to use for reranking."""
+
+    def bge_rerank(self,query,docs):
+
+        model_inputs =  [[query, doc] for doc in docs]
+        scores = self.model.predict(model_inputs)
+        results = sorted(enumerate(scores), key=lambda x: x[1], reverse=True)
+
+        return results[:self.top_n]
+
+
+    class Config:
+        """Configuration for this pydantic object."""
+
+        extra = Extra.forbid
+        arbitrary_types_allowed = True
+
+    def compress_documents(
+        self,
+        documents: Sequence[Document],
+        query: str,
+        callbacks: Optional[Callbacks] = None,
+    ) -> Sequence[Document]:
+        """
+        Compress documents using `BAAI/bge-reranker`.
+
+        Args:
+            documents: A sequence of documents to compress.
+            query: The query to use for compressing the documents.
+            callbacks: Callbacks to run during the compression process.
+
+        Returns:
+            A sequence of compressed documents.
+        """
+        if len(documents) == 0:  # to avoid empty api call
+            return []
+        doc_list = list(documents)
+        _docs = [d.page_content for d in doc_list]
+        results = self.bge_rerank(query, _docs)
+        final_results = []
+        for r in results:
+            doc = doc_list[r[0]]
+            doc.metadata["relevance_score"] = r[1]
+            final_results.append(doc)
+        return final_results
+
+
 # todo: embedding_model_8k with langchain
 def _get_emb_8k_rerank_model(model_name=embedding_model_name, device = ['cpu','cpu','cpu'],final_docs_num_reranked=4): #device = ['cuda:1','cuda:2''cuda:3']
     if 'bge' in embedding_model_name: 
         # 有query_instruction https://github.com/langchain-ai/langchain/blob/ee94ef55ee6ab064da08340817955f821dfa6261/libs/langchain/langchain/embeddings/huggingface.py#L187
         from langchain_community.embeddings import HuggingFaceBgeEmbeddings as HuggingFaceEmbeddings
     else:
-        from langchain_community.embeddings import HuggingFaceEmbeddings
+        # from langchain_community.embeddings import HuggingFaceEmbeddings
+        from langchain_huggingface import HuggingFaceEmbeddings
     embedding_model_kwargs = {'device': device[0]}
     embedding_encode_kwargs = {'batch_size': 32, 'normalize_embeddings': True}
     embed_model = HuggingFaceEmbeddings(

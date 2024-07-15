@@ -495,11 +495,11 @@ class JqkjDocTreeTokenTextSplitter(MetadataAwareTextSplitter):
     def _parse_node(self, node: BaseNode, sub_nodes_chunk_size=8192,cutoff_ratio_as_chunk=0.8,get_to_first_title_directly=True) -> List[BaseNode]:
 
         doc_tree = get_doc_tree_from_document(node)
-        if doc_tree:
-            sub_doc_tree_nodes = self._parse_file_into_sub_nodes(node, doc_tree, sub_nodes_chunk_size=sub_nodes_chunk_size,
-                                              cutoff_ratio_as_chunk =cutoff_ratio_as_chunk,
-                                              get_to_first_title_directly=get_to_first_title_directly)
-            print('dubug sub_doc_tree_nodes')
+        # if doc_tree:
+        #     sub_doc_tree_nodes = self._parse_file_into_sub_nodes(node, doc_tree, sub_nodes_chunk_size=sub_nodes_chunk_size,
+        #                                       cutoff_ratio_as_chunk =cutoff_ratio_as_chunk,
+        #                                       get_to_first_title_directly=get_to_first_title_directly)
+        #     print('dubug sub_doc_tree_nodes')
 
         if doc_tree:
             llama_index_nodes = self._parse_node_on_tree(node, doc_tree, cutoff_ratio_as_chunk,get_to_first_title_directly)       
@@ -569,7 +569,8 @@ class JqkjDocTreeTokenTextSplitter(MetadataAwareTextSplitter):
         return chunks
     
 if __name__ == "__main__":
-    from langchain.retrievers import BM25Retriever, EnsembleRetriever
+    from langchain.retrievers import EnsembleRetriever
+    from langchain_community.retrievers import BM25Retriever as LC_BM25Retriever
     from langchain.retrievers import ContextualCompressionRetriever
     from langchain.chains import RetrievalQA
     from jqcode.jq_agent.c0_init_env_models import get_emb_8k_rerank_model,get_langchain_chat_model
@@ -582,7 +583,7 @@ if __name__ == "__main__":
     doc_tree_spiltter = JqkjDocTreeTokenTextSplitter.from_defaults()
     print(doc_tree_spiltter.class_name())
 
-    top_n=1
+    top_n = 4
     input_file_dir = fr'/data/projects/JqChat/jqcode/jq_readers/_testinputdocs'
 
     query0 = "晶奇公司的应急技术服务电话？"
@@ -597,7 +598,7 @@ if __name__ == "__main__":
     query9 = '厦门市智慧民政一体化的建设内容包括哪些？'
 
     qs = [query0,query1,query2,query3,query4,query5,query6,query7,query8,query9]
-    qs = [query7]
+    # qs = [query7]
 
     # llama_index的实现 https://docs.llamaindex.ai/en/stable/examples/retrievers/bm25_retriever.html
     from llama_index.core import StorageContext,VectorStoreIndex,ServiceContext    
@@ -606,14 +607,14 @@ if __name__ == "__main__":
     from llama_index.core.postprocessor import SentenceTransformerRerank
     from llama_index.core import QueryBundle
     from llama_index.core.retrievers  import RouterRetriever
-
-    from llama_index.retrievers.bm25 import BM25Retriever
+    
+    from llama_index.retrievers.bm25 import BM25Retriever as LM_BM25Retriever
     # from llama_index.legacy.retrievers import BM25Retriever
     
    
 
 
-    reranker = SentenceTransformerRerank(top_n=top_n, model=reranker.model)
+    st_reranker = SentenceTransformerRerank(top_n=top_n, model=reranker.model)
     simple_reader = JqkjSimpleDirectoryReader(input_file_dir,overwrite_existing_converted_files=False,required_exts=['.docx','.pdf'])
     documents = simple_reader.load_data()
     service_context = ServiceContext.from_defaults(llm=llm, embed_model=embed_model,node_parser=doc_tree_spiltter)
@@ -625,15 +626,79 @@ if __name__ == "__main__":
     vector_index = VectorStoreIndex(nodes=nodes,storage_context=storage_context,service_context=service_context)
     vector_retriever = VectorIndexRetriever(index=vector_index,similarity_top_k=top_n)
     # We can pass in the index, doctore, or list of nodes to create the retriever
-    bm25_retriever  = BM25Retriever.from_defaults(nodes=nodes, similarity_top_k=top_n) 
+    bm25_retriever  = LM_BM25Retriever.from_defaults(nodes=nodes, similarity_top_k=top_n) 
     retriever_tools = [
         RetrieverTool.from_defaults(retriever=vector_retriever,description="适用于大部分情形,Useful in most cases"),
         RetrieverTool.from_defaults(retriever=bm25_retriever,description="适用于搜索特定信息、事实信息,Useful if searching about specific information")
         ] 
 
     retriever = RouterRetriever.from_defaults(retriever_tools=retriever_tools,service_context=service_context,select_multi=True)
-    nodes = retriever.retrieve(query0)
-    reranked_nodes = reranker.postprocess_nodes(nodes, query_bundle=QueryBundle(query0))
+    retrieved_nodes = retriever.retrieve(query0)
+    reranked_nodes = st_reranker.postprocess_nodes(retrieved_nodes, query_bundle=QueryBundle(query0))
 
-    print(nodes)
-    print(reranked_nodes)
+    # print(retrieved_nodes)
+    # print(reranked_nodes)
+
+    lc_all_text_splits = [i.text for i in nodes]
+    lc_documents = [schema.Document(page_content=text_split) for text_split in lc_all_text_splits]
+    from langchain_community.vectorstores import FAISS
+    vectorstore = FAISS.from_documents(documents=lc_documents, embedding=embed_model)
+
+    
+    retriever = vectorstore.as_retriever(search_type="similarity", search_kwargs={"k":top_n})
+    bm25_retriever = LC_BM25Retriever.from_texts(lc_all_text_splits,preprocess_func=jieba_pre_process)  
+    bm25_retriever.k = top_n
+
+    # 初始化集成检索器  
+    ensemble_retriever = EnsembleRetriever(retrievers=[bm25_retriever, retriever], weights=[0.3, 0.7])
+    # compressor = BgeRerank(top_n = top_n) 
+    compressor = reranker   
+    compression_retriever = ContextualCompressionRetriever(base_compressor=compressor, base_retriever=ensemble_retriever)
+
+
+
+    # chain_type:stuff、refine、map_reduce 和 map_rerank
+    qa_chain_RetrievalQA = RetrievalQA.from_chain_type(llm,retriever=compression_retriever,return_source_documents=True, chain_type="stuff")
+
+    from langchain.chains.question_answering.stuff_prompt import system_template
+    logger.info(f"USING SYSTEM PROMPY from /root/miniconda3/envs/test/lib/python3.9/site-packages/langchain/chains/question_answering/stuff_prompt.py")
+    logger.info(f"USING ‘REVICED’ SYSTEM PROMPY:\n{system_template}")
+    # 下面是智谱Chatglm的提示词
+    # 作为一名智能客服，请你记住【】中的知识库内容，并根据知识库内容用简洁和专业的来回答用户问题。如果无法从中得到答案，请说 “根据已知信息无法回答该问题” 或 “没有提供足够的相关信息”，不允许在答案中添加编造成分，答案请使用中文。
+            
+    # 用户问题：开启静音拍摄后，相机为什么还会有声音？
+    # 【若要启用电子快门并消除操作机械快门所导致的噪音和震动，请在照片拍摄菜单中将[静音拍摄]选为[开启]。
+    # - 进行静音拍摄时，屏幕中将显示一个图标。
+    # - 请注意，无论在自定义设定d5[快门类型]中选择了何种选项，都将使用电子快门。
+    # - 释放快门时，屏幕将暂时变暗。这表示已拍摄完一张照片。
+    # - 无论在设定菜单的[蜂鸣音选项]中选择了何种设定，照相机完成对焦时或自拍倒计时期间都不会发出蜂鸣音。
+    # - 启用静音拍摄将禁用某些功能，包括闪光灯；长时间曝光降噪；闪烁消减；高ISO感光度( Hi 0.3-Hi 1.0 )。
+    # - 将[静音拍摄]选为[开启]不会使照相机完全静音。照相机声音仍然可能听到，例如在自动对焦或光圈调整过程中，调整光圈时照相机声音在光圈小于( 即f值高于）f/5.6的情况下最明显。
+    # - 您可能会在照片和拍摄显示中看到以下现象：由荧光灯、水银灯或钠汽灯等光源照亮的场景中的闪烁或条带痕迹；与移动相关的失真(移动中的拍摄对象可能会失真，或者当照相机在拍摄期间发生移动时整个画面都可能出现失真)；屏幕中的锯齿状边缘、彩色边纹、莫尔条纹和亮点；在由闪烁标识和其他间歇光源照亮的场景中，或者当拍摄对象被频闪或其他闪光光源暂时照亮时出现的明亮区域或明亮带
+    # - 当[静音拍摄]选为[开启]时，连拍模式的每秒幅数会发生改变。
+    # - 若在照片拍摄菜单的[减震]中选择了[关闭]以外的选项，按下MENU或按钮时，您可能会听到照相机发出的声音。
+    # - 静音拍摄可消除快门的声音，但摄影者仍需尊重拍摄对象的隐私权和肖像权。】
+
+    # 下面是我想的提示词：
+    # '你是一个忠实的客服专家，回答问题应尽量简洁，不超过100字，并尽量忠实引用Context和Question中的原文，如果无法回答，就说不知道，不要捏造答案。以下是问题：
+
+    def chain_qa_fun(query,chain=qa_chain_RetrievalQA):
+        print(f'   -----------询问：{query}-------------')
+        # query = prompt + query
+        r = chain({"query": query})
+        
+        # print(r['query'])
+        hits = r['source_documents']
+        print('   -----------检索结果-------------')
+        print(f'共检索到{len(hits)}篇文档：')
+        for i,h in enumerate(hits):
+            print(f'Doc{i+1}[](relevance_score:{h.metadata["relevance_score"]:.3f}):\n{h.page_content}')
+        print('   -----------最终回答-------------')
+        print(r['result'])
+        print('\n\n')
+        return hits
+
+
+    # qs = [query9]
+    for q in qs:
+        chain_qa_fun(q)
