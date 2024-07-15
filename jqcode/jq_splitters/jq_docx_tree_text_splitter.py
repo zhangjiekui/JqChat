@@ -186,7 +186,6 @@ class JqkjDocTreeTokenTextSplitter(MetadataAwareTextSplitter):
         logger.info(f'......切分结果已保存到{save_path_txt}')
 
     def _parse_node_on_tree(self, lm_base_node: BaseNode, doc_tree: AnytreeNode, cutoff_ratio_as_chunk=0.8,get_to_first_title_directly=True) -> List[BaseNode]:
-
         chunks_saved = [] #存储“已经处理好的Chunks”
         text_cached =''   # 累积起来的待分割的文本
         cur_text = ''     # 当前读入的文本（可能包含Ancestors节点的标题目录文本）

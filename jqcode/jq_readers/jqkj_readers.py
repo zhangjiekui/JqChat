@@ -67,10 +67,14 @@ class JqkjDocxReader(BaseReader):
 
     def load(self, extra_info: Optional[Dict] = None) -> List[LmDocument]:
         """Parse docx file."""
-        return self.load_data(file_path = self.file_path,extra_info= extra_info)
+        return self.load_data(file_path = self.file_path,extra_info= extra_info,)
 
     def load_data(self, file_path: Path, extra_info: Optional[Dict] = None) -> List[LmDocument]:
-        """Parse docx file."""
+        """
+        Parse docx file.
+        return_type:str ='LC', #'LC' or 'LM',  'LC'代表返回langchain的格式，'LM'代表返回llama_index的格式
+        
+        """
         
         doc = self.DocumentFunc(file_path)
         text = "\n".join([paragraph.text for paragraph in doc.paragraphs if len(paragraph.text.strip())>0])
@@ -375,7 +379,7 @@ class JqkjDocxReader(BaseReader):
 
 class JqkjSimpleDirectoryReader(SimpleDirectoryReader):
     def __init__(
-    self,
+    self,    
     input_dir: Optional[str] = None,
     input_files: Optional[List] = None,
     output_dir_for_converted_files: Optional[str] = None,
@@ -430,6 +434,7 @@ class JqkjSimpleDirectoryReader(SimpleDirectoryReader):
         meta = default_file_metadata_func(file_path)
         meta.update(self.input_files_original_metadata[file_path])
         return meta
+
 
 def _test_JqkjDocxReader(file_paths=[]):
     # fr'D:\biaoshu\pdf_docx_convert\UserGuide.docx',
