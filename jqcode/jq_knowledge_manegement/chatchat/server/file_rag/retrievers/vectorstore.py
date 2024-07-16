@@ -1,4 +1,4 @@
-from langchain.vectorstores import VectorStore
+from langchain_community.vectorstores import VectorStore
 from langchain_core.retrievers import BaseRetriever
 
 from jqcode.jq_knowledge_manegement.chatchat.server.file_rag.retrievers.base import BaseRetrieverService

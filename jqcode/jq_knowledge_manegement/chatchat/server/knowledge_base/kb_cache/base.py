@@ -4,7 +4,7 @@ from contextlib import contextmanager
 from typing import Any, List, Tuple, Union
 
 from langchain.embeddings.base import Embeddings
-from langchain.vectorstores.faiss import FAISS
+from langchain_community.vectorstores.faiss import FAISS
 
 from jqcode.jq_knowledge_manegement.chatchat.configs import CHUNK_SIZE, DEFAULT_EMBEDDING_MODEL, log_verbose, logger
 

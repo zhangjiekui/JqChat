@@ -1,9 +1,10 @@
 import os
 
-from langchain.docstore.in_memory import InMemoryDocstore
+# from langchain.docstore.in_memory import InMemoryDocstore
+from langchain_community.docstore.in_memory import InMemoryDocstore
 from langchain.schema import Document
-from langchain.vectorstores.faiss import FAISS
-
+# from langchain_community.vectorstores.faiss import FAISS
+from langchain_community.vectorstores import FAISS
 from jqcode.jq_knowledge_manegement.chatchat.configs import CACHED_MEMO_VS_NUM, CACHED_VS_NUM
 from jqcode.jq_knowledge_manegement.chatchat.server.knowledge_base.kb_cache.base import *
 from jqcode.jq_knowledge_manegement.chatchat.server.knowledge_base.utils import get_vs_path

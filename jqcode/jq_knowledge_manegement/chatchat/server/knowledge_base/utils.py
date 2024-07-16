@@ -11,7 +11,7 @@ import langchain_community.document_loaders
 from langchain.docstore.document import Document
 from langchain.text_splitter import MarkdownHeaderTextSplitter, TextSplitter
 from langchain_community.document_loaders import JSONLoader, TextLoader
-
+from jqcode.jq_splitters.jq_docx_tree_text_splitter import JqkjDocTreeTokenTextSplitter
 from jqcode.jq_knowledge_manegement.chatchat.configs import (
     CHUNK_SIZE,
     KB_ROOT_PATH,
@@ -192,7 +192,7 @@ def get_loader(loader_name: str, file_path: str, loader_kwargs: Dict = None):
                 "RapidOCRPPTLoader",
             ]:
                 document_loaders_module = importlib.import_module(
-                    "chatchat.server.file_rag.document_loaders"
+                    "jqcode.jq_knowledge_manegement.chatchat.server.file_rag.document_loaders"
                 )
 
             else:
@@ -379,8 +379,7 @@ class KnowledgeFile:
         if not docs:
             return []
         if self.ext not in [".csv"]:
-            if self.text_splitter_name == "JqkjDocTreeTokenTextSplitter" or self.document_loader_name=='JqkjDocxReader':
-                from jqcode.jq_splitters.jq_docx_tree_text_splitter import JqkjDocTreeTokenTextSplitter
+            if self.text_splitter_name == "JqkjDocTreeTokenTextSplitter" or self.document_loader_name=='JqkjDocxReader':                
                 jq_doc_tree_splitter = JqkjDocTreeTokenTextSplitter(chunk_size=chunk_size, chunk_overlap=chunk_overlap)
                 docs = jq_doc_tree_splitter.get_nodes_from_documents(docs)
                 docs = [Document(page_content=node.text,metadata=node.metadata) for node in docs]

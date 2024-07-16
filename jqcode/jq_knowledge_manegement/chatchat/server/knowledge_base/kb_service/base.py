@@ -258,9 +258,13 @@ class KBService(ABC):
         docs = []
         for x in doc_infos:
             doc_info = self.get_doc_by_ids([x["id"]])[0]
+            doc_info_dict = doc_info.dict()
+            doc_info_dict.update({'id':x["id"]})
+
             if doc_info is not None:
                 # 处理非空的情况
-                doc_with_id = DocumentWithVSId(**doc_info.dict(), id=x["id"])
+                # doc_with_id = DocumentWithVSId(**doc_info.dict(), id=x["id"])
+                doc_with_id = DocumentWithVSId(**doc_info_dict)
                 docs.append(doc_with_id)
             else:
                 # 处理空的情况

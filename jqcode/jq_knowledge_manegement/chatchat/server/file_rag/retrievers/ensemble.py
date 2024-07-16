@@ -1,5 +1,5 @@
 from langchain.retrievers import EnsembleRetriever
-from langchain.vectorstores import VectorStore
+from langchain_community.vectorstores import VectorStore
 from langchain_community.retrievers import BM25Retriever
 from langchain_core.retrievers import BaseRetriever
 

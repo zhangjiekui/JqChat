@@ -1,7 +1,7 @@
 from typing import Dict, List
 
 from langchain.schema import Document
-from langchain.vectorstores import Zilliz
+from langchain_community.vectorstores import Zilliz
 
 from jqcode.jq_knowledge_manegement.chatchat.configs import kbs_config
 from jqcode.jq_knowledge_manegement.chatchat.server.file_rag.utils import get_Retriever

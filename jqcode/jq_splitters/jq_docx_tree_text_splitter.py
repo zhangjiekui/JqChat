@@ -16,13 +16,13 @@ from llama_index.core.utils import get_tqdm_iterable
 from llama_index.core.node_parser.node_utils import IdFuncCallable, build_nodes_from_splits
 from llama_index.core.node_parser.interface import MetadataAwareTextSplitter
 
-from langchain import schema
-from langchain.retrievers import EnsembleRetriever
-from langchain_community.retrievers import BM25Retriever as LC_BM25Retriever
-from langchain.retrievers import ContextualCompressionRetriever
-from langchain.chains import RetrievalQA
-from jqcode.jq_agent.c0_init_env_models import get_emb_8k_rerank_model,get_langchain_chat_model, get_es_searchstore_index_documents
-from jqcode.jq_splitters.backend_splitter_utils.jq_sentence_transformers_tokentextsplitter import SentenceTransformersTokenTextSplitter
+# from langchain import schema
+# from langchain.retrievers import EnsembleRetriever
+# from langchain_community.retrievers import BM25Retriever as LC_BM25Retriever
+# from langchain.retrievers import ContextualCompressionRetriever
+# from langchain.chains import RetrievalQA
+
+# from jqcode.jq_splitters.backend_splitter_utils.jq_sentence_transformers_tokentextsplitter import SentenceTransformersTokenTextSplitter
 
 
 
@@ -583,12 +583,13 @@ class JqkjDocTreeTokenTextSplitter(MetadataAwareTextSplitter):
         return chunks
     
 if __name__ == "__main__":
-    # from langchain.retrievers import EnsembleRetriever
-    # from langchain_community.retrievers import BM25Retriever as LC_BM25Retriever
-    # from langchain.retrievers import ContextualCompressionRetriever
-    # from langchain.chains import RetrievalQA
-    # from jqcode.jq_agent.c0_init_env_models import get_emb_8k_rerank_model,get_langchain_chat_model, get_es_searchstore_index_documents
-    # from jqcode.jq_splitters.backend_splitter_utils.jq_sentence_transformers_tokentextsplitter import SentenceTransformersTokenTextSplitter
+    from langchain.retrievers import EnsembleRetriever
+    from langchain_community.retrievers import BM25Retriever as LC_BM25Retriever
+    from langchain.retrievers import ContextualCompressionRetriever
+    from langchain.chains import RetrievalQA
+    from jqcode.jq_agent.c0_init_env_models import get_emb_8k_rerank_model,get_langchain_chat_model, get_es_searchstore_index_documents
+    from jqcode.jq_splitters.backend_splitter_utils.jq_sentence_transformers_tokentextsplitter import SentenceTransformersTokenTextSplitter
+    from jqcode.jq_agent.c0_init_env_models import get_emb_8k_rerank_model,get_langchain_chat_model, get_es_searchstore_index_documents
     embed_model,embedding_model_8k,reranker = get_emb_8k_rerank_model()
     llm = get_langchain_chat_model()
 

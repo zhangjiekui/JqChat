@@ -1,6 +1,6 @@
 from abc import ABCMeta, abstractmethod
 
-from langchain.vectorstores import VectorStore
+from langchain_community.vectorstores import VectorStore
 
 
 class BaseRetrieverService(metaclass=ABCMeta):

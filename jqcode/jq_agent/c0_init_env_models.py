@@ -2,7 +2,7 @@
 import os
 import re
 import pathlib
-
+from functools import lru_cache
 from typing import Annotated, List, TypedDict, Optional, Sequence
 from langchain.callbacks.manager import Callbacks
 import openai
@@ -98,6 +98,7 @@ def get_openai_client():
     print(f'当前使用的模型base_url为:OpenAI, {openai_client.base_url}')
     return openai_client
 
+@lru_cache()
 def get_langchain_chat_model(temperature=0.0, max_tokens=300000, streaming=True):
     chat_model = ChatOpenAI(
         model_name=llm_model_name,
@@ -185,6 +186,7 @@ class BgeRerank(BaseDocumentCompressor):
 
 
 # todo: embedding_model_8k with langchain
+@lru_cache()
 def _get_emb_8k_rerank_model(model_name=embedding_model_name, device = ['cpu','cpu','cpu'],final_docs_num_reranked=4): #device = ['cuda:1','cuda:2''cuda:3']
     if 'bge' in embedding_model_name: 
         # 有query_instruction https://github.com/langchain-ai/langchain/blob/ee94ef55ee6ab064da08340817955f821dfa6261/libs/langchain/langchain/embeddings/huggingface.py#L187
@@ -214,6 +216,7 @@ def _get_emb_8k_rerank_model(model_name=embedding_model_name, device = ['cpu','c
 
 embed_model,embedding_model_8k,reranker = _get_emb_8k_rerank_model()
 
+@lru_cache()
 def get_emb_8k_rerank_model(model_name=embedding_model_name, device = ['cpu','cpu','cpu'],final_docs_num_reranked=4):
     global embed_model
     global embedding_model_8k
@@ -295,7 +298,7 @@ def filter_and_get_messages_relevant_to_query(query:str,messages_list:List[BaseM
     else:
         return messages_list
 
-
+@lru_cache()
 def get_es_connection(): 
     es_connection= Elasticsearch(
         ES_URL,
@@ -323,6 +326,7 @@ def get_all_knowledge_base(es_connection=None,exclude_system_indices=True):
 
 hybrid=False
 strategy=ElasticsearchStore.ApproxRetrievalStrategy(hybrid=hybrid)
+@lru_cache()
 def get_es_searchstore(embedding=None,es_connection=None,index_name='test',strategy=strategy):
     embedding = embedding if embedding else get_emb_8k_rerank_model()[0]
     es_connection = es_connection if es_connection else get_es_connection()
