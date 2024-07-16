@@ -20,11 +20,8 @@ from langchain_core.pydantic_v1 import BaseModel, Field
 from langchain.text_splitter import RecursiveCharacterTextSplitter
 from langchain_community.document_loaders import WebBaseLoader
 from langchain_community.tools.tavily_search import TavilySearchResults ### Search
-# from langchain_community.chat_models import ChatOllama
-from jqcode.jq_agent.c0_init_env_models import get_langchain_chat_model,get_langchain_chat_ollama_functions,USING_OLLAMA_FUNCTIONS,USING_OLLAMA_LITELLM
-from jqcode.jq_agent.c0_init_env_models import get_emb_8k_rerank_model,split_and_get_chunks_relevant_from_documents
-from jqcode.jq_agent.c0_init_env_models import get_es_connection, get_es_searchstore, get_es_searchstore_index_documents
-from jqcode.jq_agent.c0_init_env_models import filter_and_get_messages_relevant_to_query, get_custom_handler
+from jqcode.jq_agent.c0_init_env_models import env_models_instance
+from jqcode.jq_agent.c0_init_env_models import get_custom_handler
 from jqcode.jq_agent.tools.jq_web_search_engine import get_web_search_documents,is_query_chinese,get_tavily_search_result_documents
 from copy import deepcopy
 from jqcode.jq_agent.graph_create_utils import create_graph_supervisor, create_agent, agent_node, sub_graph_enter_chain
@@ -112,6 +109,7 @@ supervisor_agent = create_graph_supervisor(
 
 
 # Preamble
+USING_OLLAMA_FUNCTIONS = False
 if USING_OLLAMA_FUNCTIONS:
     # tools.append(direct_response)
     tool_names=", ".join([str(tool).split('__.')[-1][:-2] for tool in tools])
@@ -151,6 +149,7 @@ class GradeCodingRelavance(BaseModel):
 # Code Generating/Code Executing Relavance Grader Prompt
 preamble_coding_relevant_grader = """You are a grader assessing relevance of a user question to [code generating/executing,file processing/analyzing, data exploring/analyzing]. Response me with a simple JSON string can be directly consumed by  ‘json.loads’ method, must be ‘{{"k":"yes"}}’ or  ‘{{"k":"no"}}’,'yes' means a user question is related to Python code generating/code executing.No preamble or explaination."""
 # structured_llm_documents_relevant_grader = llm.with_structured_output(GradeDocumentsRelavance, method=method_mode, include_raw=True)
+USING_OLLAMA_LITELLM =False
 method_mode ='function_calling' if USING_OLLAMA_LITELLM else "json_mode"
 if USING_OLLAMA_FUNCTIONS:
     structured_llm_coding_relevant_grader = llm.with_structured_output(GradeCodingRelavance)
@@ -319,7 +318,7 @@ def llm_fallback(state:RagSubgraphState):
     # messages_content = [f'[{m.type}]{";".join([m.tool_call["name"] for tool_call in m.tool_calls]) if hasattr(m,"tool_calls") and m.tool_calls else m.content}' for m in state["messages"]]
     
     messages_content = []
-    filtered_messages = filter_and_get_messages_relevant_to_query(question,messages)
+    filtered_messages = env_models_instance.filter_and_get_messages_relevant_to_query(question,messages)
 
 
     for m in filtered_messages:
@@ -457,7 +456,7 @@ def web_search(state:RagSubgraphState):
 
     # Web search
     docs = get_web_search_documents(query_generated)
-    chunks_relevant = split_and_get_chunks_relevant_from_documents(query=question,docs_list=docs,) #get embedding retriever and reranker results
+    chunks_relevant = env_models_instance.split_and_get_chunks_relevant_from_documents(query=question,docs_list=docs,) #get embedding retriever and reranker results
     referens = []
     if chunks_relevant:
         web_results = "\n".join([d.page_content for d in chunks_relevant])

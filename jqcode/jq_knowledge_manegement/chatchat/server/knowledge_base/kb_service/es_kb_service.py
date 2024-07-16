@@ -16,7 +16,7 @@ from jqcode.jq_knowledge_manegement.chatchat.server.knowledge_base.kb_service.ba
 from jqcode.jq_knowledge_manegement.chatchat.server.knowledge_base.utils import KnowledgeFile
 from jqcode.jq_knowledge_manegement.chatchat.server.utils import get_Embeddings
 
-from jqcode.jq_agent.c0_init_env_models import get_es_connection, get_es_searchstore
+from jqcode.jq_agent.c0_init_env_models import env_models_instance
 
 logger = logging.getLogger()
 
@@ -38,7 +38,7 @@ class ESKBService(KBService):
         try:
             # ES python客户端连接（仅连接）
             
-            self.es_client_python = get_es_connection()
+            self.es_client_python = env_models_instance.get_es_connection()
             # if self.user != "" and self.password != "":
             #     self.es_client_python = Elasticsearch(
             #         f"http://{self.IP}:{self.PORT}",

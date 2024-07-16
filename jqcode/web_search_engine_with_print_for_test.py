@@ -15,7 +15,7 @@ from langchain_community.document_transformers import Html2TextTransformer
 
 from langchain_community.tools.tavily_search import TavilySearchResults
 
-from jqcode.jq_agent.c0_init_env_models import get_es_connection, get_es_searchstore, get_es_searchstore_index_documents
+from jqcode.jq_agent.c0_init_env_models_copy import get_es_connection, get_es_searchstore, get_es_searchstore_index_documents
 
 from func_timeout import func_set_timeout, FunctionTimedOut
 

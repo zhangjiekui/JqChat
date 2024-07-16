@@ -18,8 +18,6 @@ from func_timeout import func_set_timeout, FunctionTimedOut
 import urllib3
 from urllib.parse import urljoin
 urllib3.disable_warnings()
-
-from jqcode.jq_agent.c0_init_env_models import load_project_env
 from langchain_core.tools import tool
 
 timeout_value = 60

@@ -1,19 +1,18 @@
 import re
 from langchain.text_splitter import RecursiveCharacterTextSplitter
 from langchain_community.document_loaders import WebBaseLoader
-from jqcode.jq_agent.c0_init_env_models import get_es_connection, get_es_searchstore, get_es_searchstore_index_documents,get_all_knowledge_base
-from jqcode.jq_agent.c0_init_env_models import get_emb_8k_rerank_model
+from jqcode.jq_agent.c0_init_env_models import env_models_instance
 
 
-embed_model,embedding_model_8k,reranker = get_emb_8k_rerank_model()
+embed_model,embedding_model_8k,reranker = env_models_instance.get_emb_8k_rerank_model()
 ### Build Index
 index_name='health'
-es_connection = get_es_connection()
-knowledge_base_list = get_all_knowledge_base(es_connection) 
+es_connection = env_models_instance.get_es_connection()
+knowledge_base_list = env_models_instance.get_all_knowledge_base(es_connection) 
 print(f"当前已存在的知识库列表：{knowledge_base_list=}")
 if es_connection.indices.exists(index=index_name):
     print(f"已存在index='{index_name}'！跳过插入索引的环节。")
-    vectorstore = get_es_searchstore(embedding=embed_model,es_connection=es_connection,index_name=index_name)
+    vectorstore = env_models_instance.get_es_searchstore(embedding=embed_model,es_connection=es_connection,index_name=index_name)
 
 else:
 # Docs to index
@@ -50,8 +49,8 @@ else:
     doc_splits = text_splitter.split_documents(docs_list_cleaned)
 
     # Add to vectorstore
-    vectorstore = get_es_searchstore_index_documents(documents=doc_splits, es_connection=es_connection,embedding=embed_model,index_name=index_name)
+    vectorstore = env_models_instance.get_es_searchstore_index_documents(documents=doc_splits, es_connection=es_connection,embedding=embed_model,index_name=index_name)
 
-knowledge_base_list = get_all_knowledge_base(es_connection) 
+knowledge_base_list = env_models_instance.get_all_knowledge_base(es_connection) 
 print(f"(可能新建并刷新后)存在的知识库列表：{knowledge_base_list=}")
 retriever = vectorstore.as_retriever()

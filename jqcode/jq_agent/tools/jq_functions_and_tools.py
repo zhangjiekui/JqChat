@@ -11,7 +11,7 @@ from langgraph.prebuilt import ToolNode
 from langchain_core.tools import ToolException
 from typing import List
 
-from jqcode.jq_agent.c0_init_env_models import get_langchain_chat_model
+# from jqcode.jq_agent.c0_init_env_models import env_models_instance
 
 
 # 自定义工具函数
@@ -145,7 +145,7 @@ excutable_tool_names = [tool.name for tool in excutable_tools]
 excutable_tools_descriptions_str = '\n\n'.join([f"[ToolName]:{t.name}; [ToolDescription]:{t.description}" for t in excutable_tools])
 excutable_tool_names_str = ','.join([tool.name for tool in excutable_tools])
 
-print(excutable_tools_descriptions_str)
+# print(excutable_tools_descriptions_str)
 print(f'\n本次程序中提供的所有可用的工具列表:\n {excutable_tool_names_str}')
 print("=================== system_prompt ===================")
 system_prompt = f"""You are a helpful tool assistant. You have access to the following tools: 
