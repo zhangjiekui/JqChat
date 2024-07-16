@@ -2,7 +2,7 @@ import math
 from langchain.text_splitter import TextSplitter,Tokenizer,split_text_on_tokens
 from langchain_community.embeddings import HuggingFaceBgeEmbeddings
 from langchain_huggingface import HuggingFaceEmbeddings
-from jqcode.jq_agent.c0_init_env_models import get_emb_8k_rerank_model
+from jqcode.jq_agent.c0_init_env_models import env_models_instance
 from jqcode.jq_splitters.backend_splitter_utils.jq_chinese_recursive_text_splitter import ChineseRecursiveTextSplitter
 
 from typing import (
@@ -24,7 +24,7 @@ from typing import (
     cast,
 )
 
-embed_model,embedding_model_8k,reranker = get_emb_8k_rerank_model()
+embed_model,embedding_model_8k,reranker = env_models_instance.get_emb_8k_rerank_model()
 class SentenceTransformersTokenTextSplitter(TextSplitter):
     """
     复制修改了源码，可以与HuggingFaceEmbeddings/HuggingFaceBgeEmbeddings共享model和tokenizer，避免了各自独立加载

@@ -13,7 +13,7 @@ from langchain import hub
 from langgraph.checkpoint.sqlite import SqliteSaver
 from langgraph.checkpoint.aiosqlite import AsyncSqliteSaver
 
-from jqcode.jq_agent.c0_init_env_models import get_langchain_chat_model
+from jqcode.jq_agent.c0_init_env_models import env_models_instance
 from jqcode.jq_agent.tools.jq_functions_and_tools import get_flight_number,python_repl_tool
 import shortuuid
 from dotenv import load_dotenv
@@ -33,7 +33,7 @@ class GraphAgent:
         _system_message_content = f"Solve/Answer user's questions as best as you can. You have access to the following tools:{_tool_names_str}.You are allowed to make multiple calls (either together or in sequence)."
 
         if llm_model is None:
-            llm_model = get_langchain_chat_model()
+            llm_model = env_models_instance.get_langchain_chat_model()
 
         self.tools = {t.name: t for t in tools} 
         self.model = llm_model.bind_tools(tools)

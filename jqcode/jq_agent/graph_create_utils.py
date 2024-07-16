@@ -14,8 +14,7 @@ from langchain.output_parsers.openai_tools import JsonOutputToolsParser
 from langchain.agents.output_parsers.tools import ToolsAgentOutputParser
 
 from langgraph.graph import StateGraph
-from jqcode.jq_agent.c0_init_env_models import get_langchain_chat_model
-from jqcode.jq_agent.c0_init_env_models import filter_and_get_messages_relevant_to_query
+from jqcode.jq_agent.c0_init_env_models import env_models_instance
 
 def create_agent(
     llm: ChatOpenAI,
@@ -118,7 +117,7 @@ def get_last_state(state) -> dict:
     if (messages_num:=len(messages))>1:
         print(f'原始的消息数量={messages_num}')
         original_question = state['question']
-        filtered_messages = filter_and_get_messages_relevant_to_query(original_question,messages)
+        filtered_messages = env_models_instance.filter_and_get_messages_relevant_to_query(original_question,messages)
         # print("-----------过滤掉的消息-----------")
         # for m in messages:
         #     if m not in filtered_messages:
@@ -375,7 +374,7 @@ def get_graph_nodes(graphs:Union[StateGraph,List[StateGraph]]) -> list:
 """
 
 
-llm = get_langchain_chat_model(
+llm = env_models_instance.get_langchain_chat_model(
         temperature=0.0,
         max_tokens=10000,
         streaming=True)

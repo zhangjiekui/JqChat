@@ -16,8 +16,7 @@ from flask_cors import CORS
 from flask import Flask, request, jsonify, send_from_directory, Response
 
 from jqchat.kernel_program.main import APP_PORT as KERNEL_APP_PORT
-from jqcode.jq_agent.c0_init_env_models import get_openai,get_openai_client,llm_model_name,api_key
-from jqcode.jq_agent.c0_init_env_models import get_all_knowledge_base, filter_and_get_messages_relevant_to_query
+from jqcode.jq_agent.c0_init_env_models import env_models_instance
 from jqcode.jq_agent.graph_create_utils import user_question_is_related_to_coding_or_data_analyzing,llm
 from jqcode.jq_agent.run_super_graph import super_graph_compiled_async,arun_super_graph
 from jqcode.jq_agent.jq_rag_agent_sub_graph import llm_chain,invoke_llm_config
@@ -28,9 +27,9 @@ from langchain_core.messages import HumanMessage,SystemMessage,ToolMessage,AIMes
 # HAS_DATA_FILE_UPLOADED = os.environ.get("HAS_DATA_FILE_UPLOADED", False)
 
 #todo 保留openai只是暂时不想改代码
-openai = get_openai()
+openai = env_models_instance.openai
 # 官方推荐使用client = OpenAI()
-openai_client = get_openai_client()
+openai_client = env_models_instance.openai_client
 
 
 OPENAI_EXTRA_HEADERS = json.loads(os.environ.get("OPENAI_EXTRA_HEADERS", "{}"))
@@ -151,7 +150,7 @@ system_prompt=f"""请尽量使用中文来回答问题。Act as a data analyst h
 
 # todo:需同步更新readme中安装的软件包和这里的版本描述
 usual_imports = """import numpy as np \nimport pandas as pd\nimport seaborn as sns\nimport matplotlib.pyplot as plt\n"""
-async def get_code(user_prompt, user_openai_key=api_key, model=llm_model_name):
+async def get_code(user_prompt, user_openai_key=env_models_instance.api_key, model=env_models_instance.llm_model_name):
 
     user_code_prompt = f"""First, here is a history of what I asked you to do earlier. 
     The actual prompt follows after ENDOFHISTORY. 
@@ -226,7 +225,7 @@ async def get_code(user_prompt, user_openai_key=api_key, model=llm_model_name):
     return code, text , 200
 
 
-async def get_chat(user_prompt, user_openai_key=api_key, model=llm_model_name):
+async def get_chat(user_prompt, user_openai_key=env_models_instance.api_key, model=env_models_instance.llm_model_name):
 
     user_chat_prompt = f"""First, here is a history of what I asked you to do earlier. 
     The actual prompt follows after ENDOFHISTORY. 
@@ -310,7 +309,7 @@ def models():
 #获取知识库列表
 @app.route("/docs")
 def docs():
-    return  jsonify(get_all_knowledge_base(None,True))
+    return  jsonify(env_models_instance.get_all_knowledge_base(None,True))
 
 
 
@@ -383,8 +382,8 @@ def agent_entry():
     user_prompt = request.json.get('prompt', '')
     print('=='*30)
     print(f'(IN Web) User Question: {user_prompt}')
-    model = llm_model_name
-    user_openai_key = api_key
+    model = env_models_instance.llm_model_name
+    user_openai_key = env_models_instance.api_key
     #获取用户随机ID
     user_id=request.json.get('user',None)
     #获得文档ID
@@ -460,7 +459,7 @@ def agent_entry():
     return jsonify({'code': code, 'text': text}), status
 
 @app.route('/chat', methods=['POST'])
-def generate_chat(model=llm_model_name):
+def generate_chat(model=env_models_instance.llm_model_name):
     #all of this comes from the system, not the user!
     user_prompt = request.json.get('prompt', '')
     user_openai_key = request.json.get('openAIKey', None)

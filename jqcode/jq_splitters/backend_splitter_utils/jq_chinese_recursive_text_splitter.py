@@ -36,8 +36,8 @@ def _split_text_with_regex_from_end(
 class _JqkjTokenizerWrapper():
     def __init__(self, embeding_model: Union[HuggingFaceEmbeddings, HuggingFaceBgeEmbeddings,str] = None):
         if embeding_model is None:
-            from jqcode.jq_agent.c0_init_env_models import get_emb_8k_rerank_model
-            embeding_model,embedding_model_8k,reranker = get_emb_8k_rerank_model()
+            from jqcode.jq_agent.c0_init_env_models import env_models_instance
+            embeding_model,embedding_model_8k,reranker = env_models_instance.get_emb_8k_rerank_model()
         assert embeding_model, 'embeding_model_instance不能为空'
 
         if isinstance(embeding_model,(HuggingFaceEmbeddings,HuggingFaceBgeEmbeddings)):
@@ -92,7 +92,7 @@ class ChineseRecursiveTextSplitter(RecursiveCharacterTextSplitter):
                 f"Got a larger chunk overlap ({chunk_overlap}) than or equal to chunk size "
                 f"({chunk_size}), should be smaller."
             )
-        self.tokenizer_wrapper = _JqkjTokenizerWrapper(embeding_model=None)        
+        self.tokenizer_wrapper = _JqkjTokenizerWrapper(embeding_model=model_name)        
         self._separators = separators or [
             "\n\n",
             "\n",

@@ -16,15 +16,6 @@ from llama_index.core.utils import get_tqdm_iterable
 from llama_index.core.node_parser.node_utils import IdFuncCallable, build_nodes_from_splits
 from llama_index.core.node_parser.interface import MetadataAwareTextSplitter
 
-# from langchain import schema
-# from langchain.retrievers import EnsembleRetriever
-# from langchain_community.retrievers import BM25Retriever as LC_BM25Retriever
-# from langchain.retrievers import ContextualCompressionRetriever
-# from langchain.chains import RetrievalQA
-
-# from jqcode.jq_splitters.backend_splitter_utils.jq_sentence_transformers_tokentextsplitter import SentenceTransformersTokenTextSplitter
-
-
 
 from jqcode.jq_readers.jqkj_readers import JqkjSimpleDirectoryReader
 from jqcode.jq_readers.backend_reader_utils.jqkj_doc_tree_utils import jieba_pre_process,TreeNodeType,get_doc_tree_from_document
@@ -70,7 +61,7 @@ class JqkjDocTreeTokenTextSplitter(MetadataAwareTextSplitter):
     # 注意：下面的chunk_size是已经去掉保留tokes后的，真正能够喂入模型的正常tokens数量
     chunk_size: int = Field(default=normal_tokens_chunk_size,description="每个文本块chunk的tokens数量大小", gt=0, )
     chunk_overlap: Union[int,float] = Field(default=DEFAULT_CHUNK_OVERLAP,description="两个文本块chunk可以重叠的数量大小或比例",gte=0,)
-    cr_text_splitter:ChineseRecursiveTextSplitter = Field(default=ChineseRecursiveTextSplitter(_default_normal_tokens_chunk_size,DEFAULT_CHUNK_OVERLAP),description="中英文文本分割器")
+    cr_text_splitter:ChineseRecursiveTextSplitter = Field(default=ChineseRecursiveTextSplitter(model_name=None,chunk_size=_default_normal_tokens_chunk_size,chunk_overlap=DEFAULT_CHUNK_OVERLAP),description="中英文文本分割器")
     tokens_len_func: Callable = Field(default=None,description="获取tokens数量")
  
     class Config:
@@ -88,7 +79,7 @@ class JqkjDocTreeTokenTextSplitter(MetadataAwareTextSplitter):
     ):
         """Initialize with parameters."""
         _normal_tokens_chunk_size = chunk_size - model_reserved_tokens_size
-        cr_text_splitter = ChineseRecursiveTextSplitter(_normal_tokens_chunk_size,chunk_overlap)
+        cr_text_splitter = ChineseRecursiveTextSplitter(model_name=None,chunk_size=_normal_tokens_chunk_size,chunk_overlap=chunk_overlap)
         chunk_overlap = cr_text_splitter._chunk_overlap
         
 
@@ -583,15 +574,16 @@ class JqkjDocTreeTokenTextSplitter(MetadataAwareTextSplitter):
         return chunks
     
 if __name__ == "__main__":
+    from langchain import schema
     from langchain.retrievers import EnsembleRetriever
     from langchain_community.retrievers import BM25Retriever as LC_BM25Retriever
     from langchain.retrievers import ContextualCompressionRetriever
     from langchain.chains import RetrievalQA
-    from jqcode.jq_agent.c0_init_env_models import get_emb_8k_rerank_model,get_langchain_chat_model, get_es_searchstore_index_documents
     from jqcode.jq_splitters.backend_splitter_utils.jq_sentence_transformers_tokentextsplitter import SentenceTransformersTokenTextSplitter
-    from jqcode.jq_agent.c0_init_env_models import get_emb_8k_rerank_model,get_langchain_chat_model, get_es_searchstore_index_documents
-    embed_model,embedding_model_8k,reranker = get_emb_8k_rerank_model()
-    llm = get_langchain_chat_model()
+    from jqcode.jq_agent.c0_init_env_models import env_models_instance
+
+    embed_model,embedding_model_8k,reranker = env_models_instance.get_emb_8k_rerank_model()
+    llm = env_models_instance.get_langchain_chat_model()
 
     st_splitter=SentenceTransformersTokenTextSplitter(emb_model_instance=embed_model,tokens_per_chunk=100,chunk_overlap=0.2)
     cr_text_splitter = st_splitter.chinese_recursive_text_splitter
@@ -659,7 +651,7 @@ if __name__ == "__main__":
     # from langchain_community.vectorstores import FAISS
     # vectorstore = FAISS.from_documents(documents=lc_documents, embedding=embed_model)
 
-    vectorstore = get_es_searchstore_index_documents(documents=lc_documents, embedding=embed_model,index_name="test_doc_tree_reader",source_id_key='file_path')
+    vectorstore = env_models_instance.get_es_searchstore_index_documents(documents=lc_documents, embedding=embed_model,index_name="test_doc_tree_reader",source_id_key='file_path')
     retriever = vectorstore.as_retriever(search_type="similarity", search_kwargs={"k":top_n})
     # bm25_retriever = LC_BM25Retriever.from_texts(lc_all_text_splits,preprocess_func=jieba_pre_process)
     bm25_retriever = LC_BM25Retriever.from_documents(lc_documents,preprocess_func=jieba_pre_process)  
