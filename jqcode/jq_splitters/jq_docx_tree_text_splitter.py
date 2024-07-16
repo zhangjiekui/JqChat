@@ -369,8 +369,10 @@ class JqkjDocTreeTokenTextSplitter(MetadataAwareTextSplitter):
                 vf.write(vf_string)
                 vf.seek(0)
                 df = pd.read_csv(vf)
-
-        file_path_docx = lm_base_node.metadata["file_path"]
+        
+        file_path_docx = lm_base_node.metadata.get("file_path",None) or lm_base_node.metadata.get("file_path_jq",None)
+        if not file_path_docx:
+            logger.error(f'lm_base_node的metadata(dict)中不存在key:"file_path"或"file_path_jq",lm_base_node的内容如下:\n{lm_base_node}')
         file_path_txt = file_path_docx.replace('.docx', '.txt')
         file_path_txt_preview = file_path_docx.replace('.docx', '_preview.txt')
 

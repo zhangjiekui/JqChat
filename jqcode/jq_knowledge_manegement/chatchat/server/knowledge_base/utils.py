@@ -379,16 +379,24 @@ class KnowledgeFile:
         if not docs:
             return []
         if self.ext not in [".csv"]:
-            if text_splitter is None:
-                text_splitter = make_text_splitter(
-                    splitter_name=self.text_splitter_name,
-                    chunk_size=chunk_size,
-                    chunk_overlap=chunk_overlap,
-                )
-            if self.text_splitter_name == "MarkdownHeaderTextSplitter":
-                docs = text_splitter.split_text(docs[0].page_content)
+            if self.text_splitter_name == "JqkjDocTreeTokenTextSplitter" or self.document_loader_name=='JqkjDocxReader':
+                from jqcode.jq_splitters.jq_docx_tree_text_splitter import JqkjDocTreeTokenTextSplitter
+                jq_doc_tree_splitter = JqkjDocTreeTokenTextSplitter(chunk_size=chunk_size, chunk_overlap=chunk_overlap)
+                docs = jq_doc_tree_splitter.get_nodes_from_documents(docs)
+                docs = [Document(page_content=node.text,metadata=node.metadata) for node in docs]
+            
             else:
-                docs = text_splitter.split_documents(docs)
+                if text_splitter is None:
+                    text_splitter = make_text_splitter(
+                        splitter_name=self.text_splitter_name,
+                        chunk_size=chunk_size,
+                        chunk_overlap=chunk_overlap,
+                    )
+                if self.text_splitter_name == "MarkdownHeaderTextSplitter":
+                    docs = text_splitter.split_text(docs[0].page_content) 
+
+                else:
+                    docs = text_splitter.split_documents(docs)
 
         if not docs:
             return []
