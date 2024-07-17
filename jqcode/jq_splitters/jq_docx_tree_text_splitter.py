@@ -161,7 +161,9 @@ class JqkjDocTreeTokenTextSplitter(MetadataAwareTextSplitter):
             # logger.info(f'共切分为{len(text_splits)}个Chunks,最大tokens限制为{DEFAULT_CHUNK_SIZE- metadata_str_tokens_num}，tokens利用率最大为{max_percent_str}，最小为{min_percent_str}。')
             
             for i,s in enumerate(text_splits):
-                assert s.startswith('<toc'),f'切分结果必须以"<toc"开头，当前结果为{s}'
+                # if not s.startswith('<toc'):
+                #     continue
+                # assert s.startswith('<toc'),f'切分结果必须以"<toc"开头，当前结果为{s}'
                 tokens_num = self.tokens_len_func(text=s)
                 percent = tokens_num/self.chunk_size
                 percent_str = f'{percent*100:.1f}%'

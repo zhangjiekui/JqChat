@@ -3,7 +3,6 @@ from pathlib import Path
 from pdf2docx import Converter
 from spire.doc import *
 from spire.doc.common import *
-# import office
 
 from jqcode.jq_utils.logger import jqkj_logger
 logger = jqkj_logger(__file__).get_logger()

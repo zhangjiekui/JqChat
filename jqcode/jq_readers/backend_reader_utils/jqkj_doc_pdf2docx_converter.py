@@ -27,7 +27,7 @@ def convert_doc_pdf2docx_using_WinWord(input_filepaths:Union[str,list],overwrite
         (2)pdf转换为docx，这样能获得标题目录信息
     在Linux环境下运行，依赖:
         (1)pdf-->docx 依赖pdf2docx包: pip install pdf2docx
-        (2)doc-->docx 依赖python-office包: pip install python-office
+        (2)doc-->docx 依赖spire.doc包: pip install spire.doc，但这个是收费的
     :param pdf_filepaths: str or list. pdf/doc file path(s)
     :return: (docx file path(s),valid_input_filepaths)
     """
