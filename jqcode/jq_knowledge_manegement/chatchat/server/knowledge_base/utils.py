@@ -110,7 +110,7 @@ LOADER_DICT = {
     "CSVLoader": [".csv"],
     # "FilteredCSVLoader": [".csv"], 如果使用自定义分割csv
     "JqkjDocxReader": [".pdf"],
-    "JqkjDocxReader": [".docx", ".doc"],
+    "JqkjDocxReader": [".docx", ".doc",".pdf"],
     "RapidOCRPPTLoader": [
         ".ppt",
         ".pptx",

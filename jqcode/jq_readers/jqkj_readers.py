@@ -63,7 +63,12 @@ class JqkjDocxReader(BaseReader):
             )
         self.DocumentFunc = DocxDocumentFunc
         if file_path:
-            self.file_path = Path(file_path)
+            file_path = Path(file_path)
+            if file_path.suffix in ['.pdf','.doc']:
+                input_filepaths,original_valid_input_filepaths = convert_doc_pdf2docx_using_WinWord(file_path)
+                self.file_path =  input_filepaths[0]
+            else:
+                self.file_path =  file_path
 
     def load(self, extra_info: Optional[Dict] = None) -> List[LmDocument]:
         """Parse docx file."""
