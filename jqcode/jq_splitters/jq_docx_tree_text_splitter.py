@@ -392,7 +392,7 @@ class JqkjDocTreeTokenTextSplitter(MetadataAwareTextSplitter):
 
         # return chunks_saved
 
-    def _parse_node_on_text(self, node: BaseNode, cutoff_ratio_as_chunk=0.8,get_to_first_title_directly=True) -> List[BaseNode]:
+    def _parse_node_on_text(self, node: BaseNode, cutoff_ratio_as_chunk=0.8,get_to_first_title_directly=False) -> List[BaseNode]:
         text = node.text
         chunks = self.cr_text_splitter.split_text(text)
         # return chunks
@@ -497,7 +497,7 @@ class JqkjDocTreeTokenTextSplitter(MetadataAwareTextSplitter):
                     # node_levels_list= [[node for node in children] for children in LevelOrderGroupIter(doc_tree)]
         return splitted_nodes
     
-    def _parse_node(self, node: BaseNode, sub_nodes_chunk_size=8192,cutoff_ratio_as_chunk=0.8,get_to_first_title_directly=True) -> List[BaseNode]:
+    def _parse_node(self, node: BaseNode, sub_nodes_chunk_size=8192,cutoff_ratio_as_chunk=0.8,get_to_first_title_directly=False) -> List[BaseNode]:
 
         doc_tree = get_doc_tree_from_document(node)
         # if doc_tree:
@@ -591,7 +591,7 @@ if __name__ == "__main__":
     print(doc_tree_spiltter.class_name())
 
     top_n = 4
-    input_file_dir = fr'/data/projects/JqChat/jqcode/jq_readers/_testinputdocs'
+    input_file_dir = fr'/data/projects/JqChat/jqcode/jq_readers/_testinputdocs_debug'
 
     query0 = "晶奇公司的应急技术服务电话？"
     query1 = "晶奇公司在哪一年获得ISO9001国际质量体系认证？"
@@ -622,7 +622,7 @@ if __name__ == "__main__":
 
 
     st_reranker = SentenceTransformerRerank(top_n=top_n, model=reranker.model)
-    simple_reader = JqkjSimpleDirectoryReader(input_file_dir,overwrite_existing_converted_files=False,required_exts=['.docx','.pdf'])
+    simple_reader = JqkjSimpleDirectoryReader(input_file_dir,overwrite_existing_converted_files=False,required_exts=['.doc','.docx','.pdf'])
     documents = simple_reader.load_data()
     service_context = ServiceContext.from_defaults(llm=llm, embed_model=embed_model,node_parser=doc_tree_spiltter)
     nodes = service_context.node_parser.get_nodes_from_documents(documents)
