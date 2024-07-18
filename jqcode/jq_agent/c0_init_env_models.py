@@ -211,7 +211,7 @@ class InitEnvModels:
         embedding = embedding if embedding else self.get_emb_8k_rerank_model()[0]
         es_connection = es_connection if es_connection else self.get_es_connection()
         strategy = strategy if strategy else ElasticsearchStore.ApproxRetrievalStrategy(hybrid=False)
-        index_name = index_name if index_name else 'test'    
+        index_name = index_name if index_name else 'test_doc_tree_reader'    
         es_searchstore = ElasticsearchStore(es_connection=es_connection, index_name=index_name, embedding=embedding,strategy=strategy)
         return es_searchstore
 
@@ -443,7 +443,7 @@ if __name__ == '__main__':
     print(res)
 
     ### Build An Index
-    index_name='temp'
+    index_name='index_name'
     urls = [
         "https://www.gov.cn/zhengce/content/202406/content_6955904.htm",
         # "https://www.gov.cn/zhengce/2023-03/23/content_5748063.htm",

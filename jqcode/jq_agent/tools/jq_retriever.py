@@ -6,7 +6,7 @@ from jqcode.jq_agent.c0_init_env_models import env_models_instance
 
 embed_model,embedding_model_8k,reranker = env_models_instance.get_emb_8k_rerank_model()
 ### Build Index
-index_name='health'
+index_name='test_doc_tree_reader'
 es_connection = env_models_instance.get_es_connection()
 knowledge_base_list = env_models_instance.get_all_knowledge_base(es_connection) 
 print(f"当前已存在的知识库列表：{knowledge_base_list=}")

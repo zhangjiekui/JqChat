@@ -80,7 +80,7 @@ class web_search(BaseModel):
 
 class vectorstore(BaseModel):
     """
-    A vectorstore containing documents related to 医疗卫生、医疗健康、医疗服务、医疗政策、medical treatment & health. 凡是与医疗健康相关的问题，都必须使用vectorstore工具。MUST use the vectorstore for questions on these topics.
+    A vectorstore containing documents related to 晶奇公司、安徽晶奇网络科技股份有限公司、医疗卫生、医疗健康、医疗服务、医疗政策、medical treatment & health. 凡是与晶奇公司、安徽晶奇网络科技股份有限公司及医疗健康相关的问题，都必须使用vectorstore工具。MUST use the vectorstore for questions on these topics.
     """
     query: str = Field(description="The query to use when searching the vectorstore.")
 
@@ -371,7 +371,7 @@ def generate(state:RagSubgraphState):
 
     # RAG generation
     referens = []
-    _sources =[d.metadata.get("source",None) for d in documents]
+    _sources =[d.metadata.get("source",d.metadata.get("file_path_jq",None)) for d in documents]
     sources = set([s for s in _sources if s])
     referens = list(sources)
     if referens:

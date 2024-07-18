@@ -593,7 +593,8 @@ if __name__ == "__main__":
     print(doc_tree_spiltter.class_name())
 
     top_n = 4
-    input_file_dir = fr'/data/projects/JqChat/jqcode/jq_readers/_testinputdocs_debug'
+    # input_file_dir = fr'/data/projects/JqChat/jqcode/jq_readers/_testinputdocs_debug'
+    input_file_dir = fr'/data/projects/JqChat/jqcode/jq_readers/_testinputdocs'
 
     query0 = "晶奇公司的应急技术服务电话？"
     query1 = "晶奇公司在哪一年获得ISO9001国际质量体系认证？"
