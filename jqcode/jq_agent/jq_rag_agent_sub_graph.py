@@ -377,8 +377,10 @@ def generate(state:RagSubgraphState):
     if referens:
         referens_str = "   【参考文档为】:  \n"
         for i,r in enumerate(referens):
-            # referens_str += f"    [{i+1}] <a href={r}>{r}</a>\n"
-            referens_str += f"    {i+1}. [{r}]({r})  \n"
+            if r.startswith("http"):
+                referens_str += f"    {i+1}. [{r}]({r})  \n"
+            else:
+                referens_str += f"    {i+1}. {r}  \n"
 
         os.environ["REFERENCE"] = referens_str
         print(f'{referens_str=}')
