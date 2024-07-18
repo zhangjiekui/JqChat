@@ -11,7 +11,8 @@ import langchain_community.document_loaders
 from langchain.docstore.document import Document
 from langchain.text_splitter import MarkdownHeaderTextSplitter, TextSplitter
 from langchain_community.document_loaders import JSONLoader, TextLoader
-
+from jqcode.jq_splitters.backend_splitter_utils.jq_chinese_recursive_text_splitter import ChineseRecursiveTextSplitter
+#  /data/projects/JqChat/jqcode/jq_splitters/backend_splitter_utils/jq_chinese_recursive_text_splitter.py
 from jqcode.jq_knowledge_manegement.chatchat.configs import (
     CHUNK_SIZE,
     KB_ROOT_PATH,
@@ -242,9 +243,12 @@ def make_text_splitter(splitter_name, chunk_size, chunk_overlap):
     """
     根据参数获取特定的分词器
     """
-    splitter_name = splitter_name or "SpacyTextSplitter"
+    splitter_name = splitter_name or "ChineseRecursiveTextSplitter"
     try:
-        if (
+        if splitter_name == "ChineseRecursiveTextSplitter":
+            text_splitter = ChineseRecursiveTextSplitter(chunk_size=chunk_size,chunk_overlap=chunk_overlap)
+
+        elif (
             splitter_name == "MarkdownHeaderTextSplitter"
         ):  # MarkdownHeaderTextSplitter特殊判定
             headers_to_split_on = text_splitter_dict[splitter_name][
@@ -255,7 +259,7 @@ def make_text_splitter(splitter_name, chunk_size, chunk_overlap):
             )
         else:
             try:  # 优先使用用户自定义的text_splitter
-                text_splitter_module = importlib.import_module("chatchat.server.file_rag.text_splitter")
+                text_splitter_module = importlib.import_module("jqcode.jq_knowledge_manegement.chatchat.server.file_rag.text_splitter")
                 TextSplitter = getattr(text_splitter_module, splitter_name)
             except:  # 否则使用langchain的text_splitter
                 text_splitter_module = importlib.import_module(
@@ -345,7 +349,7 @@ class KnowledgeFile:
         if self.ext not in SUPPORTED_EXTS:
             raise ValueError(f"暂未支持的文件格式 {self.filename}")
         self.loader_kwargs = loader_kwargs
-        self.filepath = get_file_path(knowledge_base_name, filename)
+        self.filepath = get_file_path(knowledge_base_name, filename) or self.filename
         self.docs = None
         self.splited_docs = None
         self.document_loader_name = get_LoaderClass(self.ext)
@@ -491,14 +495,19 @@ def files2docs_in_thread(
 
 if __name__ == "__main__":
     from pprint import pprint
+    # text_splitter = make_text_splitter(splitter_name=None,chunk_size=500,chunk_overlap=100)
 
-    kb_file = KnowledgeFile(filename="E:\\LLM\\Data\\Test.md", knowledge_base_name="samples")
-   
-
-    # kb_file.text_splitter_name = "RecursiveCharacterTextSplitter"
-    kb_file.text_splitter_name = "MarkdownHeaderTextSplitter"
+    kb_file = KnowledgeFile(filename="/data/projects/JqChat/test_zh.md", knowledge_base_name="samples")  
+    
     docs = kb_file.file2docs()
+    # kb_file.text_splitter_name = "MarkdownHeaderTextSplitter"
     # pprint(docs[-1])
+    # texts = kb_file.docs2texts(docs)
+    # print(texts[0])
+
+
+    kb_file.text_splitter_name = "ChineseRecursiveTextSplitter"
+    docs = kb_file.file2docs()
+    pprint(docs[-1])
     texts = kb_file.docs2texts(docs)
-    for text in texts:
-        print(text)
+    print(texts[0])

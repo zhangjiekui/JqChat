@@ -19,3 +19,8 @@ def get_ocr(use_cuda: bool = True) -> "RapidOCR":
 
         ocr = RapidOCR()
     return ocr
+
+if __name__ == "__main__":
+    ocr = get_ocr()
+    text = ocr('/data/projects/JqChat/jqcode/jq_knowledge_manegement/chatchat/img/logo-long-chatchat-trans-v2.png')
+    print(text)

@@ -443,7 +443,7 @@ if __name__ == '__main__':
     print(res)
 
     ### Build An Index
-    index_name='index_name'
+    index_name='test_doc_tree_reader'
     urls = [
         "https://www.gov.cn/zhengce/content/202406/content_6955904.htm",
         # "https://www.gov.cn/zhengce/2023-03/23/content_5748063.htm",
