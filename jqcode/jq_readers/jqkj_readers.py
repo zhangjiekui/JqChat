@@ -43,9 +43,15 @@ from llama_index.core.readers.file.base import default_file_metadata_func
 from jqcode.jq_readers.backend_reader_utils.jqkj_doc_pdf2docx_converter import convert_doc_pdf2docx_using_WinWord
 from jqcode.jq_readers.backend_reader_utils.jqkj_doc_tree_utils import find_nearest_parent_but_not_TableOrImageNode,TreeNodeType
 from jqcode.jq_readers.backend_reader_utils.jqkj_doc_tree_utils import compare_with_zip_docx2img,get_paras_in_table
+from rapidocr_onnxruntime import RapidOCR
+from pyemf3project.pyemf3 import EMF
+from pyemf3project.pyemf3.emr import EXTTEXTOUTW
 
 from jqcode.jq_utils.logger import jqkj_logger
 logger = jqkj_logger(__file__).get_logger()
+
+ocr = RapidOCR()
+emf = EMF() #处理emf图片需要的
 
 
 
@@ -171,19 +177,50 @@ class JqkjDocxReader(BaseReader):
                     level = current_depth
                     num_siblings = len(parent_node.children)
                     node_numbering = f"{parent_node.numbering}.{num_siblings+1}" #最后一级编码如果以0开头，就表示是文本段落
-                    text = f"<img src='{img_metadata['img_save_path_jq']}' todo图片内容待识别 />"
-                    node = Node(f'[图片{node_numbering}]{text}',type=TreeNodeType.IMAGE,parent=parent_node, numbering=node_numbering,level=level,text=f'{text}',
-                                image_filepath_jq=img_metadata['img_save_path_jq'],img_base64_jq=img_metadata['img_base64_jq'],img_cx_jq=img_metadata['img_cx_jq'],img_cy_jq=img_metadata['img_cy_jq'])
+                    img_src=img_metadata['img_save_path_jq']
+                    result = ''
+                    try:
+                        if img_src.endswith('.emf'):
+                            emf.load(img_src)
+                            recs = emf.records
+                            for rec in recs:
+                                if isinstance(rec, EXTTEXTOUTW):
+                                    result += "|"+rec.values['string']
+                            logger.debug(f"[{img_src}]中的EMF文本:\n{result}")
+                        else:
+                            ocr_result,_ = ocr(img_src)
+                            if ocr_result:
+                                ocr_texts = [line[1].strip() for line in ocr_result if line[1].strip()]
+                                result = "|".join(ocr_texts)
+                                logger.debug(f"[{img_src}]中的OCR文本:\n{result}")
+                    except Exception as e:
+                        logger.warning(f'获取图片[{img_src}]中的文本失败,详细信息为{e}')
+                        
+                    node = Node(f'[图片{node_numbering}]{img_src}',type=TreeNodeType.IMAGE,parent=parent_node, numbering=node_numbering,level=level,text=f'{result}',
+                                image_filepath_jq=img_src,img_base64_jq=img_metadata['img_base64_jq'],img_cx_jq=img_metadata['img_cx_jq'],img_cy_jq=img_metadata['img_cy_jq'])
                                                       # {"img_save_path_jq":save_path,"img_base64_jq":image_base64,"img_cx_jq":cx,"img_cy_jq":cy}
                     pre_node = node # 图片节点，不能作为父节点候选
         
             # 表格节点
             if isinstance(block,Table):
                 col_text = "|".join([cell.text.strip().replace('\n','') for cell in block.rows[0].cells])
-
                 text = f"<table column_names={col_text}/>" #th: column_name
+
                 df,vf_string = self.read_docx_table(block)
                 df_table_list.append(df)
+                # df_text = df.to_html(index=False)
+                # from langchain_community.document_loaders import DataFrameLoader
+                # from langchain_text_splitters import HTMLSectionSplitter
+                # headers_to_split_on = [("table", "row")]
+                # html_splitter = HTMLSectionSplitter(headers_to_split_on=headers_to_split_on)
+                # html_header_splits = html_splitter.split_text(df_text)
+                # html_header_splits
+                # loader = DataFrameLoader(df,)
+                # docs = loader.load()
+
+                # df.to_string(index=False)
+                # df.to_markdown(index=False)
+                # df.to_html(index=False)
 
                 current_depth = parent_node.depth+1
                 level = current_depth
@@ -470,7 +507,7 @@ def _test_JqkjDocxReader(file_paths=[]):
     return documents,trees,df_tables
 
 def _test_JqkjSimpleDirectoryReader():
-    convert_file_paths=[fr'/data/projects/JqChat/jqcode/jq_readers/_testinputdocs/UserGuide_new.docx',
+    convert_file_paths=[fr'/data/projects/JqChat/jqcode/jq_readers/_testinputdocs/厦门市智慧民政一体化平台项目建设方案 V3.6.docx',
                         # fr'/data/projects/JqChat/jqcode/jq_readers/_testinputdocs/UserGuide.pdf',
                         ]
     input_file_dir = fr'/data/projects/JqChat/jqcode/jq_readers/_testinputdocs'

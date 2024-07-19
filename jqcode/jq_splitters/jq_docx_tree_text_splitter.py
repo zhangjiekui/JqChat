@@ -18,9 +18,13 @@ from llama_index.core.node_parser.interface import MetadataAwareTextSplitter
 
 
 from jqcode.jq_readers.jqkj_readers import JqkjSimpleDirectoryReader
+from jqcode.jq_readers.backend_reader_utils.jqkj_doc_pdf2docx_converter import get_os
 from jqcode.jq_readers.backend_reader_utils.jqkj_doc_tree_utils import jieba_pre_process,TreeNodeType,get_doc_tree_from_document
 from jqcode.jq_splitters.backend_splitter_utils.jq_chinese_recursive_text_splitter import ChineseRecursiveTextSplitter
 from jqcode.jq_utils.logger import jqkj_logger
+
+from pyemf3project.pyemf3 import EMF
+from pyemf3project.pyemf3.emr import EXTTEXTOUTW
 
 logger = jqkj_logger(__file__).get_logger()
 
@@ -38,6 +42,8 @@ DEFAULT_METADATA_FORMAT_LEN = 2
 anytree_json_exporter = JsonExporter()
 anytree_json_importer = JsonImporter()
 
+system_name = get_os()
+emf = EMF() #处理emf图片需要的
 
 def _get_pre_title_nodes_text(pre_title_nodes,normal_text:bool=False):
     if len(pre_title_nodes) > 0:
@@ -355,8 +361,14 @@ class JqkjDocTreeTokenTextSplitter(MetadataAwareTextSplitter):
                     if len(text_cached.strip('\n'))>0:
                         chunks_saved.append(text_cached.strip('\n'))
 
+            if cur_node.type == TreeNodeType.IMAGE:
+                node_text = cur_node.text
+                print(node_text)
+                print(text_cached)
+
 
             if cur_node.type == TreeNodeType.TABLE:
+                print(text_cached)
                 vf_string = cur_node.df_table_jq
                 vf =  StringIO()
                 vf.write(vf_string)
@@ -595,6 +607,7 @@ if __name__ == "__main__":
     top_n = 4
     # input_file_dir = fr'/data/projects/JqChat/jqcode/jq_readers/_testinputdocs_debug'
     input_file_dir = fr'/data/projects/JqChat/jqcode/jq_readers/_testinputdocs'
+    input_files = [fr'/data/projects/JqChat/jqcode/jq_readers/_testinputdocs/厦门市智慧民政一体化平台项目建设方案 V3.6.docx']
 
     query0 = "晶奇公司的应急技术服务电话？"
     query1 = "晶奇公司在哪一年获得ISO9001国际质量体系认证？"
@@ -625,7 +638,7 @@ if __name__ == "__main__":
 
 
     st_reranker = SentenceTransformerRerank(top_n=top_n, model=reranker.model)
-    simple_reader = JqkjSimpleDirectoryReader(input_file_dir,overwrite_existing_converted_files=False,required_exts=['.doc','.docx','.pdf'])
+    simple_reader = JqkjSimpleDirectoryReader(input_files=input_files,overwrite_existing_converted_files=False,required_exts=['.doc','.docx','.pdf'])
     documents = simple_reader.load_data()
     service_context = ServiceContext.from_defaults(llm=llm, embed_model=embed_model,node_parser=doc_tree_spiltter)
     nodes = service_context.node_parser.get_nodes_from_documents(documents)

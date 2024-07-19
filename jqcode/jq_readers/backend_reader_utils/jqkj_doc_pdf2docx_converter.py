@@ -2,6 +2,7 @@ import os
 import platform
 from typing import Union
 from pathlib import Path
+
 from jqcode.jq_readers.backend_reader_utils.jqkj_doc_pdf2docx_on_linux import convert_pdf_to_docx,convert_doc_to_docx
 from jqcode.jq_utils.logger import jqkj_logger
 logger = jqkj_logger(__file__).get_logger()
