@@ -863,10 +863,10 @@ if __name__ == '__main__':
 #     print("~~~~~~~~~~~~~~~~~~~~~~~~~~~"*5) 
 #     print("~~~~test_memory~~~~"*5)
 #     print("~~~~~~~~~~~~~~~~~~~~~~~~~~~"*5)
-#     questions_test_memory = ["你知道我叫什么吗？","我叫张结魁，你叫什么呀？我们做好朋友吧","你还记得我叫什么吗?"] 
-#     for question in questions_test_memory:
-#         value=run_graph_workflow(question)
-#         # print(value)
+    questions_test_memory = ["你知道我叫什么吗？","我叫张结魁，你叫什么呀？我们做好朋友吧","你还记得我叫什么吗?"] 
+    for question in questions_test_memory:
+        value=run_graph_workflow(question)
+        # print(value)
 
     questions = ["What are the types of agent memory?","What player are the Bears expected to draft first in the 2024 NFL draft?","合肥是一个什么样的城市？","Hello, how are you today?"]
     questions = ["合肥科学岛？","Hello, how are you today?"]

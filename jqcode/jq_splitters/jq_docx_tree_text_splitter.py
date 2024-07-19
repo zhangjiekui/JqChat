@@ -18,13 +18,10 @@ from llama_index.core.node_parser.interface import MetadataAwareTextSplitter
 
 
 from jqcode.jq_readers.jqkj_readers import JqkjSimpleDirectoryReader
-from jqcode.jq_readers.backend_reader_utils.jqkj_doc_pdf2docx_converter import get_os
 from jqcode.jq_readers.backend_reader_utils.jqkj_doc_tree_utils import jieba_pre_process,TreeNodeType,get_doc_tree_from_document
 from jqcode.jq_splitters.backend_splitter_utils.jq_chinese_recursive_text_splitter import ChineseRecursiveTextSplitter
 from jqcode.jq_utils.logger import jqkj_logger
 
-from pyemf3project.pyemf3 import EMF
-from pyemf3project.pyemf3.emr import EXTTEXTOUTW
 
 logger = jqkj_logger(__file__).get_logger()
 
@@ -41,9 +38,6 @@ DEFAULT_METADATA_FORMAT_LEN = 2
 
 anytree_json_exporter = JsonExporter()
 anytree_json_importer = JsonImporter()
-
-system_name = get_os()
-emf = EMF() #处理emf图片需要的
 
 def _get_pre_title_nodes_text(pre_title_nodes,normal_text:bool=False):
     if len(pre_title_nodes) > 0:
@@ -184,6 +178,7 @@ class JqkjDocTreeTokenTextSplitter(MetadataAwareTextSplitter):
                 f.write(f'{s}\n\n')
         logger.info(f'......切分结果已保存到{save_path_txt}')
 
+
     def _parse_node_on_tree(self, lm_base_node: BaseNode, doc_tree: AnytreeNode, cutoff_ratio_as_chunk=0.8,get_to_first_title_directly=False) -> List[BaseNode]:
         chunks_saved = [] #存储“已经处理好的Chunks”
         text_cached =''   # 累积起来的待分割的文本
@@ -221,7 +216,15 @@ class JqkjDocTreeTokenTextSplitter(MetadataAwareTextSplitter):
                         continue
                 except :
                     continue
-
+                
+                if cur_node.is_leaf and cur_node.parent.type in [TreeNodeType.TEXT,TreeNodeType.DOCUMENT]:
+                    cur_title_node = cur_node.parent
+                    node_text = cur_node.text
+                    if cur_ancestors_text_placeholder == '': # 只有第一次会取值
+                        cur_ancestors_text_placeholder = _get_pre_title_nodes_text(cur_node.ancestors[1:]) #[1:] 去除文件名根节点                 
+                    if cur_node == cur_title_node.children[0] or cur_title_node != pre_title_node :     # 然后就只有在第一个叶子文本节点，或是父节点发生变化时再取值
+                        pre_title_node = cur_title_node
+                        cur_ancestors_text_placeholder = _get_pre_title_nodes_text(cur_node.ancestors[1:]) #[1:] 去除文件名根节点
             #  暂时只处理文本类型
             if cur_node.type == TreeNodeType.TEXT:
                 # 跳过目录(toc)的内容，因为对于RAG任务没什么作用，反而可能会在检索阶段存在干扰
@@ -240,14 +243,7 @@ class JqkjDocTreeTokenTextSplitter(MetadataAwareTextSplitter):
                     node_text = ''
                     continue
                 
-                if cur_node.is_leaf and cur_node.parent.type in [TreeNodeType.TEXT,TreeNodeType.DOCUMENT]:
-                    cur_title_node = cur_node.parent
-                    node_text = cur_node.text
-                    if cur_ancestors_text_placeholder == '': # 只有第一次会取值
-                        cur_ancestors_text_placeholder = _get_pre_title_nodes_text(cur_node.ancestors[1:]) #[1:] 去除文件名根节点                 
-                    if cur_node == cur_title_node.children[0] or cur_title_node != pre_title_node :     # 然后就只有在第一个叶子文本节点，或是父节点发生变化时再取值
-                        pre_title_node = cur_title_node
-                        cur_ancestors_text_placeholder = _get_pre_title_nodes_text(cur_node.ancestors[1:]) #[1:] 去除文件名根节点
+
                 
                 # 如果没有（文本子节点）Normal Text，跳出本次节点循环，不执行后面的代码，进入下一个节点
                 if len(node_text) == 0: 
