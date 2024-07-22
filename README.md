@@ -53,7 +53,7 @@ conda config --set show_channel_urls yes
 运行 xinference 框架服务
 ```
 workon xinfer
-nohup xinference-local -H 0.0.0.0 --log-level debug  > /data/xinference/xinfer.log 2>&1 & 
+nohup xinference-local -H 0.0.0.0 --log-level debug  >> /data/xinference/xinfer.log 2>&1 & 
 
 ```
 运行加载 qwen2-instruct 模型
