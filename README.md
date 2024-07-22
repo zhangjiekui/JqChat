@@ -30,6 +30,7 @@ export HF_ENDPOINT=https://hf-mirror.com
 export OLLAMA_MODEL_DIR=/data/ollama_modles
 export RAY_DEDUP_LOGS=0
 export XINFERENCE_MODEL_SRC=modelscope
+export XINFERENCE_HOME=/data/xinference
 ```
 ## pip / conda源
 
@@ -48,9 +49,16 @@ conda config --set show_channel_urls yes
 
 **注意【qwen2  的72B Int4 gptq/awq  对应的max_seq_len=32000 & gpu_memory_utilization=0.90,gptq准确率和推理效率都更优】**
 ### 本地Pip安装运行
+
+运行 xinference 框架服务
 ```
 workon xinfer
-XINFERENCE_HOME=/data/xinference xinference-local -H 0.0.0.0 --log-level debug 
+nohup xinference-local -H 0.0.0.0 --log-level debug  > /data/xinference/xinfer.log 2>&1 & 
+
+```
+运行加载 qwen2-instruct 模型
+```
+CUDA_VISIBLE_DEVICES=0,1,2,3 xinference launch --model-engine vllm --model-name qwen2-instruct --size-in-billions 72  --model-format awq --quantization Int4 --gpu_memory_utilization 0.95 --tensor_parallel_size 4 --max_model_len 32000 --n-gpu 4
 ```
 ### Docker运行
 

@@ -43,7 +43,9 @@ from llama_index.core.readers.file.base import default_file_metadata_func
 from jqcode.jq_readers.backend_reader_utils.jqkj_doc_pdf2docx_converter import convert_doc_pdf2docx_using_WinWord
 from jqcode.jq_readers.backend_reader_utils.jqkj_doc_tree_utils import find_nearest_parent_but_not_TableOrImageNode,TreeNodeType
 from jqcode.jq_readers.backend_reader_utils.jqkj_doc_tree_utils import compare_with_zip_docx2img,get_paras_in_table
+
 from rapidocr_onnxruntime import RapidOCR
+
 from pyemf3project.pyemf3 import EMF
 from pyemf3project.pyemf3.emr import EXTTEXTOUTW
 
@@ -186,13 +188,15 @@ class JqkjDocxReader(BaseReader):
                             for rec in recs:
                                 if isinstance(rec, EXTTEXTOUTW):
                                     result += "|"+rec.values['string']
-                            logger.debug(f"[{img_src}]中的EMF文本:\n{result}")
+                            logger.debug(f"图片[{img_src}]中的EMF文本:\n{result}")
                         else:
-                            ocr_result,_ = ocr(img_src)
+                            # 解码base64字符串为图像数据
+                            img_data = base64.b64decode(img_metadata['img_base64_jq'])
+                            ocr_result,_ = ocr(img_data)
                             if ocr_result:
                                 ocr_texts = [line[1].strip() for line in ocr_result if line[1].strip()]
                                 result = "|".join(ocr_texts)
-                                logger.debug(f"[{img_src}]中的OCR文本:\n{result}")
+                                logger.debug(f"图片[{img_src}]中的OCR文本:\n{result}")
                     except Exception as e:
                         logger.warning(f'获取图片[{img_src}]中的文本失败,详细信息为{e}')
                         
@@ -208,20 +212,6 @@ class JqkjDocxReader(BaseReader):
 
                 df,vf_string = self.read_docx_table(block)
                 df_table_list.append(df)
-                # df_text = df.to_html(index=False)
-                # from langchain_community.document_loaders import DataFrameLoader
-                # from langchain_text_splitters import HTMLSectionSplitter
-                # headers_to_split_on = [("table", "row")]
-                # html_splitter = HTMLSectionSplitter(headers_to_split_on=headers_to_split_on)
-                # html_header_splits = html_splitter.split_text(df_text)
-                # html_header_splits
-                # loader = DataFrameLoader(df,)
-                # docs = loader.load()
-
-                # df.to_string(index=False)
-                # df.to_markdown(index=False)
-                # df.to_html(index=False)
-
                 current_depth = parent_node.depth+1
                 level = current_depth
                 num_siblings = len(parent_node.children)
@@ -507,13 +497,13 @@ def _test_JqkjDocxReader(file_paths=[]):
     return documents,trees,df_tables
 
 def _test_JqkjSimpleDirectoryReader():
-    convert_file_paths=[fr'/data/projects/JqChat/jqcode/jq_readers/_testinputdocs/厦门市智慧民政一体化平台项目建设方案 V3.6.docx',
-                        # fr'/data/projects/JqChat/jqcode/jq_readers/_testinputdocs/UserGuide.pdf',
+    convert_file_paths=[fr'/data/projects/JqChat/jqcode/jq_readers/.testinputdocs/厦门市智慧民政一体化平台项目建设方案 V3.6.docx',
+                        # fr'/data/projects/JqChat/jqcode/jq_readers/.testinputdocs/UserGuide.pdf',
                         ]
-    input_file_dir = fr'/data/projects/JqChat/jqcode/jq_readers/_testinputdocs'
+    input_file_dir = fr'/data/projects/JqChat/jqcode/jq_readers/.testinputdocs'
     
 
-    simple_reader = JqkjSimpleDirectoryReader(input_files = convert_file_paths,output_dir_for_converted_files=fr"/data/projects/JqChat/jqcode/jq_readers/_outputdocs")
+    simple_reader = JqkjSimpleDirectoryReader(input_files = convert_file_paths,output_dir_for_converted_files=fr"/data/projects/JqChat/jqcode/jq_readers/.outputdocs")
     documents1 = simple_reader.load_data()
     print(len(documents1))
 
@@ -535,7 +525,7 @@ if __name__ == "__main__":
     #                                    ])
     
     # documents0 = _test_JqkjDocxReader([
-    #                                 fr'/data/projects/JqChat/jqcode/jq_readers/_testinputdocs/UserGuide_new.docx',
+    #                                 fr'/data/projects/JqChat/jqcode/jq_readers/.testinputdocs/UserGuide_new.docx',
     #                                 ])
 
 

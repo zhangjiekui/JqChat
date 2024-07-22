@@ -598,12 +598,11 @@ if __name__ == "__main__":
     st_splitter=SentenceTransformersTokenTextSplitter(emb_model_instance=embed_model,tokens_per_chunk=100,chunk_overlap=0.2)
     cr_text_splitter = st_splitter.chinese_recursive_text_splitter
     doc_tree_spiltter = JqkjDocTreeTokenTextSplitter.from_defaults()
-    print(doc_tree_spiltter.class_name())
-
+ 
     top_n = 4
-    # input_file_dir = fr'/data/projects/JqChat/jqcode/jq_readers/_testinputdocs_debug'
-    input_file_dir = fr'/data/projects/JqChat/jqcode/jq_readers/_testinputdocs'
-    input_files = [fr'/data/projects/JqChat/jqcode/jq_readers/_testinputdocs/厦门市智慧民政一体化平台项目建设方案 V3.6.docx']
+    # input_file_dir = fr'/data/projects/JqChat/jqcode/jq_readers/.testinputdocs_debug'
+    input_file_dir = fr'/data/projects/JqChat/jqcode/jq_readers/.testinputdocs'
+    input_files = [fr'/data/projects/JqChat/jqcode/jq_readers/.testinputdocs/厦门市智慧民政一体化平台项目建设方案 V3.6.docx']
 
     query0 = "晶奇公司的应急技术服务电话？"
     query1 = "晶奇公司在哪一年获得ISO9001国际质量体系认证？"

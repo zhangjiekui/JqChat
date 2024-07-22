@@ -288,7 +288,7 @@ def _test_jieba_pre_process():
 
 def _test_get_docx_paragraph_page_number(print_interval_only_page_breaks=10,print_interval_all=100):
     print('\n=================test_get_docx_paragraph_page_number:start=================')
-    document = DocxDocument(fr'/data/projects/JqChat/jqcode/jq_readers/_testinputdocs/UserGuide_new.docx')
+    document = DocxDocument(fr'/data/projects/JqChat/jqcode/jq_readers/.testinputdocs/UserGuide_new.docx')
     # document = DocxDocument(fr'd:/JqkjKB/jqkjfiles/outputs/outputfiles/converted_docx/UserGuide_p2.docx')
     # document = Document(fr'd:/JqkjKB/jqkjfiles/outputs/outputfiles/converted_docx/厦门市智慧民政一体化平台项目建设方案 V3.6_p2.docx')
     # document.save('temp_for_pages.docx')
@@ -315,7 +315,7 @@ def _test_get_docx_paragraph_page_number(print_interval_only_page_breaks=10,prin
 
     print(f'一共{len(document.paragraphs)}个段落（document.paragraphs）')
 
-def _valid_returned_obj_types(document = DocxDocument(fr'/data/projects/JqChat/jqcode/jq_readers/_testinputdocs/UserGuide.docx')):
+def _valid_returned_obj_types(document = DocxDocument(fr'/data/projects/JqChat/jqcode/jq_readers/.testinputdocs/UserGuide.docx')):
     types=set()
     for b in get_all_paragraghs_paras_plus_paras_in_table(document):
         types.add(type(b))
