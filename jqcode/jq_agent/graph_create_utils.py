@@ -1,5 +1,6 @@
-import sys
+import os, sys
 import functools
+from functools import lru_cache
 from typing import List,Union, TypedDict
 # from typing import Any, Callable, List, Optional
 from langchain_openai import ChatOpenAI
@@ -15,6 +16,9 @@ from langchain.agents.output_parsers.tools import ToolsAgentOutputParser
 
 from langgraph.graph import StateGraph
 from jqcode.jq_agent.c0_init_env_models import env_models_instance
+from langchain_ollama import ChatOllama
+from langchain_core.tools import tool
+from langchain_core.pydantic_v1 import BaseModel, Field
 
 def create_agent(
     llm: ChatOpenAI,
@@ -54,42 +58,56 @@ def agent_node(state, agent, name):
 def create_graph_supervisor(llm: ChatOpenAI, system_prompt, members) -> str:
     """An LLM-based router."""
     options = ["FINISH"] + members
-    supervisor_rout_tool = {
-        "type": "function",
-        "function":{
-        "name": "route",
-        "description": "Select the next role.",
-        "parameters": {
-            # "title": "routeSchema",
-            "type": "object",
-            "properties": {
-                "next": {
-                    "title": "Next",
-                    "anyOf": [{"enum": options}]
-                },
-            },
-            "required": ["next"],
-        }
-        },
-    }
     prompt = ChatPromptTemplate.from_messages(
-        [
-            ("system", system_prompt),
-            MessagesPlaceholder(variable_name="messages"),
-            (
-                "system",
-                "Given the conversation above, who should act next?"
-                " Or should we FINISH? Select one of: {options}",
-            ),
-        ]
-    ).partial(options=str(options), graph_members=", ".join(members))
-    
-    return (
-        prompt
-        | llm.bind_tools(tools=[supervisor_rout_tool], tool_choice="route")
-        # | JsonOutputToolsParser()
-        # | supervisor_post_process
-    )
+            [
+                ("system", system_prompt),
+                MessagesPlaceholder(variable_name="messages"),
+                (
+                    "system",
+                    "Given the conversation above, which action should take?"
+                    " Select one of: {options}",
+                ),
+            ]
+        ).partial(options=str(options), graph_members=", ".join(members))
+
+    if isinstance(llm,ChatOllama):            
+        class Router(BaseModel):
+            f"""Given the conversation above, dicide which action should take"""
+            action: str = Field(description=f"Given the conversation above, dicide which action should take. The action must be one of {'，'.join(options)}")
+
+        # router = llm.with_structured_output(Router,method='function_calling')
+        router = llm.bind_tools([Router],tool_choice='Router')
+        return prompt | router
+    # if False:
+    #     pass
+
+    else:
+        supervisor_rout_tool = {
+            "type": "function",
+            "function":{
+            "name": "route",
+            "description": f"根据用户的问题，决定下一步该采取的行动,结果存放在next变量中, next必须是以下取值之一： {'，'.join(options)}",
+            "parameters": {
+                # "title": "routeSchema",
+                "type": "object",
+                "properties": {
+                    "next": {
+                        "title": "next",
+                        "anyOf": [{"enum": options}]
+                    },
+                },
+                "required": ["next"],
+            }
+            },
+        }
+
+        
+        return (
+            prompt
+            | llm.bind_tools(tools=[supervisor_rout_tool], tool_choice="route")
+            # | JsonOutputToolsParser()
+            # | supervisor_post_process
+        )
 
 def sub_graph_enter_chain(message_and_next:dict, members: List[str]):
     results = {}
@@ -168,12 +186,23 @@ def supervisor_post_process_node(toolcalls_and_state:dict,supervisor_node, membe
    
     is_coding_related = user_question_is_related_to_coding_or_data_analyzing(question=question)
     tool_calls_list = toolcalls_message.tool_calls
+    next = ""
+    if tool_calls_list:
+        print('~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~')
+        print(f"导航输出的原始工具列表:{tool_calls_list}")
+        print('~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~')
+        next, tool_call_parsed_message = _parse_next(tool_calls_list,members_with_finish) 
+    else:
+        toolcalls_message_content = toolcalls_message.content
+        print('~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~')
+        print(f"导航输出的原始工具列表为空，尝试从LLM返回内容中直接提取:{toolcalls_message_content}")
+        print('~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~')
+        
+        for member in members_with_finish:
+            if member in toolcalls_message_content:
+                next = member
+                break
 
-
-    print('~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~')
-    print(f"导航输出的原始工具列表:{tool_calls_list}")
-    print('~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~')
-    next, tool_call_parsed_message = _parse_next(tool_calls_list,members_with_finish)  
     # todo: 需增加最后消息不是HumanMessage并且content真正存在才能在总图中让NEXT = "FINISH" 
     if next:
         print('*****************'*5)
@@ -208,10 +237,11 @@ def supervisor_post_process_node(toolcalls_and_state:dict,supervisor_node, membe
                 print(f"Current in {graph_name}, Next to: {next}")
                 return {"messages":messages,'next':next,"question":question,"navigated_sub_nodes":navigated_sub_nodes}
         elif graph_name=='tool_sub_graph':
-            if is_coding_related:
-                if next not in ['get_flight_number']:
-                    raise Exception('该问题与Python代码、数据分析相关，此处抛出异常，好跳转到相关模块执行！')
             print(f"IN tool_sub_graph: '{question}' Next to: {next}")
+            # if is_coding_related:
+            #     if next not in ['get_flight_number']:
+            #         raise Exception('该问题与Python代码、数据分析相关，此处抛出异常，好跳转到相关模块执行！')
+            
             if navigated_question_and_tool:
                 navigated_tool_name = navigated_question_and_tool.get(question, None)
                 print(f"'{question}' already navigated_tool_name:{navigated_tool_name}")
@@ -376,9 +406,10 @@ def get_graph_nodes(graphs:Union[StateGraph,List[StateGraph]]) -> list:
 
 llm = env_models_instance.get_langchain_chat_model(
         temperature=0.0,
-        max_tokens=10000,
+        max_tokens=30000,
         streaming=True)
 
+# llm = env_models_instance.get_ollama_tool_model()
 
 ### Coding Grader
 # Coding Grader Data model
@@ -387,7 +418,11 @@ class GradeCodingRelavance(BaseModel):
     k: str = Field(description="Whether a user question is relevant to [code generating/executing,data file processing and data exploring/analyzing], k must be 'yes' or 'no'")
 # Code Generating/Code Executing Relavance Grader Prompt
 preamble_coding_relevant_grader = """You are a grader assessing relevance of a user question to [code generating/executing,data file processing or data exploring/analyzing]. Response me with a simple JSON string can be directly consumed by  ‘json.loads’ method, must be ‘{{"k":"yes"}}’ or  ‘{{"k":"no"}}’,'yes' means a user question is related to code generating/executing,data file processing or data exploring/analyzing.No preamble or explaination."""
-structured_llm_coding_relevant_grader = llm.with_structured_output(GradeCodingRelavance,method='json_mode')
+if isinstance(llm,ChatOllama):
+    structured_llm_coding_relevant_grader = llm.with_structured_output(GradeCodingRelavance)
+else:
+    structured_llm_coding_relevant_grader = llm.with_structured_output(GradeCodingRelavance,method='json_mode')
+
 coding_relevance_prompt = ChatPromptTemplate.from_messages(
     [
         ("system",preamble_coding_relevant_grader),
@@ -397,17 +432,23 @@ coding_relevance_prompt = ChatPromptTemplate.from_messages(
 # Coding Relavance Grader
 coding_relevance_grader = coding_relevance_prompt | structured_llm_coding_relevant_grader
 
+@lru_cache
 def user_question_is_related_to_coding_or_data_analyzing(question:str):
-    response =  coding_relevance_grader.invoke({"question": question})
-    print(f"判断：Whether question '{question}' is related to [Codeing/Data File/Analyzing]? 判断结果：{response=}")
-    try:
-        result_str = response.k
-        if result_str.lower() == 'yes':
-            return True
-        else:
+    result_str = os.getenv(question,None)
+    if not result_str:
+        response =  coding_relevance_grader.invoke({"question": question})
+        print(f"判断：Whether question '{question}' is related to [Codeing/Data File/Analyzing]? 判断结果：{response=}")
+        try:
+            result_str = response.k
+            os.environ[question] = result_str
+
+        except:
+            print('“coding_relevance_grader”无法正常返回判断结果，所以人为返回False')
             return False
-    except:
-        print('“coding_relevance_grader”无法正常返回判断结果，所以人为返回False')
+    
+    if result_str.lower() == 'yes':
+        return True
+    else:
         return False
 
 if __name__ == "__main__":

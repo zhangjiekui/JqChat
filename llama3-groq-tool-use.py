@@ -24,8 +24,10 @@ rendered_tools = render_text_description(tools)
 print(rendered_tools)
 
 model_name = "llama3-groq-tool-use"
+model_name = "llama3-groq-tool-use:8b-q8_0"
 # model_name = 'llama3-groq-tool-use:70b'
-llm = ChatOllama(model=model_name,format='json').bind_tools(tools)
+llm = ChatOllama(model=model_name,format='json',temperature=0.5,top_p=0.65).bind_tools(tools)
+# llm = ChatOllama(model=model_name).bind_tools(tools)
 
 system_prompt = f"""You are an assistant that has access to functions.
 ONLY Use them:
@@ -52,7 +54,9 @@ def LLM(prompt, system_message, model=llm):
         print('Error:', error)
         raise
 prompt = '使用python可以计算出3*10的正确结果，请思考这句话正确吗？并请给出理由'
-prompt = "Using Python can calculate out 3*10's correct result,is the statement ture? and give me your reason"
+prompt = "Statement:Using Python can calculate out 3*10's correct result. Should you accept or reject the statement? and give me your reason"
+prompt = "Using Python can calculate out 3*10's correct result."
+prompt = "1+1=2"
 response = LLM(prompt,system_prompt)
 
 print("==========="*10)
@@ -67,7 +71,8 @@ if response.tool_calls:
 
 print("###########"*10)
 prompt = '使用python无法计算出3*10的正确结果，请思考判断这句话正确吗？并请给出理由'
-prompt = "Using Python can not calculate out 3*10's correct result,is the statement ture? and give me your reason"
+prompt = "Statement:Using Python can not calculate out 3*10's correct result. Should you accept or reject the statement? and give me your reason"
+prompt = "1+1=3"
 response = LLM(prompt,system_prompt)
 
 

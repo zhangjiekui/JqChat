@@ -32,14 +32,14 @@ from jq_excutable_tool_agent_subgraph import tool_chain, ToolSubgraphState, tool
 # 一、创建总图
 
 members = ["Tools", "Rag"]
+members_with_finish = ["Tools", "Rag", "FINISH" ]
 supervisor_node = create_graph_supervisor(
     llm,
-    "You are a supervisor tasked with routing a conversation between the"
-    " following teams: {team_members}. Given the following user request,"
-    " respond with the worker to act next. Each worker will perform a"
-    " task and respond with their results and status, Worker 'Tools' Only responsible for tool calls，such as query flight numbers and generate/run python code,"
-    " while Worker 'Rag' responsible for all other things, such as daily greetings and chatting, search web or knowledge base/vectorstore to answer user's question, When finished,"
-    " respond with FINISH.",
+    f"You are a supervisor tasked with routing a conversation to the next action:{','.join(members_with_finish)}. Given the user request/question,"
+    " respond with the next action to take. "
+    " Action 'Tools' Only responsible for tool calls, such as query flight numbers and generate/run python code,"
+    " while action 'Rag' responsible for all other things, such as daily greetings and chatting, search web or knowledge base/vectorstore to answer user's question. "
+    " When finished, respond with FINISH.",
     members,
 )
 
