@@ -86,7 +86,7 @@ def create_graph_supervisor(llm: ChatOpenAI, system_prompt, members) -> str:
             "type": "function",
             "function":{
             "name": "route",
-            "description": f"根据用户的问题，决定下一步该采取的行动,结果存放在next变量中, next必须是以下取值之一： {'，'.join(options)}",
+            "description": f"决定应调用的工具/采取的行动。结果存放在next变量中, next必须是以下取值之一： {'，'.join(options)}",
             "parameters": {
                 # "title": "routeSchema",
                 "type": "object",
@@ -289,7 +289,7 @@ def supervisor_post_process_node(toolcalls_and_state:dict,supervisor_node, membe
                navigated_sub_nodes.append(next)
                return {"messages":messages,'next':next,"question":question,"navigated_sub_nodes":navigated_sub_nodes}
         else:
-            print(f"Current in {graph_name}, {graph_name} outputed next: {next} is None")
+            print(f"Current in {graph_name}, {graph_name} outputed next is None")
             print(f"But we are already in {graph_name}")                
             print(f"So let next='FINISH'")
             next="FINISH"

@@ -331,7 +331,7 @@ class InitEnvModels:
                     messages_relevant.append(message_relevant)
                     message_relevant.pretty_print()
                     print(f"^^^^^^^^^上条Message的{relevance_score=}^^^^^^^^^")
-            print("++++++++++++++++++++++++++++++++++++++++++++【过滤后保留的+最近的条{reserve_last_n_messages}】消息++++++++++++++++++++++++++++++++++++++++++++")   
+            print(f"++++++++++++++++++++++++++++++++++++++++++++【过滤后保留的+最近的条{reserve_last_n_messages}】消息++++++++++++++++++++++++++++++++++++++++++++")   
             messages_list.reverse() # 前面messages_list顺序翻转了，所以这里还要翻转回来
             last_n_messages = messages_list[-reserve_last_n_messages:]
             for last_message in last_n_messages:
