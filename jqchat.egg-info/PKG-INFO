@@ -23,6 +23,11 @@ git commit -a
 ```sh
 git push
 ```
+### 端口占用释放
+```
+sudo lsof -i :{port}
+sudo kill -9 {pid}
+```
 
 ## linux系统环境变量
 
@@ -35,6 +40,7 @@ export HF_ENDPOINT=https://hf-mirror.com
 export OLLAMA_MODEL_DIR=/data/ollama_modles
 export RAY_DEDUP_LOGS=0
 export XINFERENCE_MODEL_SRC=modelscope
+export XINFERENCE_HOME=/data/xinference
 ```
 ## pip / conda源
 
@@ -48,11 +54,40 @@ conda config --set show_channel_urls yes
 ```
 ## Xinference LLM
 
-### Docker
-
 #### 当前使用版本
+原版/最新版是xinference 0.12.3 (2024-06-28)
 
-原版/最新版是xinference 0.11.1 (2024-05-21)
+**注意【qwen2  的72B Int4 gptq/awq  对应的max_seq_len=32000 & gpu_memory_utilization=0.90,gptq准确率和推理效率都更优】**
+### 本地Pip安装运行
+
+运行 xinference 框架服务
+```
+workon xinfer
+nohup xinference-local -H 0.0.0.0 --log-level debug  >> /data/xinference/xinfer.log 2>&1 & 
+
+```
+运行加载 qwen2-instruct 模型
+```
+CUDA_VISIBLE_DEVICES=0,1,2,3 xinference launch --model-engine vllm --model-name qwen2-instruct --size-in-billions 72  --model-format awq --quantization Int4 --gpu_memory_utilization 0.95 --tensor_parallel_size 4 --max_model_len 32000 --n-gpu 4
+```
+### Docker运行
+
+#### Docker参数配置
+{
+    "runtimes": {
+        "nvidia": {
+            "args": [],
+            "path": "nvidia-container-runtime"
+        }
+    },
+    "registry-mirrors": [
+      "https://docker.m.daocloud.io",
+      "https://docker.nju.edu.cn",
+      "https://5vkaailq.mirror.aliyuncs.com",
+      "http://hub-mirror.c.163.com",
+      "https://docker.mirrors.ustc.edu.cn"
+    ]
+}
 
 #### 更新镜像版本
 
@@ -62,6 +97,8 @@ docker pull xprobe/xinference:latest
 
 ```
 docker run --shm-size=64g --name xinferencev111 -d -p 9997:9997 -e XINFERENCE_MODEL_SRC=modelscope -e HF_ENDPOINT=https://hf-mirror.com -v /home/jqsoft/.xinference:/root/.xinference -v /home/jqsoft/.cache/huggingface:/root/.cache/huggingface -v /home/jqsoft/.cache/modelscope:/root/.cache/modelscope -e CONTEXT_LENGTH=10000 -e NUM_GPUS=4 --gpus all xprobe/xinference:latest xinference-local -H 0.0.0.0 --log-level debug 
+
+docker run --shm-size=64g --name xinferencev121 -d -p 9997:9997 -e XINFERENCE_MODEL_SRC=modelscope -e HF_ENDPOINT=https://hf-mirror.com -v /root/.xinference:/root/.xinference -v /root/.cache/huggingface:/root/.cache/huggingface -v /root/.cache/modelscope:/root/.cache/modelscope -e CONTEXT_LENGTH=10000 -e NUM_GPUS=4 --gpus all xprobe/xinference:latest xinference-local -H 0.0.0.0 --log-level debug
 ```
 
 ##### 参数
@@ -71,9 +108,9 @@ docker run --shm-size=64g --name xinferencev111 -d -p 9997:9997 -e XINFERENCE_MO
 ###### 模型下载地址相关：-e XINFERENCE_MODEL_SRC=modelscope -e HF_ENDPOINT=https://hf-mirror.com
 
 ### 模型 【进入Docker Shell运行】
-
+【qwen2  的72B Int4 gptq/awq  对应的**max_seq_len=32000 & gpu_memory_utilization=0.90**】,gptq准确率和推理效率都更优
+![alt text](image.png)
 【qwen1.5的72B Int4 gptq/awq  对应的**max_seq_len=10000 & gpu_memory_utilization=0.90**】
-
 【qwen1.5的110B Int4 gptq/awq 对应的**max_seq_len=10000 & gpu_memory_utilization=0.95**】
 【qwen1.5的72B Int4 gptq/awq 上面Docker运行对应的设置context_length=10000】
 
@@ -151,7 +188,9 @@ docker run -e "ENROLLMENT_TOKEN=<token>" docker.elastic.co/elasticsearch/elastic
 docker exec -it es105 /usr/share/elasticsearch/bin/elasticsearch-reset-password -u elastic
 docker exec -it es105 /usr/share/elasticsearch/bin/elasticsearch-create-enrollment-token -s kibana
 ```
-
+## Kibana https://www.elastic.co/guide/en/kibana/current/docker.html
+docker pull docker.elastic.co/kibana/kibana:8.14.0
+docker run --name kib01 --net elastic -p 5601:5601 docker.elastic.co/kibana/kibana:8.14.0
 ## 本项目的Installation
 
 ubuntu上推荐下面的安装和运行方法:
