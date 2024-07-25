@@ -52,6 +52,16 @@ def _get_pre_title_nodes_text(pre_title_nodes,normal_text:bool=False):
         text_cached = ''
     return text_cached
 
+def get_pre_title_nodes_text(cur_node,cur_title_node,pre_title_node,cur_ancestors_text_placeholder,pre_ancestors_text_placeholder):
+    if cur_node.is_leaf and cur_node.parent.type in [TreeNodeType.TEXT,TreeNodeType.DOCUMENT]:
+        cur_title_node = cur_node.parent
+        if cur_ancestors_text_placeholder == '': # 只有第一次会取值
+            cur_ancestors_text_placeholder = _get_pre_title_nodes_text(cur_node.ancestors[1:]) #[1:] 去除文件名根节点                 
+        if cur_node == cur_title_node.children[0] or cur_title_node != pre_title_node :     # 然后就只有在第一个叶子文本节点，或是父节点发生变化时再取值
+            pre_title_node = cur_title_node
+            cur_ancestors_text_placeholder = _get_pre_title_nodes_text(cur_node.ancestors[1:]) #[1:] 去除文件名根节点
+    return cur_title_node,pre_title_node,cur_ancestors_text_placeholder,pre_ancestors_text_placeholder
+
 class JqkjDocTreeTokenTextSplitter(MetadataAwareTextSplitter):
 
     _default_normal_tokens_chunk_size = DEFAULT_CHUNK_SIZE - DEFAULT_MODEL_RESERVED_TOKENS_SIZE
@@ -208,6 +218,8 @@ class JqkjDocTreeTokenTextSplitter(MetadataAwareTextSplitter):
         last_text_nodes = text_nodes[-1]
 
         for i,cur_node in enumerate(all_tree_nodes):
+
+
             if get_to_first_title_directly:
                 try:
                     if cur_node.type == TreeNodeType.TEXT and 'Heading' in cur_node.style:
@@ -216,17 +228,20 @@ class JqkjDocTreeTokenTextSplitter(MetadataAwareTextSplitter):
                         continue
                 except :
                     continue
-                
-                if cur_node.is_leaf and cur_node.parent.type in [TreeNodeType.TEXT,TreeNodeType.DOCUMENT]:
-                    cur_title_node = cur_node.parent
-                    node_text = cur_node.text
-                    if cur_ancestors_text_placeholder == '': # 只有第一次会取值
-                        cur_ancestors_text_placeholder = _get_pre_title_nodes_text(cur_node.ancestors[1:]) #[1:] 去除文件名根节点                 
-                    if cur_node == cur_title_node.children[0] or cur_title_node != pre_title_node :     # 然后就只有在第一个叶子文本节点，或是父节点发生变化时再取值
-                        pre_title_node = cur_title_node
-                        cur_ancestors_text_placeholder = _get_pre_title_nodes_text(cur_node.ancestors[1:]) #[1:] 去除文件名根节点
-            #  暂时只处理文本类型
+            # 下面这段代码重构为方法了
+            # if cur_node.is_leaf and cur_node.parent.type in [TreeNodeType.TEXT,TreeNodeType.DOCUMENT]:
+            #     cur_title_node = cur_node.parent
+            #     node_text = cur_node.text
+            #     if cur_ancestors_text_placeholder == '': # 只有第一次会取值
+            #         cur_ancestors_text_placeholder = _get_pre_title_nodes_text(cur_node.ancestors[1:]) #[1:] 去除文件名根节点                 
+            #     if cur_node == cur_title_node.children[0] or cur_title_node != pre_title_node :     # 然后就只有在第一个叶子文本节点，或是父节点发生变化时再取值
+            #         pre_title_node = cur_title_node
+            #         cur_ancestors_text_placeholder = _get_pre_title_nodes_text(cur_node.ancestors[1:]) #[1:] 去除文件名根节点
+            cur_title_node,pre_title_node,cur_ancestors_text_placeholder,pre_ancestors_text_placeholder = get_pre_title_nodes_text(cur_node,cur_title_node=cur_title_node,pre_title_node=pre_title_node,cur_ancestors_text_placeholder=cur_ancestors_text_placeholder,pre_ancestors_text_placeholder=pre_ancestors_text_placeholder)
+
+            #  处理文本类型
             if cur_node.type == TreeNodeType.TEXT:
+                node_text = cur_node.text
                 # 跳过目录(toc)的内容，因为对于RAG任务没什么作用，反而可能会在检索阶段存在干扰
                 # 与上面的get_to_first_title_directly可能会重复，
                 # 上面的get_to_first_title_directly处理的是即使没有明确的toc标识信息的情况（如pdf转过来的docx）
@@ -248,12 +263,6 @@ class JqkjDocTreeTokenTextSplitter(MetadataAwareTextSplitter):
                 # 如果没有（文本子节点）Normal Text，跳出本次节点循环，不执行后面的代码，进入下一个节点
                 if len(node_text) == 0: 
                     continue
-
-                # if '根据国家标准《信息系统安全等级保护定级指南》（GB/T22240-2008）' in node_text:
-                # if '项目建设单位：厦门市民政局' in node_text:
-                #     logger.debug('for debug')
-
-
 
                 ancestors_text_placeholder = '' if pre_ancestors_text_placeholder==cur_ancestors_text_placeholder else cur_ancestors_text_placeholder
 
@@ -358,18 +367,71 @@ class JqkjDocTreeTokenTextSplitter(MetadataAwareTextSplitter):
                         chunks_saved.append(text_cached.strip('\n'))
 
             if cur_node.type == TreeNodeType.IMAGE:
+                # 保险起见，先处理text_cached
+                tokens_cached = self.tokens_len_func(text=text_cached)
+                if tokens_cached >= max_chunk_size*cutoff_ratio_as_chunk - metadata_str_tokens_num:
+                    assert self.tokens_len_func(text=text_cached) <= DEFAULT_CHUNK_SIZE - metadata_str_tokens_num,f"{self.tokens_len_func(text=text_cached)},\n{text_cached}"   
+                    chunks_saved.append(text_cached.strip('\n'))
+                    text_cached = '' 
+
                 node_text = cur_node.text
-                print(node_text)
-                print(text_cached)
+                cur_title_node,pre_title_node,cur_ancestors_text_placeholder,pre_ancestors_text_placeholder = get_pre_title_nodes_text(cur_node,cur_title_node=cur_title_node,pre_title_node=pre_title_node,cur_ancestors_text_placeholder=cur_ancestors_text_placeholder,pre_ancestors_text_placeholder=pre_ancestors_text_placeholder)
+                if cur_ancestors_text_placeholder:
+                    if text_cached:
+                        if cur_ancestors_text_placeholder not in text_cached:
+                            text_cached = cur_ancestors_text_placeholder + text_cached
+                    else:
+                        text_cached = cur_ancestors_text_placeholder
+                
+                
+                tokens_node_text = self.tokens_len_func(text=node_text)
+                tokens_text_cached = self.tokens_len_func(text=text_cached)
+
+                tokens_bound = self.normal_tokens_chunk_size - metadata_str_tokens_num
+
+                if tokens_node_text < tokens_bound:
+                    if tokens_node_text + tokens_text_cached <= tokens_bound:
+                        text_cached = text_cached + node_text
+                        tokens_cached = self.tokens_len_func(text=text_cached)
+                        if tokens_cached >= max_chunk_size*cutoff_ratio_as_chunk - metadata_str_tokens_num:
+                            assert self.tokens_len_func(text=text_cached) <= DEFAULT_CHUNK_SIZE - metadata_str_tokens_num,f"{self.tokens_len_func(text=text_cached)},\n{text_cached}"   
+                            chunks_saved.append(text_cached.strip('\n'))
+                            text_cached = '' 
+                    else:
+                        chunks_saved.append(text_cached.strip('\n'))
+                        text_cached = ''
+                        if self.tokens_len_func(text=cur_ancestors_text_placeholder + node_text) <= tokens_bound:
+                            chunks_saved.append(cur_ancestors_text_placeholder + node_text)
+                        else:
+                            chunks_saved.append(node_text)
+                else:
+                    if tokens_text_cached<tokens_bound*0.2:
+                        _chunk_size = tokens_bound - tokens_text_cached
+                        chunks = self._split_text(text=node_text,chunk_size=_chunk_size)
+                        splits = [text_cached + chunk for chunk in chunks]
+                        chunks_saved = chunks_saved + splits
+                    else:
+                        chunks_saved.append(text_cached.strip('\n'))
+                        splits = self._split_text(text=node_text,chunk_size=tokens_bound)
+                        chunks_saved = chunks_saved + splits
+                        text_cached = ''
 
 
             if cur_node.type == TreeNodeType.TABLE:
-                print(text_cached)
+                # 保险起见，先处理text_cached
+                tokens_cached = self.tokens_len_func(text=text_cached)
+                if tokens_cached >= max_chunk_size*cutoff_ratio_as_chunk - metadata_str_tokens_num:
+                    assert self.tokens_len_func(text=text_cached) <= DEFAULT_CHUNK_SIZE - metadata_str_tokens_num,f"{self.tokens_len_func(text=text_cached)},\n{text_cached}"   
+                    chunks_saved.append(text_cached.strip('\n'))
+                    text_cached = '' 
+
+                tokens_bound = self.normal_tokens_chunk_size - metadata_str_tokens_num
                 vf_string = cur_node.df_table_jq
                 vf =  StringIO()
                 vf.write(vf_string)
                 vf.seek(0)
                 df = pd.read_csv(vf)
+                print(df.head(5))
         
         file_path_docx = lm_base_node.metadata.get("file_path",None) or lm_base_node.metadata.get("file_path_jq",None)
         if not file_path_docx:
@@ -603,6 +665,7 @@ if __name__ == "__main__":
     # input_file_dir = fr'/data/projects/JqChat/jqcode/jq_readers/.testinputdocs_debug'
     input_file_dir = fr'/data/projects/JqChat/jqcode/jq_readers/.testinputdocs'
     input_files = [fr'/data/projects/JqChat/jqcode/jq_readers/.testinputdocs/厦门市智慧民政一体化平台项目建设方案 V3.6.docx']
+    input_files = [fr'/data/projects/JqChat/jqcode/jq_readers/.testinputdocs/A方案.docx']
 
     query0 = "晶奇公司的应急技术服务电话？"
     query1 = "晶奇公司在哪一年获得ISO9001国际质量体系认证？"

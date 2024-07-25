@@ -17,6 +17,7 @@ from langchain.agents.output_parsers.tools import ToolsAgentOutputParser
 from langgraph.graph import StateGraph
 from jqcode.jq_agent.c0_init_env_models import env_models_instance
 from langchain_ollama import ChatOllama
+from langchain_experimental.llms.ollama_functions import OllamaFunctions
 from langchain_core.tools import tool
 from langchain_core.pydantic_v1 import BaseModel, Field
 
@@ -69,26 +70,41 @@ def create_graph_supervisor(llm: ChatOpenAI, system_prompt, members) -> str:
                 ),
             ]
         ).partial(options=str(options), graph_members=", ".join(members))
+    # print(prompt)
 
-    if isinstance(llm,ChatOllama):            
-        class Router(BaseModel):
-            f"""Given the conversation above, dicide which action should take"""
-            action: str = Field(description=f"Given the conversation above, dicide which action should take. The action must be one of {'，'.join(options)}")
+    # if isinstance(llm,ChatOllama):            
+    #     class Router(BaseModel):
+    #         f"""Given the conversation above, dicide which action should take"""
+    #         action: str = Field(description=f"Given the conversation above, dicide which action should take. The action must be one of {'，'.join(options)}")
 
-        # router = llm.with_structured_output(Router,method='function_calling')
-        router = llm.bind_tools([Router],tool_choice='Router')
-        return prompt | router
-    # if False:
-    #     pass
+    #     router = llm.with_structured_output(Router)
+    #     # router = llm.bind_tools([Router],tool_choice='Router')
+    #     return prompt | router
+
+    supervisor_rout_tool ={
+        "name": "route",
+        "description": "Given the conversation above, dicide which action should take",
+        "parameters": {
+            "type": "object",
+            "properties": {
+                "next": {
+                    "type": "string",
+                    "description": "next action should take, " "e.g. Tools",
+                    "enum": options
+                },
+            },
+            "required": ["next"],
+            }      
+        }
+    if isinstance(llm,OllamaFunctions):
+        return prompt | llm.bind_tools(tools=[supervisor_rout_tool],function_call={"name": "route"}) 
+        # return prompt | llm.bind_tools(tools=[supervisor_rout_tool], tool_choice="route")
 
     else:
-        supervisor_rout_tool = {
-            "type": "function",
-            "function":{
+        supervisor_rout_tool ={
             "name": "route",
-            "description": f"决定应调用的工具/采取的行动。结果存放在next变量中, next必须是以下取值之一： {'，'.join(options)}",
+            "description": "Given the conversation above, dicide which action should take",
             "parameters": {
-                # "title": "routeSchema",
                 "type": "object",
                 "properties": {
                     "next": {
@@ -97,11 +113,8 @@ def create_graph_supervisor(llm: ChatOpenAI, system_prompt, members) -> str:
                     },
                 },
                 "required": ["next"],
-            }
-            },
-        }
-
-        
+                }      
+        }        
         return (
             prompt
             | llm.bind_tools(tools=[supervisor_rout_tool], tool_choice="route")
@@ -372,6 +385,7 @@ def _parse_next(tool_calls_list, members):
                         print(tool_call_parsed_message)
 
         next = tool_call_name if tool_call_name else None
+
         if next in members:
             return next,tool_call_parsed_message
         else:
@@ -409,7 +423,8 @@ llm = env_models_instance.get_langchain_chat_model(
         max_tokens=30000,
         streaming=True)
 
-# llm = env_models_instance.get_ollama_tool_model()
+llm_ollama_function = env_models_instance.get_ollama_function_model()
+# llm = env_models_instance.get_ollama_function_model()
 
 ### Coding Grader
 # Coding Grader Data model

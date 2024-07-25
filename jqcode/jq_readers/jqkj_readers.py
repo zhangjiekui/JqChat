@@ -209,8 +209,8 @@ class JqkjDocxReader(BaseReader):
         
             # 表格节点
             if isinstance(block,Table):
-                col_text = "|".join([cell.text.strip().replace('\n','') for cell in block.rows[0].cells])
-                text = f"<table column_names={col_text}/>" #th: column_name
+                col_text = ",".join([cell.text.strip().replace('\n','') for cell in block.rows[0].cells])
+                text = f"{col_text}\r\n" #th: column_name
 
                 df,vf_string = self.read_docx_table(block)
                 df_table_list.append(df)

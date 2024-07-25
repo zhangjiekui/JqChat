@@ -77,7 +77,7 @@ for question in qs:
 
 async_memory = AsyncSqliteSaver.from_conn_string("checkpoints.async_sqlite")
 super_graph_compiled_async = super_graph.compile(checkpointer=async_memory)
-def arun_super_graph(question:str,config = {"recursion_limit":25,"configurable": {"thread_id": "userid-sessionid_978888z"}},super_graph_compiled_async=super_graph_compiled_async):
+def arun_super_graph(question:str,config = {"recursion_limit":25,"configurable": {"thread_id": "userid-sessionid_97888nx"}},super_graph_compiled_async=super_graph_compiled_async):
     
     # # """Get the current state of the graph."""
     # initial_state = asyncio.run(super_graph_compiled_async.aget_state(config=config))
@@ -159,23 +159,23 @@ if __name__ == '__main__':
         # print(asyncio.run(arun_super_graph(question)))
         print(arun_super_graph(question))
 
-# # """       
-#     print('\n\n')
-#     print("~~~~~~~~~~~~~~~~~~~~~~~~~~~"*5) 
-#     print("~~~~test_memory~~~~"*5)
-#     print("~~~~~~~~~~~~~~~~~~~~~~~~~~~"*5)
-#     questions_test_memory = ["你知道我叫什么吗？","我叫张结魁，你叫什么呀？我们做好朋友吧","?"] 
-#     for question in questions_test_memory:
-#         print(arun_super_graph(question))
+# # # """       
+    print('\n\n')
+    print("~~~~~~~~~~~~~~~~~~~~~~~~~~~"*5) 
+    print("~~~~test_memory~~~~"*5)
+    print("~~~~~~~~~~~~~~~~~~~~~~~~~~~"*5)
+    questions_test_memory = ["你知道我叫什么吗？","我叫张结魁，你叫什么呀？我们做好朋友吧","?"] 
+    for question in questions_test_memory:
+        print(arun_super_graph(question))
 
-    # questions = ["请帮我搜索获取，并按时间线梳理总结我国医疗健康相关的政策内容","合肥是一个什么样的城市？","What are the types of agent memory?","What player are the Bears expected to draft first in the 2024 NFL draft?","Hello, how are you today?"]
-    # questions = ["安徽晶奇网络科技股份有限公司的详细董事、独立董事名单","监事名单呢？"]
-    # print('\n\n')
-    # print("~~~~~~~~~~~~~~~~~~~~~~~~~~~"*5) 
-    # print("$$$$run_graph_workflow$$$$"*5)
-    # print("~~~~~~~~~~~~~~~~~~~~~~~~~~~"*5) 
-    # for question in questions:
-    #     print(arun_super_graph(question))
-    # print("~~~~~~~~~~~~~~~~~~~~~~~~~~~"*5)
+    questions = ["请帮我搜索获取，并按时间线梳理总结我国医疗健康相关的政策内容","合肥是一个什么样的城市？","What are the types of agent memory?","What player are the Bears expected to draft first in the 2024 NFL draft?","Hello, how are you today?"]
+    questions = ["安徽晶奇网络科技股份有限公司的详细董事、独立董事名单","监事名单呢？"]
+    print('\n\n')
+    print("~~~~~~~~~~~~~~~~~~~~~~~~~~~"*5) 
+    print("$$$$run_graph_workflow$$$$"*5)
+    print("~~~~~~~~~~~~~~~~~~~~~~~~~~~"*5) 
+    for question in questions:
+        print(arun_super_graph(question))
+    print("~~~~~~~~~~~~~~~~~~~~~~~~~~~"*5)
 
    

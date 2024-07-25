@@ -22,7 +22,7 @@ from langgraph.checkpoint.aiosqlite import AsyncSqliteSaver
 # from jqcode.jq_agent.hierarchical_teams_supervisor_examples.graph_create_utils import create_team_supervisor,supervisor_post_process, create_agent, agent_node, get_graph_nodes,llm
 # from jqcode.jq_agent.hierarchical_teams_supervisor_examples.sub_graphs.research_sub_graph import research_chain
 # from jqcode.jq_agent.hierarchical_teams_supervisor_examples.sub_graphs.writing_sub_graph import authoring_chain
-from graph_create_utils import create_graph_supervisor, create_agent, agent_node, get_custom_supervisor_node,get_last_state,llm
+from graph_create_utils import create_graph_supervisor, create_agent, agent_node, get_custom_supervisor_node,get_last_state,llm, llm_ollama_function
 from jq_rag_agent_sub_graph import rag_chain, RagSubgraphState,rag_sub_graph,llm_chain
 from jq_excutable_tool_agent_subgraph import tool_chain, ToolSubgraphState, tool_subgraph 
 
@@ -34,7 +34,7 @@ from jq_excutable_tool_agent_subgraph import tool_chain, ToolSubgraphState, tool
 members = ["Tools", "Rag"]
 members_with_finish = ["Tools", "Rag", "FINISH" ]
 supervisor_node = create_graph_supervisor(
-    llm,
+    llm_ollama_function,
     f"You are a supervisor tasked with routing a conversation to the next action:{','.join(members_with_finish)}. Given the user request/question,"
     " respond with the next action to take. "
     " Action 'Tools' Only responsible for tool calls, such as query flight numbers and generate/run python code,"

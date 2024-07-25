@@ -22,9 +22,11 @@ from langchain.indexes import SQLRecordManager, index
 from langchain_elasticsearch.chat_history import ElasticsearchChatMessageHistory
 # from langchain_community.chat_models import ChatOllama
 from langchain_ollama import ChatOllama
+from langchain_experimental.llms.ollama_functions import OllamaFunctions
+
 from langchain.retrievers.document_compressors.base import BaseDocumentCompressor
 from sentence_transformers import SentenceTransformer,CrossEncoder
-from langchain_experimental.llms.ollama_functions import OllamaFunctions
+
 from langchain_community.document_loaders import WebBaseLoader
 from langchain.text_splitter import RecursiveCharacterTextSplitter
 from langchain_core.messages import BaseMessage
@@ -149,12 +151,19 @@ class InitEnvModels:
         print(f'当前使用的模型为:Langchain ChatOpenAI, {self.chat_model.model_name}, API_URL为{self.chat_model.openai_api_base}')
         return self.chat_model
 
-    def get_ollama_tool_model(self,model_name = "llama3-groq-tool-use:8b-q8_0",format='json',temperature=0.5,top_p=0.65, tools:list = None):
-        ollama_tool_model = ChatOllama(model=model_name,format=format,temperature=temperature,top_p=top_p)
+    def get_ollama_chat_model(self,model_name = "llama3-groq-tool-use:8b-q8_0",temperature=0.5,top_p=0.65, tools:list = None,verbose=True):
+        ollama_tool_model = ChatOllama(model=model_name,temperature=temperature,top_p=top_p,verbose=verbose)
         if tools:
             return ollama_tool_model.bind_tools(tools)
         return ollama_tool_model
     
+    def get_ollama_function_model(self,model_name = "llama3-groq-tool-use:8b-q8_0",temperature=0.5,top_p=0.65, tools:list = None,verbose=True):
+        ollama_function_model = OllamaFunctions(model=model_name,temperature=temperature,top_p=top_p,verbose=verbose,keep_alive=-1,format="json")
+        if tools:
+            return ollama_function_model.bind_tools(tools)
+        return ollama_function_model
+
+
     
     # todo: embedding_model_8k with langchain
 

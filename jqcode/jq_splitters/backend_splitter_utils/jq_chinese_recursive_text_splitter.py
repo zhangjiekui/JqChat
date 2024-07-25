@@ -60,6 +60,8 @@ class _JqkjTokenizerWrapper():
         return self.tokenizer.decode(ids)
     
     def tokens_len(self, text: str)-> int:
+        if len(text)==0:
+            return 0
         return len(self.tokenize(text))
 
     
