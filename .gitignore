@@ -24,7 +24,7 @@ frontend/.swc/
 # 测试的文档及生成的文件
 jqcode/jq_readers/.testinputdocs/
 jqcode/jq_readers/.testinputdocs_debug/
-jqcode/jq_readers/.outputdocs
+jqcode/jq_readers/.outputdocs/
 
 
 __pycache__/
