@@ -20,7 +20,8 @@ from langchain_core.documents import Document
 from langchain_elasticsearch import ElasticsearchStore
 from langchain.indexes import SQLRecordManager, index
 from langchain_elasticsearch.chat_history import ElasticsearchChatMessageHistory
-from langchain_community.chat_models import ChatOllama
+# from langchain_community.chat_models import ChatOllama
+from langchain_ollama import ChatOllama
 from langchain.retrievers.document_compressors.base import BaseDocumentCompressor
 from sentence_transformers import SentenceTransformer,CrossEncoder
 from langchain_experimental.llms.ollama_functions import OllamaFunctions
@@ -34,6 +35,11 @@ from langchain_core.messages import BaseMessage, HumanMessage,SystemMessage,Tool
 from langchain.callbacks.base import BaseCallbackHandler
 from langchain_core.callbacks import StdOutCallbackHandler
 from dotenv import load_dotenv, find_dotenv
+
+from jqcode.jq_utils.logger import jqkj_logger
+logger = jqkj_logger(__file__).get_logger()
+
+
 os.environ['LANGCHAIN_TRACING_V2'] = 'true'
 os.environ['LANGCHAIN_ENDPOINT'] = 'https://api.smith.langchain.com'
 os.environ['LANGCHAIN_API_KEY'] = "ls__fe150087fa0643f28b3eae3a07d57529"
@@ -143,7 +149,15 @@ class InitEnvModels:
         print(f'当前使用的模型为:Langchain ChatOpenAI, {self.chat_model.model_name}, API_URL为{self.chat_model.openai_api_base}')
         return self.chat_model
 
+    def get_ollama_tool_model(self,model_name = "llama3-groq-tool-use:8b-q8_0",format='json',temperature=0.5,top_p=0.65, tools:list = None):
+        ollama_tool_model = ChatOllama(model=model_name,format=format,temperature=temperature,top_p=top_p)
+        if tools:
+            return ollama_tool_model.bind_tools(tools)
+        return ollama_tool_model
+    
+    
     # todo: embedding_model_8k with langchain
+
     def _get_emb_8k_rerank_model(self,embedding_model_name=None, embedding_model_name_8k=None, rerank_model_name=None, device = ['cpu','cpu','cpu'],final_docs_num_reranked=4): #device = ['cuda:1','cuda:2''cuda:3']
         if embedding_model_name:
             self.embedding_model_name = embedding_model_name            
@@ -177,6 +191,7 @@ class InitEnvModels:
         print(f'{rerank_model_name=}初始化成功！')
         return embed_model,embedding_model_8k,reranker
 
+    @lru_cache
     def get_emb_8k_rerank_model(self,embedding_model_name=None, embedding_model_name_8k=None, rerank_model_name=None, device = ['cpu','cpu','cpu'],final_docs_num_reranked=4):
         if not (self.embed_model and self.embedding_model_8k and self.reranker):
             self.embed_model,self.embedding_model_8k,self.reranker = self._get_emb_8k_rerank_model(embedding_model_name=embedding_model_name, embedding_model_name_8k=embedding_model_name_8k, rerank_model_name=rerank_model_name,device = device,final_docs_num_reranked=final_docs_num_reranked)
@@ -316,7 +331,7 @@ class InitEnvModels:
                     messages_relevant.append(message_relevant)
                     message_relevant.pretty_print()
                     print(f"^^^^^^^^^上条Message的{relevance_score=}^^^^^^^^^")
-            print("++++++++++++++++++++++++++++++++++++++++++++【过滤后保留的+最近的条{reserve_last_n_messages}】消息++++++++++++++++++++++++++++++++++++++++++++")   
+            print(f"++++++++++++++++++++++++++++++++++++++++++++【过滤后保留的+最近的条{reserve_last_n_messages}】消息++++++++++++++++++++++++++++++++++++++++++++")   
             messages_list.reverse() # 前面messages_list顺序翻转了，所以这里还要翻转回来
             last_n_messages = messages_list[-reserve_last_n_messages:]
             for last_message in last_n_messages:
@@ -419,6 +434,61 @@ if __name__ == '__main__':
     # qwen:110b-chat-v1.5-q4_K_M
     # litellm --model ollama_chat/llama3:70b-instruct
     # litellm --model ollama_chat/yi:34b-chat-v1.5-q8_0
+
+    from langchain_core.tools import tool
+    from langchain.tools.render import render_text_description # to describe tools as a string 
+    @tool
+    def accept(reason) -> int:
+        "Accept a reason and return 1."
+        logger.info(f"Accepting reason: {reason}")
+        return 1
+
+
+    @tool
+    def reject(reason) -> int:
+        "Reject a reason and return 0."
+        logger.info(f"Rejecting reason: {reason}")
+        return 0
+
+    tools = [accept,reject]
+    toos_dict = {tool.name:tool for tool in tools}
+    rendered_tools = render_text_description(tools)
+    ollama_tool_model = env_models_instance.get_ollama_tool_model(tools=tools)
+    print("==========="*10)
+    system_prompt = f"""You are an assistant that has access to functions.
+        ONLY Use them:
+
+        {rendered_tools}
+
+
+        Given the user input, return the name and input of the tool to use.
+        Return your response as a JSON blob with 'name' and 'arguments' keys.
+        The value associated with the 'arguments' key should be a dictionary of parameters."""
+    print("==========="*10)
+
+    prompt = "1+1=2"
+
+    def LLM(prompt, system_message, model=ollama_tool_model):
+        try:
+            messages=[{"role": "system", "content": system_message}, {"role": "user", "content": prompt}]
+            response = model.invoke(messages)
+            print('Success:\n', response)
+            if response.tool_calls:
+                for tool in response.tool_calls:
+                    tool_name = tool['name']
+                    tool_args = tool['args']['reason']
+                    res = toos_dict[tool_name](tool_args)
+                    print(f"Result:调用了工具:{tool_name}，调用参数为:{tool_args},运行结果为:{res}")
+                    return res
+        except Exception as error:
+            print('Error:', error)
+            raise
+    prompt = '使用python可以计算出3*10的正确结果，请思考这句话正确吗？并请给出理由'
+    prompt = "Statement:Using Python can calculate out 3*10's correct result. Should you accept or reject the statement? and give me your reason"
+    prompt = "Using Python can calculate out 3*10's correct result."
+    prompt = "1+1=2"
+    res = LLM(prompt,system_prompt)
+    print(res)
 
 
     sentense= ["张结魁是谁？","张结魁是安徽晶奇公司的",

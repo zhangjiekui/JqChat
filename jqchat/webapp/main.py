@@ -23,6 +23,7 @@ from jqcode.jq_agent.jq_rag_agent_sub_graph import llm_chain,invoke_llm_config
 from langchain_core.pydantic_v1 import BaseModel, Field
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_core.messages import HumanMessage,SystemMessage,ToolMessage,AIMessage
+from langchain_ollama import ChatOllama
 
 # HAS_DATA_FILE_UPLOADED = os.environ.get("HAS_DATA_FILE_UPLOADED", False)
 
@@ -80,7 +81,10 @@ question_rewrite_prompt = lambda x: ChatPromptTemplate.from_messages(
         )
     ]
 )
-question_rewrite_llm = llm.with_structured_output(QuestionReWrite,method="function_calling")
+if isinstance(llm,ChatOllama):
+    question_rewrite_llm = llm.with_structured_output(QuestionReWrite)
+else:
+    question_rewrite_llm = llm.with_structured_output(QuestionReWrite,method="function_calling")
 question_rewrite_chain = question_rewrite_prompt | question_rewrite_llm
 
 message_buffer = LimitedLengthString()

@@ -35,6 +35,7 @@ from langchain_core.messages import AIMessage, BaseMessage, HumanMessage
 from langgraph.graph.message import add_messages
 import functools
 from flask import Flask, render_template_string
+from langchain_ollama import ChatOllama
 
 
 handlers = get_custom_handler()
@@ -149,13 +150,17 @@ class GradeCodingRelavance(BaseModel):
 # Code Generating/Code Executing Relavance Grader Prompt
 preamble_coding_relevant_grader = """You are a grader assessing relevance of a user question to [code generating/executing,file processing/analyzing, data exploring/analyzing]. Response me with a simple JSON string can be directly consumed by  ‘json.loads’ method, must be ‘{{"k":"yes"}}’ or  ‘{{"k":"no"}}’,'yes' means a user question is related to Python code generating/code executing.No preamble or explaination."""
 # structured_llm_documents_relevant_grader = llm.with_structured_output(GradeDocumentsRelavance, method=method_mode, include_raw=True)
-USING_OLLAMA_LITELLM =False
-method_mode ='function_calling' if USING_OLLAMA_LITELLM else "json_mode"
-if USING_OLLAMA_FUNCTIONS:
+# USING_OLLAMA_LITELLM =True
+# method_mode ='function_calling' if USING_OLLAMA_LITELLM else "json_mode"
+# if USING_OLLAMA_FUNCTIONS:
+#     structured_llm_coding_relevant_grader = llm.with_structured_output(GradeCodingRelavance)
+# else:
+#     structured_llm_coding_relevant_grader = llm.with_structured_output(GradeCodingRelavance,method=method_mode)
+
+if isinstance(llm,ChatOllama):
     structured_llm_coding_relevant_grader = llm.with_structured_output(GradeCodingRelavance)
 else:
-    structured_llm_coding_relevant_grader = llm.with_structured_output(GradeCodingRelavance,method=method_mode)
-
+    structured_llm_coding_relevant_grader = llm.with_structured_output(GradeCodingRelavance,method='json_mode')
 
 coding_relevance_prompt = ChatPromptTemplate.from_messages(
     [
@@ -179,10 +184,15 @@ class GradeDocumentsRelavance(BaseModel):
 preamble_documents_relevant_grader = """You are a grader assessing relevance of a retrieved document to a user question. If the document contains keyword(s) or semantic meaning related to the user question, grade it as relevant. It does not need to be a stringent test.The goal is to filter out erroneous retrievals. Response me with a simple JSON string can be directly consumed by  ‘json.loads’ method, must be ‘{{"k":"yes"}}’ or  ‘{{"k":"no"}}’,'yes' means a retrieved document is related to a user question.No preamble or explaination."""
 # structured_llm_documents_relevant_grader = llm.with_structured_output(GradeDocumentsRelavance, method=method_mode, include_raw=True)
 
-if USING_OLLAMA_FUNCTIONS:
+# if USING_OLLAMA_FUNCTIONS:
+#     structured_llm_documents_relevant_grader = llm.with_structured_output(GradeDocumentsRelavance)
+# else:
+#     structured_llm_documents_relevant_grader = llm.with_structured_output(GradeDocumentsRelavance,method=method_mode)
+
+if isinstance(llm,ChatOllama):
     structured_llm_documents_relevant_grader = llm.with_structured_output(GradeDocumentsRelavance)
 else:
-    structured_llm_documents_relevant_grader = llm.with_structured_output(GradeDocumentsRelavance,method=method_mode)
+    structured_llm_documents_relevant_grader = llm.with_structured_output(GradeDocumentsRelavance,method='json_mode')
 
 retrieval_document_relevance_prompt = ChatPromptTemplate.from_messages(
     [
@@ -237,10 +247,14 @@ class GradeSupported(BaseModel):
 #Supported Grader Preamble
 
 preamble_answer_is_supported_by_documents_grader = """You are a grader assessing whether an answer is supported by a set of facts. Response me with a simple JSON string can be directly consumed by  ‘json.loads’ method, must be ‘{{"k":"yes"}}’ or  ‘{{"k":"no"}}’,'yes' means the answer is supported by the provided set of facts.No preamble or explaination. """
-if USING_OLLAMA_FUNCTIONS:
+# if USING_OLLAMA_FUNCTIONS:
+#     structured_llm_answer_is_supported_by_documents_grader = llm.with_structured_output(GradeSupported)
+# else:
+#     structured_llm_answer_is_supported_by_documents_grader = llm.with_structured_output(GradeSupported, method=method_mode)
+if isinstance(llm,ChatOllama):
     structured_llm_answer_is_supported_by_documents_grader = llm.with_structured_output(GradeSupported)
 else:
-    structured_llm_answer_is_supported_by_documents_grader = llm.with_structured_output(GradeSupported, method=method_mode)
+    structured_llm_answer_is_supported_by_documents_grader = llm.with_structured_output(GradeSupported,method='json_mode')
 # Supported (Hallucination) Grader Prompt
 answer_is_supported_by_documents_prompt = ChatPromptTemplate.from_messages(
     [
@@ -261,11 +275,14 @@ class GradeAnswer(BaseModel):
 
 # Preamble
 preamble_answer_grader = """You are a grader assessing whether an answer addresses / resolves a question. Response me with a simple JSON string can be directly consumed by  ‘json.loads’ method, must be ‘{{"k":"yes"}}’ or  ‘{{"k":"no"}}’,'yes' means the answer addresses / resolves the question.No preamble or explaination."""
-if USING_OLLAMA_FUNCTIONS:
+# if USING_OLLAMA_FUNCTIONS:
+#     structured_llm_answer_grader = llm.with_structured_output(GradeAnswer)
+# else:
+#     structured_llm_answer_grader = llm.with_structured_output(GradeAnswer, method=method_mode)
+if isinstance(llm,ChatOllama):
     structured_llm_answer_grader = llm.with_structured_output(GradeAnswer)
 else:
-    structured_llm_answer_grader = llm.with_structured_output(GradeAnswer, method=method_mode)
-
+    structured_llm_answer_grader = llm.with_structured_output(GradeAnswer,method='json_mode')
 # Prompt
 answer_prompt = ChatPromptTemplate.from_messages(
     [

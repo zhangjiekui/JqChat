@@ -107,6 +107,7 @@ class JqkjDocxReader(BaseReader):
     def parse_docx_into_tree(self, docx_document:DocxDocument,file_path: Path) -> Node:
         # metadata = docx_document.metadata
         file: Path = Path(file_path)
+        image_file_path: Path = Path('/media/temp/JqChat0717/wendang/OCR接口性能报告.docx')
 
         logger.debug('==='*30)
         node_numbering=1 
@@ -171,6 +172,7 @@ class JqkjDocxReader(BaseReader):
                         pre_node = node # 正文节点，不能作为父节点候选
 
                 # 图片节点
+                # img_metadatas_list = self.extract_imgs(block,docx_document, file, image_list, imgid_list, w_pict_images_list_id, w_pict_images_list_fn, pic_pic_images_list_id, pic_pic_images_list_fn)   
                 img_metadatas_list = self.extract_imgs(block,docx_document, file, image_list, imgid_list, w_pict_images_list_id, w_pict_images_list_fn, pic_pic_images_list_id, pic_pic_images_list_fn)   
 
                 for img_metadata in img_metadatas_list:
