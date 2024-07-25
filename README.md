@@ -191,8 +191,8 @@ git clone https://github.com/zhangjiekui/JqChat.git
 cd JqChat
 make compile_frontend （如出现错误请升级node）
 pip install -e .
-### 运行：
-jqchat
+### 后台运行：
+nohup jqchat >> jqchat.log 2>&1 & 
 ### 开发/调试：
 直接运行JqChat\main.py
 ```

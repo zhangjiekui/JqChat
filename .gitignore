@@ -29,4 +29,6 @@ jqcode/jq_readers/.outputdocs
 
 __pycache__/
 
+checkpoints.*
+
 
