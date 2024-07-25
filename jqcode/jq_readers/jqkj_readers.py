@@ -183,43 +183,45 @@ class JqkjDocxReader(BaseReader):
                     node_numbering = f"{parent_node.numbering}.{num_siblings+1}" #最后一级编码如果以0开头，就表示是文本段落
                     img_src=img_metadata['img_save_path_jq']
                     result = ''
+                    #分隔符最好选用jqcode/jq_splitters/backend_splitter_utils/jq_chinese_recursive_text_splitter.py的第98行定义的
+                    _separator = ' '
                     try:
                         if img_src.endswith('.emf'):
                             emf.load(img_src)
                             recs = emf.records
                             for rec in recs:
                                 if isinstance(rec, EXTTEXTOUTW):
-                                    result += "|"+rec.values['string']
+                                    _text = rec.values['string'].strip()
+                                    if _text:
+                                        result += _separator + _text
                             logger.debug(f"图片[{img_src}]中的EMF文本:\n{result}")
                         else:
-                            # 解码base64字符串为图像数据
-                            img_data = base64.b64decode(img_metadata['img_base64_jq'])
+
+                            img_data = img_metadata['img_blob_jq']                            
                             ocr_result,_ = ocr(img_data)
                             if ocr_result:
                                 ocr_texts = [line[1].strip() for line in ocr_result if line[1].strip()]
-                                result = "|".join(ocr_texts)
+                                #分隔符最好选用jqcode/jq_splitters/backend_splitter_utils/jq_chinese_recursive_text_splitter.py的第98行定义的
+                                result = _separator.join(ocr_texts) 
                                 logger.debug(f"图片[{img_src}]中的OCR文本:\n{result}")
                     except Exception as e:
                         logger.warning(f'获取图片[{img_src}]中的文本失败,详细信息为{e}')
                         
                     node = Node(f'[图片{node_numbering}]{img_src}',type=TreeNodeType.IMAGE,parent=parent_node, numbering=node_numbering,level=level,text=f'{result}',
-                                image_filepath_jq=img_src,img_base64_jq=img_metadata['img_base64_jq'],img_cx_jq=img_metadata['img_cx_jq'],img_cy_jq=img_metadata['img_cy_jq'])
-                                                      # {"img_save_path_jq":save_path,"img_base64_jq":image_base64,"img_cx_jq":cx,"img_cy_jq":cy}
+                                image_filepath_jq=img_src,img_blob_jq=img_metadata['img_blob_jq'],img_cx_jq=img_metadata['img_cx_jq'],img_cy_jq=img_metadata['img_cy_jq'])
+
                     pre_node = node # 图片节点，不能作为父节点候选
         
             # 表格节点
             if isinstance(block,Table):
-                col_text = ",".join([cell.text.strip().replace('\n','') for cell in block.rows[0].cells])
-                text = f"{col_text}\r\n" #th: column_name
-
                 df,vf_string = self.read_docx_table(block)
+                column_names = vf_string.split('\r\n')[0]
                 df_table_list.append(df)
                 current_depth = parent_node.depth+1
                 level = current_depth
                 num_siblings = len(parent_node.children)
                 node_numbering = f"{parent_node.numbering}.{num_siblings+1}" 
-                node = Node(f'[表格{node_numbering}]{text}',type=TreeNodeType.TABLE,
-                            df_table_jq = vf_string, parent=parent_node, numbering=node_numbering,level=level,text=f'{text}')
+                node = Node(f'[表格{node_numbering}]{column_names}',type=TreeNodeType.TABLE,parent=parent_node, numbering=node_numbering,level=level,text=vf_string)
                 # 如何解析df_table_jq = vf_string
                 # vf =  StringIO()
                 # vf.write(vf_string)
@@ -246,8 +248,8 @@ class JqkjDocxReader(BaseReader):
                         node_numbering = f"{table_as_parent_node.numbering}.{num_siblings+1}" #最后一级编码如果以0开头，就表示是文本段落
                         text = f"<img src={img_metadata['img_save_path_jq']} todo图片内容待识别 />"
                         _ = Node(f'[图片{node_numbering}]{text}',type=TreeNodeType.IMAGE,parent=table_as_parent_node, numbering=node_numbering,level=level,text=f'{text}',
-                                    image_filepath_jq=img_metadata['img_save_path_jq'],img_base64_jq=img_metadata['img_base64_jq'],img_cx_jq=img_metadata['img_cx_jq'],img_cy_jq=img_metadata['img_cy_jq'])
-                                                        # {"img_save_path_jq":save_path,"img_base64_jq":image_base64,"img_cx_jq":cx,"img_cy_jq":cy}
+                                    image_filepath_jq=img_metadata['img_save_path_jq'],img_blob_jq=img_metadata['img_blob_jq'],img_cx_jq=img_metadata['img_cx_jq'],img_cy_jq=img_metadata['img_cy_jq'])
+
             
         # 验证处理是否正确
                 # 验证读取到的、实际保存的图片数量是否一致
@@ -370,9 +372,9 @@ class JqkjDocxReader(BaseReader):
             cy = image_part.default_cy
         except:
             pass
-        image_base64 = base64.b64encode(image_part._blob)
-        image_base64 = image_base64.decode()
-
+        
+        # # mage_part.blob 可以直接ocr识别，所以不要转换来转换去了
+        # ocr(image_part.blob)
         img_dir = file.parent
         file_stem = file.stem
         
@@ -385,7 +387,8 @@ class JqkjDocxReader(BaseReader):
             f.write(image_part.blob)   
 
         # print(save_path,image_part.partname,cx,cy)  
-        img_metadata.update({"img_save_path_jq":save_path,"img_base64_jq":image_base64,"img_cx_jq":cx,"img_cy_jq":cy})
+
+        img_metadata.update({"img_save_path_jq":save_path,"img_blob_jq":image_part.blob,"img_cx_jq":cx,"img_cy_jq":cy})
         return img_metadata
 
     #This function extracts the table from the document object as a dataframe
@@ -405,7 +408,7 @@ class JqkjDocxReader(BaseReader):
         vf = io.StringIO()
         writer = csv.writer(vf)
         for row in table.rows:
-            writer.writerow(cell.text for cell in row.cells)
+            writer.writerow(cell.text.replace(" ","").replace("\r\n","").replace("\n","") for cell in row.cells)
         vf.seek(0)
         vf_string = vf.getvalue()
         return pd.read_csv(vf, **kwargs),vf_string

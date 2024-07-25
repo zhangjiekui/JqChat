@@ -150,14 +150,14 @@ class InitEnvModels:
             )
         print(f'当前使用的模型为:Langchain ChatOpenAI, {self.chat_model.model_name}, API_URL为{self.chat_model.openai_api_base}')
         return self.chat_model
-
-    def get_ollama_chat_model(self,model_name = "llama3-groq-tool-use:8b-q8_0",temperature=0.5,top_p=0.65, tools:list = None,verbose=True):
+    # model_name = "llama3-groq-tool-use:8b-q8_0",
+    def get_ollama_chat_model(self,model_name = "llama3.1",temperature=0.5,top_p=0.65, tools:list = None,verbose=True):
         ollama_tool_model = ChatOllama(model=model_name,temperature=temperature,top_p=top_p,verbose=verbose)
         if tools:
             return ollama_tool_model.bind_tools(tools)
         return ollama_tool_model
     
-    def get_ollama_function_model(self,model_name = "llama3-groq-tool-use:8b-q8_0",temperature=0.5,top_p=0.65, tools:list = None,verbose=True):
+    def get_ollama_function_model(self,model_name = "llama3.1",temperature=0.5,top_p=0.65, tools:list = None,verbose=True):
         ollama_function_model = OllamaFunctions(model=model_name,temperature=temperature,top_p=top_p,verbose=verbose,keep_alive=-1,format="json")
         if tools:
             return ollama_function_model.bind_tools(tools)

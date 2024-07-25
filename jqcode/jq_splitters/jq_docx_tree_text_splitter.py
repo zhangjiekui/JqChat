@@ -241,27 +241,29 @@ class JqkjDocTreeTokenTextSplitter(MetadataAwareTextSplitter):
 
             #  处理文本类型
             if cur_node.type == TreeNodeType.TEXT:
-                node_text = cur_node.text
+                
                 # 跳过目录(toc)的内容，因为对于RAG任务没什么作用，反而可能会在检索阶段存在干扰
                 # 与上面的get_to_first_title_directly可能会重复，
                 # 上面的get_to_first_title_directly处理的是即使没有明确的toc标识信息的情况（如pdf转过来的docx）
                 # 这里处理的是word中生成的toc，含有 style == 'toc'信息
                 # 所以仍然保留着
-                if cur_node.text.replace(' ','').lower() in ['目录','toc','tableofcontents','tableofcontent']:
-                    continue
+
                 if 'toc' in cur_node.style:
                     continue
 
                 ## 跳过目录标题文本（Heading）的内容 
                 if 'Heading' in cur_node.style:
                     pre_title_node = cur_node
-                    node_text = ''
-                    continue
-                
+                    continue               
 
-                
+
+                node_text = cur_node.text.strip()
+
                 # 如果没有（文本子节点）Normal Text，跳出本次节点循环，不执行后面的代码，进入下一个节点
                 if len(node_text) == 0: 
+                    continue
+
+                if node_text.replace(' ','').lower() in ['目录','toc','tableofcontents','tableofcontent']:
                     continue
 
                 ancestors_text_placeholder = '' if pre_ancestors_text_placeholder==cur_ancestors_text_placeholder else cur_ancestors_text_placeholder
@@ -426,12 +428,40 @@ class JqkjDocTreeTokenTextSplitter(MetadataAwareTextSplitter):
                     text_cached = '' 
 
                 tokens_bound = self.normal_tokens_chunk_size - metadata_str_tokens_num
-                vf_string = cur_node.df_table_jq
-                vf =  StringIO()
-                vf.write(vf_string)
-                vf.seek(0)
-                df = pd.read_csv(vf)
-                print(df.head(5))
+                vf_string = cur_node.text
+
+                table_tokens = self.tokens_len_func(text=vf_string)
+                if tokens_cached + table_tokens <= tokens_bound:
+                    text_cached += vf_string
+                    if self.tokens_len_func(text=text_cached) >= max_chunk_size*cutoff_ratio_as_chunk - metadata_str_tokens_num:
+                        assert self.tokens_len_func(text=text_cached) <= DEFAULT_CHUNK_SIZE - metadata_str_tokens_num,f"{self.tokens_len_func(text=text_cached)},\n{text_cached}"   
+                        chunks_saved.append(text_cached.strip('\n'))
+                        text_cached = '' 
+
+                else:
+                    _splits_on_row = vf_string.split('\r\n')
+                    splits_on_row = [row+'\r\n' for row in _splits_on_row]
+
+                    column_names = '表格：' + '\r\n' + splits_on_row[0]
+                    column_names_tokens = self.tokens_len_func(text=column_names)
+                    rows = splits_on_row[1:]
+                    
+                    if tokens_cached + column_names_tokens > tokens_bound:
+                        assert self.tokens_len_func(text=text_cached) <= DEFAULT_CHUNK_SIZE - metadata_str_tokens_num,f"{self.tokens_len_func(text=text_cached)},\n{text_cached}"   
+                        chunks_saved.append(text_cached.strip('\n'))
+                        text_cached = ''
+                    else:
+                        text_cached += column_names
+                    for row in rows:
+                        if self.tokens_len_func(text=text_cached)  + self.tokens_len_func(text=row) <= tokens_bound:
+                             text_cached += row
+                        else:
+                            assert self.tokens_len_func(text=text_cached) <= DEFAULT_CHUNK_SIZE - metadata_str_tokens_num,f"{self.tokens_len_func(text=text_cached)},\n{text_cached}"   
+                            chunks_saved.append(text_cached.strip('\n'))
+                            # cur_title_node,pre_title_node,cur_ancestors_text_placeholder,pre_ancestors_text_placeholder = get_pre_title_nodes_text(cur_node,cur_title_node=cur_title_node,pre_title_node=pre_title_node,cur_ancestors_text_placeholder=cur_ancestors_text_placeholder,pre_ancestors_text_placeholder=pre_ancestors_text_placeholder)
+                            text_cached = cur_ancestors_text_placeholder + column_names + row
+
+
         
         file_path_docx = lm_base_node.metadata.get("file_path",None) or lm_base_node.metadata.get("file_path_jq",None)
         if not file_path_docx:
