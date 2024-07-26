@@ -1,3 +1,4 @@
+import re
 import copy,math
 import pandas as pd
 from io import StringIO
@@ -20,8 +21,7 @@ from llama_index.core.node_parser.interface import MetadataAwareTextSplitter
 from jqcode.jq_readers.jqkj_readers import JqkjSimpleDirectoryReader
 from jqcode.jq_readers.backend_reader_utils.jqkj_doc_tree_utils import jieba_pre_process,TreeNodeType,get_doc_tree_from_document
 from jqcode.jq_splitters.backend_splitter_utils.jq_chinese_recursive_text_splitter import JqChineseRecursiveTextSplitter
-from jqcode.jq_knowledge_manegement.chatchat.server.file_rag.text_splitter.zh_title_enhance import is_possible_title
-
+from jqcode.jq_agent.tools.jq_web_search_engine import is_query_chinese
 from jqcode.jq_utils.logger import jqkj_logger
 
 
@@ -41,6 +41,74 @@ DEFAULT_METADATA_FORMAT_LEN = 2
 anytree_json_exporter = JsonExporter()
 anytree_json_importer = JsonImporter()
 
+def under_non_alpha_ratio(text: str, threshold: float = 0.5):
+    """Checks if the proportion of non-alpha characters in the text snippet exceeds a given
+    threshold. This helps prevent text like "-----------BREAK---------" from being tagged
+    as a title or narrative text. The ratio does not count spaces.
+
+    Parameters
+    ----------
+    text
+        The input string to test
+    threshold
+        If the proportion of non-alpha characters exceeds this threshold, the function
+        returns False
+    """
+    if len(text) == 0:
+        return False
+    
+    if not is_query_chinese(text):
+        return False
+    else:
+        try:
+            alpha_count = len([char for char in text if char.strip() and char.isalpha()])
+            total_count = len([char for char in text if char.strip()])
+            ratio = alpha_count / total_count
+            return ratio < threshold
+        except:
+            return False
+
+from jqcode.jq_knowledge_manegement.chatchat.server.file_rag.text_splitter.zh_title_enhance import is_possible_title
+def is_possible_title(
+    text: str,
+    title_max_word_length: int = 10,
+    non_alpha_threshold: float = 0.5,
+) -> bool:
+    """Checks to see if the text passes all of the checks for a valid title.
+
+    Parameters
+    ----------
+    text
+        The input text to check
+    title_max_word_length
+        The maximum number of words a title can contain
+    non_alpha_threshold
+        The minimum number of alpha characters the text needs to be considered a title
+    """
+    words_num = 0
+    if is_query_chinese(text):
+        words_num = len(text)
+        if words_num<2 or words_num>title_max_word_length:
+            return False
+    else:
+        words = text.split()
+        words = [w for w in words if w.strip()]
+        words_num = len(words)
+        if words_num<1 or words_num>title_max_word_length:
+            return False
+
+    # 文本中数字的占比不能太高，否则不是title
+    if under_non_alpha_ratio(text, threshold=non_alpha_threshold):
+        return False
+
+    # NOTE(robinson) - Prevent flagging salutations like "To My Dearest Friends," as titles
+    if text.endswith(("," , "，", ";", "；" )):
+        return False
+
+    if text.isnumeric():
+        return False
+    
+    return True
 
 title_max_word_length = 20
 def get_possible_zh_title_for_previous_sibling(cur_node,title_max_word_length=title_max_word_length):
@@ -53,7 +121,6 @@ def get_possible_zh_title_for_previous_sibling(cur_node,title_max_word_length=ti
             if len(previous_sibling_text)<=10 or is_possible_title(text=previous_sibling_text,title_max_word_length=title_max_word_length):
                 get_possible_zh_title = previous_sibling_text
     return get_possible_zh_title
-            
 
 def _get_pre_title_nodes_text(pre_title_nodes,normal_text:bool=False):
     if len(pre_title_nodes) > 0:
@@ -293,7 +360,7 @@ class JqkjDocTreeTokenTextSplitter(MetadataAwareTextSplitter):
                     cur_text = ancestors_text_placeholder + node_text + '\n'
                 else:
                     cur_text = node_text + '\n'
-                    
+
                 pre_ancestors_text_placeholder=cur_ancestors_text_placeholder
                 
 
