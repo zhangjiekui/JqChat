@@ -41,7 +41,7 @@ def create_agent(
         ]
     )
     agent = create_tool_calling_agent(llm, tools, prompt)
-    executor = AgentExecutor(agent=agent, tools=tools, handle_parsing_errors=True,early_stopping_method='generate',return_intermediate_steps=True)
+    executor = AgentExecutor(agent=agent, tools=tools, handle_parsing_errors=True,return_intermediate_steps=True)
     # executor = AgentExecutor(agent=agent, tools=tools, verbose=True, handle_parsing_errors=True,return_intermediate_steps=True)
     return executor
 
@@ -233,13 +233,13 @@ def supervisor_post_process_node(toolcalls_and_state:dict,supervisor_node, membe
     next = ""
     if tool_calls_list:
         print('~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~')
-        print(f"导航输出的原始工具列表:{tool_calls_list}")
+        print(f"{graph_name} 导航输出的原始工具列表:{tool_calls_list}")
         print('~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~')
         next, tool_call_parsed_message = _parse_next(tool_calls_list,members_with_finish) 
     else:
         toolcalls_message_content = toolcalls_message.content
         print('~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~')
-        print(f"导航输出的原始工具列表为空，尝试从LLM返回内容中直接提取:{toolcalls_message_content}")
+        print(f"{graph_name} 导航输出的原始工具列表为空，尝试从LLM返回内容中直接提取:{toolcalls_message_content}")
         print('~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~')
         
         for member in members_with_finish:
@@ -421,14 +421,20 @@ def _parse_next(tool_calls_list, members):
         if next in members:
             return next,tool_call_parsed_message
         else:
-            next = None
-            tool_call_parsed_message = f"""工具调用返回的Json格式正确，但返回的工具名称(name)不对，必须是以下列表取值之一[{",".join(members)}]"""
+            if next in ['get_flight_number','python_repl_tool']:
+                next = 'Tools'                
+            else:
+                next = 'Rag'
+            return next,tool_call_parsed_message
+
+        
+
 
         print(f'供调试观察的信息：Next={_next},tool_call_name={tool_call_name}')    
     else:        
         next = None            
         tool_call_parsed_message = f"未返回有效的工具调用列表。请重试，务必返回一个有效的工具（Tool）/函数（Function）调用"
-        # print(tool_call_parsed_message)
+    print(tool_call_parsed_message)
         
     return next,tool_call_parsed_message
 """

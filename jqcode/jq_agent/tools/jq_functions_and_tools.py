@@ -15,12 +15,32 @@ from typing import List
 
 
 # 自定义工具函数
+# @tool
+# def get_flight_number(origin:str,destination:str,date:date) -> str:
+#     """
+#     根据输入的出发地(origin),目的地(destination),日期(date),返回航班号。重要:当前日期是{current_date}，日期(date)只接受python datetime.date类型输入。如果日期是不确定的描述，如明天、后天等，请先使用工具'python_repl_tool'进行计算，并且返回python datetime.date类型结果，具体格式示例如下：2024-04-03。
+#     Args:
+#         origin:(str) 出发地/城市，例如合肥
+#         destination:(str) 目的地/城市，例如北京
+#         date:(date) 飞行日期， 例如2024-08-03.如果日期是不确定的描述，如明天、后天等，请先调用工具'python_repl_tool'进行计算，并且返回python datetime.date类型结果
+#     """
+#     result = f"东方航空MU5646 【{date}】"
+#     print(f"GetFlightNumberTool Result: {result}")
+#     return result
+
 @tool
-def get_flight_number(dep:str,des:str,date:date) -> str:
-    """根据输入的出发地(dep),目的地(des),日期(date),返回航班号。重要:当前日期是{current_date}，日期(date)只接受python datetime.date类型输入。如果日期是不确定的描述，如明天、后天等，请先使用工具'python_repl_tool'进行计算，并且返回python datetime.date类型结果，具体格式示例如下：2024-04-03。"""
-    result = f"东方航空MU5646 【{date}】"
+def get_flight_number(origin:str,destination:str) -> str:
+    """
+    根据输入的出发地(origin),目的地(destination),返回航班号。
+    Args:
+        origin:(str) 出发地/城市，例如合肥
+        destination:(str) 目的地/城市，例如北京        
+    """
+    current_date = str(datetime.now().date())
+    result = f"东方航空MU5646 【测试使用, 日期{current_date}】"
     print(f"GetFlightNumberTool Result: {result}")
     return result
+
 current_date = str(datetime.now().date())
 get_flight_number.description= get_flight_number.description.replace("{current_date}",current_date)
 
