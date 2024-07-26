@@ -157,6 +157,8 @@ class InitEnvModels:
             return ollama_tool_model.bind_tools(tools)
         return ollama_tool_model
     
+    # https://python.langchain.com/v0.2/docs/integrations/chat/ollama/
+    # https://github.com/langchain-ai/langchain/blob/master/docs/docs/integrations/chat/ollama.ipynb
     def get_ollama_function_model(self,model_name = "llama3.1",temperature=0.5,top_p=0.65, tools:list = None,verbose=True):
         ollama_function_model = OllamaFunctions(model=model_name,temperature=temperature,top_p=top_p,verbose=verbose,keep_alive=-1,format="json")
         if tools:

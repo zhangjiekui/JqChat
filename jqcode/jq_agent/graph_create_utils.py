@@ -41,7 +41,7 @@ def create_agent(
         ]
     )
     agent = create_tool_calling_agent(llm, tools, prompt)
-    executor = AgentExecutor(agent=agent, tools=tools, handle_parsing_errors=True)
+    executor = AgentExecutor(agent=agent, tools=tools, handle_parsing_errors=True,early_stopping_method='generate',return_intermediate_steps=True)
     # executor = AgentExecutor(agent=agent, tools=tools, verbose=True, handle_parsing_errors=True,return_intermediate_steps=True)
     return executor
 
@@ -50,13 +50,44 @@ def agent_node(state, agent, name):
     result = agent.invoke(state)
     print(f"~~~~~~~~~~~~~~~~~~~~~~~agent tool[{name}]执行结果~~~~~~~~~~~~~~~~~~~~~~")
     print(result["output"])
+    if result["output"]:
+        os.environ['tool_result']=result["output"]
+    else:
+        os.environ['tool_result']=''
     print("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~")
     from jq_excutable_tool_agent_subgraph import members
     if name in members:
         return {"messages": [ToolMessage(content=result["output"], name=name,tool_call_id='-1')],"next":"FINISH"}
     return {"messages": [ToolMessage(content=result["output"], name=name,tool_call_id='-1')]}
 
-def create_graph_supervisor(llm: ChatOpenAI, system_prompt, members) -> str:
+def route(next:str) -> bool:
+    """
+    Args:
+        next: (str) next action should take.
+    """     
+    return True
+
+def create_graph_supervisor(llm: ChatOpenAI, system_prompt, members_with_finish) -> str:
+    """An LLM-based router."""
+    
+    prompt = ChatPromptTemplate.from_messages(
+            [
+                ("system", system_prompt),
+                MessagesPlaceholder(variable_name="messages"),
+                (
+                    "system",
+                    f"Given the conversation above, which tool/action should take?, Select one of: {members_with_finish}",
+                ),
+            ]
+        )
+    
+    prompt.pretty_print()
+   
+    return prompt | llm.bind_tools(tools=[route], tool_choice="route")
+
+
+
+def _create_graph_supervisor(llm: ChatOpenAI, system_prompt, members) -> str:
     """An LLM-based router."""
     options = ["FINISH"] + members
     prompt = ChatPromptTemplate.from_messages(
@@ -241,7 +272,7 @@ def supervisor_post_process_node(toolcalls_and_state:dict,supervisor_node, membe
                     print(f"The last_message is '{type(message)}'属于(ToolMessage,AIMessage)")
                     print(f"并且message.content已存在，如下: '{message.content}' ")
                     print(f"So let next='Rag'")
-                    next="Rag"
+                    next="Tools"
 
                 print(f"Current in {graph_name}, Next to: {next}")
                 return {"messages":messages,'next':next,"question":question,"navigated_sub_nodes":[]}
@@ -275,13 +306,14 @@ def supervisor_post_process_node(toolcalls_and_state:dict,supervisor_node, membe
         if graph_name=='super_graph':
             print(f"Current in {graph_name}, {graph_name} outputed next: {next}")
             navigated_sub_node=set(members).intersection(set(navigated_sub_nodes))
-            # print(f"navigated_sub_node:{navigated_sub_node}")
-            if is_coding_related:
-                print(f'该问题与Python代码、数据分析相关，但NEXT= “{next}”，所以此处抛出异常，好跳转到相关模块执行！')
-                raise Exception('该问题与Python代码、数据分析相关，此处抛出异常，好跳转到相关模块执行！') 
+            print(f"navigated_sub_node:{navigated_sub_node}")
+            if not os.getenv("tool_result",''):
+                if is_coding_related:
+                    print(f'该问题与Python代码、数据分析相关，但NEXT= “{next}”，所以此处抛出异常，好跳转到相关模块执行！')
+                    raise Exception('该问题与Python代码、数据分析相关，此处抛出异常，好跳转到相关模块执行！') 
             if navigated_sub_node:
                 print(f"But navigated_sub_node:{navigated_sub_node} 已经存在")
-                if isinstance(message,(ToolMessage,AIMessage)) and message.content:
+                if isinstance(message,(ToolMessage,AIMessage)) and len(message.content)>0:
                     print(f"The last_message is '{type(message)}'属于(ToolMessage,AIMessage)")
                     print(f"并且message.content已存在，如下: '{message.content}' ")
                     print(f"So let next='FINISH'")
@@ -418,13 +450,14 @@ def get_graph_nodes(graphs:Union[StateGraph,List[StateGraph]]) -> list:
 """
 
 
-llm = env_models_instance.get_langchain_chat_model(
+llm = llm_ollama_chat = env_models_instance.get_langchain_chat_model(
         temperature=0.0,
         max_tokens=30000,
         streaming=True)
 
+
+# llm = llm_ollama_chat = env_models_instance.get_ollama_chat_model(model_name = "llama3-groq-tool-use:8b-q8_0")
 llm_ollama_function = env_models_instance.get_ollama_function_model()
-# llm = env_models_instance.get_ollama_function_model()
 
 ### Coding Grader
 # Coding Grader Data model

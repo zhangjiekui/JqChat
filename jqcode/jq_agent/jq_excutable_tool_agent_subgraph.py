@@ -1,6 +1,6 @@
-from jq_agent.tools.jq_functions_and_tools import excutable_tool_node, excutable_tool_names, excutable_tool_names_str,get_flight_number,python_repl_tool
-from jq_agent.graph_create_utils import create_graph_supervisor, create_agent, agent_node, sub_graph_enter_chain
-from jq_agent.graph_create_utils import supervisor_post_process_node,get_last_state, get_custom_supervisor_node,llm
+from jqcode.jq_agent.tools.jq_functions_and_tools import excutable_tool_node, excutable_tool_names, excutable_tool_names_str,get_flight_number,python_repl_tool
+from jqcode.jq_agent.graph_create_utils import create_graph_supervisor, create_agent, agent_node, sub_graph_enter_chain
+from jqcode.jq_agent.graph_create_utils import supervisor_post_process_node,get_last_state, get_custom_supervisor_node,llm
 from langchain_core.runnables import Runnable,RunnablePassthrough,RunnableLambda
 from typing import Annotated, List, TypedDict
 from langgraph.graph import END, StateGraph
@@ -20,13 +20,12 @@ class ToolSubgraphState(TypedDict):
     navigated_question_and_tool:dict ## {question:tool_name}
 
 
-
+members_with_finish = excutable_tool_names + ['FINISH']
 supervisor_agent = create_graph_supervisor(
     llm,
-    " You are a supervisor tasked with managing a conversation between the"
-    " following tools:  get_flight_number,python_repl_tool.  Given the following user request,"
-    " respond with the tool to act next. Each tool will perform a specific task and respond with their results and status. When finished, respond with FINISH.",
-    excutable_tool_names,
+    f"You are equipped with the following tools:  {excutable_tool_names}."
+    "Given the user question, dicide the next tool/act to take. When finished, respond with 'FINISH'.",
+    members_with_finish
 )
 
 flight_agent = create_agent(

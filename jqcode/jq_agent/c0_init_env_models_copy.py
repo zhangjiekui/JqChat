@@ -19,10 +19,15 @@ from langchain_core.documents import Document
 from langchain_elasticsearch import ElasticsearchStore
 from langchain.indexes import SQLRecordManager, index
 from langchain_elasticsearch.chat_history import ElasticsearchChatMessageHistory
-from langchain_community.chat_models import ChatOllama
+# from langchain_community.chat_models import ChatOllama
+# https://python.langchain.com/v0.2/docs/integrations/chat/ollama/
+# https://github.com/langchain-ai/langchain/blob/master/docs/docs/integrations/chat/ollama.ipynb
+from langchain_ollama import ChatOllama
+from langchain_experimental.llms.ollama_functions import OllamaFunctions
+
 from langchain.retrievers.document_compressors.base import BaseDocumentCompressor
 from sentence_transformers import SentenceTransformer,CrossEncoder
-from langchain_experimental.llms.ollama_functions import OllamaFunctions
+
 from langchain_community.document_loaders import WebBaseLoader
 from langchain.text_splitter import RecursiveCharacterTextSplitter
 from langchain_core.messages import BaseMessage
@@ -128,7 +133,6 @@ def get_langchain_chat_ollama_functions():
     )
     print(f'当前使用的模型为:Langchain OllamaFunctions, {litellm_model.model}, API_URL为{litellm_model.base_url}')
     return litellm_model
-
 
 # 留着备用
 # Visualized-BGE： https://github.com/FlagOpen/FlagEmbedding/tree/master/FlagEmbedding/visual 

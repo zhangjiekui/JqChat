@@ -100,12 +100,12 @@ class code_execution(BaseModel):
 members  = ["web_search", "vectorstore", "code_generation", "code_execution", "direct_response"]
 tools=[web_search, vectorstore, code_generation, code_execution, direct_response]
 excutable_tool_names = ["web_search", "vectorstore", "code_generation", "code_execution", "direct_response"]
+
 supervisor_agent = create_graph_supervisor(
     llm,
-    " You are a supervisor tasked with managing a conversation between the"
-    " following tools:  get_flight_number,python_repl_tool.  Given the following user request,"
-    " respond with the tool to act next. Each tool will perform a specific task and respond with their results and status. When finished, respond with FINISH.",
-    excutable_tool_names,
+    f"You are equipped with the following tools:  {excutable_tool_names}."
+    "Given the user question, dicide the next tool/act to take. When finished, respond with 'FINISH'.",
+    excutable_tool_names + ["FINISH"],
 )
 
 

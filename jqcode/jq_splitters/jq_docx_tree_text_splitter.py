@@ -68,10 +68,10 @@ def under_non_alpha_ratio(text: str, threshold: float = 0.5):
         except:
             return False
 
-from jqcode.jq_knowledge_manegement.chatchat.server.file_rag.text_splitter.zh_title_enhance import is_possible_title
+# derived from jqcode.jq_knowledge_manegement.chatchat.server.file_rag.text_splitter.zh_title_enhance import is_possible_title
 def is_possible_title(
     text: str,
-    title_max_word_length: int = 10,
+    title_max_word_length: int = 20,
     non_alpha_threshold: float = 0.5,
 ) -> bool:
     """Checks to see if the text passes all of the checks for a valid title.
@@ -94,7 +94,7 @@ def is_possible_title(
         words = text.split()
         words = [w for w in words if w.strip()]
         words_num = len(words)
-        if words_num<1 or words_num>title_max_word_length:
+        if words_num<1 or words_num>int(title_max_word_length/2):
             return False
 
     # 文本中数字的占比不能太高，否则不是title
@@ -110,15 +110,17 @@ def is_possible_title(
     
     return True
 
-title_max_word_length = 20
-def get_possible_zh_title_for_previous_sibling(cur_node,title_max_word_length=title_max_word_length):
+_r = is_possible_title('2、标准规范、功能全面')
+print(_r)
+
+def get_possible_zh_title_for_previous_sibling(cur_node,title_max_word_length=20):
     get_possible_zh_title = ''
     previous_sibling = util.leftsibling(cur_node)
     if previous_sibling:
         previous_sibling_text = previous_sibling.text.strip() + '\n'
         other_conditions = previous_sibling.is_leaf and previous_sibling.type == TreeNodeType.TEXT and 'Heading' not in previous_sibling.style
         if 'List Paragraph' in previous_sibling.style or other_conditions:       
-            if len(previous_sibling_text)<=10 or is_possible_title(text=previous_sibling_text,title_max_word_length=title_max_word_length):
+            if is_possible_title(text=previous_sibling_text,title_max_word_length=title_max_word_length):
                 get_possible_zh_title = previous_sibling_text
     return get_possible_zh_title
 
@@ -410,7 +412,7 @@ class JqkjDocTreeTokenTextSplitter(MetadataAwareTextSplitter):
                     # 着手处理当前节点， 开始新的切片
                         # 接着将当前文本 node_text 还作为一个整体来处理，因为可能是一个很长的段落文本，本身足以构成一个或多个split(s)
                         # 所以可以取多个splits(最后一个不确定)
-                    assert len(text_cached)<=title_max_word_length
+
                     tokens_cached = 0  # 因为后面把text_cached加到cur_ancestors_text_placeholder里了
                     tokens_cutoff = self.normal_tokens_chunk_size - metadata_str_tokens_num
 
@@ -795,6 +797,9 @@ if __name__ == "__main__":
     input_file_dir = fr'/data/projects/JqChat/jqcode/jq_readers/.testinputdocs'
     input_files = [fr'/data/projects/JqChat/jqcode/jq_readers/.testinputdocs/厦门市智慧民政一体化平台项目建设方案 V3.6.docx']
     input_files = [fr'/data/projects/JqChat/jqcode/jq_readers/.testinputdocs/A方案.docx']
+    input_files = [fr'/data/projects/JqChat/jqcode/jq_readers/.testinputdocs/InstallationGuide.docx']
+
+    
 
     query0 = "晶奇公司的应急技术服务电话？"
     query1 = "晶奇公司在哪一年获得ISO9001国际质量体系认证？"

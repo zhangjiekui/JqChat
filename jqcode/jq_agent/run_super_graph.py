@@ -148,33 +148,32 @@ def arun_super_graph(question:str,config = {"recursion_limit":25,"configurable":
 if __name__ == '__main__':
 
 #     # WARNING 05-13 17:46:33 scheduler.py:619] Input prompt (74314 tokens) is too long and exceeds limit of 4096
-    tool_question = ["请调用工具get_flight_number来查询后天从合肥到上海的航班","请调用工具python_repl_tool来编码计算the 10th fibonacci number并执行和输出结果"]
-    print('\n\n')
-    print("~~~~~~~~~~~~~~~~~~~~~~~~~~~"*5) 
-    print("~~~~test_tools~~~~"*5)
-    print("~~~~~~~~~~~~~~~~~~~~~~~~~~~"*5)
-    for question in tool_question:
-        result=arun_super_graph(question)
-        print(result)
-        print(asyncio.run(arun_super_graph(question)))
-        print('\n\n')
+    # tool_question = ["请调用工具get_flight_number来查询后天从合肥到上海的航班","请调用工具python_repl_tool来编码计算the 10th fibonacci number并执行和输出结果"]
+    # print('\n\n')
+    # print("~~~~~~~~~~~~~~~~~~~~~~~~~~~"*5) 
+    # print("~~~~test_tools~~~~"*5)
+    # print("~~~~~~~~~~~~~~~~~~~~~~~~~~~"*5)
+    # for question in tool_question:
+    #     result=arun_super_graph(question)
+    #     print(result)
+    #     print('\n\n')
     print("~~~~~~~~~~~~~~~~~~~~~~~~~~~"*5) 
     print("~~~~test_memory~~~~"*5)
     print("~~~~~~~~~~~~~~~~~~~~~~~~~~~"*5)
-#     questions_test_memory = ["你知道我叫什么吗？","我叫张结魁，你叫什么呀？我们做好朋友吧","?"] 
-#     for question in questions_test_memory:
-#         print(arun_super_graph(question))
+    questions_test_memory = ["你知道我叫什么吗？","我叫张结魁，你叫什么呀？我们做好朋友吧","还记得我叫什么吗？"] 
+    for question in questions_test_memory:
+        print(arun_super_graph(question))
 
-#     questions = ["请帮我搜索获取，并按时间线梳理总结我国医疗健康相关的政策内容","合肥是一个什么样的城市？","What are the types of agent memory?","What player are the Bears expected to draft first in the 2024 NFL draft?","Hello, how are you today?"]
-#     questions = ["安徽晶奇网络科技股份有限公司的详细董事、独立董事名单","监事名单呢？"]
-#     print('\n\n')
-#     print("~~~~~~~~~~~~~~~~~~~~~~~~~~~"*5) 
-#     print("$$$$run_graph_workflow$$$$"*5)
-#     print("~~~~~~~~~~~~~~~~~~~~~~~~~~~"*5) 
-#     for question in questions:
-#         print(arun_super_graph(question))
-#         print("~~~~~~~~~~~~~~~~~~~~~~~~~~~"*5)
-#         print(arun_super_graph(question))
+    questions = ["请帮我搜索获取，并按时间线梳理总结我国医疗健康相关的政策内容","合肥是一个什么样的城市？","What are the types of agent memory?","What player are the Bears expected to draft first in the 2024 NFL draft?","Hello, how are you today?"]
+    # questions = ["安徽晶奇网络科技股份有限公司的详细董事、独立董事名单","监事名单呢？"]
+    # print('\n\n')
+    # print("~~~~~~~~~~~~~~~~~~~~~~~~~~~"*5) 
+    # print("$$$$run_graph_workflow$$$$"*5)
+    # print("~~~~~~~~~~~~~~~~~~~~~~~~~~~"*5) 
+    # for question in questions:
+    #     print(arun_super_graph(question))
+    #     print("~~~~~~~~~~~~~~~~~~~~~~~~~~~"*5)
+
 
 # # # # """       
 

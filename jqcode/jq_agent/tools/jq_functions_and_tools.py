@@ -17,8 +17,8 @@ from typing import List
 # 自定义工具函数
 @tool
 def get_flight_number(dep:str,des:str,date:date) -> str:
-    """根据输入的出发地(dep),目的地(des),日期(date),返回航班号。重要:当前日期是{current_date}，日期(date)只接受python datetime.date类型输入。如果日期是不确定的描述，如明天、后天等，可以先使用工具'python_repl_tool'进行计算，并且返回python datetime.date类型结果，具体格式示例如下：2024-04-03。"""
-    result = f"晶奇航空666【{date}】"
+    """根据输入的出发地(dep),目的地(des),日期(date),返回航班号。重要:当前日期是{current_date}，日期(date)只接受python datetime.date类型输入。如果日期是不确定的描述，如明天、后天等，请先使用工具'python_repl_tool'进行计算，并且返回python datetime.date类型结果，具体格式示例如下：2024-04-03。"""
+    result = f"东方航空MU5646 【{date}】"
     print(f"GetFlightNumberTool Result: {result}")
     return result
 current_date = str(datetime.now().date())
