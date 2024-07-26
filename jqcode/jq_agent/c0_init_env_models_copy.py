@@ -31,10 +31,12 @@ from langchain_community.vectorstores.utils import DistanceStrategy
 from langchain.retrievers import ContextualCompressionRetriever
 from langchain_core.messages import BaseMessage, HumanMessage,SystemMessage,ToolMessage,AIMessage
 from langchain.callbacks.base import BaseCallbackHandler
-# from jqcode.jq_splitters.backend_splitter_utils.jq_chinese_recursive_text_splitter import ChineseRecursiveTextSplitter
-# from jqcode.jq_splitters.jq_docx_tree_text_splitter import JqkjDocTreeTokenTextSplitter
 from langchain_core.callbacks import StdOutCallbackHandler
 from dotenv import load_dotenv, find_dotenv
+
+from jqcode.jq_utils.logger import jqkj_logger
+logger = jqkj_logger(__file__).get_logger()
+
 os.environ['LANGCHAIN_TRACING_V2'] = 'true'
 os.environ['LANGCHAIN_ENDPOINT'] = 'https://api.smith.langchain.com'
 os.environ['LANGCHAIN_API_KEY'] = "ls__fe150087fa0643f28b3eae3a07d57529"
@@ -187,7 +189,7 @@ class BgeRerank(BaseDocumentCompressor):
 
 # todo: embedding_model_8k with langchain
 @lru_cache()
-def _get_emb_8k_rerank_model(model_name=embedding_model_name, device = ['cpu','cpu','cpu'],final_docs_num_reranked=4): #device = ['cuda:1','cuda:2''cuda:3']
+def _get_emb_8k_rerank_model(model_name=embedding_model_name, load_8k=False, device = ['cpu','cpu','cpu'],final_docs_num_reranked=4): #device = ['cuda:1','cuda:2''cuda:3']
     if 'bge' in embedding_model_name: 
         # 有query_instruction https://github.com/langchain-ai/langchain/blob/ee94ef55ee6ab064da08340817955f821dfa6261/libs/langchain/langchain/embeddings/huggingface.py#L187
         from langchain_community.embeddings import HuggingFaceBgeEmbeddings as HuggingFaceEmbeddings
@@ -208,10 +210,16 @@ def _get_emb_8k_rerank_model(model_name=embedding_model_name, device = ['cpu','c
     reranker_args = {'model': rerank_model_name, 'top_n': final_docs_num_reranked, 'device': device[1]}
     reranker = BCERerank(**reranker_args)
     print(f'{rerank_model_name=}初始化成功！')
-
-    embedding_model_8k = SentenceTransformer(embedding_model_name_8k, trust_remote_code=True, device=device[2])
-    embedding_model_8k.max_seq_length = 8192
-    print(f'{embedding_model_name_8k=}初始化成功！{embedding_model_8k.max_seq_length=}，可根据实际需要进行修改。')
+    
+    embedding_model_8k = None
+    if load_8k:
+        try:
+            embedding_model_8k = SentenceTransformer(embedding_model_name_8k, trust_remote_code=False, device=device[2])
+            embedding_model_8k.max_seq_length = 8192
+            print(f'{embedding_model_name_8k=}初始化成功！{embedding_model_8k.max_seq_length=}，可根据实际需要进行修改。')
+        except:
+            embedding_model_8k = None
+            logger.warning(f"embedding_model_8k:{embedding_model_name_8k}加载失败")
     return embed_model,embedding_model_8k,reranker
 
 embed_model,embedding_model_8k,reranker = _get_emb_8k_rerank_model()
@@ -239,8 +247,8 @@ def split_and_get_chunks_relevant_from_documents(query:str, docs_list:List[Docum
         doc.page_content = replace_multiple_newlines(doc.page_content)
         docs_list_cleaned.append(doc)
     if not text_splitter:
-        from jqcode.jq_splitters.backend_splitter_utils.jq_chinese_recursive_text_splitter import ChineseRecursiveTextSplitter
-        text_splitter = ChineseRecursiveTextSplitter(chunk_size=500,chunk_overlap=0.2,model_name=embed_model)
+        from jqcode.jq_splitters.backend_splitter_utils.jq_chinese_recursive_text_splitter import JqChineseRecursiveTextSplitter
+        text_splitter = JqChineseRecursiveTextSplitter(chunk_size=500,chunk_overlap=0.2,model_name=embed_model)
     
     text_chunks = text_splitter.split_documents(docs_list_cleaned)
     
@@ -268,8 +276,8 @@ def filter_and_get_messages_relevant_to_query(query:str,messages_list:List[BaseM
         unique_messages_list.reverse()    
         docs_from_messages = [Document(page_content=message.content,metadata={"message_index":message_index}) for message_index, message in enumerate(unique_messages_list)]
         if not text_splitter:
-            from jqcode.jq_splitters.backend_splitter_utils.jq_chinese_recursive_text_splitter import ChineseRecursiveTextSplitter
-            text_splitter = ChineseRecursiveTextSplitter(chunk_size=500,chunk_overlap=0.2,model_name=embed_model)
+            from jqcode.jq_splitters.backend_splitter_utils.jq_chinese_recursive_text_splitter import JqChineseRecursiveTextSplitter
+            text_splitter = JqChineseRecursiveTextSplitter(chunk_size=500,chunk_overlap=0.2,model_name=embed_model)
 
         chunks_relevant = split_and_get_chunks_relevant_from_documents(query, docs_from_messages,text_splitter=text_splitter,reranker=reranker,
                                                                     if_reranking=if_reranking,retriever_docs_num=retriever_docs_num, final_docs_num=final_docs_num,score_threshold=score_threshold)

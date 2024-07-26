@@ -6,7 +6,7 @@ from anytree import Node as AnytreeNode
 from anytree import RenderTree, AsciiStyle, PreOrderIter
 from anytree.exporter import JsonExporter
 from anytree.importer import JsonImporter
-from anytree import LevelOrderGroupIter
+from anytree import LevelOrderGroupIter, util
 
 from llama_index.core.callbacks.base import CallbackManager
 from llama_index.core.schema import BaseNode, TextNode,Document, MetadataMode
@@ -19,7 +19,9 @@ from llama_index.core.node_parser.interface import MetadataAwareTextSplitter
 
 from jqcode.jq_readers.jqkj_readers import JqkjSimpleDirectoryReader
 from jqcode.jq_readers.backend_reader_utils.jqkj_doc_tree_utils import jieba_pre_process,TreeNodeType,get_doc_tree_from_document
-from jqcode.jq_splitters.backend_splitter_utils.jq_chinese_recursive_text_splitter import ChineseRecursiveTextSplitter
+from jqcode.jq_splitters.backend_splitter_utils.jq_chinese_recursive_text_splitter import JqChineseRecursiveTextSplitter
+from jqcode.jq_knowledge_manegement.chatchat.server.file_rag.text_splitter.zh_title_enhance import is_possible_title
+
 from jqcode.jq_utils.logger import jqkj_logger
 
 
@@ -33,11 +35,25 @@ except:
 DEFAULT_CHUNK_SIZE = 512
 DEFAULT_CHUNK_OVERLAP = 0.2
 # NOTE: this is the number of tokens reserved for special tokens(BOS,EOS) and metadata formatting
-DEFAULT_MODEL_RESERVED_TOKENS_SIZE = 12
+DEFAULT_MODEL_RESERVED_TOKENS_SIZE = 10
 DEFAULT_METADATA_FORMAT_LEN = 2
 
 anytree_json_exporter = JsonExporter()
 anytree_json_importer = JsonImporter()
+
+
+title_max_word_length = 20
+def get_possible_zh_title_for_previous_sibling(cur_node,title_max_word_length=title_max_word_length):
+    get_possible_zh_title = ''
+    previous_sibling = util.leftsibling(cur_node)
+    if previous_sibling:
+        previous_sibling_text = previous_sibling.text.strip() + '\n'
+        other_conditions = previous_sibling.is_leaf and previous_sibling.type == TreeNodeType.TEXT and 'Heading' not in previous_sibling.style
+        if 'List Paragraph' in previous_sibling.style or other_conditions:       
+            if len(previous_sibling_text)<=10 or is_possible_title(text=previous_sibling_text,title_max_word_length=title_max_word_length):
+                get_possible_zh_title = previous_sibling_text
+    return get_possible_zh_title
+            
 
 def _get_pre_title_nodes_text(pre_title_nodes,normal_text:bool=False):
     if len(pre_title_nodes) > 0:
@@ -46,7 +62,7 @@ def _get_pre_title_nodes_text(pre_title_nodes,normal_text:bool=False):
             text_cached = '\n'.join(pre_title_nodes_text) + '\n'
         else:
             text_cached = '|'.join(pre_title_nodes_text)
-            text_cached = f'<toc标题目录：{text_cached}/>'
+            text_cached = f'\n<标题目录toc：{text_cached}/>'
             # <table column_names={col_text}/>
     else:
         text_cached = ''
@@ -63,7 +79,7 @@ def get_pre_title_nodes_text(cur_node,cur_title_node,pre_title_node,cur_ancestor
     return cur_title_node,pre_title_node,cur_ancestors_text_placeholder,pre_ancestors_text_placeholder
 
 class JqkjDocTreeTokenTextSplitter(MetadataAwareTextSplitter):
-
+    logger.warning('JqkjDocTreeTokenTextSplitter TODO:\n一、方便获取和检索、对照\n（1）将每个文档的doc_tree存储到磁盘，以根节点ID命名；\n（2）在每个chunks->Documnet中增加cur_node_id,parent_node_id,root_node_id；\n二、代码测试、修正\n (1)目前发现文本有不正常的截断【已解决】； \n（2）代码本身优化\n')
     _default_normal_tokens_chunk_size = DEFAULT_CHUNK_SIZE - DEFAULT_MODEL_RESERVED_TOKENS_SIZE
 
     model_reserved_tokens_size: int = Field(default=DEFAULT_MODEL_RESERVED_TOKENS_SIZE , description="为嵌入模型预留的tokens(如BOS、EOS)数量。")    
@@ -71,7 +87,7 @@ class JqkjDocTreeTokenTextSplitter(MetadataAwareTextSplitter):
     # 注意：下面的chunk_size是已经去掉保留tokes后的，真正能够喂入模型的正常tokens数量
     chunk_size: int = Field(default=normal_tokens_chunk_size,description="每个文本块chunk的tokens数量大小", gt=0, )
     chunk_overlap: Union[int,float] = Field(default=DEFAULT_CHUNK_OVERLAP,description="两个文本块chunk可以重叠的数量大小或比例",gte=0,)
-    cr_text_splitter:ChineseRecursiveTextSplitter = Field(default=ChineseRecursiveTextSplitter(model_name=None,chunk_size=_default_normal_tokens_chunk_size,chunk_overlap=DEFAULT_CHUNK_OVERLAP),description="中英文文本分割器")
+    cr_text_splitter:JqChineseRecursiveTextSplitter = Field(default=JqChineseRecursiveTextSplitter(model_name=None,chunk_size=_default_normal_tokens_chunk_size,chunk_overlap=DEFAULT_CHUNK_OVERLAP),description="中英文文本分割器")
     tokens_len_func: Callable = Field(default=None,description="获取tokens数量")
  
     class Config:
@@ -89,7 +105,7 @@ class JqkjDocTreeTokenTextSplitter(MetadataAwareTextSplitter):
     ):
         """Initialize with parameters."""
         _normal_tokens_chunk_size = chunk_size - model_reserved_tokens_size
-        cr_text_splitter = ChineseRecursiveTextSplitter(model_name=None,chunk_size=_normal_tokens_chunk_size,chunk_overlap=chunk_overlap)
+        cr_text_splitter = JqChineseRecursiveTextSplitter(model_name=None,chunk_size=_normal_tokens_chunk_size,chunk_overlap=chunk_overlap)
         chunk_overlap = cr_text_splitter._chunk_overlap
         
 
@@ -152,7 +168,7 @@ class JqkjDocTreeTokenTextSplitter(MetadataAwareTextSplitter):
     def class_name(cls) -> str:
         return "JqkjDocTreeTokenTextSplitter"
     
-    def write_chunkes_to_file(self, text_splits: List[str], save_path_txt: str, metadata_str_tokens_num:int):
+    def write_chunkes_to_preview_file(self, text_splits: List[str], save_path_txt: str, metadata_str_tokens_num:int):
         logger.info(f'\n==============================================================')
         logger.info(f'将切分结果保存到{save_path_txt}......')
         with open(save_path_txt,'w',encoding='utf-8') as f:            
@@ -258,6 +274,8 @@ class JqkjDocTreeTokenTextSplitter(MetadataAwareTextSplitter):
 
 
                 node_text = cur_node.text.strip()
+                if node_text == '3、开放互联、信息共享':
+                    pass
 
                 # 如果没有（文本子节点）Normal Text，跳出本次节点循环，不执行后面的代码，进入下一个节点
                 if len(node_text) == 0: 
@@ -268,11 +286,17 @@ class JqkjDocTreeTokenTextSplitter(MetadataAwareTextSplitter):
 
                 ancestors_text_placeholder = '' if pre_ancestors_text_placeholder==cur_ancestors_text_placeholder else cur_ancestors_text_placeholder
 
-                cur_text = ancestors_text_placeholder + node_text + '\n'
-                pre_ancestors_text_placeholder=cur_ancestors_text_placeholder
-                
                 if len(ancestors_text_placeholder) == 0 and len(text_cached) == 0: #保证每个split开头都有 标题目录 信息
                     text_cached = _get_pre_title_nodes_text(cur_node.ancestors[1:]) 
+
+                if ancestors_text_placeholder not in text_cached:
+                    cur_text = ancestors_text_placeholder + node_text + '\n'
+                else:
+                    cur_text = node_text + '\n'
+                    
+                pre_ancestors_text_placeholder=cur_ancestors_text_placeholder
+                
+
                 
                 # 统一开始tokens计数
                 tokens_cached = self.tokens_len_func(text=text_cached)
@@ -289,8 +313,6 @@ class JqkjDocTreeTokenTextSplitter(MetadataAwareTextSplitter):
                 
                 else: # 当前文本的tokens数已超出了tokens_cutoff剩余限额
                     assert tokens_cached <= max_chunk_size - metadata_str_tokens_num                     
-                    # todo: 暂时只考虑文本节点
-
                     #======  先处理text_cached，（1）要么直接作为chunk，（2）要么对当前文本进行切分，补齐切分到text_cached，一起作为一个chunk
                     
                     #以下是这两种处理情形                    
@@ -298,7 +320,7 @@ class JqkjDocTreeTokenTextSplitter(MetadataAwareTextSplitter):
                     if tokens_cached >= max_chunk_size*cutoff_ratio_as_chunk: 
                         # 如果【累积文本text_cached】的tokens已经够多，则直接作为一个chunk
                         chunks_saved.append(text_cached.rstrip('\n'))
-                        text_cached=''
+                        text_cached = get_possible_zh_title_for_previous_sibling(cur_node)
 
                     ###  （2）  <cutoff_ratio_as_chunk  【累积文本text_cached】与【当前文本node_text的切分】拼接    
                     else:
@@ -312,17 +334,17 @@ class JqkjDocTreeTokenTextSplitter(MetadataAwareTextSplitter):
                             logger.warning(f"\nChunk tokens数量{self.tokens_len_func(split0)}，超出了限制{DEFAULT_CHUNK_SIZE - metadata_str_tokens_num},该Chunk内容为：")
                             logger.warning(f"{split0}")
                         chunks_saved.append(split0.rstrip('\n'))
-                        text_cached=''
+
+                        text_cached = get_possible_zh_title_for_previous_sibling(cur_node)
                     # ====== text_cached已经处理完毕
                         
                     #################################################
                     
                     # 着手处理当前节点， 开始新的切片
                         # 接着将当前文本 node_text 还作为一个整体来处理，因为可能是一个很长的段落文本，本身足以构成一个或多个split(s)
-                        # 增加了代码校验text_cached='',tokens_cached = 0
-                        # 这时text_cached=''，所以可以取多个splits
-                    assert text_cached==''
-                    tokens_cached = 0
+                        # 所以可以取多个splits(最后一个不确定)
+                    assert len(text_cached)<=title_max_word_length
+                    tokens_cached = 0  # 因为后面把text_cached加到cur_ancestors_text_placeholder里了
                     tokens_cutoff = self.normal_tokens_chunk_size - metadata_str_tokens_num
 
                     tokens_node_text = self.tokens_len_func(text=node_text)
@@ -330,6 +352,14 @@ class JqkjDocTreeTokenTextSplitter(MetadataAwareTextSplitter):
 
                     # 因为是要对当前文本进行分割，所以前面必须要有cur_ancestors_text_placeholder部分
                     cur_ancestors_text_placeholder = _get_pre_title_nodes_text(cur_node.ancestors[1:])
+                    # 因为要比较是否相等，所以同步加上
+                    if pre_ancestors_text_placeholder == cur_ancestors_text_placeholder:
+                        if pre_ancestors_text_placeholder not in text_cached:
+                            pre_ancestors_text_placeholder += text_cached
+                    
+                    if cur_ancestors_text_placeholder not in text_cached:
+                        cur_ancestors_text_placeholder += text_cached                    
+
                     tokens_ancestors = self.tokens_len_func(text=cur_ancestors_text_placeholder)
 
                     if  tokens_node_text > max_chunk_size - metadata_str_tokens_num - tokens_cached -tokens_ancestors:
@@ -343,7 +373,7 @@ class JqkjDocTreeTokenTextSplitter(MetadataAwareTextSplitter):
                         for chunk in chunks:
                             assert self.tokens_len_func(chunk) <= max_chunk_size - metadata_str_tokens_num,f"{self.tokens_len_func(text=chunk)},\n{chunk}"
                             _chunks.append(chunk.rstrip('\n'))
-                        chunks_saved.extend(_chunks[:-1]) # 这时text_cached=''，所以可以取多个splits(最后一个不确定)
+                        chunks_saved.extend(_chunks[:-1]) # 可以取多个splits(最后一个不确定)
 
                         # 处理最后一个chunk
                         text_cached = chunks[-1]
@@ -354,14 +384,16 @@ class JqkjDocTreeTokenTextSplitter(MetadataAwareTextSplitter):
                         # 下方else: 没有超出限制，就直接作为text_cached
 
                     else:
-                        # text_cached = _get_pre_title_nodes_text(cur_node.ancestors[1:]) + node_text  #[1:] 去除文件名根节点 + node_text
-                        text_cached = cur_ancestors_text_placeholder + node_text 
+                        if cur_ancestors_text_placeholder not in node_text:
+                            text_cached = cur_ancestors_text_placeholder + node_text
+                        else:
+                            text_cached =  node_text
                     # 可同时处理上面if-else留下来的text_cached： 是否 >=cutoff_ratio_as_chunk
                     tokens_cached = self.tokens_len_func(text=text_cached)
                     if tokens_cached >= max_chunk_size*cutoff_ratio_as_chunk - metadata_str_tokens_num:
                         assert self.tokens_len_func(text=text_cached) <= DEFAULT_CHUNK_SIZE - metadata_str_tokens_num,f"{self.tokens_len_func(text=text_cached)},\n{text_cached}"   
                         chunks_saved.append(text_cached.strip('\n'))
-                        text_cached = ''
+                        text_cached = get_possible_zh_title_for_previous_sibling(cur_node)
                 
                 # 如果循环已经结束，需保证最后的text_cached也要读入
                 if cur_node == last_text_nodes:
@@ -474,7 +506,7 @@ class JqkjDocTreeTokenTextSplitter(MetadataAwareTextSplitter):
         with open(file_path_txt,'w',encoding='utf-8') as f:
             f.write(updated_text)
         # 保存供检查、预览的文本文件
-        self.write_chunkes_to_file(chunks_saved, file_path_txt_preview,metadata_str_tokens_num = metadata_str_tokens_num)
+        self.write_chunkes_to_preview_file(chunks_saved, file_path_txt_preview,metadata_str_tokens_num = metadata_str_tokens_num)
         
         # 更新原document node的信息        
         lm_base_node.text = updated_text
@@ -804,7 +836,7 @@ if __name__ == "__main__":
         print('   -----------检索结果-------------')
         print(f'共检索到{len(hits)}篇文档：')
         for i,h in enumerate(hits):
-            print(f'Doc{i+1}[](relevance_score:{h.metadata["relevance_score"]:.3f}):\n{h.page_content}')
+            print(f'文档片段[{i+1}](relevance_score:{h.metadata["relevance_score"]:.3f}):\n{h.page_content}')
         print('   -----------最终回答-------------')
         print(r['result'])
         print('\n\n')

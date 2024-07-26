@@ -3,7 +3,7 @@ from langchain.text_splitter import TextSplitter,Tokenizer,split_text_on_tokens
 from langchain_community.embeddings import HuggingFaceBgeEmbeddings
 from langchain_huggingface import HuggingFaceEmbeddings
 from jqcode.jq_agent.c0_init_env_models import env_models_instance
-from jqcode.jq_splitters.backend_splitter_utils.jq_chinese_recursive_text_splitter import ChineseRecursiveTextSplitter
+from jqcode.jq_splitters.backend_splitter_utils.jq_chinese_recursive_text_splitter import JqChineseRecursiveTextSplitter
 
 from typing import (
     AbstractSet,
@@ -42,7 +42,7 @@ class SentenceTransformersTokenTextSplitter(TextSplitter):
         """Create a new TextSplitter."""
         
         assert isinstance(emb_model_instance,(HuggingFaceEmbeddings,HuggingFaceBgeEmbeddings)),'model_name参数必须是Union[HuggingFaceEmbeddings, HuggingFaceBgeEmbeddings]'
-        self.chinese_recursive_text_splitter = ChineseRecursiveTextSplitter(chunk_size=tokens_per_chunk,chunk_overlap=chunk_overlap,model_name=emb_model_instance) 
+        self.chinese_recursive_text_splitter = JqChineseRecursiveTextSplitter(chunk_size=tokens_per_chunk,chunk_overlap=chunk_overlap,model_name=emb_model_instance) 
         self._model = emb_model_instance
         self.model_name = emb_model_instance.model_name
         self.tokenizer = self.chinese_recursive_text_splitter.tokenizer_wrapper.tokenizer

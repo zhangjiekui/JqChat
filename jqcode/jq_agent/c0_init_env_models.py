@@ -289,8 +289,8 @@ class InitEnvModels:
             doc.page_content = replace_multiple_newlines(doc.page_content)
             docs_list_cleaned.append(doc)
         if not text_splitter:
-            from jqcode.jq_splitters.backend_splitter_utils.jq_chinese_recursive_text_splitter import ChineseRecursiveTextSplitter
-            text_splitter = ChineseRecursiveTextSplitter(chunk_size=500,chunk_overlap=0.2,model_name=embed_model)
+            from jqcode.jq_splitters.backend_splitter_utils.jq_chinese_recursive_text_splitter import JqChineseRecursiveTextSplitter
+            text_splitter = JqChineseRecursiveTextSplitter(chunk_size=500,chunk_overlap=0.2,model_name=embed_model)
         
         text_chunks = text_splitter.split_documents(docs_list_cleaned)
         
@@ -320,8 +320,8 @@ class InitEnvModels:
             unique_messages_list.reverse()    
             docs_from_messages = [Document(page_content=message.content,metadata={"message_index":message_index}) for message_index, message in enumerate(unique_messages_list)]
             if not text_splitter:
-                from jqcode.jq_splitters.backend_splitter_utils.jq_chinese_recursive_text_splitter import ChineseRecursiveTextSplitter
-                text_splitter = ChineseRecursiveTextSplitter(chunk_size=500,chunk_overlap=0.2,model_name=embed_model)
+                from jqcode.jq_splitters.backend_splitter_utils.jq_chinese_recursive_text_splitter import JqChineseRecursiveTextSplitter
+                text_splitter = JqChineseRecursiveTextSplitter(chunk_size=500,chunk_overlap=0.2,model_name=embed_model)
 
             chunks_relevant = self.split_and_get_chunks_relevant_from_documents(query, docs_from_messages,text_splitter=text_splitter,reranker=reranker,
                                                                         if_reranking=if_reranking,retriever_docs_num=retriever_docs_num, final_docs_num=final_docs_num,score_threshold=score_threshold)
