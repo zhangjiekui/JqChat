@@ -72,7 +72,6 @@ class InitEnvModels:
         self.load_project_env()
         self.base_url=os.getenv("OPENAI_API_BASE",'http://10.1.150.105:4000/v1')
         self.ollama_host = os.getenv("OLLAMA_HOST",'http://localhost:11434')
-        # print(self.ollama_host)
         self.api_key =os.getenv("OPENAI_API_KEY",'NotNeeded')
         self.api_type =os.getenv("OPENAI_API_TYPE",'open_ai')
         self.llm_model_name = os.getenv("LLM_MODEL_NAME",'qwen2-instruct')
@@ -153,9 +152,11 @@ class InitEnvModels:
         print(f'当前使用的模型为:Langchain ChatOpenAI, {self.chat_model.model_name}, API_URL为{self.chat_model.openai_api_base}')
         return self.chat_model
     # model_name = "llama3-groq-tool-use:8b-q8_0",
-    def get_ollama_chat_model(self,model_name = "llama3.1",temperature=0.5,top_p=0.65, tools:list = None,verbose=True):
+    def get_ollama_chat_model(self,model_name = "llama3-groq-tool-use:8b-q8_0",temperature=0.5,top_p=0.65, tools:list = None,verbose=True):
         ollama_chat_model = ChatOllama(model=model_name,temperature=temperature,top_p=top_p,verbose=verbose)
-        print(f'Get ollama_chat_model successfully. model_name={model_name}, ollama_host = {self.ollama_host}')
+        print("-------ollama_chat_model详细信息-------")
+        print(f'       ==Get ollama_chat_model successfully. model_name={model_name}, ollama_host = {self.ollama_host}')
+        print("-------ollama_chat_model详细信息-------")
         if tools:
             return ollama_chat_model.bind_tools(tools)        
         return ollama_chat_model
