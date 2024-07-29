@@ -71,6 +71,8 @@ class InitEnvModels:
         # loade envs:
         self.load_project_env()
         self.base_url=os.getenv("OPENAI_API_BASE",'http://10.1.150.105:4000/v1')
+        self.ollama_host = os.getenv("OLLAMA_HOST",'http://localhost:11434')
+        # print(self.ollama_host)
         self.api_key =os.getenv("OPENAI_API_KEY",'NotNeeded')
         self.api_type =os.getenv("OPENAI_API_TYPE",'open_ai')
         self.llm_model_name = os.getenv("LLM_MODEL_NAME",'qwen2-instruct')
@@ -152,21 +154,13 @@ class InitEnvModels:
         return self.chat_model
     # model_name = "llama3-groq-tool-use:8b-q8_0",
     def get_ollama_chat_model(self,model_name = "llama3.1",temperature=0.5,top_p=0.65, tools:list = None,verbose=True):
-        ollama_tool_model = ChatOllama(model=model_name,temperature=temperature,top_p=top_p,verbose=verbose)
+        ollama_chat_model = ChatOllama(model=model_name,temperature=temperature,top_p=top_p,verbose=verbose)
+        print(f'Get ollama_chat_model successfully. model_name={model_name}, ollama_host = {self.ollama_host}')
         if tools:
-            return ollama_tool_model.bind_tools(tools)
-        return ollama_tool_model
+            return ollama_chat_model.bind_tools(tools)        
+        return ollama_chat_model
     
-    # https://python.langchain.com/v0.2/docs/integrations/chat/ollama/
-    # https://github.com/langchain-ai/langchain/blob/master/docs/docs/integrations/chat/ollama.ipynb
-    def get_ollama_function_model(self,model_name = "llama3.1",temperature=0.5,top_p=0.65, tools:list = None,verbose=True):
-        ollama_function_model = OllamaFunctions(model=model_name,temperature=temperature,top_p=top_p,verbose=verbose,keep_alive=-1,format="json")
-        if tools:
-            return ollama_function_model.bind_tools(tools)
-        return ollama_function_model
-
-
-    
+   
     # todo: embedding_model_8k with langchain
 
     def _get_emb_8k_rerank_model(self,embedding_model_name=None, embedding_model_name_8k=None, rerank_model_name=None, device = ['cpu','cpu','cpu'],final_docs_num_reranked=4): #device = ['cuda:1','cuda:2''cuda:3']
@@ -464,7 +458,7 @@ if __name__ == '__main__':
     tools = [accept,reject]
     toos_dict = {tool.name:tool for tool in tools}
     rendered_tools = render_text_description(tools)
-    ollama_tool_model = env_models_instance.get_ollama_tool_model(tools=tools)
+    ollama_tool_model = env_models_instance.get_ollama_chat_model(tools=tools)
     print("==========="*10)
     system_prompt = f"""You are an assistant that has access to functions.
         ONLY Use them:

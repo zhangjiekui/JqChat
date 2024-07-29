@@ -1,3 +1,7 @@
+import os
+# OLLAMA_HOST env setting MUST be done before you import langchain_ollama package in your code.
+os.environ['OLLAMA_HOST'] = "http://10.1.150.106:11434"
+
 from langchain_ollama import ChatOllama
 from langchain_core.messages import HumanMessage
 from typing import List
@@ -6,6 +10,8 @@ from typing import List
 # https://github.com/langchain-ai/langchain/blob/master/docs/docs/integrations/chat/ollama.ipynb
 # https://github.com/ollama/ollama/releases/tag/v0.3.0
 # https://github.com/langchain-ai/langchain/tree/master/libs/partners/ollama
+
+
 
 def get_ollama_chat_model(model_name = "llama3.1",temperature=0.5,top_p=0.65, tools:list = None,verbose=True):
     ollama_tool_model = ChatOllama(model=model_name,temperature=temperature,top_p=top_p,verbose=verbose)
