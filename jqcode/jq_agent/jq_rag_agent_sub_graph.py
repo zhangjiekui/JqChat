@@ -98,14 +98,14 @@ class code_execution(BaseModel):
     query: str = Field(description="The query to use when asking for running/executing a code snippet.")
 
 members  = ["web_search", "vectorstore", "code_generation", "code_execution", "direct_response"]
-tools=[web_search, vectorstore, code_generation, code_execution, direct_response]
 excutable_tool_names = ["web_search", "vectorstore", "code_generation", "code_execution", "direct_response"]
+
+tools=[web_search, vectorstore, code_generation, code_execution, direct_response]
+tools_name_and_discription_dict = {tool.__name__:tool.__doc__ for tool in tools}
 
 supervisor_agent = create_graph_supervisor(
     llm,
-    f"You are equipped with the following tools:  {excutable_tool_names}."
-    "Given the user question, dicide the next tool/act to take. When finished, respond with 'FINISH'.",
-    excutable_tool_names + ["FINISH"],
+    tools_name_and_discription_dict
 )
 
 

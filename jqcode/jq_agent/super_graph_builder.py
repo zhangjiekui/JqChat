@@ -22,7 +22,7 @@ from langgraph.checkpoint.aiosqlite import AsyncSqliteSaver
 # from jqcode.jq_agent.hierarchical_teams_supervisor_examples.graph_create_utils import create_team_supervisor,supervisor_post_process, create_agent, agent_node, get_graph_nodes,llm
 # from jqcode.jq_agent.hierarchical_teams_supervisor_examples.sub_graphs.research_sub_graph import research_chain
 # from jqcode.jq_agent.hierarchical_teams_supervisor_examples.sub_graphs.writing_sub_graph import authoring_chain
-from graph_create_utils import create_graph_supervisor, create_agent, agent_node, get_custom_supervisor_node,get_last_state,llm, llm_ollama_function,llm_ollama_chat
+from graph_create_utils import create_graph_supervisor, create_agent, agent_node, get_custom_supervisor_node,get_last_state,llm,llm_ollama_chat
 from jq_rag_agent_sub_graph import rag_chain, RagSubgraphState,rag_sub_graph,llm_chain
 from jq_excutable_tool_agent_subgraph import tool_chain, ToolSubgraphState, tool_subgraph 
 
@@ -31,21 +31,12 @@ from jq_excutable_tool_agent_subgraph import tool_chain, ToolSubgraphState, tool
 
 # 一、创建总图
 
-members = ["Tools", "Rag"]
-members_with_finish = members +["FINISH" ]
-system_prompt =f"""
-        Given the user questions, dicide next action should take:{members_with_finish}
-        Action 'Tools' Only responsible for tool calls, such as query flight numbers and generate/run python code,
-        while action 'Rag' responsible for all other things, such as daily greetings and chatting, search web or knowledge base/vectorstore to answer user's question.
-        When finished, respond with action 'FINISH'.
-                
-        Args:
-            next: (str) next action should take.
-        """  
+tools_name_and_discription_dict ={ "Tools":"Responsible for tool calls, such as query flight numbers and generate/run python code", 
+          "Rag":"Responsible for all other things, such as daily greetings and chatting, search web or knowledge base/vectorstore to answer user's question"}
+
 supervisor_node = create_graph_supervisor(
     llm_ollama_chat,
-    system_prompt,
-    members_with_finish,
+    tools_name_and_discription_dict
 )
 
 # Top-level graph state
@@ -66,7 +57,7 @@ def join_graph(response: dict):
 super_graph = StateGraph(SuperState)
 # First add the nodes, which will do the work
 
-custom_supervisor_node = get_custom_supervisor_node(supervisor_node, members, graph_name = 'super_graph' )
+custom_supervisor_node = get_custom_supervisor_node(supervisor_node, ["Tools","Rag"], graph_name = 'super_graph' )
 super_graph.add_node("supervisor", custom_supervisor_node)
 
 super_graph.add_node("Tools", tool_subgraph.compile())

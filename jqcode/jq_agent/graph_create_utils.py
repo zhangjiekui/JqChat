@@ -60,98 +60,55 @@ def agent_node(state, agent, name):
         return {"messages": [ToolMessage(content=result["output"], name=name,tool_call_id='-1')],"next":"FINISH"}
     return {"messages": [ToolMessage(content=result["output"], name=name,tool_call_id='-1')]}
 
-def route(next:str) -> bool:
-    """
-    Args:
-        next: (str) next action should take.
-    """     
-    return True
 
-def create_graph_supervisor(llm: ChatOpenAI, system_prompt, members_with_finish) -> str:
-    """An LLM-based router."""
+def create_route(descprition):
+    """                
+        Args:
+            next: (str) next tool/action should select.
+        """  
     
+    def route(next:str) -> bool:
+        return True
+
+    route.__doc__ = descprition
+    return route
+
+
+
+
+def create_graph_supervisor(llm: ChatOpenAI, tools_name_and_discription_dict:dict) -> Runnable:
+    """An LLM-based router."""
+
+
+    if "FINISH" not in tools_name_and_discription_dict.keys():
+        tools_name_and_discription_dict.update({"FINISH":"When finished, respond with 'FINISH'"})
+    
+    tools_names = []
+
+    tools_name_and_discription_formatted_str = ''
+    for key, value in tools_name_and_discription_dict.items():
+        tools_names.append(key)
+        tools_name_and_discription_formatted_str += f"\n{key}:{value}"
+
+    tools_discription = f"You are equipped with such tools:{tools_names}" + tools_name_and_discription_formatted_str
+    tools_selection = f"Given the user question, which tool/action should select?,You MUST select one but only one tool/action in: {tools_names}"
+    tools_prompt = tools_discription + '\n' + tools_selection
     prompt = ChatPromptTemplate.from_messages(
             [
-                ("system", system_prompt),
-                MessagesPlaceholder(variable_name="messages"),
-                (
-                    "system",
-                    f"Given the conversation above, which tool/action should take?, Select one of: {members_with_finish}",
-                ),
+                ("system", tools_prompt),
+                 ("human", "User question is: {question}"),
             ]
-        )
-    
-    prompt.pretty_print()
-   
-    return prompt | llm.bind_tools(tools=[route], tool_choice="route")
+        )    
+    # prompt.pretty_print()
 
+    route = create_route(descprition=tools_prompt)
 
+    llm_with_tools = llm.bind_tools(tools=[route], tool_choice="route")
+    # question = "请调用工具得到the 10th fibonacci number的结果"
+    # response = llm_with_tools.invoke(question)
+    # print(f"{question}:\n{response.tool_calls}")
+    return prompt | llm_with_tools
 
-def _create_graph_supervisor(llm: ChatOpenAI, system_prompt, members) -> str:
-    """An LLM-based router."""
-    options = ["FINISH"] + members
-    prompt = ChatPromptTemplate.from_messages(
-            [
-                ("system", system_prompt),
-                MessagesPlaceholder(variable_name="messages"),
-                (
-                    "system",
-                    "Given the conversation above, which action should take?"
-                    " Select one of: {options}",
-                ),
-            ]
-        ).partial(options=str(options), graph_members=", ".join(members))
-    # print(prompt)
-
-    # if isinstance(llm,ChatOllama):            
-    #     class Router(BaseModel):
-    #         f"""Given the conversation above, dicide which action should take"""
-    #         action: str = Field(description=f"Given the conversation above, dicide which action should take. The action must be one of {'，'.join(options)}")
-
-    #     router = llm.with_structured_output(Router)
-    #     # router = llm.bind_tools([Router],tool_choice='Router')
-    #     return prompt | router
-
-    supervisor_rout_tool ={
-        "name": "route",
-        "description": "Given the conversation above, dicide which action should take",
-        "parameters": {
-            "type": "object",
-            "properties": {
-                "next": {
-                    "type": "string",
-                    "description": "next action should take, " "e.g. Tools",
-                    "enum": options
-                },
-            },
-            "required": ["next"],
-            }      
-        }
-    if isinstance(llm,OllamaFunctions):
-        return prompt | llm.bind_tools(tools=[supervisor_rout_tool],function_call={"name": "route"}) 
-        # return prompt | llm.bind_tools(tools=[supervisor_rout_tool], tool_choice="route")
-
-    else:
-        supervisor_rout_tool ={
-            "name": "route",
-            "description": "Given the conversation above, dicide which action should take",
-            "parameters": {
-                "type": "object",
-                "properties": {
-                    "next": {
-                        "title": "next",
-                        "anyOf": [{"enum": options}]
-                    },
-                },
-                "required": ["next"],
-                }      
-        }        
-        return (
-            prompt
-            | llm.bind_tools(tools=[supervisor_rout_tool], tool_choice="route")
-            # | JsonOutputToolsParser()
-            # | supervisor_post_process
-        )
 
 def sub_graph_enter_chain(message_and_next:dict, members: List[str]):
     results = {}
@@ -456,14 +413,14 @@ def get_graph_nodes(graphs:Union[StateGraph,List[StateGraph]]) -> list:
 """
 
 
-llm = llm_ollama_chat = env_models_instance.get_langchain_chat_model(
-        temperature=0.0,
-        max_tokens=30000,
-        streaming=True)
+# llm = llm_ollama_chat = env_models_instance.get_langchain_chat_model(
+#         temperature=0.0,
+#         max_tokens=30000,
+#         streaming=True)
 
 
-# llm = llm_ollama_chat = env_models_instance.get_ollama_chat_model(model_name = "llama3-groq-tool-use:8b-q8_0")
-llm_ollama_function = env_models_instance.get_ollama_function_model()
+llm = llm_ollama_chat = env_models_instance.get_ollama_chat_model()
+
 
 ### Coding Grader
 # Coding Grader Data model

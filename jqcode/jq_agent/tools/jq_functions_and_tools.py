@@ -165,6 +165,8 @@ excutable_tool_names = [tool.name for tool in excutable_tools]
 excutable_tools_descriptions_str = '\n\n'.join([f"[ToolName]:{t.name}; [ToolDescription]:{t.description}" for t in excutable_tools])
 excutable_tool_names_str = ','.join([tool.name for tool in excutable_tools])
 
+
+
 # print(excutable_tools_descriptions_str)
 print(f'\n本次程序中提供的所有可用的工具列表:\n {excutable_tool_names_str}')
 print("=================== system_prompt ===================")

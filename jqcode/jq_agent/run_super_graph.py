@@ -22,7 +22,7 @@ question5 ="请使用python工具计算1到100的和。"
 question ="合肥八中有多少个校区？"
 qs = [question1,question2,]
 qs = [question1,question2,question3,question4,question5,question]
-qs = []
+qs = [question]
 # qs = [question5]
 
 super_graph_compiled =  super_graph.compile()
@@ -148,7 +148,7 @@ def arun_super_graph(question:str,config = {"recursion_limit":25,"configurable":
 if __name__ == '__main__':
 
 #     # WARNING 05-13 17:46:33 scheduler.py:619] Input prompt (74314 tokens) is too long and exceeds limit of 4096
-    tool_question = ["请调用工具get_flight_number并务必实际执行工具来查询后天从合肥到上海的航班","请调用工具python_repl_tool并务必实际执行工具得到the 10th fibonacci number的结果"]
+    tool_question = ["请调用工具来查询合肥到上海的航班","请调用工具得到the 10th fibonacci number的结果"]
     print('\n\n')
     print("~~~~~~~~~~~~~~~~~~~~~~~~~~~"*5) 
     print("~~~~test_tools~~~~"*5)

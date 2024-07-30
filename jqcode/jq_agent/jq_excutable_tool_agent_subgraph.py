@@ -19,13 +19,13 @@ class ToolSubgraphState(TypedDict):
     question:str
     navigated_question_and_tool:dict ## {question:tool_name}
 
+tools = [get_flight_number,python_repl_tool]
+tools_name_and_discription_dict = {tool.name:tool.description for tool in tools}
 
-members_with_finish = excutable_tool_names + ['FINISH']
+
 supervisor_agent = create_graph_supervisor(
     llm,
-    f"You are equipped with the following tools:  {excutable_tool_names}."
-    "Given the user question, dicide the next tool/act to take. When finished, respond with 'FINISH'.",
-    members_with_finish
+    tools_name_and_discription_dict
 )
 
 flight_agent = create_agent(

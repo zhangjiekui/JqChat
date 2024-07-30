@@ -22,7 +22,6 @@ from langchain.indexes import SQLRecordManager, index
 from langchain_elasticsearch.chat_history import ElasticsearchChatMessageHistory
 # from langchain_community.chat_models import ChatOllama
 from langchain_ollama import ChatOllama
-from langchain_experimental.llms.ollama_functions import OllamaFunctions
 
 from langchain.retrievers.document_compressors.base import BaseDocumentCompressor
 from sentence_transformers import SentenceTransformer,CrossEncoder
@@ -151,8 +150,12 @@ class InitEnvModels:
             )
         print(f'当前使用的模型为:Langchain ChatOpenAI, {self.chat_model.model_name}, API_URL为{self.chat_model.openai_api_base}')
         return self.chat_model
-    # model_name = "llama3-groq-tool-use:8b-q8_0",
-    def get_ollama_chat_model(self,model_name = "llama3-groq-tool-use:8b-q8_0",temperature=0.5,top_p=0.65, tools:list = None,verbose=True):
+    # model_name = "llama3-groq-tool-use:8b-q8_0"
+    # model_name = "adrienbrault/gorilla-openfunctions-v2:Q6_K"
+    # model_name = "allenporter/xlam:7b"
+    model_name = "mistral-large:latest"
+    
+    def get_ollama_chat_model(self,model_name = model_name,temperature=0.5,top_p=0.65, tools:list = None,verbose=True):
         ollama_chat_model = ChatOllama(model=model_name,temperature=temperature,top_p=top_p,verbose=verbose)
         print("-------ollama_chat_model详细信息-------")
         print(f'       ==Get ollama_chat_model successfully. model_name={model_name}, ollama_host = {self.ollama_host}')
@@ -333,10 +336,10 @@ class InitEnvModels:
                 message_relevant = unique_messages_list[index]
                 if message_relevant not in messages_relevant:
                     relevance_score = chunk_relevant.metadata.get('relevance_score',None)
-                    print("--------------------------------")            
+                    # print("--------------------------------")            
                     messages_relevant.append(message_relevant)
-                    message_relevant.pretty_print()
-                    print(f"^^^^^^^^^上条Message的{relevance_score=}^^^^^^^^^")
+                    # message_relevant.pretty_print()
+                    # print(f"^^^^^^^^^上条Message的{relevance_score=}^^^^^^^^^")
             print(f"++++++++++++++++++++++++++++++++++++++++++++【过滤后保留的+最近的条{reserve_last_n_messages}】消息++++++++++++++++++++++++++++++++++++++++++++")   
             messages_list.reverse() # 前面messages_list顺序翻转了，所以这里还要翻转回来
             last_n_messages = messages_list[-reserve_last_n_messages:]

@@ -110,8 +110,8 @@ def is_possible_title(
     
     return True
 
-_r = is_possible_title('2、标准规范、功能全面')
-print(_r)
+# _r = is_possible_title('2、标准规范、功能全面')
+# print(_r)
 
 def get_possible_zh_title_for_previous_sibling(cur_node,title_max_word_length=20):
     get_possible_zh_title = ''
@@ -304,7 +304,6 @@ class JqkjDocTreeTokenTextSplitter(MetadataAwareTextSplitter):
 
         for i,cur_node in enumerate(all_tree_nodes):
 
-
             if get_to_first_title_directly:
                 try:
                     if cur_node.type == TreeNodeType.TEXT and 'Heading' in cur_node.style:
@@ -313,15 +312,7 @@ class JqkjDocTreeTokenTextSplitter(MetadataAwareTextSplitter):
                         continue
                 except :
                     continue
-            # 下面这段代码重构为方法了
-            # if cur_node.is_leaf and cur_node.parent.type in [TreeNodeType.TEXT,TreeNodeType.DOCUMENT]:
-            #     cur_title_node = cur_node.parent
-            #     node_text = cur_node.text
-            #     if cur_ancestors_text_placeholder == '': # 只有第一次会取值
-            #         cur_ancestors_text_placeholder = _get_pre_title_nodes_text(cur_node.ancestors[1:]) #[1:] 去除文件名根节点                 
-            #     if cur_node == cur_title_node.children[0] or cur_title_node != pre_title_node :     # 然后就只有在第一个叶子文本节点，或是父节点发生变化时再取值
-            #         pre_title_node = cur_title_node
-            #         cur_ancestors_text_placeholder = _get_pre_title_nodes_text(cur_node.ancestors[1:]) #[1:] 去除文件名根节点
+
             cur_title_node,pre_title_node,cur_ancestors_text_placeholder,pre_ancestors_text_placeholder = get_pre_title_nodes_text(cur_node,cur_title_node=cur_title_node,pre_title_node=pre_title_node,cur_ancestors_text_placeholder=cur_ancestors_text_placeholder,pre_ancestors_text_placeholder=pre_ancestors_text_placeholder)
 
             #  处理文本类型
@@ -703,12 +694,6 @@ class JqkjDocTreeTokenTextSplitter(MetadataAwareTextSplitter):
     def _parse_node(self, node: BaseNode, sub_nodes_chunk_size=8192,cutoff_ratio_as_chunk=0.8,get_to_first_title_directly=False) -> List[BaseNode]:
 
         doc_tree = get_doc_tree_from_document(node)
-        # if doc_tree:
-        #     sub_doc_tree_nodes = self._parse_file_into_sub_nodes(node, doc_tree, sub_nodes_chunk_size=sub_nodes_chunk_size,
-        #                                       cutoff_ratio_as_chunk =cutoff_ratio_as_chunk,
-        #                                       get_to_first_title_directly=get_to_first_title_directly)
-        #     print('dubug sub_doc_tree_nodes')
-
         if doc_tree:
             llama_index_nodes = self._parse_node_on_tree(node, doc_tree, cutoff_ratio_as_chunk,get_to_first_title_directly)       
             return llama_index_nodes

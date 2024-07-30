@@ -132,6 +132,90 @@ max_model_len默认值4096，可能会报错误： Input prompt (4108 tokens) is
 Initializing an LLM engine： max_seq_len=4096
 RayWorkerVllm：If you are running out of memory, consider decreasing `gpu_memory_utilization` or enforcing eager mode. You can also reduce the `max_num_seqs` as needed to decrease memory usage.
 
+
+## Ollama
+Ollama(V0.3+) now supports tool calling: https://ollama.com/blog/tool-support 
+
+langchain_ollama(V0.1+) from langchain_ollama import ChatOllama
+
+pip install ollama -U: https://github.com/ollama/ollama-python
+
+#### OpenAI compatibility
+```
+import openai
+
+openai.base_url = "http://localhost:11434/v1"
+openai.api_key = 'ollama'
+
+response = openai.chat.completions.create(
+	model="llama3.1",
+	messages=messages,
+	tools=tools,
+)
+```
+#### ChatOllama
+```
+from langchain_ollama import ChatOllama # need langchain_ollama(V0.1+) 
+
+# /data/projects/JqChat/jqcode/jq_agent/c0_init_env_models.py
+def get_ollama_chat_model(self,model_name = "allenporter/xlam:7b",temperature=0.5,top_p=0.65, tools:list = None,verbose=True):
+    ollama_chat_model = ChatOllama(model=model_name,temperature=temperature,top_p=top_p,verbose=verbose)
+    print("-------ollama_chat_model详细信息-------")
+    print(f'       ==Get ollama_chat_model successfully. model_name={model_name}, ollama_host = {self.ollama_host}')
+    print("-------ollama_chat_model详细信息-------")
+    if tools:
+        return ollama_chat_model.bind_tools(tools)        
+    return ollama_chat_model
+```
+
+1、安装
+https://ollama.com/download/linux
+```
+curl -fsSL https://ollama.com/install.sh | sh
+```
+2、OLLAMA_HOST=0.0.0.0
+https://github.com/ollama/ollama/blob/1a83581a8e1063418f5f1fec14638409d0681b68/docs/faq.md
+```
+systemctl edit ollama.service
+```
+For each environment variable, add a line `Environment` under section `[Service]`:
+```
+[Service]
+Environment="OLLAMA_HOST=0.0.0.0"
+```
+3、运行模型
+```
+ollama run llama3-groq-tool-use:8b-q8_0
+```
+
+4、ollama ps 查看运行中的模型，以及是否使用了GPU
+```
+ollama ps
+```
+结果如下
+```
+NAME      	ID          	SIZE 	PROCESSOR	UNTIL
+llama3:70b	bcfb190ca3a7	42 GB	100% GPU 	4 minutes from now
+```
+
+
+5、OLLAMA_HOST环境变量使用
+
+参见  https://github.com/zhangjiekui/JqChat/commit/73fe468524983d71fca3e620006ea122f20550f0
+
+```
+在jqchat项目的.env中增加一行:OLLAMA_HOST = http://10.1.150.106:11434
+
+或者
+
+# OLLAMA_HOST env setting MUST be done before you import langchain_ollama package in your code.
+import os
+os.environ['OLLAMA_HOST'] = "http://10.1.150.106:11434"
+```
+6、查看Log
+```
+journalctl -e -u ollama
+```
 ## HF模型下载方法：
 
 在目标文件夹下/data/models：

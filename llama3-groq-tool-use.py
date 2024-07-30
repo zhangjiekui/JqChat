@@ -13,24 +13,28 @@ from typing import List
 
 
 
-def get_ollama_chat_model(model_name = "llama3.1",temperature=0.5,top_p=0.65, tools:list = None,verbose=True):
-    ollama_tool_model = ChatOllama(model=model_name,temperature=temperature,top_p=top_p,verbose=verbose)
+def get_ollama_chat_model(model_name = "llama3-groq-tool-use:8b-q8_0",temperature=0.5,top_p=0.65, tools:list = None,verbose=True):
+    ollama_host = os.getenv("OLLAMA_HOST",'http://localhost:11434')
+    ollama_chat_model = ChatOllama(model=model_name,temperature=temperature,top_p=top_p,verbose=verbose)
+    print("-------ollama_chat_model详细信息-------")
+    print(f'       ==Get ollama_chat_model successfully. model_name={model_name}, ollama_host = {ollama_host}')
+    print("-------ollama_chat_model详细信息-------")
     if tools:
-        return ollama_tool_model.bind_tools(tools)
-    return ollama_tool_model
+        return ollama_chat_model.bind_tools(tools)        
+    return ollama_chat_model
 
-model_chat = get_ollama_chat_model(model_name = "llama3-groq-tool-use:8b-q8_0")
+model_chat = get_ollama_chat_model(model_name = "mistral-large:latest")
 
 
 def create_route(members):
     system_prompt = f"""
-        Given the user questions, dicide next action should take:{members}
-        Action 'Tools' Only responsible for tool calls, such as query flight numbers and generate/run python code,
-        while action 'Rag' responsible for all other things, such as daily greetings and chatting, search web or knowledge base/vectorstore to answer user's question.
+        Given the user questions, dicide next tool/action should take:{members}\n
+        'Tools': Only responsible for tool calls, such as query flight numbers and generate/run python code,\n
+        'Rag': Responsible for all other things, such as daily greetings and chatting, search web or knowledge base/vectorstore to answer user's question.
         When finished, respond with action 'FINISH'.
                 
         Args:
-            next: (str) next action should take.
+            next: (str) next action should take, next must be one of {members}.
         """  
     
     def route(next:str) -> bool:
