@@ -418,7 +418,7 @@ class JqkjDocTreeTokenTextSplitter(MetadataAwareTextSplitter):
                             pre_ancestors_text_placeholder += text_cached
                     
                     if cur_ancestors_text_placeholder not in text_cached:
-                        cur_ancestors_text_placeholder += text_cached                    
+                        text_cached += cur_ancestors_text_placeholder                    
 
                     tokens_ancestors = self.tokens_len_func(text=cur_ancestors_text_placeholder)
 
@@ -462,6 +462,10 @@ class JqkjDocTreeTokenTextSplitter(MetadataAwareTextSplitter):
 
             if cur_node.type == TreeNodeType.IMAGE:
                 # 保险起见，先处理text_cached
+                cur_ancestors_text_placeholder = _get_pre_title_nodes_text(cur_node.ancestors[1:])
+                if cur_ancestors_text_placeholder not in text_cached:
+                    text_cached += cur_ancestors_text_placeholder
+
                 tokens_cached = self.tokens_len_func(text=text_cached)
                 if tokens_cached >= max_chunk_size*cutoff_ratio_as_chunk - metadata_str_tokens_num:
                     assert self.tokens_len_func(text=text_cached) <= DEFAULT_CHUNK_SIZE - metadata_str_tokens_num,f"{self.tokens_len_func(text=text_cached)},\n{text_cached}"   
@@ -473,7 +477,7 @@ class JqkjDocTreeTokenTextSplitter(MetadataAwareTextSplitter):
                 if cur_ancestors_text_placeholder:
                     if text_cached:
                         if cur_ancestors_text_placeholder not in text_cached:
-                            text_cached = cur_ancestors_text_placeholder + text_cached
+                            text_cached += cur_ancestors_text_placeholder
                     else:
                         text_cached = cur_ancestors_text_placeholder
                 
@@ -513,7 +517,10 @@ class JqkjDocTreeTokenTextSplitter(MetadataAwareTextSplitter):
 
             if cur_node.type == TreeNodeType.TABLE:
                 # 保险起见，先处理text_cached
-                tokens_cached = self.tokens_len_func(text=text_cached)
+                cur_ancestors_text_placeholder = _get_pre_title_nodes_text(cur_node.ancestors[1:])
+                if cur_ancestors_text_placeholder not in text_cached:
+                    text_cached += cur_ancestors_text_placeholder  
+
                 if tokens_cached >= max_chunk_size*cutoff_ratio_as_chunk - metadata_str_tokens_num:
                     assert self.tokens_len_func(text=text_cached) <= DEFAULT_CHUNK_SIZE - metadata_str_tokens_num,f"{self.tokens_len_func(text=text_cached)},\n{text_cached}"   
                     chunks_saved.append(text_cached.strip('\n'))
@@ -521,10 +528,15 @@ class JqkjDocTreeTokenTextSplitter(MetadataAwareTextSplitter):
 
                 tokens_bound = self.normal_tokens_chunk_size - metadata_str_tokens_num
                 vf_string = cur_node.text
+                _vf_string_with_prefix = '表格：' + '\r\n' + vf_string
 
                 table_tokens = self.tokens_len_func(text=vf_string)
+                _table_tokens_prefix = self.tokens_len_func(text=_vf_string_with_prefix)
                 if tokens_cached + table_tokens <= tokens_bound:
-                    text_cached += vf_string
+                    if tokens_cached + _table_tokens_prefix <= tokens_bound:
+                        text_cached += _vf_string_with_prefix
+                    else:
+                        text_cached += vf_string
                     if self.tokens_len_func(text=text_cached) >= max_chunk_size*cutoff_ratio_as_chunk - metadata_str_tokens_num:
                         assert self.tokens_len_func(text=text_cached) <= DEFAULT_CHUNK_SIZE - metadata_str_tokens_num,f"{self.tokens_len_func(text=text_cached)},\n{text_cached}"   
                         chunks_saved.append(text_cached.strip('\n'))
@@ -783,8 +795,7 @@ if __name__ == "__main__":
     input_files = [fr'/data/projects/JqChat/jqcode/jq_readers/.testinputdocs/厦门市智慧民政一体化平台项目建设方案 V3.6.docx']
     input_files = [fr'/data/projects/JqChat/jqcode/jq_readers/.testinputdocs/A方案.docx']
     input_files = [fr'/data/projects/JqChat/jqcode/jq_readers/.testinputdocs/InstallationGuide.docx']
-
-    
+    input_files = [fr'/data/projects/JqChat/jqcode/jq_readers/.testinputdocs/PPQA000_质量保证过程.doc']   
 
     query0 = "晶奇公司的应急技术服务电话？"
     query1 = "晶奇公司在哪一年获得ISO9001国际质量体系认证？"

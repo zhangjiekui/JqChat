@@ -413,13 +413,13 @@ def get_graph_nodes(graphs:Union[StateGraph,List[StateGraph]]) -> list:
 """
 
 
-# llm = llm_ollama_chat = env_models_instance.get_langchain_chat_model(
-#         temperature=0.0,
-#         max_tokens=30000,
-#         streaming=True)
+llm = llm_ollama_chat = env_models_instance.get_langchain_chat_model(
+        temperature=0.0,
+        max_tokens=30000,
+        streaming=True)
 
 
-llm = llm_ollama_chat = env_models_instance.get_ollama_chat_model()
+# llm = llm_ollama_chat = env_models_instance.get_ollama_chat_model()
 
 
 ### Coding Grader
