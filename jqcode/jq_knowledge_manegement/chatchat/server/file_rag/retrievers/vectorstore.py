@@ -18,7 +18,7 @@ class VectorstoreRetrieverService(BaseRetrieverService):
     def from_vectorstore(
         vectorstore: VectorStore,
         top_k: int,
-        score_threshold: int or float,
+        score_threshold: int or float=0.3,
     ):
         retriever = vectorstore.as_retriever(
             search_type="similarity_score_threshold",
@@ -27,4 +27,5 @@ class VectorstoreRetrieverService(BaseRetrieverService):
         return VectorstoreRetrieverService(retriever=retriever)
 
     def get_relevant_documents(self, query: str):
-        return self.retriever.get_relevant_documents(query)[: self.top_k]
+        # return self.retriever.get_relevant_documents(query)[: self.top_k]
+        return self.retriever.invoke(query)[: self.top_k]

@@ -157,6 +157,7 @@ class ConfigKbFactory(core_config.ConfigFactory[ConfigKb]):
                 "index_name": "test",
                 "user": "elastic",
                 "password": "esnNFWQbCIspxTPGwOom",
+                "dims_length": "768",
             },
             "milvus_kwargs": {
                 "search_params": {"metric_type": "L2"},  # 在此处增加search_params
