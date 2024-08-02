@@ -114,7 +114,12 @@ class GraphAgent:
                 print("\n ....bad tool name....")
                 result = "bad tool name, retry"  # instruct LLM to retry if bad
             else:
-                result = self.executable_tool_dict[t['name']].invoke(t['args'])
+                try:
+                    result = self.executable_tool_dict[t['name']].invoke(t['args'])
+                    print(f"{t['name']}({t['args']})的执行结果为:'{result}'")
+                except Exception as e:
+                    print(e)
+                
             results.append(ToolMessage(tool_call_id=t['id'], name=t['name'], content=str(result)))
         print("Back to the model!")
         return {'messages': results}
@@ -135,7 +140,7 @@ class GraphAgent:
             tool_call_1_name = tool_call_1['name']
 
             if tool_call_1_name in self.routing_tool_names:
-                print(f"Returned first ToolName is '{tool_call_1_name}', So routing to 'Rag' Node......")
+                print(f"Returned first ToolName is '{tool_call_1_name}', So routing to sub_graph 'Rag:{tool_call_1_name}' Node......")
                 os.environ["rag_graph_next"] = tool_call_1_name
                 os.environ['web_search_query'] = tool_call_1["args"]['query']
                 return "Rag"
@@ -172,7 +177,7 @@ def run(abot):
     '你好',
     '合肥大蜀山',   
     '请查询明天从合肥到上海的航班',
-    '请计算1到100的和',
+    '请使用python_repl_tool来计算1到100的和',
     "请使用tavily_search_tool工具搜索信息，回答问题：What is the weather in SF and LA? ",
     "Who won the super bowl in 2024? In what state is the winning team headquarters located?What is the GDP of that state? ",
     ]
