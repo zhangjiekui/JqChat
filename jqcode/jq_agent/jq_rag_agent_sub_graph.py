@@ -39,6 +39,7 @@ from langchain_ollama import ChatOllama
 
 
 handlers = get_custom_handler()
+handlers =[]
 invoke_llm_config = {'callbacks' : handlers}
 ### GraphState
 class RagSubgraphState(TypedDict):
@@ -98,7 +99,7 @@ class CODE_EXECUTION(BaseModel):
     query: str = Field(description="The query to use when asking for running/executing a code snippet.")
 
 members  = ["WEB_SEARCH", "VECTORSTORE", "CODE_GENERATION", "CODE_EXECUTION", "DIRECT_RESPONCE"]
-excutable_tool_names = ["web_search", "vectorstore", "code_generation", "code_execution", "direct_response"]
+# excutable_tool_names = ["web_search", "vectorstore", "code_generation", "code_execution", "direct_response"]
 
 tools=[WEB_SEARCH, VECTORSTORE, CODE_GENERATION, CODE_EXECUTION, DIRECT_RESPONCE]
 tools_name_and_discription_dict = {tool.__name__:tool.__doc__ for tool in tools}
@@ -287,7 +288,7 @@ else:
 answer_prompt = ChatPromptTemplate.from_messages(
     [
         ("system",preamble_answer_grader),
-        ("human", "question: {question} \n\n answer: {generation}"),
+        ("human", "question: {question} \n\nanswer: {generation}"),
     ]
 )
 # answer grader
@@ -446,7 +447,7 @@ def grade_documents(state:RagSubgraphState):
     relevance_filtered_message = ToolMessage(content=relevance_filtered_results,name='grade_documents',tool_call_id='0')
     return {"documents": filtered_docs, "question": question, "messages":relevance_filtered_message}
 
-def WEB_SEARCH(state:RagSubgraphState):
+def web_search(state:RagSubgraphState):
     """
     Web search based on the re-phrased question.
 
@@ -528,10 +529,10 @@ def WEB_SEARCH(state:RagSubgraphState):
     web_results_document = Document(page_content=web_results_summary)
     return {"documents": web_results_document, "question_searched":{question:True},"messages":web_search_message}
 
-def CODE_GENERATION(state:RagSubgraphState):
+def code_generation(state:RagSubgraphState):
     pass
 
-def CODE_EXECUTION(state:RagSubgraphState):
+def code_execution(state:RagSubgraphState):
     pass
 
 def route_question(state:RagSubgraphState):
@@ -545,42 +546,45 @@ def route_question(state:RagSubgraphState):
         str: Next node to call
     """    
     print("---ROUTE QUESTION---")
-    question = state["question"]
-
-     # 更新消息列表
-    source = question_router.invoke({"question": question},config=invoke_llm_config)
-    # print(source)
-    print(f"---ROUTE DESTINATION---")
     
-    # Fallback to LLM
-    if USING_OLLAMA_FUNCTIONS:
-        try:
-            tool_calls = source.additional_kwargs['function_call']
-            # tool_calls = {'name': 'web_search', 'arguments': '{"query": "How to respond when someone asks \'how are you today?\'"}'}
-        except:
-            tool_calls = []
-            print("---ROUTE QUESTION TO LLM_FALLBACK---")
-            return "llm_fallback" 
-        if len(tool_calls) == 0:
-            print("---Router Could Not Decide Where To GO (len[tool_calls]) == 0), SO ROUTE QUESTION TO LLM ---")
-            return "llm_fallback"
 
-        # Choose datasource
-        datasource = tool_calls["name"].lower()
+    # 获取导航到下一个节点
+    datasource = os.getenv("rag_graph_next",'')
+    if not datasource:
+        question = state["question"]
+        source = question_router.invoke({"question": question},config=invoke_llm_config)
+        # print(source)
+        print(f"---ROUTE DESTINATION---")
+        
+        # Fallback to LLM
+        if USING_OLLAMA_FUNCTIONS:
+            try:
+                tool_calls = source.additional_kwargs['function_call']
+                # tool_calls = {'name': 'web_search', 'arguments': '{"query": "How to respond when someone asks \'how are you today?\'"}'}
+            except:
+                tool_calls = []
+                print("---ROUTE QUESTION TO LLM_FALLBACK---")
+                return "llm_fallback" 
+            if len(tool_calls) == 0:
+                print("---Router Could Not Decide Where To GO (len[tool_calls]) == 0), SO ROUTE QUESTION TO LLM ---")
+                return "llm_fallback"
 
-    else:        
-        try:
-            tool_calls = source.tool_calls
-        except:
-            tool_calls = []
-            print("---ROUTE QUESTION TO LLM---")
-            return "llm_fallback" 
-        if len(tool_calls) == 0:
-            print("---Router Could Not Decide Where To GO (len[tool_calls]) == 0), SO ROUTE QUESTION TO LLM ---")
-            return "llm_fallback"
+            # Choose datasource
+            datasource = tool_calls["name"].lower()
 
-        # Choose datasource
-        datasource = tool_calls[0]["name"].lower()
+        else:        
+            try:
+                tool_calls = source.tool_calls
+            except:
+                tool_calls = []
+                print("---ROUTE QUESTION TO LLM---")
+                return "llm_fallback" 
+            if len(tool_calls) == 0:
+                print("---Router Could Not Decide Where To GO (len[tool_calls]) == 0), SO ROUTE QUESTION TO LLM ---")
+                return "llm_fallback"
+
+            # Choose datasource
+            datasource = tool_calls[0]["name"].lower()
 
     datasource = datasource.lower()
     if datasource == 'web_search':
@@ -729,12 +733,12 @@ rag_sub_graph.set_conditional_entry_point(
 # Define the nodes
     # The first argument is the unique node name
     # The second argument is the function or object that will be called whenever the node is used.
-rag_sub_graph.add_node("web_search", WEB_SEARCH) # web search
+rag_sub_graph.add_node("web_search", web_search) # web search
 rag_sub_graph.add_node("retrieve", retrieve) # retrieve
 rag_sub_graph.add_node("grade_documents", grade_documents) # grade documents
 rag_sub_graph.add_node("generate", generate) 
-rag_sub_graph.add_node("code_generation", CODE_GENERATION) 
-rag_sub_graph.add_node("code_execution", CODE_EXECUTION)
+rag_sub_graph.add_node("code_generation", code_generation) 
+rag_sub_graph.add_node("code_execution", code_execution)
 rag_sub_graph.add_node("llm_fallback", llm_fallback) # llm
 
 # define the edges

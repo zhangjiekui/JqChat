@@ -1,7 +1,7 @@
 # source: https://learn.deeplearning.ai/courses/ai-agents-in-langgraph/lesson/3/langgraph-components
 print('参考：https://learn.deeplearning.ai/courses/ai-agents-in-langgraph/lesson/3/langgraph-components')
 from langgraph.graph import StateGraph, END
-from typing import TypedDict, Annotated
+from typing import TypedDict, Annotated, Literal
 from langchain_core.pydantic_v1 import BaseModel, Field
 
 from langgraph.graph.message import add_messages
@@ -18,7 +18,7 @@ from jqcode.jq_agent.c0_init_env_models import env_models_instance
 from jqcode.jq_agent.tools.jq_functions_and_tools import get_flight_number,python_repl_tool
 from jqcode.jq_agent.jq_rag_agent_sub_graph import rag_sub_graph
 # from jqcode.jq_agent.jq_rag_agent_sub_graph import WEB_SEARCH,VECTORSTORE,CODE_GENERATION,CODE_EXECUTION
-
+import os
 import shortuuid
 from dotenv import load_dotenv
 _ = load_dotenv()
@@ -57,6 +57,7 @@ class CODE_EXECUTION(BaseModel):
 class GraphAgentState(TypedDict):
     messages: Annotated[list[AnyMessage], add_messages]
     question : str
+    rag_graph_next:str = Literal["WEB_SEARCH", "VECTORSTORE", "CODE_GENERATION", "CODE_EXECUTION", "DIRECT_RESPONCE"]
 
 
 class GraphAgent:
@@ -98,9 +99,7 @@ class GraphAgent:
             {True: "action", False: END , "Rag":"Rag"}
         )
         graph.add_edge("action", "llm")        
-        
         graph.add_edge("Rag", END)
-
         graph.set_entry_point("llm")
         return graph.compile(checkpointer=self.memory)
     
@@ -126,17 +125,20 @@ class GraphAgent:
         print(f'finish_reason: {result.response_metadata["finish_reason"]}')
         print('*************** finish_reason ***************') 
         returned_tool_calling_nums = len(result.tool_calls)
+        os.environ["rag_graph_next"] = ''
+
         if returned_tool_calling_nums>0:
             print(f'Returned {returned_tool_calling_nums} tool_calls')
             if returned_tool_calling_nums>1:
-                print(f'!!! Mutitple  tool_calls !!!')
+                print(f'!!! Multitple  tool_calls !!!')
             tool_call_1 = result.tool_calls[0]
             tool_call_1_name = tool_call_1['name']
+
             if tool_call_1_name in self.routing_tool_names:
                 print(f"Returned first ToolName is '{tool_call_1_name}', So routing to 'Rag' Node......")
-                return "Rag"               
-
-
+                os.environ["rag_graph_next"] = tool_call_1_name
+                os.environ['web_search_query'] = tool_call_1["args"]['query']
+                return "Rag"
         else:
             print('No returned tool_calling')
             print(f'{type(result)}: {result.content}')
@@ -171,7 +173,7 @@ def run(abot):
     '合肥大蜀山',   
     '请查询明天从合肥到上海的航班',
     '请计算1到100的和',
-    "What is the weather in SF and LA? ",
+    "请使用tavily_search_tool工具搜索信息，回答问题：What is the weather in SF and LA? ",
     "Who won the super bowl in 2024? In what state is the winning team headquarters located?What is the GDP of that state? ",
     ]
     for user_question in user_questions:
