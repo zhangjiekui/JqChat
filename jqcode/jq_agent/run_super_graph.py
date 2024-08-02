@@ -22,7 +22,7 @@ question5 ="请使用python工具计算1到100的和。"
 question ="合肥八中有多少个校区？"
 qs = [question1,question2,]
 qs = [question1,question2,question3,question4,question5,question]
-qs = [question]
+qs = []
 # qs = [question5]
 
 super_graph_compiled =  super_graph.compile()

@@ -19,6 +19,7 @@ from jqcode.jq_agent.c0_init_env_models import env_models_instance
 from langchain_ollama import ChatOllama
 from langchain_experimental.llms.ollama_functions import OllamaFunctions
 from langchain_core.tools import tool
+from langchain.tools.render import render_text_description
 from langchain_core.pydantic_v1 import BaseModel, Field
 
 def create_agent(
@@ -65,12 +66,13 @@ def create_route(descprition):
     """                
         Args:
             next: (str) next tool/action should select.
-        """  
-    
+    """  
+    @tool
     def route(next:str) -> bool:
-        return True
+        """next tool/action should select"""
+        return next
 
-    route.__doc__ = descprition
+    route.__doc__ += descprition
     return route
 
 
@@ -89,9 +91,11 @@ def create_graph_supervisor(llm: ChatOpenAI, tools_name_and_discription_dict:dic
     for key, value in tools_name_and_discription_dict.items():
         tools_names.append(key)
         tools_name_and_discription_formatted_str += f"\n{key}:{value}"
-
+    
+    # rendered_tools = render_text_description(route)
     tools_discription = f"You are equipped with such tools:{tools_names}" + tools_name_and_discription_formatted_str
-    tools_selection = f"Given the user question, which tool/action should select?,You MUST select one but only one tool/action in: {tools_names}"
+    return_example = '{{"name":"route","arguments":{{"next":"Tools"}}}}'
+    tools_selection = f'Given the user question, which tool/action should select?,You MUST select one but only one tool/action in: {tools_names} and return such as ' + return_example
     tools_prompt = tools_discription + '\n' + tools_selection
     prompt = ChatPromptTemplate.from_messages(
             [
@@ -102,6 +106,8 @@ def create_graph_supervisor(llm: ChatOpenAI, tools_name_and_discription_dict:dic
     # prompt.pretty_print()
 
     route = create_route(descprition=tools_prompt)
+    print(render_text_description([route]))
+    # tools_prompt.prettyprint()
 
     llm_with_tools = llm.bind_tools(tools=[route], tool_choice="route")
     # question = "请调用工具得到the 10th fibonacci number的结果"
@@ -415,8 +421,7 @@ def get_graph_nodes(graphs:Union[StateGraph,List[StateGraph]]) -> list:
 
 llm = llm_ollama_chat = env_models_instance.get_langchain_chat_model(
         temperature=0.0,
-        max_tokens=30000,
-        streaming=True)
+        streaming=False)
 
 
 # llm = llm_ollama_chat = env_models_instance.get_ollama_chat_model()

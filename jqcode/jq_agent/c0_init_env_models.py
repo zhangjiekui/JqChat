@@ -137,7 +137,7 @@ class InitEnvModels:
         return self.openai_client
 
 
-    def get_langchain_chat_model(self, temperature=0.0, max_tokens=300000, streaming=True):
+    def get_langchain_chat_model(self, temperature=0.0, max_tokens=2000, streaming=True):
         if not self.chat_model or temperature!=self.chat_model.temperature or max_tokens!=self.chat_model.max_tokens or streaming!=self.chat_model.streaming:
             self.chat_model = ChatOpenAI(
                 model_name=self.llm_model_name,
@@ -462,7 +462,8 @@ if __name__ == '__main__':
     tools = [accept,reject]
     toos_dict = {tool.name:tool for tool in tools}
     rendered_tools = render_text_description(tools)
-    ollama_tool_model = env_models_instance.get_ollama_chat_model(tools=tools)
+    # llm = env_models_instance.get_ollama_chat_model(tools=tools)
+    llm = env_models_instance.get_langchain_chat_model().bind_tools(tools)
     print("==========="*10)
     system_prompt = f"""You are an assistant that has access to functions.
         ONLY Use them:
@@ -477,11 +478,24 @@ if __name__ == '__main__':
 
     prompt = "1+1=2"
 
-    def LLM(prompt, system_message, model=ollama_tool_model):
+    import json
+    import json_repair
+
+    def LLM(prompt, system_message, model=llm):
         try:
             messages=[{"role": "system", "content": system_message}, {"role": "user", "content": prompt}]
             response = model.invoke(messages)
             print('Success:\n', response)
+            
+            if not response.tool_calls:
+                parsed_tool_calls=[json_repair.loads(response.content)]
+                for tool in parsed_tool_calls:
+                    tool_name = tool['name']
+                    tool_args = tool['arguments']['reason']
+                    res = toos_dict[tool_name](tool_args)
+                    print(f"Result:调用了工具:{tool_name}，调用参数为:{tool_args},运行结果为:{res}")
+                    return res
+
             if response.tool_calls:
                 for tool in response.tool_calls:
                     tool_name = tool['name']
@@ -522,41 +536,41 @@ if __name__ == '__main__':
     print(res)
 
     ### Build An Index
-    index_name='test_doc_tree_reader'
-    urls = [
-        "https://www.gov.cn/zhengce/content/202406/content_6955904.htm",
-        # "https://www.gov.cn/zhengce/2023-03/23/content_5748063.htm",
-        # "https://www.gov.cn/zhengce/zhengceku/202305/content_6883704.htm",
-        # "https://new.qq.com/rain/a/20220916A0213800",
-        # "https://www.gov.cn/zhengce/content/2022-05/20/content_5691424.htm",
-        # "https://www.cn-healthcare.com/articlewm/20220211/content-1313937.html",
-        # "https://www3.weforum.org/docs/WEF_Global_Health_and_Healthcare_Strategic_Outlook_2023_CN.pdf",
-        # "https://www2.deloitte.com/content/dam/Deloitte/cn/Documents/life-sciences-health-care/deloitte-cn-lshc-2023-global-health-care-outlook-zh-230316.pdf",
-        # "https://www2.deloitte.com/content/dam/Deloitte/cn/Documents/life-sciences-health-care/cn-lshc-china-lshc-industry-survey-2024-zh-240314.pdf",
-        # "https://www.gov.cn/zhengce/2012-12/26/content_2618554.htm"
-    ]
+    # index_name='test_doc_tree_reader'
+    # urls = [
+    #     "https://www.gov.cn/zhengce/content/202406/content_6955904.htm",
+    #     # "https://www.gov.cn/zhengce/2023-03/23/content_5748063.htm",
+    #     # "https://www.gov.cn/zhengce/zhengceku/202305/content_6883704.htm",
+    #     # "https://new.qq.com/rain/a/20220916A0213800",
+    #     # "https://www.gov.cn/zhengce/content/2022-05/20/content_5691424.htm",
+    #     # "https://www.cn-healthcare.com/articlewm/20220211/content-1313937.html",
+    #     # "https://www3.weforum.org/docs/WEF_Global_Health_and_Healthcare_Strategic_Outlook_2023_CN.pdf",
+    #     # "https://www2.deloitte.com/content/dam/Deloitte/cn/Documents/life-sciences-health-care/deloitte-cn-lshc-2023-global-health-care-outlook-zh-230316.pdf",
+    #     # "https://www2.deloitte.com/content/dam/Deloitte/cn/Documents/life-sciences-health-care/cn-lshc-china-lshc-industry-survey-2024-zh-240314.pdf",
+    #     # "https://www.gov.cn/zhengce/2012-12/26/content_2618554.htm"
+    # ]
 
-    knowledge_base_list = env_models_instance.get_all_knowledge_base(es_connection) 
-    print(f"插入{index_name}前的{knowledge_base_list=}")
-    if es_connection.indices.exists(index=index_name):
-        print(f"已存在index='{index_name}'！跳过插入索引的环节。")
-    else:
-        docs = [WebBaseLoader(url).load() for url in urls]
-        docs_list = [item for sublist in docs for item in sublist]
-        docs_list_cleaned = []
-        for doc in docs_list:
-            doc.page_content = replace_multiple_newlines(doc.page_content)
-            docs_list_cleaned.append(doc)
+    # knowledge_base_list = env_models_instance.get_all_knowledge_base(es_connection) 
+    # print(f"插入{index_name}前的{knowledge_base_list=}")
+    # if es_connection.indices.exists(index=index_name):
+    #     print(f"已存在index='{index_name}'！跳过插入索引的环节。")
+    # else:
+    #     docs = [WebBaseLoader(url).load() for url in urls]
+    #     docs_list = [item for sublist in docs for item in sublist]
+    #     docs_list_cleaned = []
+    #     for doc in docs_list:
+    #         doc.page_content = replace_multiple_newlines(doc.page_content)
+    #         docs_list_cleaned.append(doc)
 
-        # Split
-        text_splitter = RecursiveCharacterTextSplitter.from_tiktoken_encoder(
-            chunk_size=512, chunk_overlap=0
-        )
-        doc_splits = text_splitter.split_documents(docs_list_cleaned)
+    #     # Split
+    #     text_splitter = RecursiveCharacterTextSplitter.from_tiktoken_encoder(
+    #         chunk_size=512, chunk_overlap=0
+    #     )
+    #     doc_splits = text_splitter.split_documents(docs_list_cleaned)
 
-        # Add to vectorstore
-        vectorstore = env_models_instance.get_es_searchstore_index_documents(documents=doc_splits, es_connection=es_connection,embedding=embed_model,index_name=index_name)
-        print(f"插入{index_name}后的{knowledge_base_list=}")
+    #     # Add to vectorstore
+    #     vectorstore = env_models_instance.get_es_searchstore_index_documents(documents=doc_splits, es_connection=es_connection,embedding=embed_model,index_name=index_name)
+    #     print(f"插入{index_name}后的{knowledge_base_list=}")
 
 
     '''

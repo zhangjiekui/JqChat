@@ -67,40 +67,40 @@ class RagSubgraphState(TypedDict):
 
 
 ### Router Data model
-class direct_response(BaseModel):
+class DIRECT_RESPONCE(BaseModel):
     """
     Direct response. Answer user directly if you do know how to response.
     """
     query: str = Field(description="The question user want you to answer.")
 
-class web_search(BaseModel):
+class WEB_SEARCH(BaseModel):
     """
     The internet. Use web_search for questions that are related to anything else than agent memory , prompt engineering, and adversarial attacks, 特别是2024年及以后相关的问题及发生的事情.
     """
     query: str = Field(description="The query to use when searching the internet.")
 
-class vectorstore(BaseModel):
+class VECTORSTORE(BaseModel):
     """
     A vectorstore containing documents related to 晶奇公司、安徽晶奇网络科技股份有限公司、医疗卫生、医疗健康、医疗服务、医疗政策、medical treatment & health. 凡是与晶奇公司、安徽晶奇网络科技股份有限公司及医疗健康相关的问题，都必须使用vectorstore工具。MUST use the vectorstore for questions on these topics.
     """
     query: str = Field(description="The query to use when searching the vectorstore.")
 
-class code_generation(BaseModel):
+class CODE_GENERATION(BaseModel):
     """
     Code Assistant/Code generation . Use programming code (preferred Python language) to slove a user question, if the question related to [code generating, file processing/analyzing, data exploring/analyzing/visualizing].
     """
     query: str = Field(description="The query to use when generating code.")
 
-class code_execution(BaseModel):
+class CODE_EXECUTION(BaseModel):
     """
     Code execution/Code intepreter. When user providing a code snippet and asking for running/executing, w or w/o returning the result.
     """
     query: str = Field(description="The query to use when asking for running/executing a code snippet.")
 
-members  = ["web_search", "vectorstore", "code_generation", "code_execution", "direct_response"]
+members  = ["WEB_SEARCH", "VECTORSTORE", "CODE_GENERATION", "CODE_EXECUTION", "DIRECT_RESPONCE"]
 excutable_tool_names = ["web_search", "vectorstore", "code_generation", "code_execution", "direct_response"]
 
-tools=[web_search, vectorstore, code_generation, code_execution, direct_response]
+tools=[WEB_SEARCH, VECTORSTORE, CODE_GENERATION, CODE_EXECUTION, DIRECT_RESPONCE]
 tools_name_and_discription_dict = {tool.__name__:tool.__doc__ for tool in tools}
 
 supervisor_agent = create_graph_supervisor(
@@ -446,7 +446,7 @@ def grade_documents(state:RagSubgraphState):
     relevance_filtered_message = ToolMessage(content=relevance_filtered_results,name='grade_documents',tool_call_id='0')
     return {"documents": filtered_docs, "question": question, "messages":relevance_filtered_message}
 
-def web_search(state:RagSubgraphState):
+def WEB_SEARCH(state:RagSubgraphState):
     """
     Web search based on the re-phrased question.
 
@@ -528,10 +528,10 @@ def web_search(state:RagSubgraphState):
     web_results_document = Document(page_content=web_results_summary)
     return {"documents": web_results_document, "question_searched":{question:True},"messages":web_search_message}
 
-def code_generation(state:RagSubgraphState):
+def CODE_GENERATION(state:RagSubgraphState):
     pass
 
-def code_execution(state:RagSubgraphState):
+def CODE_EXECUTION(state:RagSubgraphState):
     pass
 
 def route_question(state:RagSubgraphState):
@@ -566,7 +566,7 @@ def route_question(state:RagSubgraphState):
             return "llm_fallback"
 
         # Choose datasource
-        datasource = tool_calls["name"]
+        datasource = tool_calls["name"].lower()
 
     else:        
         try:
@@ -580,9 +580,9 @@ def route_question(state:RagSubgraphState):
             return "llm_fallback"
 
         # Choose datasource
-        datasource = tool_calls[0]["name"]
+        datasource = tool_calls[0]["name"].lower()
 
-
+    datasource = datasource.lower()
     if datasource == 'web_search':
         print("---ROUTE QUESTION TO WEB SEARCH---")
         try:
@@ -729,12 +729,12 @@ rag_sub_graph.set_conditional_entry_point(
 # Define the nodes
     # The first argument is the unique node name
     # The second argument is the function or object that will be called whenever the node is used.
-rag_sub_graph.add_node("web_search", web_search) # web search
+rag_sub_graph.add_node("web_search", WEB_SEARCH) # web search
 rag_sub_graph.add_node("retrieve", retrieve) # retrieve
 rag_sub_graph.add_node("grade_documents", grade_documents) # grade documents
 rag_sub_graph.add_node("generate", generate) 
-rag_sub_graph.add_node("code_generation", code_generation) 
-rag_sub_graph.add_node("code_execution", code_execution)
+rag_sub_graph.add_node("code_generation", CODE_GENERATION) 
+rag_sub_graph.add_node("code_execution", CODE_EXECUTION)
 rag_sub_graph.add_node("llm_fallback", llm_fallback) # llm
 
 # define the edges
@@ -771,7 +771,8 @@ rag_compiled = rag_sub_graph.compile()
 rag_chain = functools.partial(sub_graph_enter_chain, members=members) | rag_compiled
 
 rag_compiled.get_graph().print_ascii()  #Visualize this graph in ascii
-
+print("\n"*5)
+print("=========="*5)
 # Run With Memory
 def run_graph_workflow(question:str,config = {"recursion_limit":25,"configurable": {"thread_id": "UserName_SessionID"}}):
     memory = SqliteSaver.from_conn_string("checkpoints.sqlite")
