@@ -54,15 +54,33 @@ class CODE_EXECUTION(BaseModel):
     """
     query: str = Field(description="The query to use when asking for running/executing a code snippet.")
 
+def clean_up_list_when_encounter_null_element(messages_a: list, messages_b: list | None) -> list:
+    if messages_b:
+        if not isinstance(messages_b,list):
+            messages_b = [messages_b]
+
+        if messages_a:
+            if messages_a == messages_b:
+                return messages_b
+            else:
+                messages_b = [el for el in messages_b if el not in messages_a]
+                return messages_a + messages_b
+        else:
+            return messages_b
+    else:
+        return []
+
+
 class GraphAgentState(TypedDict):
     messages: Annotated[list[AnyMessage], add_messages]
+    question_related_messages: Annotated[list[AnyMessage], clean_up_list_when_encounter_null_element]
     question : str
-    rag_graph_next:str = Literal["WEB_SEARCH", "VECTORSTORE", "CODE_GENERATION", "CODE_EXECUTION", "DIRECT_RESPONCE"]
 
 
 class GraphAgent:
-    def __init__(self,executable_tools:list, routing_tools_wrapped_in_class:list, llm_model:ChatOpenAI=None, recursion_limit:int=25, memory_thread_id:str=shortuuid.uuid()) -> None:
+    def __init__(self,executable_tools:list, routing_tools_wrapped_in_class:list, llm_model:ChatOpenAI=None, recursion_limit:int=25, memory_thread_id:str="shortuuid.uuid()") -> None:
         
+        print(f'{memory_thread_id=}')
         _executable_tool_names = [tool.name for tool in executable_tools]
         _routing_tool_names = [tool.__name__ for tool in routing_tools_wrapped_in_class]
         _tool_names = _executable_tool_names + _routing_tool_names
@@ -116,13 +134,21 @@ class GraphAgent:
             else:
                 try:
                     result = self.executable_tool_dict[t['name']].invoke(t['args'])
-                    print(f"{t['name']}({t['args']})的执行结果为:'{result}'")
+                    if "Error" in str(result):
+                        print(f"{t['name']}({t['args']})的执行错误，结果为:'{result}'")
+                        question = state['question']
+                        message_str = question + f"返回的工具调用名称为{t['name']},工具调用参数为{t['args']},但实际运行时出现错误:{str(result)},请重新返回正确的工具调用名称和参数"
+                        human_makeup_message = HumanMessage(content=message_str)
+                        return {'messages': human_makeup_message,'question_related_messages':human_makeup_message}
+                    
+                    else:
+                        print(f"{t['name']}({t['args']})的执行正确，结果为:'{result}'")
                 except Exception as e:
                     print(e)
                 
             results.append(ToolMessage(tool_call_id=t['id'], name=t['name'], content=str(result)))
         print("Back to the model!")
-        return {'messages': results}
+        return {'messages': results,'question_related_messages':results}
     
     def exists_action(self,state:GraphAgentState):
         result = state['messages'][-1]
@@ -151,18 +177,22 @@ class GraphAgent:
         return returned_tool_calling_nums
     
     def call_llm(self,state: GraphAgentState):
-        messages = state['messages']
-        # for m in messages:
-        #     m.pretty_print()
-
-        # todo add message filter
-        # messages = [m for m in messages if isinstance(m,(HumanMessage, AIMessage))] 
+        
+        question_related_messages = state.get('question_related_messages',[])
+        if not question_related_messages:
+            # 获取历史相关message
+            question_related_messages = [HumanMessage(content="question_related_messages")]
+            # 当前message
+            input_message = state.get('messages')[-1]
+            # 历史 + 当前
+            question_related_messages.append(input_message)
 
         if self.system_message:
-            messages = self.system_message + messages
+            messages = self.system_message + question_related_messages
             print(f"{len(messages)=}")
         message = self.model.invoke(messages,config=self.config)
-        return {'messages': message}
+        question_related_messages.append(message)
+        return {'messages': message,'question_related_messages':question_related_messages}
     
 
 
@@ -178,14 +208,40 @@ def run(abot):
     '合肥大蜀山',   
     '请查询明天从合肥到上海的航班',
     '请使用python_repl_tool来计算1到100的和',
+    '请使用python_repl_tool来计算1到100的和,以及10的阶乘',
     "请使用tavily_search_tool工具搜索信息，回答问题：What is the weather in SF and LA? ",
     "Who won the super bowl in 2024? In what state is the winning team headquarters located?What is the GDP of that state? ",
     ]
     for user_question in user_questions:
-        print('================='*5) 
-        print(f"USER：{user_question}")
-        messages = [HumanMessage(content=user_question)]
-        result = abot.graph.invoke({"messages": messages,"question":user_question},config=abot.config)
+        question_id:str=shortuuid.uuid()
+        print('================='*5)
+        print(f"USER：{user_question},{question_id=}")
+        history_messages = abot.graph.get_state(config=abot.config).values['messages']
+        print(f"Before Invoke: {len(history_messages)=}")
+
+        question_related_messages = abot.graph.get_state(config=abot.config).values['question_related_messages']
+        print(f"Before Invoke: {len(question_related_messages)=}")
+
+
+        input_message = HumanMessage(content=user_question,additional_kwargs={"question_id":question_id})
+
+        print(f'{input_message.additional_kwargs["question_id"]=}') 
+
+        # abot.graph.update_state(abot.config["configurable"]["thread_id"],{"question_related_messages":[]})
+        # abot.graph.update_state(abot.config,{"question_related_messages":[]})
+        
+        result = abot.graph.invoke({"messages": [input_message],"question":user_question,"question_related_messages":[]},config=abot.config)
+        history_messages = abot.graph.get_state(config=abot.config).values['messages']
+        print(f"After Invoke: {len(history_messages)=}")
+
+        print(f"After Invoke: {history_messages[0]=}")
+        try:
+            print(f'After Invoke: {history_messages[-2].additional_kwargs["question_id"]=}')
+        except:
+            print(f'After Invoke: history_messages[0].additional_kwargs["question_id"]=不存在！')
+
+
+        
         print('====问题和答案====') 
         print(f"USER：{user_question}")
         print(f"AI：{result['messages'][-1].content}")

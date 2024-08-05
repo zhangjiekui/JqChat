@@ -62,6 +62,7 @@ class RagSubgraphState(TypedDict):
     documents : List[str]
     question_searched : dict
     messages: Annotated[list, add_messages]
+    question_related_messages:dict
         # Messages have the type "list". 
         # The `add_messages` function in the annotation defines how this state key should be updated
         # (in this case, it appends messages to the list, rather than overwriting them)
