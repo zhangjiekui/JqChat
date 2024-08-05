@@ -333,9 +333,23 @@ async def start_main_server():
 
     def process_count():
         return len(processes)
-
+    
+    kernel_started = manager.Event()
+    
+    processes["kernel"] = process
+    process = Process(
+        target=run_kernel_program,
+        name=f"Kernel Server",
+        kwargs=dict(
+            started_event=kernel_started,
+            run_mode=run_mode,
+        ),
+        daemon=False,
+    )
+    processes["kernel"] = process
+    
     api_started = manager.Event()
-    kernel_started=manager.Event()
+   
     if args.api:
         process = Process(
             target=run_api_server,
@@ -345,20 +359,9 @@ async def start_main_server():
                 run_mode=run_mode,
             ),
             daemon=False,
-        )
-        # 和API一起启动
-        processes["kernel"] = process
-        process = Process(
-            target=run_kernel_program,
-            name=f"Kernel Server",
-            kwargs=dict(
-                started_event=kernel_started,
-                run_mode=run_mode,
-            ),
-            daemon=False,
-        )
-        processes["kernel"] = process
-        
+        )    
+    
+    
 
     webui_started = manager.Event()
     if args.webui:
