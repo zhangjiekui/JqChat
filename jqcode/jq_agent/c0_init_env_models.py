@@ -49,6 +49,22 @@ os.environ['TAVILY_API_KEY'] = "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"
 def replace_multiple_newlines(text):
     return re.sub(r'\n+', '\n', text)
 
+def clean_up_list_when_encounter_null_element(messages_a: list, messages_b: list | None) -> list:
+    if messages_b:
+        if not isinstance(messages_b,list):
+            messages_b = [messages_b]
+
+        if messages_a:
+            if messages_a == messages_b:
+                return messages_b
+            else:
+                messages_b = [el for el in messages_b if el not in messages_a]
+                return messages_a + messages_b
+        else:
+            return messages_b
+    else:
+        return []
+    
 class SingletonDecorator:
     def __init__(self, cls):
         self._cls = cls
@@ -295,12 +311,12 @@ class InitEnvModels:
         text_chunks = text_splitter.split_documents(docs_list_cleaned)
         
         if if_reranking:
-            retriever = FAISS.from_documents(text_chunks, embed_model, distance_strategy=DistanceStrategy.MAX_INNER_PRODUCT).as_retriever(search_type="similarity", search_kwargs={"score_threshold": score_threshold, "k": retriever_docs_num})
+            retriever = FAISS.from_documents(text_chunks, embed_model, distance_strategy=DistanceStrategy.MAX_INNER_PRODUCT).as_retriever(search_type="mmr", search_kwargs={"score_threshold": score_threshold, "k": retriever_docs_num})
             compression_retriever = ContextualCompressionRetriever(base_compressor=reranker, base_retriever=retriever)
             chunks_relevant = compression_retriever.invoke(query)
         else:
             retriever_docs_num = final_docs_num
-            retriever = FAISS.from_documents(text_chunks, embed_model, distance_strategy=DistanceStrategy.MAX_INNER_PRODUCT).as_retriever(search_type="similarity", search_kwargs={"score_threshold": score_threshold, "k": retriever_docs_num})
+            retriever = FAISS.from_documents(text_chunks, embed_model, distance_strategy=DistanceStrategy.MAX_INNER_PRODUCT).as_retriever(search_type="mmr", search_kwargs={"score_threshold": score_threshold, "k": retriever_docs_num})
             chunks_relevant = retriever.invoke(query)
         return chunks_relevant
 
@@ -329,7 +345,7 @@ class InitEnvModels:
             sorted_chunks_relevant = sorted(chunks_relevant, key=lambda x: (x.metadata['message_index'], x.metadata['start_index']))
             messages_relevant = []
 
-            print(f"++++++++++++++++++++++++++++++++++++++++++++【过滤后保留的+最近的条{reserve_last_n_messages}】消息++++++++++++++++++++++++++++++++++++++++++++")   
+            
             for chunk_relevant in sorted_chunks_relevant:
                 index = chunk_relevant.metadata['message_index']
                 # unique_messages_list[index].content = chunk_relevant.page_content #不能改变内容（即不能使用分块后的内容，否则可能无法获取完整的答案）
@@ -340,12 +356,19 @@ class InitEnvModels:
                     messages_relevant.append(message_relevant)
                     # message_relevant.pretty_print()
                     # print(f"^^^^^^^^^上条Message的{relevance_score=}^^^^^^^^^")
-            print(f"++++++++++++++++++++++++++++++++++++++++++++【过滤后保留的+最近的条{reserve_last_n_messages}】消息++++++++++++++++++++++++++++++++++++++++++++")   
+            print(f"++++++++++++++++++++++++++++++++++++++++++++【合并过滤后保留的{len(messages_relevant)}+最近的{reserve_last_n_messages}条】消息++++++++++++++++++++++++++++++++++++++++++++")   
             messages_list.reverse() # 前面messages_list顺序翻转了，所以这里还要翻转回来
-            last_n_messages = messages_list[-reserve_last_n_messages:]
-            for last_message in last_n_messages:
-                if  last_message not in messages_relevant:
-                    messages_relevant.append(last_message)
+            if reserve_last_n_messages>0:
+                last_n_messages = messages_list[-reserve_last_n_messages:]
+                for last_message in last_n_messages:
+                    last_message_content = last_message.content
+                    # 防止之前的消息内容与当前消息内容一致
+                    messages_relevant = [m for m in messages_relevant if m.content!=last_message_content]
+
+
+                    if  last_message not in messages_relevant:
+                        messages_relevant.append(last_message)
+            print(f"++++++++++++++++++++++++++++++++++++++++++++【合并后保留了{len(messages_relevant)}条】消息++++++++++++++++++++++++++++++++++++++++++++")
             return messages_relevant
         else:
             return messages_list

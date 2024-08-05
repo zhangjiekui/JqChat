@@ -14,7 +14,7 @@ from langchain_core.tools import tool
 from langgraph.checkpoint.sqlite import SqliteSaver
 from langgraph.checkpoint.aiosqlite import AsyncSqliteSaver
 
-from jqcode.jq_agent.c0_init_env_models import env_models_instance
+from jqcode.jq_agent.c0_init_env_models import env_models_instance,clean_up_list_when_encounter_null_element
 from jqcode.jq_agent.tools.jq_functions_and_tools import get_flight_number,python_repl_tool
 from jqcode.jq_agent.jq_rag_agent_sub_graph import rag_sub_graph
 # from jqcode.jq_agent.jq_rag_agent_sub_graph import WEB_SEARCH,VECTORSTORE,CODE_GENERATION,CODE_EXECUTION
@@ -54,21 +54,7 @@ class CODE_EXECUTION(BaseModel):
     """
     query: str = Field(description="The query to use when asking for running/executing a code snippet.")
 
-def clean_up_list_when_encounter_null_element(messages_a: list, messages_b: list | None) -> list:
-    if messages_b:
-        if not isinstance(messages_b,list):
-            messages_b = [messages_b]
 
-        if messages_a:
-            if messages_a == messages_b:
-                return messages_b
-            else:
-                messages_b = [el for el in messages_b if el not in messages_a]
-                return messages_a + messages_b
-        else:
-            return messages_b
-    else:
-        return []
 
 
 class GraphAgentState(TypedDict):
@@ -137,8 +123,10 @@ class GraphAgent:
                     if "Error" in str(result):
                         print(f"{t['name']}({t['args']})的执行错误，结果为:'{result}'")
                         question = state['question']
-                        message_str = question + f"返回的工具调用名称为{t['name']},工具调用参数为{t['args']},但实际运行时出现错误:{str(result)},请重新返回正确的工具调用名称和参数"
+                        # message_str = question + f"返回的工具调用名称为{t['name']},工具调用参数为{t['args']},但实际运行时出现错误:{str(result)},请重新返回正确的工具调用名称和参数"
+                        message_str = f"请重新回答用户问题:{question}，并避免再出现以下错误:{str(result)}"
                         human_makeup_message = HumanMessage(content=message_str)
+
                         return {'messages': human_makeup_message,'question_related_messages':human_makeup_message}
                     
                     else:
@@ -181,11 +169,18 @@ class GraphAgent:
         question_related_messages = state.get('question_related_messages',[])
         if not question_related_messages:
             # 获取历史相关message
-            question_related_messages = [HumanMessage(content="question_related_messages")]
+            # question_related_messages = [HumanMessage(content="makeup a question_related_messages")]
+            question = state['question']
+            messages = state['messages']
+            # 注意设置reserve_last_n_messages = 1，也就是除最后1条消息外，全部的messages均视为历史messages
+            question_related_messages = env_models_instance.filter_and_get_messages_relevant_to_query(query=question,messages_list=messages,reserve_last_n_messages = 1)
+
             # 当前message
             input_message = state.get('messages')[-1]
+            assert isinstance(input_message,HumanMessage),f"必须保证input_message:{input_message}为HumanMessage"
             # 历史 + 当前
-            question_related_messages.append(input_message)
+            if input_message not in question_related_messages:
+                question_related_messages.append(input_message)
 
         if self.system_message:
             messages = self.system_message + question_related_messages

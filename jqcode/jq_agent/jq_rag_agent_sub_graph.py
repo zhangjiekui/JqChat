@@ -14,13 +14,13 @@ from langgraph.graph.message import add_messages
 from langchain_core.runnables import Runnable, RunnableConfig, RunnableLambda
 from langgraph.pregel import GraphRecursionError
 from langchain_core.output_parsers import StrOutputParser
-from langchain_core.messages import HumanMessage,SystemMessage,ToolMessage,AIMessage
+from langchain_core.messages import HumanMessage,SystemMessage,ToolMessage,AnyMessage 
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_core.pydantic_v1 import BaseModel, Field
 from langchain.text_splitter import RecursiveCharacterTextSplitter
 from langchain_community.document_loaders import WebBaseLoader
 from langchain_community.tools.tavily_search import TavilySearchResults ### Search
-from jqcode.jq_agent.c0_init_env_models import env_models_instance
+from jqcode.jq_agent.c0_init_env_models import env_models_instance,clean_up_list_when_encounter_null_element
 from jqcode.jq_agent.c0_init_env_models import get_custom_handler
 from jqcode.jq_agent.tools.jq_web_search_engine import get_web_search_documents,is_query_chinese,get_tavily_search_result_documents
 from copy import deepcopy
@@ -61,12 +61,12 @@ class RagSubgraphState(TypedDict):
     generation : str
     documents : List[str]
     question_searched : dict
-    messages: Annotated[list, add_messages]
-    question_related_messages:dict
+    messages: Annotated[list[AnyMessage], add_messages]
+    
         # Messages have the type "list". 
         # The `add_messages` function in the annotation defines how this state key should be updated
         # (in this case, it appends messages to the list, rather than overwriting them)
-
+    question_related_messages: Annotated[list[AnyMessage], clean_up_list_when_encounter_null_element]
 
 ### Router Data model
 class DIRECT_RESPONCE(BaseModel):

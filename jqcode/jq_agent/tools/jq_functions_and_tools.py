@@ -69,6 +69,7 @@ def python_repl_tool(query:str) -> str:
     
     def _revise_query(query:str) -> str:
         print('......检查是否有print......：')
+        query.replace('\\n',"\n")
         lines = query.split("\n")
         for line in lines[::-1]:
             if len(line.strip())>0:
