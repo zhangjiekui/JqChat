@@ -742,8 +742,8 @@ def get_img_base64(file_name: str) -> str:
     
     d = os.path.dirname(__file__)
     parent_path = os.path.dirname(d)
-    f_path=parent_path+"\\img\\"
-    image = f"{f_path+file_name}"
+    f_path=os.path.join(parent_path,"img")
+    image = f"{f_path+ os.sep +file_name}"
     # 读取图片
     with open(image, "rb") as f:
         buffer = BytesIO(f.read())
