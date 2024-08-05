@@ -459,7 +459,7 @@ def generate_chat(model:str,request:Request):
     return ({'text': text}), status
     # return jsonify({'text': user_prompt + text}), status
 
-@app.route('/upload', methods=['POST'])
+@chat_router.route('/upload', methods=['POST'])
 def upload_file(request:Request):
     # check if the post request has the file part
     if 'file' not in request.files:
