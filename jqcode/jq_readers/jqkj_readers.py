@@ -40,7 +40,7 @@ from llama_index.legacy.readers.file.base import SimpleDirectoryReader
 from llama_index.legacy.readers.file.base import DEFAULT_FILE_READER_CLS
 from llama_index.core.readers.file.base import default_file_metadata_func
 
-from jqcode.jq_readers.backend_reader_utils.jqkj_doc_pdf2docx_converter import convert_doc_pdf2docx_using_WinWord
+from jqcode.jq_readers.backend_reader_utils.jqkj_doc_pdf2docx_converter import convert_doc_pdf2docx_on_win_and_linux
 from jqcode.jq_readers.backend_reader_utils.jqkj_doc_tree_utils import find_nearest_parent_but_not_TableOrImageNode,TreeNodeType
 from jqcode.jq_readers.backend_reader_utils.jqkj_doc_tree_utils import compare_with_zip_docx2img,get_paras_in_table
 
@@ -73,7 +73,7 @@ class JqkjDocxReader(BaseReader):
         if file_path:
             file_path = Path(file_path)
             if file_path.suffix in ['.pdf','.doc']:
-                input_filepaths,original_valid_input_filepaths = convert_doc_pdf2docx_using_WinWord(file_path)
+                input_filepaths,original_valid_input_filepaths = convert_doc_pdf2docx_on_win_and_linux(file_path)
                 self.file_path =  input_filepaths[0]
             else:
                 self.file_path =  file_path
@@ -447,7 +447,7 @@ class JqkjSimpleDirectoryReader(SimpleDirectoryReader):
             )
             self.DEFAULT_FILE_READER_CLS = self.JQKJ_DEFAULT_FILE_READER_CLS()
             self.supported_suffix = list(self.DEFAULT_FILE_READER_CLS.keys())
-            converted_input_filepaths,original_valid_input_filepaths = convert_doc_pdf2docx_using_WinWord(self.input_files,overwrite=overwrite_existing_converted_files,destination_dir=output_dir_for_converted_files)
+            converted_input_filepaths,original_valid_input_filepaths = convert_doc_pdf2docx_on_win_and_linux(self.input_files,overwrite=overwrite_existing_converted_files,destination_dir=output_dir_for_converted_files)
             
             converted_files_metadata = {}
             for i,file in enumerate(converted_input_filepaths):                     

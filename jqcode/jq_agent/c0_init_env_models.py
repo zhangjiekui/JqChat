@@ -337,7 +337,7 @@ class InitEnvModels:
             docs_from_messages = [Document(page_content=message.content,metadata={"message_index":message_index}) for message_index, message in enumerate(unique_messages_list)]
             if not text_splitter:
                 from jqcode.jq_splitters.backend_splitter_utils.jq_chinese_recursive_text_splitter import JqChineseRecursiveTextSplitter
-                text_splitter = JqChineseRecursiveTextSplitter(chunk_size=500,chunk_overlap=0.2,model_name=embed_model)
+                text_splitter = JqChineseRecursiveTextSplitter(model_name=embed_model)
 
             chunks_relevant = self.split_and_get_chunks_relevant_from_documents(query, docs_from_messages,text_splitter=text_splitter,reranker=reranker,
                                                                         if_reranking=if_reranking,retriever_docs_num=retriever_docs_num, final_docs_num=final_docs_num,score_threshold=score_threshold)
@@ -357,19 +357,45 @@ class InitEnvModels:
                     # message_relevant.pretty_print()
                     # print(f"^^^^^^^^^上条Message的{relevance_score=}^^^^^^^^^")
             print(f"++++++++++++++++++++++++++++++++++++++++++++【合并过滤后保留的{len(messages_relevant)}+最近的{reserve_last_n_messages}条】消息++++++++++++++++++++++++++++++++++++++++++++")   
+            
             messages_list.reverse() # 前面messages_list顺序翻转了，所以这里还要翻转回来
+            
             if reserve_last_n_messages>0:
                 last_n_messages = messages_list[-reserve_last_n_messages:]
                 for last_message in last_n_messages:
                     last_message_content = last_message.content
                     # 防止之前的消息内容与当前消息内容一致
                     messages_relevant = [m for m in messages_relevant if m.content!=last_message_content]
+                    
 
-
-                    if  last_message not in messages_relevant:
-                        messages_relevant.append(last_message)
-            print(f"++++++++++++++++++++++++++++++++++++++++++++【合并后保留了{len(messages_relevant)}条】消息++++++++++++++++++++++++++++++++++++++++++++")
-            return messages_relevant
+            print(f"++++++++++++++++++++++++++++++++++++++++++++【过滤后保留的、最近的messages合并后，保留了{len(messages_relevant)}条】消息++++++++++++++++++++++++++++++++++++++++++++")
+            print(f"============================================【为保留后的HumanMassage查询增加对应的AIMessage】消息===========================")
+            
+            final_messages_relevant = []
+            
+            for message in messages_relevant:
+                final_messages_relevant.append(message)
+                if isinstance(message,HumanMessage):
+                    try:
+                        question_id = message.additional_kwargs.get("question_id","")
+                    except:            
+                        question_id = ""
+                    
+                    if question_id:
+                        m0_index = messages_list.index(message)
+                        _messages_list  = messages_list[m0_index:]
+                        for m in _messages_list:
+                            if isinstance(m,AIMessage):
+                                try:
+                                    ai_message_id = m.additional_kwargs.get("question_id","")
+                                    if ai_message_id == question_id:
+                                        final_messages_relevant.append(m)
+                                        break
+                                except:
+                                    continue
+            if  last_message not in final_messages_relevant:
+                final_messages_relevant.append(last_message)
+            return final_messages_relevant
         else:
             return messages_list
         

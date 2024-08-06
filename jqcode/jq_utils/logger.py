@@ -9,13 +9,14 @@ from pathlib import Path
 from jqcode.jq_config.general_config import logfile_path,VERBOSE
 
 logfile_path = logfile_path
+stem = logfile_path.stem
 
 class jqkj_logger(object):
     def __init__(self,current_file_path=None,logfile_path = logfile_path,verbose=VERBOSE,propagate = False):
         if current_file_path is None:
-            current_file_path = __file__
-        index=current_file_path.index('jqcode')
+            current_file_path = __file__        
         try:
+            index=current_file_path.index(stem)
             current_file_path = current_file_path[index:]
         except: 
             current_file_path = os.path.basename(current_file_path) 

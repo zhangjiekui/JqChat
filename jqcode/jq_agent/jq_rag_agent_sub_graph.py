@@ -462,10 +462,10 @@ def web_search(state:RagSubgraphState):
     print("---WEB SEARCH---")
     question = state["question"]
     try:
-        query_generated = os.environ['web_search_query']
-        os.environ['web_search_query'] = ''
-        if os.environ['web_search_query']:
-            print(f"os.environ['web_search_query']必须置为'',但现在的值为{os.environ['web_search_query']} ")
+        query_generated = os.environ['rag_args']
+        os.environ['rag_args'] = ''
+        if os.environ['rag_args']:
+            print(f"os.environ['rag_args']必须置为'',但现在的值为{os.environ['rag_args']} ")
             raise Exception
         if not query_generated:
             query_generated = llm_chain.invoke({"question": question,"context":'请生成合适并且简洁的搜索引擎查询关键词,不需要任何额外的解释或内容'},config=invoke_llm_config)
@@ -591,7 +591,7 @@ def route_question(state:RagSubgraphState):
     if datasource == 'web_search':
         print("---ROUTE QUESTION TO WEB SEARCH---")
         try:
-            os.environ['web_search_query'] = tool_calls[0]["args"]['query']
+            os.environ['rag_args'] = tool_calls[0]["args"]['query']
         except:
             pass       
         return "web_search" 

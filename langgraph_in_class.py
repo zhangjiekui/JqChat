@@ -1,7 +1,7 @@
 # source: https://learn.deeplearning.ai/courses/ai-agents-in-langgraph/lesson/3/langgraph-components
 print('参考：https://learn.deeplearning.ai/courses/ai-agents-in-langgraph/lesson/3/langgraph-components')
 from langgraph.graph import StateGraph, END
-from typing import TypedDict, Annotated, Literal
+from typing import TypedDict, Annotated, Literal, Optional, Union
 from langchain_core.pydantic_v1 import BaseModel, Field
 
 from langgraph.graph.message import add_messages
@@ -20,10 +20,14 @@ from jqcode.jq_agent.jq_rag_agent_sub_graph import rag_sub_graph
 # from jqcode.jq_agent.jq_rag_agent_sub_graph import WEB_SEARCH,VECTORSTORE,CODE_GENERATION,CODE_EXECUTION
 import os
 import shortuuid
+
+from jqcode.jq_utils.logger import jqkj_logger
+logger = jqkj_logger(__file__).get_logger()
 from dotenv import load_dotenv
 _ = load_dotenv()
 
-### Router Data model
+# region
+### Begin: Router Data model Class Definitions
 class DIRECT_RESPONCE(BaseModel):
     """
     Direct response. Answer user directly if you do know how to response.
@@ -54,8 +58,8 @@ class CODE_EXECUTION(BaseModel):
     """
     query: str = Field(description="The query to use when asking for running/executing a code snippet.")
 
-
-
+### End: Router Data model Class Definitions
+# endregion
 
 class GraphAgentState(TypedDict):
     messages: Annotated[list[AnyMessage], add_messages]
@@ -64,9 +68,9 @@ class GraphAgentState(TypedDict):
 
 
 class GraphAgent:
-    def __init__(self,executable_tools:list, routing_tools_wrapped_in_class:list, llm_model:ChatOpenAI=None, recursion_limit:int=25, memory_thread_id:str="shortuuid.uuid()") -> None:
+    def __init__(self,executable_tools:list, routing_tools_wrapped_in_class:list, llm_model:ChatOpenAI=None, recursion_limit:int=25, memory_thread_id:str=shortuuid.uuid()) -> None:
         
-        print(f'{memory_thread_id=}')
+        # print(f'{memory_thread_id=}')
         _executable_tool_names = [tool.name for tool in executable_tools]
         _routing_tool_names = [tool.__name__ for tool in routing_tools_wrapped_in_class]
         _tool_names = _executable_tool_names + _routing_tool_names
@@ -87,10 +91,79 @@ class GraphAgent:
                
         self.system_message = [SystemMessage(content=_system_message_content)]
         self.config =  {"recursion_limit":recursion_limit,"configurable": {"thread_id":memory_thread_id }}
-        self.memory = SqliteSaver.from_conn_string("checkpoints.sqlite")
+        self.memory = SqliteSaver.from_conn_string("memory_checkpoints.sqlite")
+        # self.memory = AsyncSqliteSaver.from_conn_string("memory_checkpoints.async_sqlite")
+        self.question_id:str= self.get_random_id()
+        self.message_idx_in_a_question_epoch = self.set_message_idx_in_a_question_epoch()
+
         self.graph = self.graph_definition()
-        self.state = self.graph.get_state(config=self.config).values
+        self.all_history_messages = self.get_all_history_messages()
+        self.question_related_messages = self.get_question_related_messages()
+    
+    def makeup_message_with_question_id_idx(self,Message_ClassOrInstance:AnyMessage,content:Union[str,None]=None,question_id:Union[str,None]=None,idx_in_a_question_epoch:Union[int,None]=None):
+        if not question_id:
+            question_id = self.question_id
+        if not idx_in_a_question_epoch:
+            idx_in_a_question_epoch = self.set_message_idx_in_a_question_epoch()
+        _dict = {"question_id":question_id,"idx_in_a_question_epoch":idx_in_a_question_epoch}
+        if isinstance(Message_ClassOrInstance,AnyMessage):
+            Message_ClassOrInstance.additional_kwargs = _dict
+            message = Message_ClassOrInstance
+        else: 
+            message = Message_ClassOrInstance(content=content,additional_kwargs=_dict)
+        return message
+    
+    def get_question_id_idx_from_message(self,message:AnyMessage):
+        try:
+            question_id = message.additional_kwargs.get("question_id","")
+        except:            
+            question_id = ""
         
+        try:
+            idx_in_a_question_epoch = message.additional_kwargs.get("idx_in_a_question_epoch","")
+        except:            
+            idx_in_a_question_epoch = ""
+        
+        if not question_id:
+            logger.warning(f'无法从message:{message}获取到question_id')
+        if not idx_in_a_question_epoch:
+            logger.warning(f'无法从message:{message}获取到idx_in_a_question_epoch')
+        
+        return question_id,idx_in_a_question_epoch
+
+    def get_random_id(self):
+        self.question_id = shortuuid.uuid() 
+        return self.question_id
+    
+    def set_message_idx_in_a_question_epoch(self,start_idx:Union[int,None]=None):
+        try:
+            logger.info(f"{self.message_idx_in_a_question_epoch=}")
+        except:
+            self.message_idx_in_a_question_epoch = -1
+            logger.info(f"{self.message_idx_in_a_question_epoch=}")        
+
+        if start_idx is None:
+            self.message_idx_in_a_question_epoch = self.message_idx_in_a_question_epoch + 1
+        elif isinstance(start_idx,int):
+            self.message_idx_in_a_question_epoch = start_idx + 1
+        else:
+            logger.warning(f'start_idx:{start_idx}必须是Union[int,None]')
+        return self.message_idx_in_a_question_epoch
+    
+
+    
+    def get_all_history_messages(self):
+        self.all_history_messages = self._get_messages_from_state_by_key("messages") 
+        return self.all_history_messages
+    
+    def get_question_related_messages(self):
+        self.question_related_messages = self._get_messages_from_state_by_key("question_related_messages") 
+        return self.question_related_messages
+
+    def _get_messages_from_state_by_key(self,key:str):
+        messages = self.graph.get_state(config=self.config).values[key] 
+        return messages
+       
     
     def graph_definition(self,):
         graph = StateGraph(GraphAgentState)
@@ -124,17 +197,16 @@ class GraphAgent:
                         print(f"{t['name']}({t['args']})的执行错误，结果为:'{result}'")
                         question = state['question']
                         # message_str = question + f"返回的工具调用名称为{t['name']},工具调用参数为{t['args']},但实际运行时出现错误:{str(result)},请重新返回正确的工具调用名称和参数"
-                        message_str = f"请重新回答用户问题:{question}，并避免再出现以下错误:{str(result)}"
-                        human_makeup_message = HumanMessage(content=message_str)
-
-                        return {'messages': human_makeup_message,'question_related_messages':human_makeup_message}
-                    
+                        result = f"请重新回答用户问题:{question}，并避免再出现以下错误:{str(result)}"
+                        # human_makeup_message = HumanMessage(content=message_str)
+                        # return {'messages': human_makeup_message,'question_related_messages':human_makeup_message}                    
                     else:
                         print(f"{t['name']}({t['args']})的执行正确，结果为:'{result}'")
                 except Exception as e:
                     print(e)
-                
-            results.append(ToolMessage(tool_call_id=t['id'], name=t['name'], content=str(result)))
+            tool_message = ToolMessage(tool_call_id=t['id'], name=t['name'], content=str(result)) 
+            tool_message = self.makeup_message_with_question_id_idx(tool_message)     
+            results.append(tool_message)
         print("Back to the model!")
         return {'messages': results,'question_related_messages':results}
     
@@ -156,7 +228,7 @@ class GraphAgent:
             if tool_call_1_name in self.routing_tool_names:
                 print(f"Returned first ToolName is '{tool_call_1_name}', So routing to sub_graph 'Rag:{tool_call_1_name}' Node......")
                 os.environ["rag_graph_next"] = tool_call_1_name
-                os.environ['web_search_query'] = tool_call_1["args"]['query']
+                os.environ['rag_args'] = tool_call_1["args"]['query']
                 return "Rag"
         else:
             print('No returned tool_calling')
@@ -165,13 +237,15 @@ class GraphAgent:
         return returned_tool_calling_nums
     
     def call_llm(self,state: GraphAgentState):
+
+        question_related_messages = self.get_question_related_messages()
         
-        question_related_messages = state.get('question_related_messages',[])
         if not question_related_messages:
             # 获取历史相关message
-            # question_related_messages = [HumanMessage(content="makeup a question_related_messages")]
+            # question_related_messages = self.makeup_message_with_question_id_idx(HumanMessage,content="makeup a question_related_messages")
+            
             question = state['question']
-            messages = state['messages']
+            messages = self.get_all_history_messages() ## 或者  messages = state['messages']    
             # 注意设置reserve_last_n_messages = 1，也就是除最后1条消息外，全部的messages均视为历史messages
             question_related_messages = env_models_instance.filter_and_get_messages_relevant_to_query(query=question,messages_list=messages,reserve_last_n_messages = 1)
 
@@ -186,6 +260,9 @@ class GraphAgent:
             messages = self.system_message + question_related_messages
             print(f"{len(messages)=}")
         message = self.model.invoke(messages,config=self.config)
+        
+        message = self.makeup_message_with_question_id_idx(message)
+
         question_related_messages.append(message)
         return {'messages': message,'question_related_messages':question_related_messages}
     
@@ -197,7 +274,7 @@ executable_tools = [get_flight_number,python_repl_tool]
 route_tools = [WEB_SEARCH,VECTORSTORE,CODE_GENERATION,CODE_EXECUTION]
 abot = GraphAgent(executable_tools=executable_tools,routing_tools_wrapped_in_class=route_tools)
 
-def run(abot):
+def run(abot:GraphAgent):
     user_questions = [
     '你好',
     '合肥大蜀山',   
@@ -208,30 +285,35 @@ def run(abot):
     "Who won the super bowl in 2024? In what state is the winning team headquarters located?What is the GDP of that state? ",
     ]
     for user_question in user_questions:
-        question_id:str=shortuuid.uuid()
+        abot.question_id = abot.get_random_id()
         print('================='*5)
-        print(f"USER：{user_question},{question_id=}")
-        history_messages = abot.graph.get_state(config=abot.config).values['messages']
-        print(f"Before Invoke: {len(history_messages)=}")
+        print(f"USER：{user_question} (With question_id: {abot.question_id})")
+
+        _all_history_messages = abot.graph.get_state(config=abot.config).values['messages']
+        all_history_messages = abot.get_all_history_messages()
+        assert _all_history_messages==all_history_messages
+
+        print(f"Before Invoke: {len(all_history_messages)=}")
 
         question_related_messages = abot.graph.get_state(config=abot.config).values['question_related_messages']
         print(f"Before Invoke: {len(question_related_messages)=}")
 
+        input_message = abot.makeup_message_with_question_id_idx(HumanMessage,content=user_question)
 
-        input_message = HumanMessage(content=user_question,additional_kwargs={"question_id":question_id})
+        question_id,idx_in_a_question_epoch = abot.get_question_id_idx_from_message(input_message)
 
-        print(f'{input_message.additional_kwargs["question_id"]=}') 
+        print(f'get对照：{question_id=},{idx_in_a_question_epoch=}') 
 
-        # abot.graph.update_state(abot.config["configurable"]["thread_id"],{"question_related_messages":[]})
-        # abot.graph.update_state(abot.config,{"question_related_messages":[]})
-        
+       
         result = abot.graph.invoke({"messages": [input_message],"question":user_question,"question_related_messages":[]},config=abot.config)
-        history_messages = abot.graph.get_state(config=abot.config).values['messages']
-        print(f"After Invoke: {len(history_messages)=}")
+        _all_history_messages = abot.graph.get_state(config=abot.config).values['messages']
+        all_history_messages = abot.get_all_history_messages()
+        assert _all_history_messages==all_history_messages
+        print(f"After Invoke: {len(all_history_messages)=}")
 
-        print(f"After Invoke: {history_messages[0]=}")
+        print(f"After Invoke: {all_history_messages[0]=}")
         try:
-            print(f'After Invoke: {history_messages[-2].additional_kwargs["question_id"]=}')
+            print(f'After Invoke: {all_history_messages[-2].additional_kwargs["question_id"]=}')
         except:
             print(f'After Invoke: history_messages[0].additional_kwargs["question_id"]=不存在！')
 

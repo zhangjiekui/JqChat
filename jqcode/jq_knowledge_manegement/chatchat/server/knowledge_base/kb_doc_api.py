@@ -7,7 +7,7 @@ from fastapi import Body, File, Form, Query, UploadFile
 from fastapi.responses import FileResponse
 from langchain.docstore.document import Document
 from sse_starlette import EventSourceResponse
-from jqcode.jq_readers.backend_reader_utils.jqkj_doc_pdf2docx_converter import convert_doc_pdf2docx_using_WinWord
+from jqcode.jq_readers.backend_reader_utils.jqkj_doc_pdf2docx_converter import convert_doc_pdf2docx_on_win_and_linux
 from jqcode.jq_knowledge_manegement.chatchat.configs import (
     CHUNK_SIZE,
     DEFAULT_EMBEDDING_MODEL,
@@ -129,7 +129,7 @@ def _save_files_in_thread(
             if filename.endswith(('.doc','pdf')):
                 docx_filename = Path(file_path).with_suffix(".docx")
                 docx_file_path = get_file_path(knowledge_base_name=knowledge_base_name, doc_name=docx_filename)
-                input_filepaths,original_valid_input_filepaths = convert_doc_pdf2docx_using_WinWord(file_path,overwrite=override)
+                input_filepaths,original_valid_input_filepaths = convert_doc_pdf2docx_on_win_and_linux(file_path,overwrite=override)
                 if os.path.isfile(docx_file_path):
                     if os.path.isfile(file_path):
                         os.remove(file_path)

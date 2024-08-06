@@ -20,7 +20,7 @@ def get_os():
  
 os_name = get_os()
 
-def convert_doc_pdf2docx_using_WinWord(input_filepaths:Union[str,list],overwrite=True,destination_dir=None):
+def convert_doc_pdf2docx_on_win_and_linux(input_filepaths:Union[str,list],overwrite=True,destination_dir=None):
     """
     Convert pdf or doc file(s) to docx file(s) using windows word application through pywin32.win32com
     在windows下运行，利用word程序将:
@@ -127,10 +127,12 @@ def convert_doc_pdf2docx_using_WinWord(input_filepaths:Union[str,list],overwrite
 
     return input_filepaths,original_valid_input_filepaths
 
+def convert_md_to_docx(input_filepaths:Union[str,list],overwrite=True,destination_dir=None):
+    pass
 
 if __name__ == "__main__":
     pdf_filepaths = [fr'D:\biaoshu\pdf_docx_convert\UserGuide.docx',fr'C:\Users\zjk\Desktop\桌面临时文档\temp文件\厦门市集美区\厦门市智慧民政一体化平台项目建设方案 V3.6.doc',fr'D:\biaoshu\pdf_docx_convert\UserGuide.pdf',fr'D:\biaoshu\pdf_docx_convert\InstallationGuide.pdf',fr'D:\biaoshu\pdf_docx_convert\baichuan.pdf']
     # doc_filepaths = convert_pdf2docx_using_Win32WordApp(pdf_filepaths)
     pdf_filepaths = [fr"/data/projects/JqChat/test_en.pdf",fr"/data/projects/JqChat/test_zh.doc"]
-    doc_filepaths = convert_doc_pdf2docx_using_WinWord(pdf_filepaths,overwrite=True)
+    doc_filepaths = convert_doc_pdf2docx_on_win_and_linux(pdf_filepaths,overwrite=True)
 
