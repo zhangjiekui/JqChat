@@ -30,5 +30,6 @@ jqcode/jq_readers/.outputdocs/
 __pycache__/
 
 checkpoints.*
+.NLTK_DATA/
 
 

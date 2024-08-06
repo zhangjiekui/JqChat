@@ -98,7 +98,7 @@ class GraphAgent:
 
         self.graph = self.graph_definition()
         self.all_history_messages = self.get_all_history_messages()
-        self.question_related_messages = self.get_question_related_messages()
+        self.question_related_messages = self.get_question_related_messages_from_state()
     
     def makeup_message_with_question_id_idx(self,Message_ClassOrInstance:AnyMessage,content:Union[str,None]=None,question_id:Union[str,None]=None,idx_in_a_question_epoch:Union[int,None]=None):
         if not question_id:
@@ -156,7 +156,7 @@ class GraphAgent:
         self.all_history_messages = self._get_messages_from_state_by_key("messages") 
         return self.all_history_messages
     
-    def get_question_related_messages(self):
+    def get_question_related_messages_from_state(self):
         self.question_related_messages = self._get_messages_from_state_by_key("question_related_messages") 
         return self.question_related_messages
 
@@ -212,9 +212,13 @@ class GraphAgent:
     
     def exists_action(self,state:GraphAgentState):
         result = state['messages'][-1]
-        print('*************** finish_reason ***************') 
-        print(f'finish_reason: {result.response_metadata["finish_reason"]}')
-        print('*************** finish_reason ***************') 
+        print('*************** finish_reason ***************')
+        try: 
+            print(f'result: {result}')
+            print(f'finish_reason: {result.response_metadata["finish_reason"]}')
+            print('*************** finish_reason ***************') 
+        except:
+            print(f'result has no ["finish_reason"]: {result}')
         returned_tool_calling_nums = len(result.tool_calls)
         os.environ["rag_graph_next"] = ''
 
@@ -237,8 +241,14 @@ class GraphAgent:
         return returned_tool_calling_nums
     
     def call_llm(self,state: GraphAgentState):
+        # 当前message
+        input_message = state.get('messages')[-1]
 
-        question_related_messages = self.get_question_related_messages()
+        _question = state.get('question')
+        if _question == "还记得我叫什么吗？":
+            pass
+
+        question_related_messages = self.get_question_related_messages_from_state()
         
         if not question_related_messages:
             # 获取历史相关message
@@ -249,22 +259,26 @@ class GraphAgent:
             # 注意设置reserve_last_n_messages = 1，也就是除最后1条消息外，全部的messages均视为历史messages
             question_related_messages = env_models_instance.filter_and_get_messages_relevant_to_query(query=question,messages_list=messages,reserve_last_n_messages = 1)
 
-            # 当前message
-            input_message = state.get('messages')[-1]
-            assert isinstance(input_message,HumanMessage),f"必须保证input_message:{input_message}为HumanMessage"
-            # 历史 + 当前
-            if input_message not in question_related_messages:
-                question_related_messages.append(input_message)
+
+
+        # 历史 + 当前
+        if input_message not in question_related_messages:
+            question_related_messages.append(input_message)
 
         if self.system_message:
             messages = self.system_message + question_related_messages
             print(f"{len(messages)=}")
-        message = self.model.invoke(messages,config=self.config)
-        
-        message = self.makeup_message_with_question_id_idx(message)
+        try:    
+            message = self.model.invoke(messages,config=self.config)
+            message = self.makeup_message_with_question_id_idx(message)
 
-        question_related_messages.append(message)
-        return {'messages': message,'question_related_messages':question_related_messages}
+            question_related_messages.append(message)
+            return {'messages': message,'question_related_messages':question_related_messages}
+        except:
+            for m in messages:
+                m.pretty_print()
+        
+
     
 
 
@@ -276,13 +290,14 @@ abot = GraphAgent(executable_tools=executable_tools,routing_tools_wrapped_in_cla
 
 def run(abot:GraphAgent):
     user_questions = [
-    '你好',
+    '你好，我叫张结魁',
     '合肥大蜀山',   
     '请查询明天从合肥到上海的航班',
     '请使用python_repl_tool来计算1到100的和',
     '请使用python_repl_tool来计算1到100的和,以及10的阶乘',
     "请使用tavily_search_tool工具搜索信息，回答问题：What is the weather in SF and LA? ",
     "Who won the super bowl in 2024? In what state is the winning team headquarters located?What is the GDP of that state? ",
+    "还记得我叫什么吗？"
     ]
     for user_question in user_questions:
         abot.question_id = abot.get_random_id()
