@@ -19,6 +19,7 @@ from jqchat.kernel_program.main import APP_PORT as KERNEL_APP_PORT
 from jqcode.jq_agent.c0_init_env_models import env_models_instance
 from jqcode.jq_agent.graph_create_utils import user_question_is_related_to_coding_or_data_analyzing,llm
 from jqcode.jq_agent.run_super_graph import super_graph_compiled_async,arun_super_graph
+from langgraph_in_class import run_conversation
 from jqcode.jq_agent.jq_rag_agent_sub_graph import llm_chain,invoke_llm_config
 from langchain_core.pydantic_v1 import BaseModel, Field
 from langchain_core.prompts import ChatPromptTemplate
@@ -438,14 +439,19 @@ def agent_entry():
     is_coding_related = user_question_is_related_to_coding_or_data_analyzing(question=user_prompt)
     
     HAS_DATA_FILE_UPLOADED = os.environ.get("HAS_DATA_FILE_UPLOADED", False)
-    if HAS_DATA_FILE_UPLOADED and is_coding_related:
+    if HAS_DATA_FILE_UPLOADED or is_coding_related:
         code, text, status = loop.run_until_complete(get_code(user_prompt, user_openai_key, model))
+    
+    # else:
+    #     text, with_exception = arun_super_graph(question=user_prompt,config=config,super_graph_compiled_async=super_graph_compiled_async)
+    #     if with_exception:
+    #         if is_coding_related:
+    #             print('前面程序运行或判断出现了问题，下面试图使用Python代码方式来解决......')
+    #             code, text, status = loop.run_until_complete(get_code(user_prompt, user_openai_key, model))
+
     else:
-        text, with_exception = arun_super_graph(question=user_prompt,config=config,super_graph_compiled_async=super_graph_compiled_async)
-        if with_exception:
-            if is_coding_related:
-                print('前面程序运行或判断出现了问题，下面试图使用Python代码方式来解决......')
-                code, text, status = loop.run_until_complete(get_code(user_prompt, user_openai_key, model))
+        text = run_conversation(user_question=user_prompt)
+
 
     print('~~'*30)
     if code:

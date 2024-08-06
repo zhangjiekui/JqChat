@@ -286,9 +286,25 @@ class GraphAgent:
 tavily_search_tool = TavilySearchResults(max_results=4) #increased number of results
 executable_tools = [get_flight_number,python_repl_tool]
 route_tools = [WEB_SEARCH,VECTORSTORE,CODE_GENERATION,CODE_EXECUTION]
-abot = GraphAgent(executable_tools=executable_tools,routing_tools_wrapped_in_class=route_tools)
+chat_bot = GraphAgent(executable_tools=executable_tools,routing_tools_wrapped_in_class=route_tools)
 
-def run(abot:GraphAgent):
+
+def run_conversation(user_question:str,jqchat_agent:GraphAgent=chat_bot):    
+    jqchat_agent.question_id = jqchat_agent.get_random_id()
+    print('================='*5)
+    print(f"USER：{user_question} (With question_id: {jqchat_agent.question_id})")
+    input_message = jqchat_agent.makeup_message_with_question_id_idx(HumanMessage,content=user_question)       
+    result = jqchat_agent.graph.invoke({"messages": [input_message],"question":user_question,"question_related_messages":[]},config=jqchat_agent.config)
+
+    print('====问题和答案====') 
+    print(f"USER：{user_question}")
+    answer = result['messages'][-1].content
+    print(f"AI：{answer}")
+    return answer
+    print('================='*5)
+
+
+if __name__ == "__main__":
     user_questions = [
     '你好，我叫张结魁',
     '合肥大蜀山',   
@@ -299,49 +315,9 @@ def run(abot:GraphAgent):
     "Who won the super bowl in 2024? In what state is the winning team headquarters located?What is the GDP of that state? ",
     "还记得我叫什么吗？"
     ]
+    
     for user_question in user_questions:
-        abot.question_id = abot.get_random_id()
-        print('================='*5)
-        print(f"USER：{user_question} (With question_id: {abot.question_id})")
-
-        _all_history_messages = abot.graph.get_state(config=abot.config).values['messages']
-        all_history_messages = abot.get_all_history_messages()
-        assert _all_history_messages==all_history_messages
-
-        print(f"Before Invoke: {len(all_history_messages)=}")
-
-        question_related_messages = abot.graph.get_state(config=abot.config).values['question_related_messages']
-        print(f"Before Invoke: {len(question_related_messages)=}")
-
-        input_message = abot.makeup_message_with_question_id_idx(HumanMessage,content=user_question)
-
-        question_id,idx_in_a_question_epoch = abot.get_question_id_idx_from_message(input_message)
-
-        print(f'get对照：{question_id=},{idx_in_a_question_epoch=}') 
-
-       
-        result = abot.graph.invoke({"messages": [input_message],"question":user_question,"question_related_messages":[]},config=abot.config)
-        _all_history_messages = abot.graph.get_state(config=abot.config).values['messages']
-        all_history_messages = abot.get_all_history_messages()
-        assert _all_history_messages==all_history_messages
-        print(f"After Invoke: {len(all_history_messages)=}")
-
-        print(f"After Invoke: {all_history_messages[0]=}")
-        try:
-            print(f'After Invoke: {all_history_messages[-2].additional_kwargs["question_id"]=}')
-        except:
-            print(f'After Invoke: history_messages[0].additional_kwargs["question_id"]=不存在！')
-
-
-        
-        print('====问题和答案====') 
-        print(f"USER：{user_question}")
-        print(f"AI：{result['messages'][-1].content}")
-        print('================='*5)
-
-
-if __name__ == "__main__":
-    run(abot)
+        answer = run_conversation(user_question=user_question )
 
 
 # source: https://learn.deeplearning.ai/courses/ai-agents-in-langgraph/lesson/3/langgraph-components    

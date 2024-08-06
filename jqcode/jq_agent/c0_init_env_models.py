@@ -46,6 +46,8 @@ os.environ['LANGCHAIN_ENDPOINT'] = 'https://api.smith.langchain.com'
 os.environ['LANGCHAIN_API_KEY'] = "ls__fe150087fa0643f28b3eae3a07d57529"
 os.environ['TAVILY_API_KEY'] = "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"
 
+
+
 def replace_multiple_newlines(text):
     return re.sub(r'\n+', '\n', text)
 
@@ -300,6 +302,7 @@ class InitEnvModels:
         
         embed_model  = embed_model if embed_model else self.embed_model
         reranker  = reranker if reranker else self.reranker
+        
         docs_list_cleaned = []
         for doc in docs_list:
             doc.page_content = replace_multiple_newlines(doc.page_content)
