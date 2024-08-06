@@ -295,7 +295,7 @@ chat_router = APIRouter(prefix="/chat", tags=["Chat对话"])
 
 
 
-@chat_router.route('/api/<path:path>', methods=["GET", "POST"])
+@chat_router.api_route('/api/<path:path>', methods=["GET", "POST"])
 def proxy_kernel_manager(path,request:Request):
     if request.method == "POST":
         print('starting code execution')
@@ -330,12 +330,11 @@ def proxy_kernel_manager(path,request:Request):
 
 
 @chat_router.post('/inject-context')
-def inject_context(request:Request):
-    user_prompt = request.json.get('prompt', '')
-
+def inject_context(
+    user_prompt: str = Body(alias="prompt",description="用户输入"),
+    ):
     # Append all messages to the message buffer for later use
     message_buffer.append(user_prompt + "\n\n")
-
     return JSONResponse(content={"result": "success"})
 
 
@@ -343,9 +342,9 @@ def inject_context(request:Request):
 @chat_router.post('/completions',summary="对话接口")
 # def generate_code():
 async def agent_entry(
-    user_prompt: str = Body("prompt",description="用户输入"),
-    doc_id: str = Body("doc", description="知识库ID"),
-    user_id: str = Body("user", description="用户随机ID"),
+    user_prompt: str = Body(alias="query",description="用户输入"),
+    doc_id: str = Body(alias="doc", description="知识库ID"),
+    user_id: str = Body(alias="user", description="用户随机ID"),
     ):
     print('============================================================')
     print('============================================================')

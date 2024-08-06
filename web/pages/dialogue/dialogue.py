@@ -198,6 +198,7 @@ def dialogue_page(
         chat_box.ai_say("正在思考中...")
         user=ctx.get("uid")
         doc=selected_kb
+        print(prompt,user,doc)
         msg=chat(query=prompt,user=user,doc=doc,_api=api)
 
         chat_box.update_msg(msg["text"],streaming=False)
