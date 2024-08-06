@@ -15,6 +15,7 @@ from jqchat.webapp.main import app, APP_PORT
 from jqchat.kernel_program.main import main as kernel_program_main, cleanup_kernel_program
 
 APP_URL = "http://localhost:%s" % APP_PORT
+log_filename = "jqchat_ui.log"
 
 def run_webapp():
     try:
@@ -33,7 +34,7 @@ def run_kernel_program():
 def setup_logging():
     log_format = "%(asctime)s [%(levelname)s]: %(message)s"
     logging.basicConfig(level=logging.INFO, format=log_format)
-    log_filename = "app.log"
+    # log_filename = "jqchat_ui.log"
     file_handler = logging.FileHandler(log_filename)
     file_handler.setFormatter(logging.Formatter(log_format))
     logging.getLogger().addHandler(file_handler)
@@ -46,7 +47,7 @@ def print_banner():
         print("    Open AgentRagChatCI  Interactive UI in your browser" )
         print(f" >本地: {APP_URL}  远程：http://10.1.150.105:{APP_PORT} ")
         print("")
-        print("> You can inspect detailed logs in app.log")
+        print(f"> You can inspect detailed logs in {log_filename}")
         print("=="*30)
         print("=================已启动完成，下面是运行信息=================")
         print("=="*30)  
