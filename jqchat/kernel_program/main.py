@@ -24,7 +24,6 @@ import jqchat.kernel_program.utils as utils
 
 
 APP_PORT = int(os.environ.get("API_PORT", 5011))
-print(f'{APP_PORT=}')
 
 # Get global logger
 logger = config.get_logger()

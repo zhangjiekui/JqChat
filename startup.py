@@ -75,8 +75,6 @@ def run_api_server(
 def run_webui(
     started_event: mp.Event = None, run_mode: str = None
 ):
-    import sys
-
     from jqcode.jq_knowledge_manegement.chatchat.utils import (
         get_config_dict,
         get_log_file,
@@ -180,6 +178,7 @@ def run_webui(
     bootstrap.load_config_options(flag_options=flag_options)
     bootstrap.run(script_dir, False, args, flag_options)
     started_event.set()
+    
 #run kernel for code
 def run_kernel_program(started_event: mp.Event = None, run_mode: str = None
 ):
@@ -253,7 +252,6 @@ def dump_server_info(after_start=False, args=None):
         print("\n")
         print(f"服务端运行信息：")
         if args.api:
-
             print(f"    Chatchat Api Server: {api_address()}")
         if args.webui:
             print(f"    Chatchat WEBUI Server: {webui_address()}")
@@ -312,40 +310,43 @@ async def start_main_server():
         args.api = True
         args.api_worker = True
         args.webui = True
+        args.kernel = True
     elif args.all_api:
         args.api = True
         args.api_worker = True
         args.webui = False
+        args.kernel = True
     elif args.api:
         args.api = True
         args.api_worker = False
         args.webui = False
+        args.kernel = True
     if args.lite:
         args.api = True
         args.api_worker = False
         args.webui = True
+        args.kernel = False
 
     if len(sys.argv) > 1:
         logger.info(f"正在启动服务：")
-        logger.info(f"如需查看 llm_api 日志，请前往 {LOG_PATH}")
 
     processes = {}
 
     def process_count():
         return len(processes)
     
-    # kernel_started = manager.Event()
     
     kernel_started = manager.Event()
-    process = Process(
-            target=run_kernel_program,
-            name=f"Kernel Server",
-            kwargs=dict(
-                started_event=kernel_started,
-            ),
-            daemon=True,
+    if(args.kernel):
+        process = Process(
+                target=run_kernel_program,
+                name=f"Kernel Server",
+                kwargs=dict(
+                    started_event=kernel_started,
+                ),
+                daemon=True,
         )    
-    processes["kernel"] = process
+        processes["kernel"] = process
     
     
     api_started = manager.Event()
@@ -359,7 +360,7 @@ async def start_main_server():
             ),
             daemon=False,
         )    
-    processes["api"] = process
+        processes["api"] = process
     
 
     webui_started = manager.Event()
@@ -371,7 +372,7 @@ async def start_main_server():
                 started_event=webui_started,
                 run_mode=run_mode,
             ),
-            daemon=True,
+            daemon=False,
         )
         processes["webui"] = process
 
@@ -380,28 +381,31 @@ async def start_main_server():
     if process_count() == 0:
         parser.print_help()
     else:
+        dump_server_info(after_start=False,args=args)
         try:
             if p := processes.get("kernel"):
                 p.start()
                 p.name = f"{p.name} ({p.pid})"
                 kernel_started.wait()  # 等待kernel启动完成
+                logger.info(f"启动KERNEL服务：{p.name}")
 
             if p := processes.get("api"):
                 p.start()
                 p.name = f"{p.name} ({p.pid})"
                 api_started.wait()  # 等待api.py启动完成
+                logger.info(f"启动API服务：{ p.name}")
 
             if p := processes.get("webui"):
                 p.start()
                 p.name = f"{p.name} ({p.pid})"
                 webui_started.wait()  # 等待webui.py启动完成
+                logger.info(f"启动WEB服务：{p.name}")
 
             dump_server_info(after_start=True, args=args)
-
             # 等待所有进程退出
             while processes:
                 for p in processes.values():
-                    p.join(2)
+                    p.join(3)
                     if not p.is_alive():
                         processes.pop(p.name)
         except Exception as e:
@@ -428,7 +432,7 @@ def main():
     cwd = os.getcwd()
     sys.path.append(cwd)
     multiprocessing.freeze_support()
-    print("cwd:" + cwd)
+    logger.info(f"应用启动路径:{cwd}")
     from jqcode.jq_knowledge_manegement.chatchat.server.knowledge_base.migrate import create_tables
 
     create_tables()
