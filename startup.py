@@ -336,17 +336,21 @@ async def start_main_server():
         return len(processes)
     
     
-    kernel_started = manager.Event()
+    # kernel_started = manager.Event()
+    # if(args.kernel):
+    #     process = Process(
+    #             target=run_kernel_program,
+    #             name=f"Kernel Server",
+    #             kwargs=dict(
+    #                 started_event=kernel_started,
+    #             ),
+    #             daemon=True,
+    #     )    
+    #     processes["kernel"] = process
     if(args.kernel):
-        process = Process(
-                target=run_kernel_program,
-                name=f"Kernel Server",
-                kwargs=dict(
-                    started_event=kernel_started,
-                ),
-                daemon=True,
-        )    
-        processes["kernel"] = process
+        logger.info("启动kernel")
+        kernel_started = manager.Event()
+        run_kernel_program()
     
     
     api_started = manager.Event()
