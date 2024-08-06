@@ -1,7 +1,7 @@
 
 import asyncio
-from typing import Dict
-from fastapi import APIRouter, Body, Request,Response
+from typing import List
+from fastapi import APIRouter, Body, File, Request,Response, UploadFile
 
 import os
 from fastapi.responses import JSONResponse
@@ -10,7 +10,6 @@ import asyncio
 import json
 import re
 import logging
-import sys
 
 
 import pandas as pd
@@ -25,7 +24,7 @@ from jqcode.jq_agent.run_super_graph import super_graph_compiled_async,arun_supe
 from jqcode.jq_agent.jq_rag_agent_sub_graph import llm_chain,invoke_llm_config
 from langchain_core.pydantic_v1 import BaseModel, Field
 from langchain_core.prompts import ChatPromptTemplate
-from langchain_core.messages import HumanMessage,SystemMessage,ToolMessage,AIMessage
+from langchain_core.messages import HumanMessage,SystemMessage
 from langchain_ollama import ChatOllama
 
 
@@ -330,39 +329,35 @@ def proxy_kernel_manager(path,request:Request):
 
 
 
-@chat_router.route('/inject-context', methods=['POST'])
+@chat_router.post('/inject-context')
 def inject_context(request:Request):
     user_prompt = request.json.get('prompt', '')
 
     # Append all messages to the message buffer for later use
     message_buffer.append(user_prompt + "\n\n")
 
-    return ({"result": "success"})
+    return JSONResponse(content={"result": "success"})
 
 
 
-@chat_router.route('/completions', methods=['POST'])
+@chat_router.post('/completions',summary="对话接口")
 # def generate_code():
-def agent_entry(request:Request):
+async def agent_entry(
+    user_prompt: str = Body("prompt",description="用户输入"),
+    doc_id: str = Body("doc", description="知识库ID"),
+    user_id: str = Body("user", description="用户随机ID"),
+    ):
     print('============================================================')
     print('============================================================')
     print('触发python_backend......jqchat/webapp/main.py#L335')
-    user_prompt = request.json.get('prompt', '')
     print('=='*30)
     print(f'(IN Web) User Question: {user_prompt}')
     model = env_models_instance.llm_model_name
     user_openai_key = env_models_instance.api_key
-    #获取用户随机ID
-    user_id=request.json.get('user',None)
-    #获得文档ID
-    doc_id=request.json.get('doc',None);
-
     loop = asyncio.new_event_loop()
     asyncio.set_event_loop(loop)
-
     code, text, status = None, None, 200
     config = {"recursion_limit":25,"configurable": {"thread_id": user_id}}
-
     initial_graph_state = asyncio.run(super_graph_compiled_async.aget_state(config=config)).values
     messages = initial_graph_state.get('messages',[])
     
@@ -426,26 +421,24 @@ def agent_entry(request:Request):
 
     return JSONResponse(content={"code":code,"text":text},status_code=status)
 
-@chat_router.route('/chat', methods=['POST'])
-def generate_chat(model:str,request:Request):
+@chat_router.post('/chat',summary="纯聊天接口")
+def generate_chat(
+    model:str,
+    user:str,
+    doc:str,
+    openAIKey:str,
+    prompt:str,
+    request:Request):
     #all of this comes from the system, not the user!
     if(model is None ):
         model=(env_models_instance.llm_model_name)
-    user_prompt = request.json.get('prompt', '')
-    user_openai_key = request.json.get('openAIKey', None)
-    # model = request.json.get('model', None)
-    #获取用户随机ID
-    user_id=request.json.get('user',None)
-    #获得文档ID
-    doc_id=request.json.get('doc',None);
-
-    print('CHAT_TEXT: ' + user_prompt)
+    print('CHAT_TEXT: ' + prompt)
     loop = asyncio.new_event_loop()
     asyncio.set_event_loop(loop)
 
     text, exeption_message, status = loop.run_until_complete(
         #TODO:需要此处增加传入的user_id和doc_id
-        get_chat(user_prompt, user_openai_key, model))
+        get_chat(prompt, openAIKey, model))
     loop.close()
     if text is None:
         print(exeption_message)
@@ -453,28 +446,30 @@ def generate_chat(model:str,request:Request):
 
 
     # Append all messages to the message buffer for later use
-    user_prompt = 'USER: ' + user_prompt + "\n\n"
-    message_buffer.append(user_prompt)
+    prompt = 'USER: ' + prompt + "\n\n"
+    message_buffer.append(prompt)
     # print(f"""RETURNING TO UI: ${status}""")
-    return ({'text': text}), status
+    return JSONResponse(content={'text': text}, status_code=status)
     # return jsonify({'text': user_prompt + text}), status
 
-@chat_router.route('/upload', methods=['POST'])
-def upload_file(request:Request):
+@chat_router.post('/upload',summary="上传接口")
+def upload_file(
+    file: UploadFile = File(..., description="上传文件"),
+    ):
     # check if the post request has the file part
-    if 'file' not in request.files:
-        return ({'error': 'No file part in the request'}), 400
-    file = request.files['file']
+    # if 'file' not in request.files:
+    #     return ({'error': 'No file part in the request'}), 400
+    # file = request.files['file']
     # if user does not select file, browser also
     # submit an empty part without filename
     if file.filename == '':
         return ({'error': 'No selected file'}), 400
     if file and allowed_file(file.filename):
-        file_target = os.path.join(app.config['UPLOAD_FOLDER'], file.filename)
+        file_target = os.path.join(UPLOAD_FOLDER, file.filename)
         file.save(file_target)
         file_info = inspect_file(file_target)
         os.environ["HAS_DATA_FILE_UPLOADED"] = 'True'
         message_buffer.append(f"已上传保存的文件名为{file.filename},请在分析过程中使用这个数据文件" + "\n\n")
-        return ({'message': f'File {file.filename} uploaded successfully.\n{file_info}'}), 200
+        return JSONResponse(content={'message': f'File {file.filename} uploaded successfully.\n{file_info}'}, status_code=200)
     else:
-        return ({'error': 'File type not allowed'}), 400
+        return JSONResponse(content={'error': 'File type not allowed'}, status_code=400)

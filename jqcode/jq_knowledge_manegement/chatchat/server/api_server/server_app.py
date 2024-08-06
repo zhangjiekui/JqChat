@@ -11,7 +11,7 @@ from starlette.responses import RedirectResponse
 from jqcode.jq_knowledge_manegement.chatchat.configs import CHATCHAT_ROOT, MEDIA_PATH, OPEN_CROSS_DOMAIN, VERSION
 # from jqcode.jq_knowledge_manegement.chatchat.server.api_server.chat_routes import chat_router
 from jqcode.jq_knowledge_manegement.chatchat.server.api_server.kb_routes import kb_router
-from jqchat.chat_routes_copy import chat_router
+from jqchat.chat_routes import chat_router
 # from jqcode.jq_knowledge_manegement.chatchat.server.api_server.openai_routes import openai_router
 # from jqcode.jq_knowledge_manegement.chatchat.server.api_server.server_routes import server_router
 # from jqcode.jq_knowledge_manegement.chatchat.server.api_server.tool_routes import tool_router

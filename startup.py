@@ -11,7 +11,7 @@ import sys
 
 from contextlib import asynccontextmanager
 from multiprocessing import Process
-from jqchat.kernel_program.main import main as kernel_program_main, cleanup_kernel_program
+from jqchat.kernel_program.main import main as kernel_program_main
 
 logger = logging.getLogger()
 
@@ -181,9 +181,11 @@ def run_webui(
     bootstrap.run(script_dir, False, args, flag_options)
     started_event.set()
 #run kernel for code
-def run_kernel_program():
+def run_kernel_program(started_event: mp.Event = None, run_mode: str = None
+):
     try:
         asyncio.run(kernel_program_main())
+        mp.set()
     except Exception as e:
         logging.exception("Error running the kernel_program:")
         sys.exit(1)
@@ -323,8 +325,6 @@ async def start_main_server():
         args.api_worker = False
         args.webui = True
 
-    dump_server_info(args=args)
-
     if len(sys.argv) > 1:
         logger.info(f"正在启动服务：")
         logger.info(f"如需查看 llm_api 日志，请前往 {LOG_PATH}")
@@ -334,22 +334,21 @@ async def start_main_server():
     def process_count():
         return len(processes)
     
-    kernel_started = manager.Event()
+    # kernel_started = manager.Event()
     
-    processes["kernel"] = process
+    kernel_started = manager.Event()
     process = Process(
-        target=run_kernel_program,
-        name=f"Kernel Server",
-        kwargs=dict(
-            started_event=kernel_started,
-            run_mode=run_mode,
-        ),
-        daemon=False,
-    )
+            target=run_kernel_program,
+            name=f"Kernel Server",
+            kwargs=dict(
+                started_event=kernel_started,
+            ),
+            daemon=True,
+        )    
     processes["kernel"] = process
+    
     
     api_started = manager.Event()
-   
     if args.api:
         process = Process(
             target=run_api_server,
@@ -360,7 +359,7 @@ async def start_main_server():
             ),
             daemon=False,
         )    
-    
+    processes["api"] = process
     
 
     webui_started = manager.Event()
@@ -382,6 +381,11 @@ async def start_main_server():
         parser.print_help()
     else:
         try:
+            if p := processes.get("kernel"):
+                p.start()
+                p.name = f"{p.name} ({p.pid})"
+                kernel_started.wait()  # 等待kernel启动完成
+
             if p := processes.get("api"):
                 p.start()
                 p.name = f"{p.name} ({p.pid})"
@@ -425,9 +429,9 @@ def main():
     sys.path.append(cwd)
     multiprocessing.freeze_support()
     print("cwd:" + cwd)
-    # from jqcode.jq_knowledge_manegement.chatchat.server.knowledge_base.migrate import create_tables
+    from jqcode.jq_knowledge_manegement.chatchat.server.knowledge_base.migrate import create_tables
 
-    # create_tables()
+    create_tables()
     if sys.version_info < (3, 10):
         loop = asyncio.get_event_loop()
     else:
