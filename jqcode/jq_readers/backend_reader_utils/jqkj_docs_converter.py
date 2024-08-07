@@ -232,7 +232,7 @@ def convert_doc_pdf2docx_on_win_and_linux(input_filepaths:Union[str,list],overwr
     return input_filepaths,original_valid_input_filepaths
 
 
-def convert_file_to_docx(input_filepaths: Union[str, list], overwrite=True, destination_dir=None):
+def convert_file_to_docx(input_filepaths: Union[str, list], overwrite=False, destination_dir=None):
     """
     将 Markdown、PDF 或 DOC 文件转换为 DOCX 格式。
 
@@ -267,6 +267,7 @@ def convert_file_to_docx(input_filepaths: Union[str, list], overwrite=True, dest
         # 检查文件是否存在
         if output_filepath.exists() and not overwrite:
             logger.info(f"File {output_filepath} already exists. Skipping conversion.")
+            input_filepaths_exist_and_replaced_by_docx_if_converted.append(output_filepath)
             continue
 
         # 根据文件扩展名进行转换

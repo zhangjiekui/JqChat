@@ -341,7 +341,7 @@ def inject_context(
 
 @chat_router.post('/completions',summary="对话接口")
 # def generate_code():
-async def agent_entry(
+def agent_entry(
     user_prompt: str = Body(alias="query",description="用户输入"),
     doc_id: str = Body(alias="doc", description="知识库ID"),
     user_id: str = Body(alias="user", description="用户随机ID"),

@@ -180,7 +180,7 @@ def run_webui(
     started_event.set()
     
 #run kernel for code
-async def run_kernel_program(started_event: mp.Event = None, run_mode: str = None):
+def run_kernel_program(started_event: mp.Event = None, run_mode: str = None):
     try:
         asyncio.run(kernel_program_main())
         #started_event.set()
@@ -345,7 +345,9 @@ async def start_main_server():
     #        ),
     #        daemon=False,)  
     #    processes["kernel"] = process
-    
+    if(args.kernel):
+        kernel_program_process = Process(target=run_kernel_program)
+        processes["kernel"] = kernel_program_process
     
     api_started = manager.Event()
     if args.api:
@@ -384,7 +386,7 @@ async def start_main_server():
             if p := processes.get("kernel"):
                 p.start()
                 p.name = f"{p.name} ({p.pid})"
-                # kernel_started.wait()  # 等待kernel启动完成
+                #kernel_started.wait()  # 等待kernel启动完成
                 logger.info(f"启动KERNEL服务：{p.name}")
 
             if p := processes.get("api"):
@@ -434,18 +436,19 @@ def main():
     from jqcode.jq_knowledge_manegement.chatchat.server.knowledge_base.migrate import create_tables
 
     create_tables()
-    #if sys.version_info < (3, 10):
-    #    loop = asyncio.get_event_loop()
-    #else:
-    #    try:
-    #        loop = asyncio.get_running_loop()
-    #    except RuntimeError:
-    #        loop = asyncio.new_event_loop()
-    #
-    #    asyncio.set_event_loop(loop)
-    #loop.run_until_complete(start_main_server())
-    asyncio.run(start_main_server())
-    asyncio.wait(run_kernel_program())
+    if sys.version_info < (3, 10):
+        loop = asyncio.get_event_loop()
+    else:
+        try:
+            loop = asyncio.get_running_loop()
+        except RuntimeError:
+            loop = asyncio.new_event_loop()
+    
+        asyncio.set_event_loop(loop)
+    loop.run_until_complete(start_main_server())
+    #asyncio.run(start_main_server())
+    # asyncio.wait(run_kernel_program())
+    #kernel_program_process = Process(target=run_kernel_program)
 
 if __name__ == "__main__":
     main()

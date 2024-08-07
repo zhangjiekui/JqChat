@@ -136,3 +136,714 @@ langchain版本：0.2.11
 ==============================Langchain-Chatchat Configuration==============================
 
 
+2024-08-07 09:10:41,871 root         951242 INFO     启动KERNEL服务：Process-2 (951457)
+/root/.virtualenvs/test/lib/python3.10/site-packages/pydantic/_internal/_fields.py:161: UserWarning: Field "model_name" has conflict with protected namespace "model_".
+
+You may be able to resolve this warning by setting `model_config['protected_namespaces'] = ()`.
+  warnings.warn(
+[2024-08-07 09:10:47,503] WARNING [langchain_community.utils.user_agent:11] USER_AGENT environment variable not set, consider setting it to identify your requests.
+/data/projects/JqChat/jqcode/jq_agent/c0_init_env_models.py:262: ElasticsearchWarning: this request accesses system indices: [.kibana_security_session_1, .kibana_security_solution_8.14.0_001, .kibana_analytics_8.14.0_001, .apm-custom-link, .security-profile-8, .kibana_alerting_cases_8.14.0_001, .kibana_task_manager_8.14.0_001, .apm-agent-configuration, .security-7, .kibana_ingest_8.14.0_001, .kibana_8.14.0_001], but in a future major version, direct access to system indices will be prevented by default
+  self.all_indices = es_connection.indices.get_alias(index="*")
+[2024-08-07 09:10:53,418] WARNING [langchain_community.utils.user_agent:11] USER_AGENT environment variable not set, consider setting it to identify your requests.
+/data/projects/JqChat/jqcode/jq_agent/c0_init_env_models.py:262: ElasticsearchWarning: this request accesses system indices: [.kibana_security_session_1, .kibana_security_solution_8.14.0_001, .kibana_analytics_8.14.0_001, .apm-custom-link, .security-profile-8, .kibana_alerting_cases_8.14.0_001, .kibana_task_manager_8.14.0_001, .apm-agent-configuration, .security-7, .kibana_ingest_8.14.0_001, .kibana_8.14.0_001], but in a future major version, direct access to system indices will be prevented by default
+  self.all_indices = es_connection.indices.get_alias(index="*")
+/data/projects/JqChat/jqcode/jq_agent/c0_init_env_models.py:262: ElasticsearchWarning: this request accesses system indices: [.kibana_security_solution_8.14.0_001, .kibana_security_session_1, .kibana_analytics_8.14.0_001, .apm-custom-link, .security-profile-8, .kibana_alerting_cases_8.14.0_001, .kibana_task_manager_8.14.0_001, .apm-agent-configuration, .security-7, .kibana_ingest_8.14.0_001, .kibana_8.14.0_001], but in a future major version, direct access to system indices will be prevented by default
+  self.all_indices = es_connection.indices.get_alias(index="*")
+####################################
+##本项目运行日志位置: /data/projects/JqChat/jqchat_agent.log
+####################################
+
+
+
+=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*
+项目.env文件路径：/data/projects/JqChat/.env
+=*=* load_dotenv('/data/projects/JqChat/.env')成功！
+=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*
+
+
+
+当前使用的模型base_url为:OpenAI, http://10.1.150.105:9997/v1/
+当前使用的模型为:Langchain ChatOpenAI, qwen2-instruct, API_URL为http://10.1.150.105:9997/v1
+self.embedding_model_name='/data/models/bce-embedding-base_v1'初始化成功！维度为768
+embedding_model_name_8k=None初始化成功！embedding_model_8k.max_seq_length=8192，可根据实际需要进行修改。
+rerank_model_name=None初始化成功！
+当前使用的Elasticsearch URL为| https://10.1.150.105:9200 |,详细信息如下:
+-------Elasticsearch Connection详细信息-------
+{'name': '9a56057ebad3', 'cluster_name': 'docker-cluster', 'cluster_uuid': 'a4C6GMC2QfK5WUBTFuIdwg', 'version': {'number': '8.14.0', 'build_flavor': 'default', 'build_type': 'docker', 'build_hash': '8d96bbe3bf5fed931f3119733895458eab75dca9', 'build_date': '2024-06-03T10:05:49.073003402Z', 'build_snapshot': False, 'lucene_version': '9.10.0', 'minimum_wire_compatibility_version': '7.17.0', 'minimum_index_compatibility_version': '7.0.0'}, 'tagline': 'You Know, for Search'}
+-------Elasticsearch Connection详细信息-------
+-------可以通过Kibana URL查看:| http://127.0.0.1:5601 | http://10.1.150.105:5601 |-------
+当前使用的模型为:Langchain ChatOpenAI, qwen2-instruct, API_URL为http://10.1.150.105:9997/v1
+当前使用的模型为:Langchain ChatOpenAI, qwen2-instruct, API_URL为http://10.1.150.105:9997/v1
+
+###增加了ToolException处理函数_handle_error function
+
+本次程序中提供的所有可用的工具列表:
+ get_flight_number,python_repl_tool
+=================== system_prompt ===================
+当前已存在的知识库列表：knowledge_base_list=['es_test', '李园沁', 'my_new_vs', 'test_doc_tree_reader', 'temp', 'test', 'health', 'test_docs', 'yqli', 'samples', 'test_libreoffice', 'chat']
+已存在index='test_doc_tree_reader'！跳过插入索引的环节。
+(可能新建并刷新后)存在的知识库列表：knowledge_base_list=['es_test', '李园沁', 'my_new_vs', 'test_doc_tree_reader', 'temp', 'test', 'health', 'test_docs', 'yqli', 'samples', 'test_libreoffice', 'chat']
+route(next: str) -> bool - next tool/action should select
+WEB_SEARCH, VECTORSTORE, CODE_GENERATION, CODE_EXECUTION, DIRECT_RESPONCE
+WEB_SEARCH, VECTORSTORE, CODE_GENERATION, CODE_EXECUTION, DIRECT_RESPONCE
+                                                         +-----------+                                                 
+                                                    .....| __start__ |....                                             
+                                          .......... ....+-----------+ .............                                   
+                                ..........       ....          .           .....    ..........                         
+                      ..........            .....             .                 ....          .........                
+                ......                  ....                  .                     ....               ..........      
+    +----------+                     ...                      .                         ...                      ..... 
+    | retrieve |                     .                        .                           .                          . 
+    +----------+                     .                        .                           .                          . 
+          *                          .                        .                           .                          . 
+          *                          .                        .                           .                          . 
+          *                          .                        .                           .                          . 
++-----------------+                  .                        .                           .                          . 
+| grade_documents |                  .                        .                           .                          . 
++-----------------+..                .                        .                           .                          . 
+          .          .....           .                        .                           .                          . 
+          .               ....       .                        .                           .                          . 
+          .                   ...    .                        .                           .                          . 
+          ..                  +------------+                  .                 +-----------------+                 .. 
+            ..                | web_search |                  .                 | code_generation |               ..   
+              ..              +------------+                  .                 +-----------------+             ..     
+                ..            ..                              .                                 **            ..       
+                  ..        ..                                .                                   **        ..         
+                    ..    ..                                  .                                     **    ..           
+                 +----------+                                 ...                             +----------------+       
+                 | generate |.......                             ....                         | code_execution |       
+                 +----------+       .............                    .....                    +----------------+       
+                       .                         ..............           .....                 **                     
+                       .                                       .............   ....           **                       
+                       .                                                    ..........      **                         
+                       ....                                                       +--------------+                     
+                           .......                                                | llm_fallback |                     
+                                  .......                                      ***+--------------+                     
+                                         .......                           ****                                        
+                                                .......                ****                                            
+                                                       ....         ***                                                
+                                                          +---------+                                                  
+                                                          | __end__ |                                                  
+                                                          +---------+                                                  
+
+
+
+
+
+
+==================================================
+route(next: str) -> bool - next tool/action should select
+route(next: str) -> bool - next tool/action should select
+route(next: str) -> bool - next tool/action should select
+WEB_SEARCH, VECTORSTORE, CODE_GENERATION, CODE_EXECUTION, DIRECT_RESPONCE
+WEB_SEARCH, VECTORSTORE, CODE_GENERATION, CODE_EXECUTION, DIRECT_RESPONCE
+/root/.virtualenvs/test/lib/python3.10/site-packages/pydantic/_internal/_fields.py:161: UserWarning: Field "model_name" has conflict with protected namespace "model_".
+
+You may be able to resolve this warning by setting `model_config['protected_namespaces'] = ()`.
+  warnings.warn(
+INFO:     Started server process [951458]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+2024-08-07 09:10:54,465 root         951242 INFO     启动API服务：API Server (951458)
+INFO:     Uvicorn running on http://0.0.0.0:7861 (Press CTRL+C to quit)
+2024-08-07 09:10:54,467 root         951242 INFO     启动WEB服务：WEBUI Server (951833)
+
+  You can now view your Streamlit app in your browser.
+
+  URL: http://localhost:8501
+
+2024-08-07 09:11:07,265 httpx        951458 INFO     HTTP Request: POST http://10.1.150.105:9997/v1/chat/completions "HTTP/1.1 200 OK"
+2024-08-07 09:11:07,742 httpx        951458 INFO     HTTP Request: POST http://10.1.150.105:9997/v1/chat/completions "HTTP/1.1 200 OK"
+2024-08-07 09:11:08,401 httpx        951458 INFO     HTTP Request: POST http://10.1.150.105:9997/v1/chat/completions "HTTP/1.1 200 OK"
+2024-08-07 09:11:09,956 httpx        951458 INFO     HTTP Request: POST http://10.1.150.105:9997/v1/chat/completions "HTTP/1.1 200 OK"
+2024-08-07 09:11:10,353 httpx        951458 INFO     HTTP Request: POST http://10.1.150.105:9997/v1/chat/completions "HTTP/1.1 200 OK"
+                                                         +-----------+                                                 
+                                                    .....| __start__ |....                                             
+                                          .......... ....+-----------+ .............                                   
+                                ..........       ....          .           .....    ..........                         
+                      ..........            .....             .                 ....          .........                
+                ......                  ....                  .                     ....               ..........      
+    +----------+                     ...                      .                         ...                      ..... 
+    | retrieve |                     .                        .                           .                          . 
+    +----------+                     .                        .                           .                          . 
+          *                          .                        .                           .                          . 
+          *                          .                        .                           .                          . 
+          *                          .                        .                           .                          . 
++-----------------+                  .                        .                           .                          . 
+| grade_documents |                  .                        .                           .                          . 
++-----------------+..                .                        .                           .                          . 
+          .          .....           .                        .                           .                          . 
+          .               ....       .                        .                           .                          . 
+          .                   ...    .                        .                           .                          . 
+          ..                  +------------+                  .                 +-----------------+                 .. 
+            ..                | web_search |                  .                 | code_generation |               ..   
+              ..              +------------+                  .                 +-----------------+             ..     
+                ..            **                              .                                 **            ..       
+                  ..        **                                .                                   **        ..         
+                    ..    **                                  .                                     **    ..           
+                 +----------+                                 ...                             +----------------+       
+                 | generate |.......                             ....                         | code_execution |       
+                 +----------+       .............                    .....                    +----------------+       
+                       .                         ..............           .....                 **                     
+                       .                                       .............   ....           **                       
+                       .                                                    ..........      **                         
+                       ....                                                       +--------------+                     
+                           .......                                                | llm_fallback |                     
+                                  .......                                      ***+--------------+                     
+                                         .......                           ****                                        
+                                                .......                ****                                            
+                                                       ....         ***                                                
+                                                          +---------+                                                  
+                                                          | __end__ |                                                  
+                                                          +---------+                                                  
+
+
+
+
+
+
+==================================================
+============================================================
+============================================================
+触发python_backend......jqchat/webapp/main.py#L335
+============================================================
+(IN Web) User Question: 你好
+进入改写环节前的user_prompt=你好
+content='{"k":"no"}' response_metadata={'finish_reason': 'stop'} id='run-0411a6ef-3368-43fb-9fbf-003e5f60147b-0'
+converted_message.tool_calls=[]
+判断：Whether question '你好' is related to [Codeing/Data File/Analyzing]? 判断结果：response=GradeCodingRelavance(k='no')
+=*==*==*==*==*==*==*==*==*==*==*==*==*==*==*==*==*==*==*==*=
+In Agent 'arun_graph_workflow'：question='你好'
+get_last_state中获取到的navigated_sub_nodes:None
+get_last_state中获取到的navigated_question_and_tool:None
+supervisor_post_process_node中获取到的navigated_sub_nodes:None
+supervisor_post_process_node中获取到的navigated_question_and_tool:None
+*************************************************************************************
+Enter in super_graph,len(messages)=1
+**********************************
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+super_graph 导航输出的原始工具列表为空，尝试从LLM返回内容中直接提取:
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Current in super_graph, super_graph outputed next: 
+navigated_sub_node:set()
+But navigated_sub_node:set() 为空
+So let next='Rag'
+Current in super_graph, Next to: Rag
+---ROUTE QUESTION---
+content=' 你好！有什么可以帮助你的吗？' response_metadata={'finish_reason': 'stop'} id='run-ac2b4a4f-75dd-471f-a417-09d2981eff46-0'
+converted_message.tool_calls=[]
+---ROUTE DESTINATION---
+---Router Could Not Decide Where To GO (len[tool_calls]) == 0), SO ROUTE QUESTION TO LLM ---
+---LLM Fallback---
+context_str='[human]你好'
+len(context_str)=9
+截断后的len(context_str)=9
+content='你好！有什么可以帮助你的吗？' response_metadata={'finish_reason': 'stop'} id='run-c3c01a2c-e362-400e-8cd2-947048353f0f-0'
+converted_message.tool_calls=[]
+get_last_state中获取到的navigated_sub_nodes:['Rag']
+get_last_state中获取到的navigated_question_and_tool:None
+原始的消息数量=2
+supervisor_post_process_node中获取到的navigated_sub_nodes:['Rag']
+supervisor_post_process_node中获取到的navigated_question_and_tool:None
+*************************************************************************************
+Enter in super_graph,len(messages)=2
+**********************************
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+super_graph 导航输出的原始工具列表:[{'name': 'Rag', 'args': {'next': 'Rag'}, 'id': '434f760a-ed2e-4992-94f1-167c157f608c', 'type': 'tool_call'}]
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+*************************************************************************************
+Current in super_graph, super_graph outputed next: Rag
+*************************************************************************************
+The output next 'Rag' is in navigated_sub_nodes '['Rag']'
+The last_message is '<class 'langchain_core.messages.ai.AIMessage'>'属于(ToolMessage,AIMessage)
+并且message.content已存在，如下: '你好！有什么可以帮助你的吗？' 
+So let next='FINISH'
+Current in super_graph, Next to: FINISH
+~~~输出最终执行结果~~~
+用户问题：你好
+最后答案：你好！有什么可以帮助你的吗？
+~~~输出最终执行结果~~~
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+============================================================
+INFO:     127.0.0.1:54978 - "POST /chat/completions HTTP/1.1" 200 OK
+2024-08-07 09:11:11,360 httpx        951833 INFO     HTTP Request: POST http://127.0.0.1:7861/chat/completions "HTTP/1.1 200 OK"
+2024-08-07 09:11:47,960 httpx        951458 INFO     HTTP Request: POST http://10.1.150.105:9997/v1/chat/completions "HTTP/1.1 200 OK"
+2024-08-07 09:11:49,459 httpx        951458 INFO     HTTP Request: POST http://10.1.150.105:9997/v1/chat/completions "HTTP/1.1 200 OK"
+2024-08-07 09:11:49,838 openai._base_client 951458 INFO     Retrying request to /chat/completions in 0.798627 seconds
+2024-08-07 09:11:50,654 httpx        951458 INFO     HTTP Request: POST http://10.1.150.105:9997/v1/chat/completions "HTTP/1.1 200 OK"
+2024-08-07 09:11:52,577 httpx        951458 INFO     HTTP Request: POST http://10.1.150.105:9997/v1/chat/completions "HTTP/1.1 200 OK"
+2024-08-07 09:11:54,539 httpx        951458 INFO     HTTP Request: POST http://10.1.150.105:9997/v1/chat/completions "HTTP/1.1 200 OK"
+2024-08-07 09:11:55,324 httpx        951458 INFO     HTTP Request: POST http://10.1.150.105:9997/v1/chat/completions "HTTP/1.1 200 OK"
+============================================================
+============================================================
+触发python_backend......jqchat/webapp/main.py#L335
+============================================================
+(IN Web) User Question: 你很好
+进入改写环节前的user_prompt=你很好
+content=' 你很好' response_metadata={'finish_reason': 'stop'} id='run-73d7fbec-fede-4a33-976c-74b794b52ecb-0'
+converted_message.tool_calls=[]
+question_rewrite_chain result=None
+question_rewrite_chain执行出现错误:'NoneType' object has no attribute 'q',但忽略
+改写后得到的rewrited_question=
+original_question=你很好
+history_messages_context=你好||你好！有什么可以帮助你的吗？
+rewrited_question=你很好
+content='{"k":"no"}' response_metadata={'finish_reason': 'stop'} id='run-8af164f9-39fe-4b74-9ee8-92b76dd3b43e-0'
+converted_message.tool_calls=[]
+判断：Whether question '你很好' is related to [Codeing/Data File/Analyzing]? 判断结果：response=GradeCodingRelavance(k='no')
+=*==*==*==*==*==*==*==*==*==*==*==*==*==*==*==*==*==*==*==*=
+In Agent 'arun_graph_workflow'：question='你很好'
+get_last_state中获取到的navigated_sub_nodes:None
+get_last_state中获取到的navigated_question_and_tool:None
+原始的消息数量=3
+supervisor_post_process_node中获取到的navigated_sub_nodes:None
+supervisor_post_process_node中获取到的navigated_question_and_tool:None
+*************************************************************************************
+Enter in super_graph,len(messages)=3
+**********************************
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+super_graph 导航输出的原始工具列表为空，尝试从LLM返回内容中直接提取: 谢谢你，我很好，有什么可以帮助你的吗？(Translation: Thank you, I am well. Is there anything I can assist you with?) 
+Thought: I now know the final answer.
+FINISH
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+*************************************************************************************
+Current in super_graph, super_graph outputed next: FINISH
+*************************************************************************************
+The output next 'FINISH', next=='FINISH', but 'len(navigated_sub_nodes)==0',we have not answer the question
+So let next='Rag'
+Current in super_graph, Next to: Rag
+---ROUTE QUESTION---
+content='' additional_kwargs={'tool_calls': [{'index': None, 'id': '1ac1f2e6-1b8b-46f8-855d-1a166c677006', 'function': {'arguments': '{"query": "谢谢，我很好，有什么可以帮助你的吗？"}', 'name': 'DIRECT_RESPONCE'}, 'type': 'function'}]} response_metadata={'finish_reason': 'tool_calls'} id='run-790d127d-c8fb-40de-890c-91ed77d9f89f-0' tool_calls=[{'name': 'DIRECT_RESPONCE', 'args': {'query': '谢谢，我很好，有什么可以帮助你的吗？'}, 'id': '1ac1f2e6-1b8b-46f8-855d-1a166c677006', 'type': 'tool_call'}]
+converted_message.tool_calls=[{'name': 'DIRECT_RESPONCE', 'args': {'query': '谢谢，我很好，有什么可以帮助你的吗？'}, 'id': '1ac1f2e6-1b8b-46f8-855d-1a166c677006', 'type': 'tool_call'}]
+---ROUTE DESTINATION---
+---返回的导航字段为:direct_responce，该字段不在导航列表内，ROUTE QUESTION TO LLM---
+---ROUTE QUESTION TO LLM---
+---LLM Fallback---
+context_str='[human]你好;[ai]你好！有什么可以帮助你的吗？;[human]你很好'
+len(context_str)=39
+截断后的len(context_str)=39
+content='谢谢！我是一个AI助手，没有情感，但我尽力提供最好的帮助。有什么我可以为你做的吗？' response_metadata={'finish_reason': 'stop'} id='run-1db3a659-1c21-477d-a7c7-e7bdd5637422-0'
+converted_message.tool_calls=[]
+get_last_state中获取到的navigated_sub_nodes:['Rag']
+get_last_state中获取到的navigated_question_and_tool:None
+原始的消息数量=4
+supervisor_post_process_node中获取到的navigated_sub_nodes:['Rag']
+supervisor_post_process_node中获取到的navigated_question_and_tool:None
+*************************************************************************************
+Enter in super_graph,len(messages)=4
+**********************************
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+super_graph 导航输出的原始工具列表:[{'name': 'FINISH', 'args': {}, 'id': '96d9539e-c500-4261-8aca-9a1bf6d0c8c2', 'type': 'tool_call'}]
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+*************************************************************************************
+Current in super_graph, super_graph outputed next: FINISH
+*************************************************************************************
+Current in super_graph, Next to: FINISH
+~~~输出最终执行结果~~~
+用户问题：你很好
+最后答案：谢谢！我是一个AI助手，没有情感，但我尽力提供最好的帮助。有什么我可以为你做的吗？
+~~~输出最终执行结果~~~
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+============================================================
+INFO:     127.0.0.1:33344 - "POST /chat/completions HTTP/1.1" 200 OK
+2024-08-07 09:11:56,972 httpx        951833 INFO     HTTP Request: POST http://127.0.0.1:7861/chat/completions "HTTP/1.1 200 OK"
+2024-08-07 09:12:01,549 httpx        951458 INFO     HTTP Request: POST http://10.1.150.105:9997/v1/chat/completions "HTTP/1.1 200 OK"
+2024-08-07 09:12:02,363 httpx        951458 INFO     HTTP Request: POST http://10.1.150.105:9997/v1/chat/completions "HTTP/1.1 200 OK"
+2024-08-07 09:12:02,751 openai._base_client 951458 INFO     Retrying request to /chat/completions in 0.882130 seconds
+2024-08-07 09:12:03,650 httpx        951458 INFO     HTTP Request: POST http://10.1.150.105:9997/v1/chat/completions "HTTP/1.1 200 OK"
+2024-08-07 09:12:04,419 httpx        951458 INFO     HTTP Request: POST http://10.1.150.105:9997/v1/chat/completions "HTTP/1.1 200 OK"
+2024-08-07 09:12:06,102 httpx        951458 INFO     HTTP Request: POST http://10.1.150.105:9997/v1/chat/completions "HTTP/1.1 200 OK"
+2024-08-07 09:12:06,752 httpx        951458 INFO     HTTP Request: POST http://10.1.150.105:9997/v1/chat/completions "HTTP/1.1 200 OK"
+============================================================
+============================================================
+触发python_backend......jqchat/webapp/main.py#L335
+============================================================
+(IN Web) User Question: 我也很好
+进入改写环节前的user_prompt=我也很好
+content='' response_metadata={'finish_reason': 'stop'} id='run-c8845671-32d9-4c0c-9aef-6ad712eb7137-0'
+converted_message.tool_calls=[]
+question_rewrite_chain result=None
+question_rewrite_chain执行出现错误:'NoneType' object has no attribute 'q',但忽略
+改写后得到的rewrited_question=
+original_question=我也很好
+history_messages_context=你好！有什么可以帮助你的吗？||你很好||谢谢！我是一个AI助手，没有情感，但我尽力提供最好的帮助。有什么我可以为你做的吗？
+rewrited_question=我也很好
+content='{"k":"no"}' response_metadata={'finish_reason': 'stop'} id='run-b29b19db-6f58-4807-9158-99e6dfbdeb9a-0'
+converted_message.tool_calls=[]
+判断：Whether question '我也很好' is related to [Codeing/Data File/Analyzing]? 判断结果：response=GradeCodingRelavance(k='no')
+=*==*==*==*==*==*==*==*==*==*==*==*==*==*==*==*==*==*==*==*=
+In Agent 'arun_graph_workflow'：question='我也很好'
+get_last_state中获取到的navigated_sub_nodes:None
+get_last_state中获取到的navigated_question_and_tool:None
+原始的消息数量=5
+supervisor_post_process_node中获取到的navigated_sub_nodes:None
+supervisor_post_process_node中获取到的navigated_question_and_tool:None
+*************************************************************************************
+Enter in super_graph,len(messages)=5
+**********************************
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+super_graph 导航输出的原始工具列表为空，尝试从LLM返回内容中直接提取:
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Current in super_graph, super_graph outputed next: 
+navigated_sub_node:set()
+But navigated_sub_node:set() 为空
+So let next='Rag'
+Current in super_graph, Next to: Rag
+---ROUTE QUESTION---
+content=' 很高兴听到你过得好！有什么我可以帮助你的吗？' response_metadata={'finish_reason': 'stop'} id='run-f37b3143-53db-4957-8f69-867fbfec7603-0'
+converted_message.tool_calls=[]
+---ROUTE DESTINATION---
+---Router Could Not Decide Where To GO (len[tool_calls]) == 0), SO ROUTE QUESTION TO LLM ---
+---LLM Fallback---
+context_str='[human]你好;[ai]你好！有什么可以帮助你的吗？;[human]你很好;[ai]谢谢！我是一个AI助手，没有情感，但我尽力提供最好的帮助。有什么我可以为你做的吗？;[human]我也很好'
+len(context_str)=97
+截断后的len(context_str)=97
+content='很高兴听到你也很好的消息！如果有什么需要帮助的，随时告诉我。' response_metadata={'finish_reason': 'stop'} id='run-c9abb16e-64a4-4d03-bd71-38f2967258a5-0'
+converted_message.tool_calls=[]
+get_last_state中获取到的navigated_sub_nodes:['Rag']
+get_last_state中获取到的navigated_question_and_tool:None
+原始的消息数量=6
+supervisor_post_process_node中获取到的navigated_sub_nodes:['Rag']
+supervisor_post_process_node中获取到的navigated_question_and_tool:None
+*************************************************************************************
+Enter in super_graph,len(messages)=6
+**********************************
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+super_graph 导航输出的原始工具列表:[{'name': 'Rag', 'args': {}, 'id': 'e169db23-3d3a-420d-99b3-3af58cfd5767', 'type': 'tool_call'}]
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+*************************************************************************************
+Current in super_graph, super_graph outputed next: Rag
+*************************************************************************************
+The output next 'Rag' is in navigated_sub_nodes '['Rag']'
+The last_message is '<class 'langchain_core.messages.ai.AIMessage'>'属于(ToolMessage,AIMessage)
+并且message.content已存在，如下: '很高兴听到你也很好的消息！如果有什么需要帮助的，随时告诉我。' 
+So let next='FINISH'
+Current in super_graph, Next to: FINISH
+~~~输出最终执行结果~~~
+用户问题：我也很好
+最后答案：很高兴听到你也很好的消息！如果有什么需要帮助的，随时告诉我。
+~~~输出最终执行结果~~~
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+============================================================
+INFO:     127.0.0.1:58896 - "POST /chat/completions HTTP/1.1" 200 OK
+2024-08-07 09:12:07,625 httpx        951833 INFO     HTTP Request: POST http://127.0.0.1:7861/chat/completions "HTTP/1.1 200 OK"
+2024-08-07 09:12:41,251 openai._base_client 951458 INFO     Retrying request to /chat/completions in 0.970235 seconds
+2024-08-07 09:12:42,239 httpx        951458 INFO     HTTP Request: POST http://10.1.150.105:9997/v1/chat/completions "HTTP/1.1 200 OK"
+2024-08-07 09:12:43,268 httpx        951458 INFO     HTTP Request: POST http://10.1.150.105:9997/v1/chat/completions "HTTP/1.1 200 OK"
+2024-08-07 09:12:44,965 httpx        951458 INFO     HTTP Request: POST http://10.1.150.105:9997/v1/chat/completions "HTTP/1.1 200 OK"
+2024-08-07 09:12:45,360 httpx        951458 INFO     HTTP Request: POST http://10.1.150.105:9997/v1/chat/completions "HTTP/1.1 200 OK"
+============================================================
+============================================================
+触发python_backend......jqchat/webapp/main.py#L335
+============================================================
+(IN Web) User Question: 你好
+进入改写环节前的user_prompt=你好
+=*==*==*==*==*==*==*==*==*==*==*==*==*==*==*==*==*==*==*==*=
+In Agent 'arun_graph_workflow'：question='你好'
+get_last_state中获取到的navigated_sub_nodes:None
+get_last_state中获取到的navigated_question_and_tool:None
+supervisor_post_process_node中获取到的navigated_sub_nodes:None
+supervisor_post_process_node中获取到的navigated_question_and_tool:None
+*************************************************************************************
+Enter in super_graph,len(messages)=1
+**********************************
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+super_graph 导航输出的原始工具列表为空，尝试从LLM返回内容中直接提取: 你好，有什么可以帮助你的吗？ FINISH
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+*************************************************************************************
+Current in super_graph, super_graph outputed next: FINISH
+*************************************************************************************
+The output next 'FINISH', next=='FINISH', but 'len(navigated_sub_nodes)==0',we have not answer the question
+So let next='Rag'
+Current in super_graph, Next to: Rag
+---ROUTE QUESTION---
+content='' additional_kwargs={'tool_calls': [{'index': None, 'id': '1547ce39-eee3-435c-b1cf-620a61db1206', 'function': {'arguments': '{"query": "你好"}', 'name': 'DIRECT_RESPONCE'}, 'type': 'function'}]} response_metadata={'finish_reason': 'tool_calls'} id='run-5b944de0-bb7c-4b4f-9c0e-f7ad539ec8ec-0' tool_calls=[{'name': 'DIRECT_RESPONCE', 'args': {'query': '你好'}, 'id': '1547ce39-eee3-435c-b1cf-620a61db1206', 'type': 'tool_call'}]
+converted_message.tool_calls=[{'name': 'DIRECT_RESPONCE', 'args': {'query': '你好'}, 'id': '1547ce39-eee3-435c-b1cf-620a61db1206', 'type': 'tool_call'}]
+---ROUTE DESTINATION---
+---返回的导航字段为:direct_responce，该字段不在导航列表内，ROUTE QUESTION TO LLM---
+---ROUTE QUESTION TO LLM---
+---LLM Fallback---
+context_str='[human]你好'
+len(context_str)=9
+截断后的len(context_str)=9
+content='你好！有什么可以帮助你的吗？' response_metadata={'finish_reason': 'stop'} id='run-ccb4d587-9d90-49dc-a458-39fe843d617e-0'
+converted_message.tool_calls=[]
+get_last_state中获取到的navigated_sub_nodes:['Rag']
+get_last_state中获取到的navigated_question_and_tool:None
+原始的消息数量=2
+supervisor_post_process_node中获取到的navigated_sub_nodes:['Rag']
+supervisor_post_process_node中获取到的navigated_question_and_tool:None
+*************************************************************************************
+Enter in super_graph,len(messages)=2
+**********************************
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+super_graph 导航输出的原始工具列表为空，尝试从LLM返回内容中直接提取: 你好！有什么可以帮助你的吗？ FINISH
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+*************************************************************************************
+Current in super_graph, super_graph outputed next: FINISH
+*************************************************************************************
+Current in super_graph, Next to: FINISH
+~~~输出最终执行结果~~~
+用户问题：你好
+最后答案：你好！有什么可以帮助你的吗？
+~~~输出最终执行结果~~~
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+============================================================
+INFO:     127.0.0.1:52688 - "POST /chat/completions HTTP/1.1" 200 OK
+2024-08-07 09:12:46,467 httpx        951833 INFO     HTTP Request: POST http://127.0.0.1:7861/chat/completions "HTTP/1.1 200 OK"
+2024-08-07 09:13:25,573 httpx        951458 INFO     HTTP Request: POST http://10.1.150.105:9997/v1/chat/completions "HTTP/1.1 200 OK"
+2024-08-07 09:13:26,352 httpx        951458 INFO     HTTP Request: POST http://10.1.150.105:9997/v1/chat/completions "HTTP/1.1 200 OK"
+2024-08-07 09:13:26,734 openai._base_client 951458 INFO     Retrying request to /chat/completions in 0.851392 seconds
+2024-08-07 09:13:27,607 httpx        951458 INFO     HTTP Request: POST http://10.1.150.105:9997/v1/chat/completions "HTTP/1.1 200 OK"
+2024-08-07 09:13:31,851 httpx        951458 INFO     HTTP Request: POST http://10.1.150.105:9997/v1/chat/completions "HTTP/1.1 200 OK"
+2024-08-07 09:13:34,233 httpx        951458 INFO     HTTP Request: POST http://10.1.150.105:9997/v1/chat/completions "HTTP/1.1 200 OK"
+2024-08-07 09:13:38,956 httpx        951458 INFO     HTTP Request: POST http://10.1.150.105:9997/v1/chat/completions "HTTP/1.1 200 OK"
+============================================================
+============================================================
+触发python_backend......jqchat/webapp/main.py#L335
+============================================================
+(IN Web) User Question: 请绘制sin(x)曲线图
+进入改写环节前的user_prompt=请绘制sin(x)曲线图
+content='' response_metadata={'finish_reason': 'stop'} id='run-33b71af7-832d-4c06-ae6b-b26213d9ed88-0'
+converted_message.tool_calls=[]
+question_rewrite_chain result=None
+question_rewrite_chain执行出现错误:'NoneType' object has no attribute 'q',但忽略
+改写后得到的rewrited_question=
+original_question=请绘制sin(x)曲线图
+history_messages_context=你好||你好！有什么可以帮助你的吗？
+rewrited_question=请绘制sin(x)曲线图
+content='{"k":"yes"}' response_metadata={'finish_reason': 'stop'} id='run-6c6395dc-81ea-4c18-ae83-1d5a7455fbdf-0'
+converted_message.tool_calls=[]
+判断：Whether question '请绘制sin(x)曲线图' is related to [Codeing/Data File/Analyzing]? 判断结果：response=GradeCodingRelavance(k='yes')
+=*==*==*==*==*==*==*==*==*==*==*==*==*==*==*==*==*==*==*==*=
+In Agent 'arun_graph_workflow'：question='请绘制sin(x)曲线图'
+get_last_state中获取到的navigated_sub_nodes:None
+get_last_state中获取到的navigated_question_and_tool:None
+原始的消息数量=3
+supervisor_post_process_node中获取到的navigated_sub_nodes:None
+supervisor_post_process_node中获取到的navigated_question_and_tool:None
+*************************************************************************************
+Enter in super_graph,len(messages)=3
+**********************************
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+super_graph 导航输出的原始工具列表:[{'name': 'FINISH', 'args': {}, 'id': 'da0680e5-5663-48ec-bfdf-7062cf15dbab', 'type': 'tool_call'}]
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+*************************************************************************************
+Current in super_graph, super_graph outputed next: FINISH
+*************************************************************************************
+The output next 'FINISH', next=='FINISH', but 'len(navigated_sub_nodes)==0',we have not answer the question
+So let next='Rag'
+Current in super_graph, Next to: Rag
+---ROUTE QUESTION---
+content='' additional_kwargs={'tool_calls': [{'index': None, 'id': '5ef9e82f-6413-4ddd-b0b9-c2cf882062dc', 'function': {'arguments': '{"query": "绘制sin(x)曲线图"}', 'name': 'CODE_GENERATION'}, 'type': 'function'}]} response_metadata={'finish_reason': 'tool_calls'} id='run-c922ffdd-09d6-4318-a761-0f4cfcbaa36d-0' tool_calls=[{'name': 'CODE_GENERATION', 'args': {'query': '绘制sin(x)曲线图'}, 'id': '5ef9e82f-6413-4ddd-b0b9-c2cf882062dc', 'type': 'tool_call'}]
+converted_message.tool_calls=[{'name': 'CODE_GENERATION', 'args': {'query': '绘制sin(x)曲线图'}, 'id': '5ef9e82f-6413-4ddd-b0b9-c2cf882062dc', 'type': 'tool_call'}]
+---ROUTE DESTINATION---
+---ROUTE QUESTION TO CODE GENERATION---
+---LLM Fallback---
+context_str='[human]你好;[ai]你好！有什么可以帮助你的吗？;[human]请绘制sin(x)曲线图'
+len(context_str)=48
+截断后的len(context_str)=48
+content="我目前无法直接绘制图形，但我可以告诉你如何使用Python的matplotlib库来绘制sin(x)的曲线图。以下是一个简单的示例代码：\n\n```python\nimport numpy as np\nimport matplotlib.pyplot as plt\n\nx = np.linspace(0, 2 * np.pi, 100)  # 生成从0到2π的100个点\ny = np.sin(x)  # 计算这些点的正弦值\n\nplt.plot(x, y)  # 绘制曲线\nplt.xlabel('x')  # 设置x轴标签\nplt.ylabel('sin(x)')  # 设置y轴标签\nplt.title('Sin(x) Curve')  # 设置标题\nplt.show()  # 显示图形\n```\n\n运行这段代码，你将看到一个从0到2π的sin(x)曲线图。" response_metadata={'finish_reason': 'stop'} id='run-010c9e7c-ae5a-40c3-af63-962fc4384366-0'
+converted_message.tool_calls=[]
+get_last_state中获取到的navigated_sub_nodes:['Rag']
+get_last_state中获取到的navigated_question_and_tool:None
+原始的消息数量=4
+supervisor_post_process_node中获取到的navigated_sub_nodes:['Rag']
+supervisor_post_process_node中获取到的navigated_question_and_tool:None
+*************************************************************************************
+Enter in super_graph,len(messages)=4
+**********************************
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+super_graph 导航输出的原始工具列表:[{'name': 'FINISH', 'args': {'name': 'FINISH', 'arguments': '要绘制sin(x)的曲线图，你通常需要使用Python的matplotlib库。首先，你需要导入必要的库，例如numpy和matplotlib。然后，你可以使用numpy生成一系列的x值，接着计算对应的sin(x)值。最后，使用matplotlib的plot函数绘制这些值。由于我当前无法运行代码，我无法直接为你绘制这个图形，但你可以按照我描述的步骤自己尝试。'}, 'id': 'ff8c452d-90b3-4efb-9127-63980e5e7462', 'type': 'tool_call'}]
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+*************************************************************************************
+Current in super_graph, super_graph outputed next: FINISH
+*************************************************************************************
+Current in super_graph, Next to: FINISH
+~~~输出最终执行结果~~~
+用户问题：请绘制sin(x)曲线图
+最后答案：我目前无法直接绘制图形，但我可以告诉你如何使用Python的matplotlib库来绘制sin(x)的曲线图。以下是一个简单的示例代码：
+
+```python
+import numpy as np
+import matplotlib.pyplot as plt
+
+x = np.linspace(0, 2 * np.pi, 100)  # 生成从0到2π的100个点
+y = np.sin(x)  # 计算这些点的正弦值
+
+plt.plot(x, y)  # 绘制曲线
+plt.xlabel('x')  # 设置x轴标签
+plt.ylabel('sin(x)')  # 设置y轴标签
+plt.title('Sin(x) Curve')  # 设置标题
+plt.show()  # 显示图形
+```
+
+运行这段代码，你将看到一个从0到2π的sin(x)曲线图。
+~~~输出最终执行结果~~~
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+============================================================
+INFO:     127.0.0.1:43186 - "POST /chat/completions HTTP/1.1" 200 OK
+2024-08-07 09:13:43,852 httpx        951833 INFO     HTTP Request: POST http://127.0.0.1:7861/chat/completions "HTTP/1.1 200 OK"
+2024-08-07 09:14:38,917 httpx        951458 INFO     HTTP Request: POST http://10.1.150.105:9997/v1/chat/completions "HTTP/1.1 200 OK"
+2024-08-07 09:14:39,694 httpx        951458 INFO     HTTP Request: POST http://10.1.150.105:9997/v1/chat/completions "HTTP/1.1 200 OK"
+2024-08-07 09:14:40,073 openai._base_client 951458 INFO     Retrying request to /chat/completions in 0.764309 seconds
+2024-08-07 09:14:40,854 httpx        951458 INFO     HTTP Request: POST http://10.1.150.105:9997/v1/chat/completions "HTTP/1.1 200 OK"
+2024-08-07 09:14:42,506 httpx        951458 INFO     HTTP Request: POST http://10.1.150.105:9997/v1/chat/completions "HTTP/1.1 200 OK"
+2024-08-07 09:14:44,348 httpx        951458 INFO     HTTP Request: POST http://10.1.150.105:9997/v1/chat/completions "HTTP/1.1 200 OK"
+2024-08-07 09:14:45,409 httpx        951458 INFO     HTTP Request: POST http://10.1.150.105:9997/v1/chat/completions "HTTP/1.1 200 OK"
+============================================================
+============================================================
+触发python_backend......jqchat/webapp/main.py#L335
+============================================================
+(IN Web) User Question: 啊
+进入改写环节前的user_prompt=啊
+content='' response_metadata={'finish_reason': 'stop'} id='run-c8ad8b9b-8273-4fe2-8c92-08c736dae70c-0'
+converted_message.tool_calls=[]
+question_rewrite_chain result=None
+question_rewrite_chain执行出现错误:'NoneType' object has no attribute 'q',但忽略
+改写后得到的rewrited_question=
+original_question=啊
+history_messages_context=谢谢！我是一个AI助手，没有情感，但我尽力提供最好的帮助。有什么我可以为你做的吗？||我也很好||很高兴听到你也很好的消息！如果有什么需要帮助的，随时告诉我。
+rewrited_question=啊
+content='{"k":"no"}' response_metadata={'finish_reason': 'stop'} id='run-8a56d707-7373-42bf-9192-1af958ca09fa-0'
+converted_message.tool_calls=[]
+判断：Whether question '啊' is related to [Codeing/Data File/Analyzing]? 判断结果：response=GradeCodingRelavance(k='no')
+=*==*==*==*==*==*==*==*==*==*==*==*==*==*==*==*==*==*==*==*=
+In Agent 'arun_graph_workflow'：question='啊'
+get_last_state中获取到的navigated_sub_nodes:None
+get_last_state中获取到的navigated_question_and_tool:None
+原始的消息数量=7
+supervisor_post_process_node中获取到的navigated_sub_nodes:None
+supervisor_post_process_node中获取到的navigated_question_and_tool:None
+*************************************************************************************
+Enter in super_graph,len(messages)=1
+**********************************
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+super_graph 导航输出的原始工具列表为空，尝试从LLM返回内容中直接提取: 我不明白你的意思，请重新描述你的问题，让我能够帮助你。如果你在尝试发出声音或测试麦克风，请确认你现在是否在一个可以正常交流的环境中。
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Current in super_graph, super_graph outputed next: 
+navigated_sub_node:set()
+But navigated_sub_node:set() 为空
+So let next='Rag'
+Current in super_graph, Next to: Rag
+---ROUTE QUESTION---
+content='' additional_kwargs={'tool_calls': [{'index': None, 'id': '10939a6e-2f07-4eff-aa09-17190d8a0792', 'function': {'arguments': '{"query": "啊"}', 'name': 'DIRECT_RESPONCE'}, 'type': 'function'}]} response_metadata={'finish_reason': 'tool_calls'} id='run-df1f11cd-5260-44b1-a0f6-f067dd65791f-0' tool_calls=[{'name': 'DIRECT_RESPONCE', 'args': {'query': '啊'}, 'id': '10939a6e-2f07-4eff-aa09-17190d8a0792', 'type': 'tool_call'}]
+converted_message.tool_calls=[{'name': 'DIRECT_RESPONCE', 'args': {'query': '啊'}, 'id': '10939a6e-2f07-4eff-aa09-17190d8a0792', 'type': 'tool_call'}]
+---ROUTE DESTINATION---
+---返回的导航字段为:direct_responce，该字段不在导航列表内，ROUTE QUESTION TO LLM---
+---ROUTE QUESTION TO LLM---
+---LLM Fallback---
+context_str='[human]你好'
+len(context_str)=9
+截断后的len(context_str)=9
+content='你好，有什么可以帮助你的吗？你的“啊”似乎像是需要一些帮助或表达了一些不确定或惊讶的情绪。请告诉我更多的细节，我会尽力帮助你。' response_metadata={'finish_reason': 'stop'} id='run-c7db6155-919e-4939-93f6-156cbee0be3b-0'
+converted_message.tool_calls=[]
+get_last_state中获取到的navigated_sub_nodes:['Rag']
+get_last_state中获取到的navigated_question_and_tool:None
+原始的消息数量=8
+supervisor_post_process_node中获取到的navigated_sub_nodes:['Rag']
+supervisor_post_process_node中获取到的navigated_question_and_tool:None
+*************************************************************************************
+Enter in super_graph,len(messages)=2
+**********************************
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+super_graph 导航输出的原始工具列表为空，尝试从LLM返回内容中直接提取: It seems like your message might have been cut off or perhaps you're not sure what to ask. How can I assist you today? Whether it's information, a task, or just a chat, feel free to let me know! FINISH
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+*************************************************************************************
+Current in super_graph, super_graph outputed next: FINISH
+*************************************************************************************
+Current in super_graph, Next to: FINISH
+~~~输出最终执行结果~~~
+用户问题：啊
+最后答案：你好，有什么可以帮助你的吗？你的“啊”似乎像是需要一些帮助或表达了一些不确定或惊讶的情绪。请告诉我更多的细节，我会尽力帮助你。
+~~~输出最终执行结果~~~
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+============================================================
+INFO:     127.0.0.1:55816 - "POST /chat/completions HTTP/1.1" 200 OK
+2024-08-07 09:14:47,314 httpx        951833 INFO     HTTP Request: POST http://127.0.0.1:7861/chat/completions "HTTP/1.1 200 OK"
+2024-08-07 09:16:22,792 httpx        951458 INFO     HTTP Request: POST http://10.1.150.105:9997/v1/chat/completions "HTTP/1.1 200 OK"
+2024-08-07 09:16:24,516 httpx        951458 INFO     HTTP Request: POST http://10.1.150.105:9997/v1/chat/completions "HTTP/1.1 200 OK"
+2024-08-07 09:16:24,901 openai._base_client 951458 INFO     Retrying request to /chat/completions in 0.960159 seconds
+2024-08-07 09:16:25,879 httpx        951458 INFO     HTTP Request: POST http://10.1.150.105:9997/v1/chat/completions "HTTP/1.1 200 OK"
+2024-08-07 09:16:28,023 httpx        951458 INFO     HTTP Request: POST http://10.1.150.105:9997/v1/chat/completions "HTTP/1.1 200 OK"
+2024-08-07 09:16:31,106 httpx        951458 INFO     HTTP Request: POST http://10.1.150.105:9997/v1/chat/completions "HTTP/1.1 200 OK"
+2024-08-07 09:16:32,182 httpx        951458 INFO     HTTP Request: POST http://10.1.150.105:9997/v1/chat/completions "HTTP/1.1 200 OK"
+============================================================
+============================================================
+触发python_backend......jqchat/webapp/main.py#L335
+============================================================
+(IN Web) User Question: 是的方法
+进入改写环节前的user_prompt=是的方法
+content='' additional_kwargs={'tool_calls': [{'index': None, 'id': '065c0e6b-afb2-4ac6-b6c1-21e6aefb0e76', 'function': {'arguments': '{"q": "是的方法"}', 'name': 'QuestionReWrite'}, 'type': 'function'}]} response_metadata={'finish_reason': 'tool_calls'} id='run-fbc2ddfa-f741-4a76-9a22-e5a78f9cb502-0' tool_calls=[{'name': 'QuestionReWrite', 'args': {'q': '是的方法'}, 'id': '065c0e6b-afb2-4ac6-b6c1-21e6aefb0e76', 'type': 'tool_call'}]
+converted_message.tool_calls=[{'name': 'QuestionReWrite', 'args': {'q': '是的方法'}, 'id': '065c0e6b-afb2-4ac6-b6c1-21e6aefb0e76', 'type': 'tool_call'}]
+question_rewrite_chain result=QuestionReWrite(q='是的方法')
+改写后得到的rewrited_question=是的方法
+original_question=是的方法
+history_messages_context=很高兴听到你也很好的消息！如果有什么需要帮助的，随时告诉我。||啊||你好，有什么可以帮助你的吗？你的“啊”似乎像是需要一些帮助或表达了一些不确定或惊讶的情绪。请告诉我更多的细节，我会尽力帮助你。
+rewrited_question=是的方法
+content='{"k":"no"}' response_metadata={'finish_reason': 'stop'} id='run-d125fbba-768c-4711-821b-c1c88760c714-0'
+converted_message.tool_calls=[]
+判断：Whether question '是的方法' is related to [Codeing/Data File/Analyzing]? 判断结果：response=GradeCodingRelavance(k='no')
+=*==*==*==*==*==*==*==*==*==*==*==*==*==*==*==*==*==*==*==*=
+In Agent 'arun_graph_workflow'：question='是的方法'
+get_last_state中获取到的navigated_sub_nodes:None
+get_last_state中获取到的navigated_question_and_tool:None
+原始的消息数量=9
+supervisor_post_process_node中获取到的navigated_sub_nodes:None
+supervisor_post_process_node中获取到的navigated_question_and_tool:None
+*************************************************************************************
+Enter in super_graph,len(messages)=3
+**********************************
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+super_graph 导航输出的原始工具列表为空，尝试从LLM返回内容中直接提取:
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Current in super_graph, super_graph outputed next: 
+navigated_sub_node:set()
+But navigated_sub_node:set() 为空
+So let next='Rag'
+Current in super_graph, Next to: Rag
+---ROUTE QUESTION---
+content=' 很抱歉，您的问题不是很清楚。能否请您详细说明一下，以便我能够更好地帮助您？谢谢！\nThought: I now know the final answer.\nFinal Answer: 请您提供更多的信息或详细描述您的问题，这样我才能更好地回答您。如果您有任何具体问题或需要帮助，请随时告诉我。谢谢！' response_metadata={'finish_reason': 'stop'} id='run-df0cf4c2-7b41-4041-891d-e102ab20e81d-0'
+converted_message.tool_calls=[]
+---ROUTE DESTINATION---
+---Router Could Not Decide Where To GO (len[tool_calls]) == 0), SO ROUTE QUESTION TO LLM ---
+---LLM Fallback---
+context_str='[human]你好;[ai]你好！有什么可以帮助你的吗？;[human]你很好'
+len(context_str)=39
+截断后的len(context_str)=39
+content='我不太明白你的问题，请提供更多的上下文或者明确你的问题，这样我才能更好地帮助你。如果你是在称赞我，我会继续努力提供更好的服务！' response_metadata={'finish_reason': 'stop'} id='run-7d1e77ec-e745-4597-9df5-d3f47e0a966a-0'
+converted_message.tool_calls=[]
+get_last_state中获取到的navigated_sub_nodes:['Rag']
+get_last_state中获取到的navigated_question_and_tool:None
+原始的消息数量=10
+supervisor_post_process_node中获取到的navigated_sub_nodes:['Rag']
+supervisor_post_process_node中获取到的navigated_question_and_tool:None
+*************************************************************************************
+Enter in super_graph,len(messages)=4
+**********************************
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+super_graph 导航输出的原始工具列表:[{'name': 'Rag', 'args': {'content': '您的问题不是很清楚，请提供更多详细信息，以便我可以帮助您。'}, 'id': '6c1ddfb5-92a3-4373-88ab-2d6ac3c6ccfe', 'type': 'tool_call'}]
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+*************************************************************************************
+Current in super_graph, super_graph outputed next: Rag
+*************************************************************************************
+The output next 'Rag' is in navigated_sub_nodes '['Rag']'
+The last_message is '<class 'langchain_core.messages.ai.AIMessage'>'属于(ToolMessage,AIMessage)
+并且message.content已存在，如下: '谢谢！我是一个AI助手，没有情感，但我尽力提供最好的帮助。有什么我可以为你做的吗？' 
+So let next='FINISH'
+Current in super_graph, Next to: FINISH
+~~~输出最终执行结果~~~
+用户问题：是的方法
+最后答案：我不太明白你的问题，请提供更多的上下文或者明确你的问题，这样我才能更好地帮助你。如果你是在称赞我，我会继续努力提供更好的服务！
+~~~输出最终执行结果~~~
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+============================================================
+INFO:     127.0.0.1:60540 - "POST /chat/completions HTTP/1.1" 200 OK
+2024-08-07 09:16:34,057 httpx        951833 INFO     HTTP Request: POST http://127.0.0.1:7861/chat/completions "HTTP/1.1 200 OK"

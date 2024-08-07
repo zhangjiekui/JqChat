@@ -70,16 +70,30 @@ class JqkjDocxReader(BaseReader):
                 "`pip install python-docx`"
             )
         self.DocumentFunc = DocxDocumentFunc
+        self.orginal_filepath_extra_info = None
         if file_path:
             file_path = Path(file_path)
-            if file_path.suffix in ['.pdf','.doc','md']:
-                input_filepaths,original_valid_input_filepaths = convert_file_to_docx(file_path)
-                self.file_path =  input_filepaths[0]
+            if file_path.exists():
+                if file_path.suffix in ['.pdf','.doc','.md']:
+                    input_filepaths_exist,input_filepaths_exist_and_replaced_by_docx_if_converted = convert_file_to_docx(file_path,overwrite=False)
+                    self.file_path =  input_filepaths_exist_and_replaced_by_docx_if_converted[0]
+                    self.orginal_filepath_extra_info = {'original_jq':str(file_path)}
+                else:
+                    self.file_path =  file_path
             else:
-                self.file_path =  file_path
+                logger.warning(f"文件不存在:{file_path}")
 
     def load(self, extra_info: Optional[Dict] = None) -> List[LmDocument]:
         """Parse docx file."""
+        if not extra_info:
+            extra_info = {}
+        
+        if self.orginal_filepath_extra_info:
+            extra_info.update(self.orginal_filepath_extra_info)
+            # a = {"a":0}
+            # b= {"b":1}
+            # c = a.update(b)
+        # self.load_data(file_path = self.file_path,extra_info= {})
         return self.load_data(file_path = self.file_path,extra_info= extra_info,)
 
     def load_data(self, file_path: Path, extra_info: Optional[Dict] = None) -> List[LmDocument]:
@@ -488,9 +502,11 @@ class JqkjSimpleDirectoryReader(SimpleDirectoryReader):
         return meta
 
 
-def _test_JqkjDocxReader(file_paths=[]):
+def _test_JqkjDocxReader(file_paths=[fr"/media/temp/发票识别接口文档.md"]):
     # fr'D:\biaoshu\pdf_docx_convert\UserGuide.docx',
-    reader = JqkjDocxReader()
+    reader = JqkjDocxReader(file_path=file_paths[0])
+    d = reader.load()
+
     documents = []
     trees = []
     df_tables = []
@@ -517,6 +533,7 @@ def _test_JqkjDocxReader(file_paths=[]):
     return documents,trees,df_tables
 
 def _test_JqkjSimpleDirectoryReader():
+    
     convert_file_paths=[# fr'/data/projects/JqChat/jqcode/jq_readers/.testinputdocs/厦门市智慧民政一体化平台项目建设方案 V3.6.docx',
                         fr'/data/projects/JqChat/jqcode/jq_readers/.testinputdocs/UserGuide.pdf',
                         fr'/data/projects/JqChat/jqcode/jq_readers/.testinputdocs/AAMIS_项目总体计划_120925.doc',
@@ -535,6 +552,8 @@ def _test_JqkjSimpleDirectoryReader():
     return documents1,documents2
 
 if __name__ == "__main__":
+
+    _test_JqkjDocxReader()
     # _test_JqkjSimpleDirectoryReader()
     # [fr'd:/JqkjKB/jqkjfiles/outputs/outputfiles/converted_docx/厦门市智慧民政一体化平台项目建设方案 V3.6.docx']
 
