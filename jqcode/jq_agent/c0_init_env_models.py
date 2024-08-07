@@ -4,7 +4,7 @@ import re
 import threading
 import pathlib
 from functools import lru_cache
-from typing import Annotated, List, TypedDict, Optional, Sequence
+from typing import Annotated, List, TypedDict, Optional, Sequence,Literal
 from langchain.callbacks.manager import Callbacks
 import openai
 import langchain
@@ -51,22 +51,37 @@ os.environ['TAVILY_API_KEY'] = "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"
 def replace_multiple_newlines(text):
     return re.sub(r'\n+', '\n', text)
 
+# region:废弃的方法
+# def clean_up_list_when_encounter_null_element(messages_a: list, messages_b: list | None, mode: Literal['replace','join']='join') -> list:
+#     if messages_b:
+#         if not isinstance(messages_b,list):
+#             messages_b = [messages_b]
+        
+#         if mode == 'replace':
+#             return messages_b
+        
+#         if not messages_a or messages_a == messages_b:
+#             return messages_b
+#         else:
+#             messages_a = [el for el in messages_a if el not in messages_b]
+#             return messages_a + messages_b
+#     else:
+#         return []
+# endregion
+
 def clean_up_list_when_encounter_null_element(messages_a: list, messages_b: list | None) -> list:
     if messages_b:
         if not isinstance(messages_b,list):
-            messages_b = [messages_b]
-
-        if messages_a:
-            if messages_a == messages_b:
-                return messages_b
-            else:
-                messages_b = [el for el in messages_b if el not in messages_a]
-                return messages_a + messages_b
-        else:
+            messages_b = [messages_b]        
+       
+        if not messages_a or messages_a == messages_b:
             return messages_b
+        else:
+            messages_a = [el for el in messages_a if el not in messages_b]
+            return messages_a + messages_b
     else:
         return []
-    
+
 class SingletonDecorator:
     def __init__(self, cls):
         self._cls = cls

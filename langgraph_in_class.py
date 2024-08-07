@@ -13,7 +13,7 @@ from langchain import hub
 from langchain_core.tools import tool
 from langgraph.checkpoint.sqlite import SqliteSaver
 from langgraph.checkpoint.aiosqlite import AsyncSqliteSaver
-
+from langchain_core.runnables import Runnable, RunnableConfig
 from jqcode.jq_agent.c0_init_env_models import env_models_instance,clean_up_list_when_encounter_null_element
 from jqcode.jq_agent.tools.jq_functions_and_tools import get_flight_number,python_repl_tool
 from jqcode.jq_agent.jq_rag_agent_sub_graph import rag_sub_graph
@@ -26,7 +26,7 @@ logger = jqkj_logger(__file__).get_logger()
 from dotenv import load_dotenv
 _ = load_dotenv()
 
-# region
+# region: Router Data model Class Definitions
 ### Begin: Router Data model Class Definitions
 class DIRECT_RESPONCE(BaseModel):
     """
@@ -61,6 +61,7 @@ class CODE_EXECUTION(BaseModel):
 ### End: Router Data model Class Definitions
 # endregion
 
+    
 class GraphAgentState(TypedDict):
     messages: Annotated[list[AnyMessage], add_messages]
     question_related_messages: Annotated[list[AnyMessage], clean_up_list_when_encounter_null_element]
@@ -70,7 +71,7 @@ class GraphAgentState(TypedDict):
 class GraphAgent:
     def __init__(self,executable_tools:list, routing_tools_wrapped_in_class:list, llm_model:ChatOpenAI=None, recursion_limit:int=25, memory_thread_id:str=shortuuid.uuid()) -> None:
         
-        # print(f'{memory_thread_id=}')
+    # region: 初始化
         _executable_tool_names = [tool.name for tool in executable_tools]
         _routing_tool_names = [tool.__name__ for tool in routing_tools_wrapped_in_class]
         _tool_names = _executable_tool_names + _routing_tool_names
@@ -99,7 +100,9 @@ class GraphAgent:
         self.graph = self.graph_definition()
         self.all_history_messages = self.get_all_history_messages()
         self.question_related_messages = self.get_question_related_messages_from_state()
+    # endregion
     
+    # region: 类内方法定义
     def makeup_message_with_question_id_idx(self,Message_ClassOrInstance:AnyMessage,content:Union[str,None]=None,question_id:Union[str,None]=None,idx_in_a_question_epoch:Union[int,None]=None):
         if not question_id:
             question_id = self.question_id
@@ -149,9 +152,7 @@ class GraphAgent:
         else:
             logger.warning(f'start_idx:{start_idx}必须是Union[int,None]')
         return self.message_idx_in_a_question_epoch
-    
-
-    
+        
     def get_all_history_messages(self):
         self.all_history_messages = self._get_messages_from_state_by_key("messages") 
         return self.all_history_messages
@@ -163,8 +164,9 @@ class GraphAgent:
     def _get_messages_from_state_by_key(self,key:str):
         messages = self.graph.get_state(config=self.config).values[key] 
         return messages
-       
+    # endregion   
     
+    # region:Graph定义
     def graph_definition(self,):
         graph = StateGraph(GraphAgentState)
         graph.add_node("llm",self.call_llm)
@@ -184,53 +186,59 @@ class GraphAgent:
         tool_calls = state['messages'][-1].tool_calls
         results = []
         for t in tool_calls:
-            print(f"LLM Returned tool_calling: ")
-            print(f"    Tool_name:{ t['name']}")
-            print(f"    Tool_args: {t['args']}")
-            if not t['name'] in self.executable_tool_dict:      # check for bad tool name from LLM
-                print("\n ....bad tool name....")
-                result = "bad tool name, retry"  # instruct LLM to retry if bad
-            else:
-                try:
+            logger.info(f"LLM Returned tool_calling: ")
+            tool_name = t['name']
+            tool_args = t['args']
+            logger.debug(f"    Tool_name:{tool_name}")
+            logger.debug(f"    Tool_args: {tool_args}")
+            tool_call_id = t["id"]
+            
+            try:
+                if not tool_name in self.executable_tool_dict:      # check for bad tool name from LLM                
+                    result = f"返回了错误的工具名称'{tool_name}'，工具名必须是{self.executable_tool_names}中的一个"  # instruct LLM to retry if bad
+                    raise Exception(result)
+                else:                    
                     result = self.executable_tool_dict[t['name']].invoke(t['args'])
-                    if "Error" in str(result):
-                        print(f"{t['name']}({t['args']})的执行错误，结果为:'{result}'")
-                        question = state['question']
-                        # message_str = question + f"返回的工具调用名称为{t['name']},工具调用参数为{t['args']},但实际运行时出现错误:{str(result)},请重新返回正确的工具调用名称和参数"
-                        result = f"请重新回答用户问题:{question}，并避免再出现以下错误:{str(result)}"
-                        # human_makeup_message = HumanMessage(content=message_str)
-                        # return {'messages': human_makeup_message,'question_related_messages':human_makeup_message}                    
-                    else:
-                        print(f"{t['name']}({t['args']})的执行正确，结果为:'{result}'")
-                except Exception as e:
-                    print(e)
-            tool_message = ToolMessage(tool_call_id=t['id'], name=t['name'], content=str(result)) 
-            tool_message = self.makeup_message_with_question_id_idx(tool_message)     
-            results.append(tool_message)
+                    result = str(result)
+                    if "error" in result.lower():
+                        raise Exception(result)
+                                  
+                    tool_message = ToolMessage(tool_call_id=tool_call_id, name=tool_name, content=result) 
+                    tool_message = self.makeup_message_with_question_id_idx(tool_message)     
+                    results.append(tool_message)            
+            
+            except Exception as e:
+                question = state['question']
+                error_prompt = f'执行工具调用出现错误:\n  工具名称：{tool_name}\n  调用参数：{tool_args}\n  错误信息：{str(e)}\n'
+                logger.warning(error_prompt)
+                makeup_ai_message = AIMessage(content="", tool_calls=[t])
+                makeup_ai_message = self.makeup_message_with_question_id_idx(makeup_ai_message)
+                makeup_tool_message = ToolMessage(tool_call_id=tool_call_id, name=tool_name,  content=error_prompt)
+                makeup_tool_message = self.makeup_message_with_question_id_idx(makeup_tool_message)
+                makeup_human_message = HumanMessage(content=f"对于用户问题:{question},上次的工具调用出现了错误，请仔细规划和思考，重新生成正确的工具名称和调用参数，避免出现同样的错误！")
+                makeup_human_message = self.makeup_message_with_question_id_idx(makeup_human_message)
+                results = results + [makeup_ai_message,makeup_tool_message,makeup_human_message]
+                # return {'messages': results,'question_related_messages':results}   
+            
+
         print("Back to the model!")
         return {'messages': results,'question_related_messages':results}
     
     def exists_action(self,state:GraphAgentState):
         result = state['messages'][-1]
-        print('*************** finish_reason ***************')
-        try: 
-            print(f'result: {result}')
-            print(f'finish_reason: {result.response_metadata["finish_reason"]}')
-            print('*************** finish_reason ***************') 
-        except:
-            print(f'result has no ["finish_reason"]: {result}')
+
         returned_tool_calling_nums = len(result.tool_calls)
         os.environ["rag_graph_next"] = ''
 
-        if returned_tool_calling_nums>0:
-            print(f'Returned {returned_tool_calling_nums} tool_calls')
+        if returned_tool_calling_nums > 0:
+            logger.debug(f'Returned {returned_tool_calling_nums} tool_calls')
             if returned_tool_calling_nums>1:
-                print(f'!!! Multitple  tool_calls !!!')
+                logger.info(f'!!! 惊喜: Multitple  tool_calls !!!')
             tool_call_1 = result.tool_calls[0]
             tool_call_1_name = tool_call_1['name']
 
             if tool_call_1_name in self.routing_tool_names:
-                print(f"Returned first ToolName is '{tool_call_1_name}', So routing to sub_graph 'Rag:{tool_call_1_name}' Node......")
+                logger.info(f"Returned first ToolName is '{tool_call_1_name}', So routing to sub_graph 'Rag: {tool_call_1_name}' Node......")
                 os.environ["rag_graph_next"] = tool_call_1_name
                 os.environ['rag_args'] = tool_call_1["args"]['query']
                 return "Rag"
@@ -259,8 +267,6 @@ class GraphAgent:
             # 注意设置reserve_last_n_messages = 1，也就是除最后1条消息外，全部的messages均视为历史messages
             question_related_messages = env_models_instance.filter_and_get_messages_relevant_to_query(query=question,messages_list=messages,reserve_last_n_messages = 1)
 
-
-
         # 历史 + 当前
         if input_message not in question_related_messages:
             question_related_messages.append(input_message)
@@ -270,6 +276,17 @@ class GraphAgent:
             print(f"{len(messages)=}")
         try:    
             message = self.model.invoke(messages,config=self.config)
+            try: 
+                finish_reason = message.response_metadata["finish_reason"]
+                reason = 'a finish_reason of “length” means that the AI had more data to output but the limitations of that call prevented it from finishing'
+                if finish_reason ==  "length":
+                    model_name = self.model.bound.model_name
+                    max_tokens = self.model.bound.max_tokens
+                    logger.warning(f'LLM({model_name})返回: finish_reason ==  "length" [{reason}]，当前设置的max_tokens={max_tokens}，请检查调整该设置')
+                    print(f'LLM({model_name})返回: finish_reason ==  "length" [{reason}]，当前设置的max_tokens={max_tokens}，请检查调整该设置值!')
+            except:
+                pass
+
             message = self.makeup_message_with_question_id_idx(message)
 
             question_related_messages.append(message)
@@ -278,7 +295,7 @@ class GraphAgent:
             for m in messages:
                 m.pretty_print()
         
-
+    # endregion: Graph定义
     
 
 
