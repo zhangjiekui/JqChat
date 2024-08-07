@@ -119,7 +119,7 @@ def upload_temp_docs(files, _api: ApiRequest) -> str:
     """
     return _api.upload_temp_docs(files).get("data", {}).get("id")
 
-def chat(query,user,doc,_api:ApiRequest)  :
+def chat(query,user,doc:str,_api:ApiRequest)  :
     return _api.chat_chat(query=query,user=user,doc=doc)
 
 def dialogue_page(
@@ -197,12 +197,11 @@ def dialogue_page(
         chat_box.user_say(prompt)
         chat_box.ai_say("正在思考中...")
         user=ctx.get("uid")
-        doc=selected_kb
+        doc=str(selected_kb_index)
         print(prompt,user,doc)
         msg=chat(query=prompt,user=user,doc=doc,_api=api)
-
         chat_box.update_msg(msg["text"],streaming=False)
-        if(msg["code"]):
+        if("code" in msg):
             chat_box.insert_msg(
                   Markdown( # type: ignore
                                     msg["code"],

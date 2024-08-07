@@ -11,7 +11,7 @@ import sys
 
 from contextlib import asynccontextmanager
 from multiprocessing import Process
-from jqchat.kernel_program.main import main as kernel_program_main
+from jqchat.kernel_program.main import main as kernel_program_main,APP_PORT
 
 logger = logging.getLogger()
 
@@ -180,11 +180,10 @@ def run_webui(
     started_event.set()
     
 #run kernel for code
-def run_kernel_program(started_event: mp.Event = None, run_mode: str = None
-):
+def run_kernel_program(started_event: mp.Event = None, run_mode: str = None):
     try:
         asyncio.run(kernel_program_main())
-        mp.set()
+        started_event.set()
     except Exception as e:
         logging.exception("Error running the kernel_program:")
         sys.exit(1)
@@ -240,7 +239,6 @@ def dump_server_info(after_start=False, args=None):
     from jqcode.jq_knowledge_manegement.chatchat.configs import VERSION
     from jqcode.jq_knowledge_manegement.chatchat.server.utils import api_address, webui_address
 
-    print("\n")
     print("=" * 30 + "Langchain-Chatchat Configuration" + "=" * 30)
     print(f"操作系统：{platform.platform()}.")
     print(f"python版本：{sys.version}")
@@ -249,12 +247,13 @@ def dump_server_info(after_start=False, args=None):
     print("\n")
 
     if after_start:
-        print("\n")
         print(f"服务端运行信息：")
         if args.api:
             print(f"    Chatchat Api Server: {api_address()}")
         if args.webui:
             print(f"    Chatchat WEBUI Server: {webui_address()}")
+        if args.kernel:
+            print(f"    Chatchat Kernel Server: http://0.0.0.0:{APP_PORT}")
     print("=" * 30 + "Langchain-Chatchat Configuration" + "=" * 30)
     print("\n")
 
@@ -335,22 +334,17 @@ async def start_main_server():
     def process_count():
         return len(processes)
     
-    
-    # kernel_started = manager.Event()
-    # if(args.kernel):
-    #     process = Process(
-    #             target=run_kernel_program,
-    #             name=f"Kernel Server",
-    #             kwargs=dict(
-    #                 started_event=kernel_started,
-    #             ),
-    #             daemon=True,
-    #     )    
-    #     processes["kernel"] = process
+    kernel_started = manager.Event()
     if(args.kernel):
-        logger.info("启动kernel")
-        kernel_started = manager.Event()
-        run_kernel_program()
+        process = Process(
+            target=run_kernel_program,
+            name=f"Kernel Server",
+            kwargs=dict(
+                started_event=kernel_started,
+                run_mode=run_mode,
+            ),
+            daemon=False,)  
+        processes["kernel"] = process
     
     
     api_started = manager.Event()
@@ -385,12 +379,12 @@ async def start_main_server():
     if process_count() == 0:
         parser.print_help()
     else:
-        dump_server_info(after_start=False,args=args)
+        # dump_server_info(after_start=False,args=args)
         try:
             if p := processes.get("kernel"):
                 p.start()
                 p.name = f"{p.name} ({p.pid})"
-                kernel_started.wait()  # 等待kernel启动完成
+                # kernel_started.wait()  # 等待kernel启动完成
                 logger.info(f"启动KERNEL服务：{p.name}")
 
             if p := processes.get("api"):
@@ -402,7 +396,7 @@ async def start_main_server():
             if p := processes.get("webui"):
                 p.start()
                 p.name = f"{p.name} ({p.pid})"
-                webui_started.wait()  # 等待webui.py启动完成
+                # webui_started.wait()  # 等待webui.py启动完成
                 logger.info(f"启动WEB服务：{p.name}")
 
             dump_server_info(after_start=True, args=args)
@@ -437,9 +431,9 @@ def main():
     sys.path.append(cwd)
     multiprocessing.freeze_support()
     logger.info(f"应用启动路径:{cwd}")
-    from jqcode.jq_knowledge_manegement.chatchat.server.knowledge_base.migrate import create_tables
+    # from jqcode.jq_knowledge_manegement.chatchat.server.knowledge_base.migrate import create_tables
 
-    create_tables()
+    # create_tables()
     if sys.version_info < (3, 10):
         loop = asyncio.get_event_loop()
     else:
