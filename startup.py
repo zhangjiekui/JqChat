@@ -180,10 +180,10 @@ def run_webui(
     started_event.set()
     
 #run kernel for code
-def run_kernel_program(started_event: mp.Event = None, run_mode: str = None):
+async def run_kernel_program(started_event: mp.Event = None, run_mode: str = None):
     try:
         asyncio.run(kernel_program_main())
-        started_event.set()
+        #started_event.set()
     except Exception as e:
         logging.exception("Error running the kernel_program:")
         sys.exit(1)
@@ -334,17 +334,17 @@ async def start_main_server():
     def process_count():
         return len(processes)
     
-    kernel_started = manager.Event()
-    if(args.kernel):
-        process = Process(
-            target=run_kernel_program,
-            name=f"Kernel Server",
-            kwargs=dict(
-                started_event=kernel_started,
-                run_mode=run_mode,
-            ),
-            daemon=False,)  
-        processes["kernel"] = process
+    #kernel_started = manager.Event()
+    #if(args.kernel):
+    #    process = Process(
+    #        target=kernel_program_main,
+    #        name=f"Kernel Server",
+    #        kwargs=dict(
+    #            started_event=kernel_started,
+    #            run_mode=run_mode,
+    #        ),
+    #        daemon=False,)  
+    #    processes["kernel"] = process
     
     
     api_started = manager.Event()
@@ -431,20 +431,21 @@ def main():
     sys.path.append(cwd)
     multiprocessing.freeze_support()
     logger.info(f"应用启动路径:{cwd}")
-    # from jqcode.jq_knowledge_manegement.chatchat.server.knowledge_base.migrate import create_tables
+    from jqcode.jq_knowledge_manegement.chatchat.server.knowledge_base.migrate import create_tables
 
-    # create_tables()
-    if sys.version_info < (3, 10):
-        loop = asyncio.get_event_loop()
-    else:
-        try:
-            loop = asyncio.get_running_loop()
-        except RuntimeError:
-            loop = asyncio.new_event_loop()
-
-        asyncio.set_event_loop(loop)
-    loop.run_until_complete(start_main_server())
-
+    create_tables()
+    #if sys.version_info < (3, 10):
+    #    loop = asyncio.get_event_loop()
+    #else:
+    #    try:
+    #        loop = asyncio.get_running_loop()
+    #    except RuntimeError:
+    #        loop = asyncio.new_event_loop()
+    #
+    #    asyncio.set_event_loop(loop)
+    #loop.run_until_complete(start_main_server())
+    asyncio.run(start_main_server())
+    asyncio.wait(run_kernel_program())
 
 if __name__ == "__main__":
     main()

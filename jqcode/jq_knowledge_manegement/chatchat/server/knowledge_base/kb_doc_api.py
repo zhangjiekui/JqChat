@@ -7,7 +7,7 @@ from fastapi import Body, File, Form, Query, UploadFile
 from fastapi.responses import FileResponse
 from langchain.docstore.document import Document
 from sse_starlette import EventSourceResponse
-from jqcode.jq_readers.backend_reader_utils.jqkj_doc_pdf2docx_converter import convert_doc_pdf2docx_on_win_and_linux
+from jqcode.jq_readers.backend_reader_utils.jqkj_docs_converter import convert_doc_pdf2docx_on_win_and_linux
 from jqcode.jq_knowledge_manegement.chatchat.configs import (
     CHUNK_SIZE,
     DEFAULT_EMBEDDING_MODEL,

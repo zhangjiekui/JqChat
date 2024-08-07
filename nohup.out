@@ -1,0 +1,138 @@
+2024-08-07 07:26:32,697 root         920019 INFO     启动KERNEL服务：Kernel Server (920241)
+Process Kernel Server:
+Traceback (most recent call last):
+  File "/usr/lib/python3.10/multiprocessing/process.py", line 314, in _bootstrap
+    self.run()
+  File "/usr/lib/python3.10/multiprocessing/process.py", line 108, in run
+    self._target(*self._args, **self._kwargs)
+TypeError: main() got an unexpected keyword argument 'started_event'
+/root/.virtualenvs/test/lib/python3.10/site-packages/pydantic/_internal/_fields.py:161: UserWarning: Field "model_name" has conflict with protected namespace "model_".
+
+You may be able to resolve this warning by setting `model_config['protected_namespaces'] = ()`.
+  warnings.warn(
+[2024-08-07 07:26:38,277] WARNING [langchain_community.utils.user_agent:11] USER_AGENT environment variable not set, consider setting it to identify your requests.
+/data/projects/JqChat/jqcode/jq_agent/c0_init_env_models.py:262: ElasticsearchWarning: this request accesses system indices: [.kibana_security_solution_8.14.0_001, .kibana_security_session_1, .kibana_analytics_8.14.0_001, .apm-custom-link, .security-profile-8, .kibana_alerting_cases_8.14.0_001, .kibana_task_manager_8.14.0_001, .apm-agent-configuration, .security-7, .kibana_ingest_8.14.0_001, .kibana_8.14.0_001], but in a future major version, direct access to system indices will be prevented by default
+  self.all_indices = es_connection.indices.get_alias(index="*")
+[2024-08-07 07:26:43,645] WARNING [langchain_community.utils.user_agent:11] USER_AGENT environment variable not set, consider setting it to identify your requests.
+/data/projects/JqChat/jqcode/jq_agent/c0_init_env_models.py:262: ElasticsearchWarning: this request accesses system indices: [.kibana_security_solution_8.14.0_001, .kibana_security_session_1, .kibana_analytics_8.14.0_001, .apm-custom-link, .security-profile-8, .kibana_alerting_cases_8.14.0_001, .kibana_task_manager_8.14.0_001, .apm-agent-configuration, .security-7, .kibana_ingest_8.14.0_001, .kibana_8.14.0_001], but in a future major version, direct access to system indices will be prevented by default
+  self.all_indices = es_connection.indices.get_alias(index="*")
+####################################
+##本项目运行日志位置: /data/projects/JqChat/jqchat_agent.log
+####################################
+
+
+
+=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*
+项目.env文件路径：/data/projects/JqChat/.env
+=*=* load_dotenv('/data/projects/JqChat/.env')成功！
+=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*
+
+
+
+当前使用的模型base_url为:OpenAI, http://10.1.150.105:9997/v1/
+当前使用的模型为:Langchain ChatOpenAI, qwen2-instruct, API_URL为http://10.1.150.105:9997/v1
+self.embedding_model_name='/data/models/bce-embedding-base_v1'初始化成功！维度为768
+embedding_model_name_8k=None初始化成功！embedding_model_8k.max_seq_length=8192，可根据实际需要进行修改。
+rerank_model_name=None初始化成功！
+当前使用的Elasticsearch URL为| https://10.1.150.105:9200 |,详细信息如下:
+-------Elasticsearch Connection详细信息-------
+{'name': '9a56057ebad3', 'cluster_name': 'docker-cluster', 'cluster_uuid': 'a4C6GMC2QfK5WUBTFuIdwg', 'version': {'number': '8.14.0', 'build_flavor': 'default', 'build_type': 'docker', 'build_hash': '8d96bbe3bf5fed931f3119733895458eab75dca9', 'build_date': '2024-06-03T10:05:49.073003402Z', 'build_snapshot': False, 'lucene_version': '9.10.0', 'minimum_wire_compatibility_version': '7.17.0', 'minimum_index_compatibility_version': '7.0.0'}, 'tagline': 'You Know, for Search'}
+-------Elasticsearch Connection详细信息-------
+-------可以通过Kibana URL查看:| http://127.0.0.1:5601 | http://10.1.150.105:5601 |-------
+当前使用的模型为:Langchain ChatOpenAI, qwen2-instruct, API_URL为http://10.1.150.105:9997/v1
+当前使用的模型为:Langchain ChatOpenAI, qwen2-instruct, API_URL为http://10.1.150.105:9997/v1
+
+###增加了ToolException处理函数_handle_error function
+
+本次程序中提供的所有可用的工具列表:
+ get_flight_number,python_repl_tool
+=================== system_prompt ===================
+当前已存在的知识库列表：knowledge_base_list=['es_test', '李园沁', 'my_new_vs', 'test_doc_tree_reader', 'temp', 'test', 'health', 'test_docs', 'yqli', 'samples', 'test_libreoffice', 'chat']
+已存在index='test_doc_tree_reader'！跳过插入索引的环节。
+(可能新建并刷新后)存在的知识库列表：knowledge_base_list=['es_test', '李园沁', 'my_new_vs', 'test_doc_tree_reader', 'temp', 'test', 'health', 'test_docs', 'yqli', 'samples', 'test_libreoffice', 'chat']
+route(next: str) -> bool - next tool/action should select
+WEB_SEARCH, VECTORSTORE, CODE_GENERATION, CODE_EXECUTION, DIRECT_RESPONCE
+WEB_SEARCH, VECTORSTORE, CODE_GENERATION, CODE_EXECUTION, DIRECT_RESPONCE
+                                                         +-----------+                                                 
+                                                    .....| __start__ |....                                             
+                                          .......... ....+-----------+ .............                                   
+                                ..........       ....          .           .....    ..........                         
+                      ..........            .....             .                 ....          .........                
+                ......                  ....                  .                     ....               ..........      
+    +----------+                     ...                      .                         ...                      ..... 
+    | retrieve |                     .                        .                           .                          . 
+    +----------+                     .                        .                           .                          . 
+          *                          .                        .                           .                          . 
+          *                          .                        .                           .                          . 
+          *                          .                        .                           .                          . 
++-----------------+                  .                        .                           .                          . 
+| grade_documents |                  .                        .                           .                          . 
++-----------------+..                .                        .                           .                          . 
+          .          .....           .                        .                           .                          . 
+          .               ....       .                        .                           .                          . 
+          .                   ...    .                        .                           .                          . 
+          ..                  +------------+                  ..                +-----------------+                  . 
+            ..                | web_search |                    ..              | code_generation |                  . 
+              ..              +------------+                      ..            +-----------------+                  . 
+                ..            ..                                    ..            **                                 . 
+                  ..        ..                                        ..        **                                   . 
+                    ..    ..                                            ..    **                                     . 
+                 +----------+                                      +----------------+                              ... 
+                 | generate |.......                               | code_execution |                          ....    
+                 +----------+       .............                  +----------------+                     .....        
+                       .                         ..............                   **                 .....             
+                       .                                       .............        **           ....                  
+                       .                                                    .......   **      ...                      
+                       ....                                                       +--------------+                     
+                           .......                                                | llm_fallback |                     
+                                  .......                                      ***+--------------+                     
+                                         .......                           ****                                        
+                                                .......                ****                                            
+                                                       ....         ***                                                
+                                                          +---------+                                                  
+                                                          | __end__ |                                                  
+                                                          +---------+                                                  
+
+
+
+
+
+
+==================================================
+route(next: str) -> bool - next tool/action should select
+route(next: str) -> bool - next tool/action should select
+route(next: str) -> bool - next tool/action should select
+WEB_SEARCH, VECTORSTORE, CODE_GENERATION, CODE_EXECUTION, DIRECT_RESPONCE
+WEB_SEARCH, VECTORSTORE, CODE_GENERATION, CODE_EXECUTION, DIRECT_RESPONCE
+/root/.virtualenvs/test/lib/python3.10/site-packages/pydantic/_internal/_fields.py:161: UserWarning: Field "model_name" has conflict with protected namespace "model_".
+
+You may be able to resolve this warning by setting `model_config['protected_namespaces'] = ()`.
+  warnings.warn(
+INFO:     Started server process [920242]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+INFO:     Uvicorn running on http://0.0.0.0:7861 (Press CTRL+C to quit)
+2024-08-07 07:26:44,606 root         920019 INFO     启动API服务：API Server (920242)
+2024-08-07 07:26:44,608 root         920019 INFO     启动WEB服务：WEBUI Server (920545)
+2024-08-07 07:26:45,384 root         920019 ERROR    'Kernel Server (920241)'
+2024-08-07 07:26:45,384 root         920019 WARNING  Caught KeyboardInterrupt! Setting stop event...
+2024-08-07 07:26:45,384 root         920019 WARNING  Sending SIGKILL to <Process name='Kernel Server (920241)' pid=920241 parent=920019 stopped exitcode=1>
+2024-08-07 07:26:45,384 root         920019 WARNING  Sending SIGKILL to <Process name='API Server (920242)' pid=920242 parent=920019 started>
+2024-08-07 07:26:45,385 root         920019 WARNING  Sending SIGKILL to <Process name='WEBUI Server (920545)' pid=920545 parent=920019 started>
+2024-08-07 07:26:45,387 root         920019 INFO     Process status: <Process name='Kernel Server (920241)' pid=920241 parent=920019 stopped exitcode=1>
+2024-08-07 07:26:45,387 root         920019 INFO     Process status: <Process name='API Server (920242)' pid=920242 parent=920019 started>
+2024-08-07 07:26:45,387 root         920019 INFO     Process status: <Process name='WEBUI Server (920545)' pid=920545 parent=920019 started>
+==============================Langchain-Chatchat Configuration==============================
+操作系统：Linux-5.15.0-117-generic-x86_64-with-glibc2.35.
+python版本：3.10.12 (main, Jul 29 2024, 16:56:48) [GCC 11.4.0]
+项目版本：v0.3.0
+langchain版本：0.2.11
+
+
+服务端运行信息：
+    Chatchat Api Server: http://127.0.0.1:7861
+    Chatchat WEBUI Server: http://0.0.0.0:8501
+    Chatchat Kernel Server: http://0.0.0.0:5011
+==============================Langchain-Chatchat Configuration==============================
+
+

@@ -37,13 +37,59 @@ def convert_md_to_docx(input_filepaths:Union[str,list],overwrite=True,destinatio
     :param destination_dir: 将保存 DOCX 文件的目录
                             如果为 None, 则使用当前目录
     """
-    # 确保输入是一个列表
-    if isinstance(input_filepaths, str):
-        input_filepaths = [input_filepaths]
+    not_exist_filepaths = []
+    passed_makeup_filepaths = []
+    existed_docx_filepath = []
+    converted_makeup_filepaths = []   
+    if not isinstance(input_filepaths,(str,Path,list)):
+        raise TypeError(f"{input_filepaths} must be str,Path or list, not {type(input_filepaths)}")    
+    if isinstance(input_filepaths,(str,Path)):
+        input_filepaths = [input_filepaths]        
+    input_filepaths = [Path(filepath) for filepath in input_filepaths]
+    logger.info(f"原始的输入文件列表为({len(input_filepaths)})：\n  {' | '.join([str(x) for x in input_filepaths])}")
 
-    # 如果destination_dir没有指定,则目标目录为当前目录
-    if destination_dir is None:
-        destination_dir = os.getcwd()
+    not_exist_filepaths = [filepath for filepath in input_filepaths if not filepath.exists()]
+
+    if len(not_exist_filepaths) > 0:
+        logger.warning(f"路径不存在的文件列表为({len(not_exist_filepaths)})，将直接跳过！：\n  {' | '.join([str(x) for x in not_exist_filepaths])}")
+
+    input_filepaths = [filepath for filepath in input_filepaths if filepath.exists()]
+    original_valid_input_filepaths = [item for item in input_filepaths]
+    logger.info(f"有效的输入文件列表为({len(input_filepaths)})：\n  {' | '.join([str(x) for x in input_filepaths])}")
+
+    makeup_filepaths =[filepath for filepath in input_filepaths if filepath.suffix in  ['.md']]
+    logger.info(f"待转换的makeup文件列表为({len(makeup_filepaths)})：\n  {' | '.join([str(x) for x in makeup_filepaths])}")    
+    
+    if len(makeup_filepaths) > 0:
+        if destination_dir:
+            if not Path(destination_dir).exists():
+                logger.warning(f"输出目录[{destination_dir}]不存在!将尝试创建该目录。")
+                Path(destination_dir).mkdir(parents=True, exist_ok=True) 
+            destination_dir = Path(destination_dir).absolute()
+            logger.info(f"  输出目录路径为[{destination_dir}]")
+
+        for makeup_filepath in makeup_filepaths:
+
+            docx_filepath = makeup_filepath.with_suffix(".docx")
+            if destination_dir:
+                docx_filepath = destination_dir / docx_filepath.name
+
+            if docx_filepath.exists():
+                if overwrite:
+                    docx_filepath.unlink
+                else:
+                    passed_makeup_filepaths.append(makeup_filepath)
+                    existed_docx_filepath.append(docx_filepath)
+                    index = input_filepaths.index(makeup_filepath)
+                    input_filepaths.insert(index, docx_filepath) 
+                    input_filepaths.remove(makeup_filepath) 
+    if len(passed_makeup_filepaths)>0:
+        logger.warning(f"目标文件已存在的列表（转换前）为({len(passed_makeup_filepaths)})：\n  {' | '.join([str(x) for x in passed_makeup_filepaths])}")
+        logger.warning(f"目标文件已存在的列表（转换后）为({len(existed_docx_filepath)})：\n  {' | '.join([str(x) for x in existed_docx_filepath])}")
+        logger.warning(f"因为转换参数overwrite={overwrite}，以上这些文件将直接跳过转换，如需重新转换并覆盖，请设置overwrite为True!")
+        for makeup_filepath in passed_makeup_filepaths:
+            makeup_filepaths.remove(makeup_filepath)
+
 
     # 遍历输入md的文件路径
     for md_filepath in input_filepaths:
@@ -63,10 +109,20 @@ def convert_md_to_docx(input_filepaths:Union[str,list],overwrite=True,destinatio
         # 执行pandoc文件转换命令
         try:
             subprocess.run(pandoc_command, shell=True, check=True)
-            print(f"Converted {md_filepath} to {docx_filepath}")
+            # logger.info(f"Converted {md_filepath} to {docx_filepath}")
         except subprocess.CalledProcessError as e:
-            print(f"An error occurred while converting {md_filepath}: {e}")
+            logger.info(f"An error occurred while converting {md_filepath}: {e}")
 
+        converted_makeup_filepaths.append(str(docx_filepath))
+        index = input_filepaths.index(makeup_filepath)
+        input_filepaths.insert(index, docx_filepath)  
+        input_filepaths.remove(makeup_filepath) 
+
+    # logger.info(f"有效的原始输入文件列表为({len(original_valid_input_filepaths)})：\n  {' | '.join([str(x) for x in original_valid_input_filepaths])}")  
+    logger.info(f"转换后的相应docx文件列表为({len(converted_makeup_filepaths)})：\n  {' | '.join([str(x) for x in converted_makeup_filepaths])}")
+    logger.info(f"返回新的有效文件列表为({len(input_filepaths)})：\n  {' | '.join([str(x) for x in input_filepaths])}")
+
+    return input_filepaths,original_valid_input_filepaths
 
 def convert_doc_pdf2docx_on_win_and_linux(input_filepaths:Union[str,list],overwrite=True,destination_dir=None):
     """
@@ -82,9 +138,9 @@ def convert_doc_pdf2docx_on_win_and_linux(input_filepaths:Union[str,list],overwr
     """
     
     not_exist_filepaths = []
-    passed_pdf_doc_filepaths = []
+    passed_makeup_filepaths = []
     existed_docx_filepath = []
-    converted_pdf_doc_filepaths = []   
+    converted_makeup_filepaths = []   
     if not isinstance(input_filepaths,(str,Path,list)):
         raise TypeError(f"{input_filepaths} must be str,Path or list, not {type(input_filepaths)}")    
     if isinstance(input_filepaths,(str,Path)):
@@ -110,7 +166,7 @@ def convert_doc_pdf2docx_on_win_and_linux(input_filepaths:Union[str,list],overwr
                 logger.warning(f"输出目录[{destination_dir}]不存在!将尝试创建该目录。")
                 Path(destination_dir).mkdir(parents=True, exist_ok=True) 
             destination_dir = Path(destination_dir).absolute()
-            logger.info(f"输出目录路径为[{destination_dir}]")
+            logger.info(f"  输出目录路径为[{destination_dir}]")
 
         for pdf_doc_filepath in pdf_doc_filepaths:
 
@@ -122,21 +178,21 @@ def convert_doc_pdf2docx_on_win_and_linux(input_filepaths:Union[str,list],overwr
                 if overwrite:
                     docx_filepath.unlink
                 else:
-                    passed_pdf_doc_filepaths.append(pdf_doc_filepath)
+                    passed_makeup_filepaths.append(pdf_doc_filepath)
                     existed_docx_filepath.append(docx_filepath)
                     index = input_filepaths.index(pdf_doc_filepath)
                     input_filepaths.insert(index, docx_filepath) 
                     input_filepaths.remove(pdf_doc_filepath) 
 
-    if len(passed_pdf_doc_filepaths)>0:
-        logger.warning(f"目标文件已存在的列表（转换前）为({len(passed_pdf_doc_filepaths)})：\n  {' | '.join([str(x) for x in passed_pdf_doc_filepaths])}")
+    if len(passed_makeup_filepaths)>0:
+        logger.warning(f"目标文件已存在的列表（转换前）为({len(passed_makeup_filepaths)})：\n  {' | '.join([str(x) for x in passed_makeup_filepaths])}")
         logger.warning(f"目标文件已存在的列表（转换后）为({len(existed_docx_filepath)})：\n  {' | '.join([str(x) for x in existed_docx_filepath])}")
         logger.warning(f"因为转换参数overwrite={overwrite}，以上这些文件将直接跳过转换，如需重新转换并覆盖，请设置overwrite为True!")
-        for pdf_doc_filepath in passed_pdf_doc_filepaths:
+        for pdf_doc_filepath in passed_makeup_filepaths:
             pdf_doc_filepaths.remove(pdf_doc_filepath)
     
     if len(pdf_doc_filepaths) > 0:
-        logger.warning('因存在须转换的doc/pdf文件，建议最好在ms windows下运行，且安装有ms word程序！')
+        logger.warning('  因存在须转换的doc/pdf文件，建议最好在ms windows下运行，且安装有ms word程序！')
         for pdf_doc_filepath in pdf_doc_filepaths:
             docx_filepath = pdf_doc_filepath.with_suffix(".docx")
             if destination_dir:
@@ -161,7 +217,7 @@ def convert_doc_pdf2docx_on_win_and_linux(input_filepaths:Union[str,list],overwr
                     raise Exception(f'暂不支持 {os_name} 操作系统,建议在Windows或Linux环境下运行')
 
 
-                converted_pdf_doc_filepaths.append(str(docx_filepath))
+                converted_makeup_filepaths.append(str(docx_filepath))
                 index = input_filepaths.index(pdf_doc_filepath)
                 input_filepaths.insert(index, docx_filepath)  
                 input_filepaths.remove(pdf_doc_filepath)          
@@ -169,8 +225,8 @@ def convert_doc_pdf2docx_on_win_and_linux(input_filepaths:Union[str,list],overwr
             except Exception as e:
                 logger.warning(f"无法转换[doc/pdf-->docx]，详细错误信息为{e}")
 
-    logger.info(f"有效的原始输入文件列表为({len(original_valid_input_filepaths)})：\n  {' | '.join([str(x) for x in original_valid_input_filepaths])}")  
-    logger.info(f"转换后的相应docx文件列表为({len(converted_pdf_doc_filepaths)})：\n  {' | '.join([str(x) for x in converted_pdf_doc_filepaths])}")
+    # logger.info(f"有效的原始输入文件列表为({len(original_valid_input_filepaths)})：\n  {' | '.join([str(x) for x in original_valid_input_filepaths])}")  
+    logger.info(f"转换后的相应docx文件列表为({len(converted_makeup_filepaths)})：\n  {' | '.join([str(x) for x in converted_makeup_filepaths])}")
     logger.info(f"返回新的有效文件列表为({len(input_filepaths)})：\n  {' | '.join([str(x) for x in input_filepaths])}")
 
     return input_filepaths,original_valid_input_filepaths
@@ -190,13 +246,18 @@ def convert_file_to_docx(input_filepaths: Union[str, list], overwrite=True, dest
     if isinstance(input_filepaths, (str, Path)):
         input_filepaths = [input_filepaths]
 
+        
+    input_filepaths = [Path(filepath) for filepath in input_filepaths]
+    input_filepaths_exist = [filepath for filepath in input_filepaths if filepath.exists()]
+    input_filepaths_exist_and_replaced_by_docx_if_converted = []
+
     # 如果destination_dir没有指定,则目标目录为当前目录
     if destination_dir is None:
         destination_dir = os.getcwd()
 
     for filepath in input_filepaths:
         if not Path(filepath).exists():
-            print(f"File {filepath} does not exist. Skipping.")
+            logger.info(f"File {filepath} does not exist. Skipping.")
             continue
 
         # 定义输出的docx文件路径
@@ -205,16 +266,22 @@ def convert_file_to_docx(input_filepaths: Union[str, list], overwrite=True, dest
 
         # 检查文件是否存在
         if output_filepath.exists() and not overwrite:
-            print(f"File {output_filepath} already exists. Skipping conversion.")
+            logger.info(f"File {output_filepath} already exists. Skipping conversion.")
             continue
 
         # 根据文件扩展名进行转换
+        logger.info(f'==*=={filepath}')
         if Path(filepath).suffix == '.md':
             convert_md_to_docx(filepath, output_filepath, destination_dir=destination_dir)
+            input_filepaths_exist_and_replaced_by_docx_if_converted.append(output_filepath)
         elif Path(filepath).suffix in ['.pdf', '.doc']:
             convert_doc_pdf2docx_on_win_and_linux(filepath, output_filepath, destination_dir=destination_dir)
+            input_filepaths_exist_and_replaced_by_docx_if_converted.append(output_filepath)
         else:
-            print(f"Unsupported file type for conversion: {filepath}")
+            logger.warning(f"JqConverter跳过文件转换: {filepath}")
+            input_filepaths_exist_and_replaced_by_docx_if_converted.append(filepath)
+
+    return input_filepaths_exist,input_filepaths_exist_and_replaced_by_docx_if_converted
 
 
 
@@ -224,7 +291,7 @@ if __name__ == "__main__":
              "/media/temp/发票识别接口文档.md",
              "/media/temp/OCR接口性能报告.doc"]
 
-    convert_file_to_docx(files, overwrite=False, destination_dir='/media/temp/docxfiles/')
+    convert_file_to_docx(files, overwrite=True, destination_dir='/media/temp/docxfiles/')
 
 
 

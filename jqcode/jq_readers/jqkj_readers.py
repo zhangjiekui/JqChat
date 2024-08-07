@@ -40,7 +40,7 @@ from llama_index.legacy.readers.file.base import SimpleDirectoryReader
 from llama_index.legacy.readers.file.base import DEFAULT_FILE_READER_CLS
 from llama_index.core.readers.file.base import default_file_metadata_func
 
-from jqcode.jq_readers.backend_reader_utils.jqkj_doc_pdf2docx_converter import convert_doc_pdf2docx_on_win_and_linux
+from jqcode.jq_readers.backend_reader_utils.jqkj_docs_converter import convert_file_to_docx
 from jqcode.jq_readers.backend_reader_utils.jqkj_doc_tree_utils import find_nearest_parent_but_not_TableOrImageNode,TreeNodeType
 from jqcode.jq_readers.backend_reader_utils.jqkj_doc_tree_utils import compare_with_zip_docx2img,get_paras_in_table
 
@@ -72,8 +72,8 @@ class JqkjDocxReader(BaseReader):
         self.DocumentFunc = DocxDocumentFunc
         if file_path:
             file_path = Path(file_path)
-            if file_path.suffix in ['.pdf','.doc']:
-                input_filepaths,original_valid_input_filepaths = convert_doc_pdf2docx_on_win_and_linux(file_path)
+            if file_path.suffix in ['.pdf','.doc','md']:
+                input_filepaths,original_valid_input_filepaths = convert_file_to_docx(file_path)
                 self.file_path =  input_filepaths[0]
             else:
                 self.file_path =  file_path
@@ -431,7 +431,22 @@ class JqkjSimpleDirectoryReader(SimpleDirectoryReader):
     file_extractor: Optional[Dict[str, BaseReader]] = None,
     num_files_limit: Optional[int] = None,
     file_metadata: Optional[Callable[[str], Dict]] = None,
-) -> None:
+) -> None:  
+            # 确保输入是个列表
+            if input_files:
+                if isinstance(input_files, (str, Path)):
+                    input_files = [input_files] 
+
+                input_files = [Path(filepath) for filepath in input_files]        
+                input_filepaths_not_existed = [filepath for filepath in input_files if not filepath.exists()]
+                if input_filepaths_not_existed:
+                    logger.warning(f"下列文件不存在，跳过：")
+                    for _f in input_filepaths_not_existed:
+                        logger.warning(f"    --{_f}")
+                
+                input_files = [filepath for filepath in input_files if filepath.exists()]
+
+
             super(JqkjSimpleDirectoryReader,self).__init__(
                 input_dir=input_dir,
                 input_files=input_files,
@@ -447,12 +462,12 @@ class JqkjSimpleDirectoryReader(SimpleDirectoryReader):
             )
             self.DEFAULT_FILE_READER_CLS = self.JQKJ_DEFAULT_FILE_READER_CLS()
             self.supported_suffix = list(self.DEFAULT_FILE_READER_CLS.keys())
-            converted_input_filepaths,original_valid_input_filepaths = convert_doc_pdf2docx_on_win_and_linux(self.input_files,overwrite=overwrite_existing_converted_files,destination_dir=output_dir_for_converted_files)
+            input_filepaths_exist,input_filepaths_exist_and_replaced_by_docx_if_converted = convert_file_to_docx(self.input_files,overwrite=overwrite_existing_converted_files,destination_dir=output_dir_for_converted_files)
             
             converted_files_metadata = {}
-            for i,file in enumerate(converted_input_filepaths):                     
+            for i,file in enumerate(input_filepaths_exist_and_replaced_by_docx_if_converted):                     
                 file = str(file)
-                original_file = str(original_valid_input_filepaths[i])
+                original_file = str(input_filepaths_exist[i])
 
                 original = ''   
                 if file!=original_file:
@@ -460,11 +475,11 @@ class JqkjSimpleDirectoryReader(SimpleDirectoryReader):
                 converted_files_metadata[file] = {'original_jq':original}
                         
                     
-            self.input_files = converted_input_filepaths
+            self.input_files = input_filepaths_exist_and_replaced_by_docx_if_converted
             self.input_files_original_metadata=converted_files_metadata
             self.file_metadata = file_metadata or self.JQKJ_DEFAULT_FILE_META_DATA_FUNC
 
-    def JQKJ_DEFAULT_FILE_READER_CLS(self,jqkj_dict={".pdf": JqkjDocxReader,".docx": JqkjDocxReader,".doc": JqkjDocxReader}):     
+    def JQKJ_DEFAULT_FILE_READER_CLS(self,jqkj_dict={".pdf": JqkjDocxReader,".docx": JqkjDocxReader,".doc": JqkjDocxReader,".md": JqkjDocxReader}):     
         DEFAULT_FILE_READER_CLS.update(jqkj_dict)
         return DEFAULT_FILE_READER_CLS
     def JQKJ_DEFAULT_FILE_META_DATA_FUNC(self,file_path: str) -> Dict:
@@ -502,17 +517,19 @@ def _test_JqkjDocxReader(file_paths=[]):
     return documents,trees,df_tables
 
 def _test_JqkjSimpleDirectoryReader():
-    convert_file_paths=[fr'/data/projects/JqChat/jqcode/jq_readers/.testinputdocs/厦门市智慧民政一体化平台项目建设方案 V3.6.docx',
-                        # fr'/data/projects/JqChat/jqcode/jq_readers/.testinputdocs/UserGuide.pdf',
+    convert_file_paths=[# fr'/data/projects/JqChat/jqcode/jq_readers/.testinputdocs/厦门市智慧民政一体化平台项目建设方案 V3.6.docx',
+                        fr'/data/projects/JqChat/jqcode/jq_readers/.testinputdocs/UserGuide.pdf',
+                        fr'/data/projects/JqChat/jqcode/jq_readers/.testinputdocs/AAMIS_项目总体计划_120925.doc',
+                        fr"/media/temp/发票识别接口文档.md"
                         ]
-    input_file_dir = fr'/data/projects/JqChat/jqcode/jq_readers/.testinputdocs'
+    
     
 
     simple_reader = JqkjSimpleDirectoryReader(input_files = convert_file_paths,output_dir_for_converted_files=fr"/data/projects/JqChat/jqcode/jq_readers/.outputdocs")
     documents1 = simple_reader.load_data()
-    print(len(documents1))
-
-    simple_reader2 = JqkjSimpleDirectoryReader(input_file_dir)
+    # print(len(documents1))
+    input_file_dir = fr'/data/projects/JqChat/jqcode/jq_readers/.testinputdocs'
+    simple_reader2 = JqkjSimpleDirectoryReader(input_file_dir,exclude_hidden = False)
     documents2 = simple_reader2.load_data()
     print(len(documents2))
     return documents1,documents2
