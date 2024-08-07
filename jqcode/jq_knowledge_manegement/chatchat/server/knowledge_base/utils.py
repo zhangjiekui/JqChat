@@ -11,7 +11,7 @@ import langchain_community.document_loaders
 from langchain.docstore.document import Document
 from langchain.text_splitter import MarkdownHeaderTextSplitter, TextSplitter
 from langchain_community.document_loaders import JSONLoader, TextLoader
-from jqcode.jq_splitters.backend_splitter_utils.jq_chinese_recursive_text_splitter import JqChineseRecursiveTextSplitter
+# from jqcode.jq_splitters.backend_splitter_utils.jq_chinese_recursive_text_splitter import JqChineseRecursiveTextSplitter
 #  /data/projects/JqChat/jqcode/jq_splitters/backend_splitter_utils/jq_chinese_recursive_text_splitter.py
 from jqcode.jq_knowledge_manegement.chatchat.configs import (
     CHUNK_SIZE,
@@ -25,6 +25,7 @@ from jqcode.jq_knowledge_manegement.chatchat.configs import (
 from jqcode.jq_knowledge_manegement.chatchat.server.file_rag.text_splitter import (
     zh_title_enhance as func_zh_title_enhance,
 )
+from jqcode.jq_knowledge_manegement.chatchat.server.file_rag.text_splitter.chinese_recursive_text_splitter import ChineseRecursiveTextSplitter
 from jqcode.jq_knowledge_manegement.chatchat.server.utils import run_in_process_pool, run_in_thread_pool
 
 logger = logging.getLogger()
@@ -246,7 +247,8 @@ def make_text_splitter(splitter_name, chunk_size, chunk_overlap):
     splitter_name = splitter_name or "ChineseRecursiveTextSplitter"
     try:
         if splitter_name == "ChineseRecursiveTextSplitter":
-            text_splitter = JqChineseRecursiveTextSplitter(chunk_size=chunk_size,chunk_overlap=chunk_overlap)
+            # text_splitter = JqChineseRecursiveTextSplitter(chunk_size=chunk_size,chunk_overlap=chunk_overlap)
+            text_splitter = ChineseRecursiveTextSplitter(chunk_size=chunk_size,chunk_overlap=chunk_overlap)
 
         elif (
             splitter_name == "MarkdownHeaderTextSplitter"
