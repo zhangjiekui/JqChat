@@ -177,10 +177,11 @@ class InitEnvModels:
                 model_name=self.llm_model_name,
                 openai_api_base=self.base_url,    
                 openai_api_key= self.api_key,
-                streaming=True,
+                streaming=False,
                 verbose=True,
                 temperature=temperature,
-                max_tokens=max_tokens
+                max_tokens=max_tokens,
+                
             )
         print(f'当前使用的模型为:Langchain ChatOpenAI, {self.chat_model.model_name}, API_URL为{self.chat_model.openai_api_base}')
         return self.chat_model

@@ -125,7 +125,8 @@ class JqkjDocxReader(BaseReader):
         doc = self.DocumentFunc(self.file_path)
         text = "\n".join([paragraph.text for paragraph in doc.paragraphs if len(paragraph.text.strip())>0])
         doc_tree,df_table_list = self.parse_docx_into_tree(doc,self.file_path)
-
+        
+        # 'original_source_jq'(转换前的文件pdf/doc/md的文件路径，如果本就是docx文件,则为空),'source':docx文件路径
         metadata = {"file_name_jq": file_path.name,"file_doc_object_jq":doc,"file_doc_tree_jq":doc_tree,'df_table_list_jq':df_table_list,"file_path_jq":str(file_path)}
         # metadata = {"file_doc_tree_jq":doc_tree}
         if extra_info is not None:

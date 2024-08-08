@@ -211,23 +211,27 @@ class GraphAgent:
                 question = state['question']
                 error_prompt = f'执行工具调用出现错误:\n  工具名称：{tool_name}\n  调用参数：{tool_args}\n  错误信息：{str(e)}\n'
                 logger.warning(error_prompt)
-                makeup_ai_message = AIMessage(content="", tool_calls=[t])
-                makeup_ai_message = self.makeup_message_with_question_id_idx(makeup_ai_message)
+                # makeup_ai_message = AIMessage(content="", tool_calls=[t])
+                # makeup_ai_message = self.makeup_message_with_question_id_idx(makeup_ai_message)
                 makeup_tool_message = ToolMessage(tool_call_id=tool_call_id, name=tool_name,  content=error_prompt)
                 makeup_tool_message = self.makeup_message_with_question_id_idx(makeup_tool_message)
                 makeup_human_message = HumanMessage(content=f"对于用户问题:{question},上次的工具调用出现了错误，请仔细规划和思考，重新生成正确的工具名称和调用参数，避免出现同样的错误！")
                 makeup_human_message = self.makeup_message_with_question_id_idx(makeup_human_message)
-                results = results + [makeup_ai_message,makeup_tool_message,makeup_human_message]
-                # return {'messages': results,'question_related_messages':results}   
+                # results = results + [makeup_ai_message,makeup_tool_message,makeup_human_message]
+                results = results + [makeup_tool_message,makeup_human_message]
+                logger.info("工具调用执行异常，加入执行错误信息，返回到大模型")
+                return {'messages': results,'question_related_messages':results}   
             
 
-        print("Back to the model!")
+        logger.info("工具调用执行正常，返回到大模型")
         return {'messages': results,'question_related_messages':results}
     
     def exists_action(self,state:GraphAgentState):
         result = state['messages'][-1]
-
-        returned_tool_calling_nums = len(result.tool_calls)
+        try:
+            returned_tool_calling_nums = len(result.tool_calls)
+        except:
+            returned_tool_calling_nums = 0
         os.environ["rag_graph_next"] = ''
 
         if returned_tool_calling_nums > 0:
@@ -251,10 +255,6 @@ class GraphAgent:
     def call_llm(self,state: GraphAgentState):
         # 当前message
         input_message = state.get('messages')[-1]
-
-        _question = state.get('question')
-        if _question == "还记得我叫什么吗？":
-            pass
 
         question_related_messages = self.get_question_related_messages_from_state()
         
@@ -327,7 +327,7 @@ if __name__ == "__main__":
     '合肥大蜀山',   
     '请查询明天从合肥到上海的航班',
     '请使用python_repl_tool来计算1到100的和',
-    '请使用python_repl_tool来计算1到100的和,以及10的阶乘',
+    '请调用python_repl_tool工具，一个计算1到100的和,另一个计算10的阶乘，并实际执行工具获取计算结果',
     "请使用tavily_search_tool工具搜索信息，回答问题：What is the weather in SF and LA? ",
     "Who won the super bowl in 2024? In what state is the winning team headquarters located?What is the GDP of that state? ",
     "还记得我叫什么吗？"

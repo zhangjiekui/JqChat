@@ -10,7 +10,8 @@ from langchain_core.messages import ToolMessage
 from langgraph.prebuilt import ToolNode
 from langchain_core.tools import ToolException
 from typing import List
-
+from jqcode.jq_utils.logger import jqkj_logger
+logger = jqkj_logger(__file__).get_logger()
 # from jqcode.jq_agent.c0_init_env_models import env_models_instance
 
 
@@ -25,7 +26,7 @@ def get_flight_number(origin:str,destination:str,date:date) -> str:
         date:(date) 飞行日期， 例如2024-08-03.如果日期是不确定的描述，如明天、后天等，请先调用工具'python_repl_tool'进行计算，并且返回python datetime.date类型结果
     """
     result = f"东方航空MU5646 【{date}】"
-    print(f"GetFlightNumberTool Result: {result}")
+    logger.info(f"'get_flight_number'执行结果: {result}")
     return result
 
 # @tool
@@ -52,30 +53,34 @@ get_flight_number.description= get_flight_number.description.replace("{current_d
 @tool
 def python_repl_tool(query:str) -> str: 
     """
-    A Python shell. Use this to execute Input(query:str) python commands. Output(value:str):you MUST using `print($value)` to print out at least one value, or multiple values as needed to better answer/solve the user's problem.For examples:
+    A Python shell. Use this to execute Input(query:str) python commands. 
+        Input: query:str.Python code. You must use '\n' to seperate each code line
+    
+        Output: you MUST using `print($code or value$)` to print out at least one value (mostly in the last line), or multiple values as needed to better answer/solve the user's problem.For examples:
         `# print out at least one value: MUST.
-         import datetime
-         print(datetime.datetime.today() + datetime.timedelta(days=2))
+            import datetime
+            print(datetime.datetime.today() + datetime.timedelta(days=2))
 
         `# print out multiple values: AS NEEDED. 
-         print(1+1)
-         print(298*3)
-         print(8-1) 
+            print(1+1)
+            print(298*3)
+            print(8-1) 
         `    
     """
 
     python_repl = PythonREPLTool()
-    print('...调用执行Python_REPL...过程如下：')
+    logger.debug('...调用执行Python_REPL...过程如下：')
     
     def _revise_query(query:str) -> str:
-        print('......检查是否有print......：')
-        query.replace('\\n',"\n")
+        logger.debug('......检查是否有print......：')
+        query = query.replace('\\n',"\n")
+        query = query.replace(';',"\n")
         lines = query.split("\n")
         for line in lines[::-1]:
             if len(line.strip())>0:
                 if not line.startswith('#'): #直接跳过注释行
                     if line.startswith('print'):
-                        print(f"===已经有print了，直接返回原query:\n{query}")
+                        logger.debug(f"===已经有print了，直接返回原query:\n{query}")
                         return query #已经有print了，就直接返回原query
                     else:
                         last_line_splits = line.split("#")
@@ -85,36 +90,40 @@ def python_repl_tool(query:str) -> str:
                         _query = "\n".join(lines)
 
                         print(f"===revised_query:\n{_query}")
+                        print(f"===end of revised_query")
                         return _query
-    
     try:
-        message = query if query else "query is empty"
-        print(f"===尝试直接执行生成的Python程序语句:\n{query}")        
-        result = python_repl.run(query) 
-        if result:
-            if not "Error" in result and not "Exception" in result:
-                print(f"尝试直接执行生成的Python程序语句成功")
-                print(f"PythonReplTool Result: {result}")            
-                return result
-            else:
-                print(f'直接执行生成的Python程序语句出现错误！{result}')
-                raise Exception(result)
+        if not query:
+            raise ToolException(f"query (python code) is empty")
         else:
-            print(f'直接执行生成的Python程序语句执行结果为空，可能是最后一行没有使用print打印出执行结果！')
-            raise Exception('直接执行生成的Python程序语句执行结果为空，可能是最后一行没有使用print打印出执行结果！')
+            logger.debug(f"===尝试直接执行生成的Python程序语句:\n{query}")  
+            result = python_repl.run(query) 
+            if result:
+                if not "error" in result.lower() and not "exception" in result.lower():
+                    logger.debug(f"尝试直接执行生成的Python程序语句成功")
+                    logger.debug(f"'python_repl_tool'执行结果:{result}")           
+                    return result
+                else:
+                    logger.debug(f'直接执行生成的Python程序语句出现错误！{result}')
+                    raise Exception(result)
+            else:
+                logger.debug(f'直接执行生成的Python程序语句执行结果为空，可能是最后一行没有使用print打印出执行结果！')
+                raise Exception('直接执行生成的Python程序语句执行结果为空，可能是最后一行没有使用print打印出执行结果！')
     except Exception as e:
-        print(f'直接执行生成的Python程序语句出现错误，错误信息为:{e}') 
-        print(f'===尝试修改Python程序语句，并重新执行')
+        logger.debug(f'直接执行生成的Python程序语句出现错误，错误信息为:{e}') 
+        logger.debug(f'===尝试修改Python程序语句，并重新执行')
         revised_query = _revise_query(query)
-        result = python_repl.run(revised_query)
+        try:
+            result = python_repl.run(revised_query)
+        except Exception as e:        
+            raise ToolException(f"The `python_repl_tool` failed.The python code was: \n{revised_query}. \nthe exception was: {e}")
         # result = python_repl.run(query) # 用做ToolException测试，不使用revised_query
         if result:
-            print(f"PythonReplTool Result: {result}")            
+            logger.debug(f"'python_repl_tool'执行结果:{result}")            
             return result
         else:
             raise ToolException(f"No observation was found. Maybe you should add `print($value)` in you python code?")
-    except Exception as e:        
-        raise ToolException(f"The `python_repl_tool_with_print tool` failed.The python commands was: \n{message}. \nthe exception was: {e}")
+
 
 print("\n###增加了ToolException处理函数_handle_error function")
 def _handle_error(error: ToolException) -> str:
@@ -142,22 +151,6 @@ def _print_event(event: dict, _printed: set, max_length=1500):
                 msg_repr = msg_repr[:max_length] + " ... (truncated)"
             print(msg_repr)
             _printed.add(message.id)
-
-
-# def python_repl_run_with_print(query:str,python_repl=python_repl) -> str:
-#     print('...调用执行Python_REPL......结果如下：')
-#     result = python_repl.run(query)
-#     print(f"PythonReplTool Result: {result}")
-#     return result
-
-# python_repl_tool = Tool(
-#     name="python_repl_tool",
-#     # from https://python.langchain.com/docs/integrations/toolkits/python
-#     description ="""牢记：请生成Python代码,代码内容必须是全英文字符，代码行之间必须用换行号符'\\n'分割,千万不要使用';'来分割！You are an agent designed to write and execute python code to answer questions.You have access to a python REPL, which you can use to execute python code.Input should be a valid python command.If you get an error, debug your code and try again.Only use the output of your code to answer the question. You might know the answer without running any code, but you should still run the code to get the answer. If it does not seem like you can write code to answer the question, just return "I don't know" as the answer.""",
-#     # https://python.langchain.com/docs/integrations/tools/python
-#     # description="A Python shell. Use this to execute python commands. Input should be a valid python command. If you want to see the output of a value, you should print it out with `print(...)`.",
-#     func=python_repl_run_with_print
-# )
 
 excutable_tools = [get_flight_number,python_repl_tool]
 _bind_handle_error(excutable_tools)

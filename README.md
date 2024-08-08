@@ -42,6 +42,31 @@ conda config --add channels https://mirrors.aliyun.com/anaconda/pkgs/free/
 conda config --set show_channel_urls yes
 
 ```
+## Lmdeploy 【经测试，存在问题】
+#### 安装
+```
+workon xinfer
+pip install lmdeploy
+```
+#### 使用modelscope下载模型
+```
+pip install modelscope
+nano ~/.bashrc
+export LMDEPLOY_USE_MODELSCOPE=True
+source ~/.bashrc
+```
+#### 部署API服务
+
+https://github.com/InternLM/lmdeploy/blob/main/docs/zh_cn/llm/api_server.md
+https://github.com/InternLM/lmdeploy/blob/main/docs/zh_cn/llm/api_server_tools.md
+
+参数：lmdeploy serve api_server -h
+```
+lmdeploy serve api_server Shanghai_AI_Laboratory/internlm2_5-20b-chat --server-port 9997 --tp 4 --log-level DEBUG
+```
+#### LMDeploy支持的Function/Tool Calling模型
+LMDeploy 支持 InternLM2, InternLM2.5 和 Llama3.1 模型的工具调用
+
 ## Xinference LLM
 
 #### 当前使用版本
@@ -56,6 +81,8 @@ workon xinfer
 nohup xinference-local -H 0.0.0.0 --log-level debug  >> /data/xinference/xinfer.log 2>&1 & 
 
 tail -f /data/xinference/xinfer.log
+
+ps -ef | grep 'xinference-local'找到包含了【xinfer/bin/xinference-local -H 0.0.0.0】对应行的pid 然后 sudo kill -9 
 
 ```
 运行加载 qwen2-instruct 模型
