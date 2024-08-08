@@ -70,6 +70,7 @@ def replace_multiple_newlines(text):
 # endregion
 
 def clean_up_list_when_encounter_null_element(messages_a: list, messages_b: list | None) -> list:
+    # todo 可以考虑在messages_b中加入一个控制消息：如ControlMassage(content="replace")，取出来后，直接返回 messages_b[0:-1]
     if messages_b:
         if not isinstance(messages_b,list):
             messages_b = [messages_b]        
@@ -199,6 +200,8 @@ class InitEnvModels:
     
    
     # todo: embedding_model_8k with langchain
+
+    # todo: add api的方式: /data/projects/JqChat/jqcode/jq_knowledge_manegement/chatchat/server/localai_embeddings.py
 
     def _get_emb_8k_rerank_model(self,embedding_model_name=None, embedding_model_name_8k=None, rerank_model_name=None, device = ['cpu','cpu','cpu'],final_docs_num_reranked=4): #device = ['cuda:1','cuda:2''cuda:3']
         if embedding_model_name:

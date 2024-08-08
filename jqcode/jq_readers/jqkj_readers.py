@@ -77,24 +77,25 @@ class JqkjDocxReader(BaseReader):
                 if file_path.suffix in ['.pdf','.doc','.md']:
                     input_filepaths_exist,input_filepaths_exist_and_replaced_by_docx_if_converted = convert_file_to_docx(file_path,overwrite=False)
                     self.file_path =  input_filepaths_exist_and_replaced_by_docx_if_converted[0]
-                    self.orginal_filepath_extra_info = {'original_jq':str(file_path)}
-                else:
+                    self.orginal_filepath_extra_info = {'original_source_jq':str(file_path),'source':str(self.file_path)}
+                else:                    
                     self.file_path =  file_path
+                    self.orginal_filepath_extra_info = {'original_source_jq':'','source':str(self.file_path)}
             else:
-                logger.warning(f"文件不存在:{file_path}")
+                logger.error(f"文件不存在:{file_path}")
 
     def load(self, extra_info: Optional[Dict] = None) -> List[LmDocument]:
         """Parse docx file."""
-        if not extra_info:
-            extra_info = {}
+        # if not extra_info:
+        #     extra_info = {}
         
-        if self.orginal_filepath_extra_info:
-            extra_info.update(self.orginal_filepath_extra_info)
-            # a = {"a":0}
-            # b= {"b":1}
-            # c = a.update(b)
-        # self.load_data(file_path = self.file_path,extra_info= {})
-        return self.load_data(file_path = self.file_path,extra_info= extra_info,)
+        # if self.orginal_filepath_extra_info:
+        #     extra_info.update(self.orginal_filepath_extra_info)
+        #     # a = {"a":0}
+        #     # b= {"b":1}
+        #     # c = a.update(b)
+        # # self.load_data(file_path = self.file_path,extra_info= {})
+        return self.load_data(file_path = self.file_path,extra_info= extra_info)
 
     def load_data(self, file_path: Path, extra_info: Optional[Dict] = None) -> List[LmDocument]:
         """
@@ -102,15 +103,36 @@ class JqkjDocxReader(BaseReader):
         return_type:str ='LC', #'LC' or 'LM',  'LC'代表返回langchain的格式，'LM'代表返回llama_index的格式
         
         """
+        file_path = Path(file_path)
+        if file_path.exists():
+            ext = file_path.suffix
+
+            if ext in ['.pdf','.doc','.md']:
+                input_filepaths_exist,input_filepaths_exist_and_replaced_by_docx_if_converted = convert_file_to_docx(file_path,overwrite=False)
+                
+                # self.file_path为转换后的docx文件路径
+                self.file_path =  input_filepaths_exist_and_replaced_by_docx_if_converted[0]
+                self.orginal_filepath_extra_info = {'original_source_jq':str(file_path),'source':str(self.file_path)}
+            elif ext in ['.docx']:
+                self.file_path =  file_path
+                self.orginal_filepath_extra_info = {'original_source_jq':'','source':str(self.file_path)}
+            else:
+                logger.error(f"JqkjDocxReader暂只支持['.pdf','.doc','.md','.docx'],无法读取[{ext}]文件")
+        else:
+            logger.error(f"文件不存在:{file_path}")
+
         
-        doc = self.DocumentFunc(file_path)
+        doc = self.DocumentFunc(self.file_path)
         text = "\n".join([paragraph.text for paragraph in doc.paragraphs if len(paragraph.text.strip())>0])
-        doc_tree,df_table_list = self.parse_docx_into_tree(doc,file_path)
+        doc_tree,df_table_list = self.parse_docx_into_tree(doc,self.file_path)
 
         metadata = {"file_name_jq": file_path.name,"file_doc_object_jq":doc,"file_doc_tree_jq":doc_tree,'df_table_list_jq':df_table_list,"file_path_jq":str(file_path)}
         # metadata = {"file_doc_tree_jq":doc_tree}
         if extra_info is not None:
             metadata.update(extra_info)
+        
+        if self.orginal_filepath_extra_info is not None:
+            metadata.update(self.orginal_filepath_extra_info)
 
         _keys = list(metadata.keys())
         document = LmDocument(text=text, metadata=metadata)
@@ -486,7 +508,7 @@ class JqkjSimpleDirectoryReader(SimpleDirectoryReader):
                 original = ''   
                 if file!=original_file:
                     original = original_file
-                converted_files_metadata[file] = {'original_jq':original}
+                converted_files_metadata[file] = {'original_source_jq':original}
                         
                     
             self.input_files = input_filepaths_exist_and_replaced_by_docx_if_converted
