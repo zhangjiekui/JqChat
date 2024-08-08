@@ -636,8 +636,7 @@ class InitEnvModels:
         else:
             return messages_list
         
-_env_models_instance = InitEnvModels()
-env_models_instance = _env_models_instance if _env_models_instance else InitEnvModels()
+env_models_instance = InitEnvModels()
 
 
 # 留着备用
@@ -824,7 +823,7 @@ if __name__ == '__main__':
     langchain_chat_model = env_models_instance.get_langchain_chat_model()
     embed_model,embedding_model_8k,reranker = env_models_instance.get_emb_8k_rerank_model()
     res = langchain_chat_model.invoke([SystemMessage('请使用中文回答我！'), HumanMessage('你好')])
-    print(res)
+    # print(res)
 
     ### Build An Index
     # index_name='test_doc_tree_reader'
