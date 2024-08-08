@@ -9,8 +9,6 @@ from langchain_community.embeddings import HuggingFaceBgeEmbeddings
 from langchain_huggingface import HuggingFaceEmbeddings
 from jqcode.jq_utils.logger import jqkj_logger
 from jqcode.jq_config import general_config
-from jqcode.jq_agent.c0_init_env_models import env_models_instance
-
 
 
 logger = jqkj_logger(__file__).get_logger()
@@ -35,8 +33,8 @@ def _split_text_with_regex_from_end(
     return [s for s in splits if s != ""]
 
 class _JqkjTokenizerWrapper():
-    def __init__(self):
-        self.tokenizer = env_models_instance.tokenizer
+    def __init__(self,tokenizer):
+        self.tokenizer = tokenizer
 
     _max_length_equal_32_bit_integer: int = 2**32
     def tokenize(self, text: str) -> List[int]: 
@@ -59,7 +57,7 @@ class _JqkjTokenizerWrapper():
 class JqChineseRecursiveTextSplitter(RecursiveCharacterTextSplitter):
     def __init__(
             self,
-            model_name: Union[HuggingFaceEmbeddings, HuggingFaceBgeEmbeddings,str] = None,
+            tokenizer_wrapper:_JqkjTokenizerWrapper,
             chunk_size: int = 500,
             chunk_overlap: float = 0.2,
             separators: Optional[List[str]] = [
@@ -91,7 +89,7 @@ class JqChineseRecursiveTextSplitter(RecursiveCharacterTextSplitter):
                 f"({chunk_size}), should be smaller."
             )
 
-        self.tokenizer_wrapper = _JqkjTokenizerWrapper()  
+        self.tokenizer_wrapper = tokenizer_wrapper  
         super().__init__(chunk_size=chunk_size,chunk_overlap=chunk_overlap,separators=separators,is_separator_regex=is_separator_regex,add_start_index=add_start_index,keep_separator=keep_separator, strip_whitespace=strip_whitespace, length_function = self.tokenizer_wrapper.tokens_len,**kwargs)
         
 

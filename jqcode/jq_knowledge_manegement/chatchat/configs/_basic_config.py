@@ -83,7 +83,7 @@ class ConfigBasicFactory(core_config.ConfigFactory[ConfigBasic]):
         logging.basicConfig(format=self.LOG_FORMAT)
 
     def _init_data_dir(self):
-        logger.info(f"Init data dir: {self.DATA_PATH}")
+        # logger.info(f"Init data dir: {self.DATA_PATH}")
         # nltk 模型存储路径
         self.NLTK_DATA_PATH = os.path.join(self.DATA_PATH, "nltk_data")
         import nltk
@@ -107,7 +107,7 @@ class ConfigBasicFactory(core_config.ConfigFactory[ConfigBasic]):
         if not os.path.exists(self.BASE_TEMP_DIR):
             os.makedirs(self.BASE_TEMP_DIR, exist_ok=True)
 
-        logger.info(f"Init data dir: {self.DATA_PATH} success.")
+        # logger.info(f"Init data dir: {self.DATA_PATH} success.")
 
     def get_config(self) -> ConfigBasic:
         config = ConfigBasic()

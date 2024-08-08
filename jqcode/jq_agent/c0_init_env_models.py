@@ -35,6 +35,8 @@ from langchain.retrievers import ContextualCompressionRetriever
 from langchain_core.messages import BaseMessage, HumanMessage,SystemMessage,ToolMessage,AIMessage
 from langchain.callbacks.base import BaseCallbackHandler
 from langchain_core.callbacks import StdOutCallbackHandler
+from jqcode.jq_splitters.backend_splitter_utils.jq_chinese_recursive_text_splitter import JqChineseRecursiveTextSplitter,_JqkjTokenizerWrapper
+            
 
 from transformers import AutoTokenizer
 from pydantic.v1 import PrivateAttr
@@ -254,6 +256,9 @@ class InitEnvModels:
         self.embed_model,self.embedding_model_8k,self.reranker = None,None,None
         self.embed_model,self.embedding_model_8k,self.reranker = self.get_emb_8k_rerank_model()
         self.tokenizer = AutoTokenizer.from_pretrained(self.embedding_model_name_or_path)
+        self.text_splitter = JqChineseRecursiveTextSplitter(tokenizer_wrapper=_JqkjTokenizerWrapper(self.tokenizer),chunk_size=self.embedding_model_max_tokens,chunk_overlap=0.2)
+
+  
         
         self.ELASTIC_PASSWORD = os.getenv("ELASTIC_PASSWORD")
         self.CERT_FINGERPRINT = os.getenv("CERT_FINGERPRINT")
@@ -522,8 +527,7 @@ class InitEnvModels:
             doc.page_content = replace_multiple_newlines(doc.page_content)
             docs_list_cleaned.append(doc)
         if not text_splitter:
-            from jqcode.jq_splitters.backend_splitter_utils.jq_chinese_recursive_text_splitter import JqChineseRecursiveTextSplitter
-            text_splitter = JqChineseRecursiveTextSplitter(chunk_size=500,chunk_overlap=0.2,model_name=embed_model)
+            text_splitter = self.text_splitter
         text_chunks = text_splitter.split_documents(docs_list_cleaned)
         
         reranker = reranker if reranker else self.reranker
@@ -566,8 +570,8 @@ class InitEnvModels:
                 reranker  = reranker if reranker else self.reranker 
                 docs_from_messages = [Document(page_content=message.content,metadata={"message_index":message_index}) for message_index, message in enumerate(unique_messages_list)]
                 if not text_splitter:
-                    from jqcode.jq_splitters.backend_splitter_utils.jq_chinese_recursive_text_splitter import JqChineseRecursiveTextSplitter
-                    text_splitter = JqChineseRecursiveTextSplitter(model_name=embed_model)
+                    text_splitter = self.text_splitter
+
 
                 chunks_relevant = self.split_and_get_chunks_relevant_from_documents(query, docs_from_messages,text_splitter=text_splitter,reranker=reranker,
                                                                             if_reranking=if_reranking,retriever_docs_num=retriever_docs_num, final_docs_num=final_docs_num,score_threshold=score_threshold,only_use_reranker=only_use_reranker)
@@ -632,7 +636,8 @@ class InitEnvModels:
         else:
             return messages_list
         
-env_models_instance = InitEnvModels()
+_env_models_instance = InitEnvModels()
+env_models_instance = _env_models_instance if _env_models_instance else InitEnvModels()
 
 
 # 留着备用
