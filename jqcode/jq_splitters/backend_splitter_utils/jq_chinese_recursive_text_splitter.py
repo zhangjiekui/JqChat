@@ -9,6 +9,7 @@ from langchain_community.embeddings import HuggingFaceBgeEmbeddings
 from langchain_huggingface import HuggingFaceEmbeddings
 from jqcode.jq_utils.logger import jqkj_logger
 from jqcode.jq_config import general_config
+from jqcode.jq_agent.c0_init_env_models import env_models_instance
 
 
 
@@ -34,22 +35,8 @@ def _split_text_with_regex_from_end(
     return [s for s in splits if s != ""]
 
 class _JqkjTokenizerWrapper():
-    def __init__(self, embeding_model: Union[HuggingFaceEmbeddings, HuggingFaceBgeEmbeddings,str] = None):
-        if embeding_model is None:
-            from jqcode.jq_agent.c0_init_env_models import env_models_instance
-            embeding_model,embedding_model_8k,reranker = env_models_instance.get_emb_8k_rerank_model()
-        assert embeding_model, 'embeding_model_instance不能为空'
-
-        if isinstance(embeding_model,(HuggingFaceEmbeddings,HuggingFaceBgeEmbeddings)):
-            self.model_name_or_path = embeding_model.model_name
-            self.tokenizer = embeding_model.client.tokenizer
-        elif isinstance(embeding_model,str):
-            assert os.path.exists(embeding_model)
-            self.model_name_or_path = embeding_model
-            self.tokenizer = AutoTokenizer.from_pretrained(embeding_model)
-        else:
-            raise Exception('_JqkjTokenizerWrapper初始化失败，参数必须是Union[HuggingFaceEmbeddings, HuggingFaceBgeEmbeddings,str]')
-        # self.partial_tokenize_func = partial(self.tokenizer.encode,**kwargs)
+    def __init__(self):
+        self.tokenizer = env_models_instance.tokenizer
 
     _max_length_equal_32_bit_integer: int = 2**32
     def tokenize(self, text: str) -> List[int]: 
@@ -104,7 +91,7 @@ class JqChineseRecursiveTextSplitter(RecursiveCharacterTextSplitter):
                 f"({chunk_size}), should be smaller."
             )
 
-        self.tokenizer_wrapper = _JqkjTokenizerWrapper(embeding_model=model_name)  
+        self.tokenizer_wrapper = _JqkjTokenizerWrapper()  
         super().__init__(chunk_size=chunk_size,chunk_overlap=chunk_overlap,separators=separators,is_separator_regex=is_separator_regex,add_start_index=add_start_index,keep_separator=keep_separator, strip_whitespace=strip_whitespace, length_function = self.tokenizer_wrapper.tokens_len,**kwargs)
         
 

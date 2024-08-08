@@ -378,3 +378,17 @@ class LocalAIEmbeddings(BaseModel, Embeddings):
         """
         embedding = await self._aembedding_func(text, engine=self.deployment)
         return embedding
+if __name__ == '__main__':
+    # from langchain_community.embeddings import LocalAIEmbeddings
+    embeddings_api = LocalAIEmbeddings(
+        model= 'bce-embedding-base_v1',
+        openai_api_key="random-string",
+        openai_api_base="http://10.1.150.105:9997/v1"
+    )
+
+
+    emd = embeddings_api.embed_query("quey")
+    print(emd)
+
+    documents_emd =embeddings_api.embed_documents(["text1","text2"])
+
