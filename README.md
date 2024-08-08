@@ -82,10 +82,10 @@ nohup xinference-local -H 0.0.0.0 --log-level debug  >> /data/xinference/xinfer.
 
 tail -f /data/xinference/xinfer.log
 
-ps -ef | grep 'xinference-local'找到包含了【xinfer/bin/xinference-local -H 0.0.0.0】对应行的pid 然后 sudo kill -9 
+ps -ef | grep 'xinference-local'     找到包含了【xinfer/bin/xinference-local -H 0.0.0.0】对应行的pid 然后 sudo kill -9 
 
 ```
-运行加载 qwen2-instruct 模型
+运行加载 qwen2-instruct 模型ok
 ```
 CUDA_VISIBLE_DEVICES=0,1,2,3 xinference launch --model-engine vllm --model-name qwen2-instruct --size-in-billions 72  --model-format awq --quantization Int4 --gpu_memory_utilization 0.95 --tensor_parallel_size 4 --max_model_len 32000 --n-gpu 4
 ```

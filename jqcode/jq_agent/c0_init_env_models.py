@@ -171,13 +171,13 @@ class InitEnvModels:
         return self.openai_client
 
 
-    def get_langchain_chat_model(self, temperature=0.0, max_tokens=2000, streaming=True):
+    def get_langchain_chat_model(self, temperature=0.0, max_tokens=32000, streaming=True):
         if not self.chat_model or temperature!=self.chat_model.temperature or max_tokens!=self.chat_model.max_tokens or streaming!=self.chat_model.streaming:
             self.chat_model = ChatOpenAI(
                 model_name=self.llm_model_name,
                 openai_api_base=self.base_url,    
                 openai_api_key= self.api_key,
-                streaming=False,
+                streaming=True,
                 verbose=True,
                 temperature=temperature,
                 max_tokens=max_tokens,
