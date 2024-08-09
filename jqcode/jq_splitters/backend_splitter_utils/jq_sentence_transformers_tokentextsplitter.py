@@ -41,10 +41,15 @@ class SentenceTransformersTokenTextSplitter(TextSplitter):
     ) -> None:
         """Create a new TextSplitter."""
         
-        assert isinstance(emb_model_instance,(HuggingFaceEmbeddings,HuggingFaceBgeEmbeddings)),'model_name参数必须是Union[HuggingFaceEmbeddings, HuggingFaceBgeEmbeddings]'
-        self.chinese_recursive_text_splitter = JqChineseRecursiveTextSplitter(chunk_size=tokens_per_chunk,chunk_overlap=chunk_overlap,model_name=emb_model_instance) 
-        self._model = emb_model_instance
-        self.model_name = emb_model_instance.model_name
+        # assert isinstance(emb_model_instance,(HuggingFaceEmbeddings,HuggingFaceBgeEmbeddings)),'model_name参数必须是Union[HuggingFaceEmbeddings, HuggingFaceBgeEmbeddings]'
+        self.chinese_recursive_text_splitter = env_models_instance.text_splitter
+        try:
+            self.model_name = emb_model_instance.model_name 
+        except:
+            self.model_name = env_models_instance.embedding_model_name
+        
+        self._model = emb_model_instance if emb_model_instance else env_models_instance.embed_model
+
         self.tokenizer = self.chinese_recursive_text_splitter.tokenizer_wrapper.tokenizer
         self._initialize_chunk_configuration(tokens_per_chunk=tokens_per_chunk)
         super().__init__(**kwargs,chunk_size=tokens_per_chunk, chunk_overlap=chunk_overlap,length_function=self.chinese_recursive_text_splitter.tokenizer_wrapper.tokens_len)
@@ -52,7 +57,11 @@ class SentenceTransformersTokenTextSplitter(TextSplitter):
     def _initialize_chunk_configuration(
         self, *, tokens_per_chunk: Optional[int]
     ) -> None:
-        self.maximum_tokens_per_chunk = cast(int, self._model.client.max_seq_length)
+        try:
+            max_seq_length = self._model.client.max_seq_length
+        except:
+            max_seq_length = env_models_instance.embedding_model_max_tokens
+        self.maximum_tokens_per_chunk = cast(int, max_seq_length)
 
         if tokens_per_chunk is None:
             self.tokens_per_chunk = self.maximum_tokens_per_chunk - 12

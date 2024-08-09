@@ -11,6 +11,8 @@ import langchain_community.document_loaders
 from langchain.docstore.document import Document
 from langchain.text_splitter import MarkdownHeaderTextSplitter, TextSplitter
 from langchain_community.document_loaders import JSONLoader, TextLoader
+from jqcode.jq_readers.backend_reader_utils.jqkj_docs_converter import jq_reader_list
+
 # from jqcode.jq_splitters.backend_splitter_utils.jq_chinese_recursive_text_splitter import JqChineseRecursiveTextSplitter
 #  /data/projects/JqChat/jqcode/jq_splitters/backend_splitter_utils/jq_chinese_recursive_text_splitter.py
 from jqcode.jq_knowledge_manegement.chatchat.configs import (
@@ -111,8 +113,7 @@ LOADER_DICT = {
     "JSONLinesLoader": [".jsonl"],
     "CSVLoader": [".csv"],
     # "FilteredCSVLoader": [".csv"], 如果使用自定义分割csv
-    "JqkjDocxReader": [".pdf"],
-    "JqkjDocxReader": [".docx", ".doc",".pdf"],
+    "JqkjDocxReader": jq_reader_list,
     "RapidOCRPPTLoader": [
         ".ppt",
         ".pptx",

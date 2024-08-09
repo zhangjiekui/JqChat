@@ -25,6 +25,21 @@ def get_os():
  
 os_name = get_os()
 
+# todo: 
+# 1)代码本身的检查（命名）
+# 2)加入其他常见类型的转换
+# 3)chatchat的类型设置要与此处的联动起来
+
+docpdf_list = [".doc",".pdf"]
+pandoc_list =  [".md",".html"]
+jq_reader_list =pandoc_list+docpdf_list
+
+# dict: {".doc":ReadClass}
+
+# 循环dict：、
+#   如果key in JqReadderList:dict["key"] = JqReadder
+
+
 
 def convert_md_to_docx(input_filepaths:Union[str,list],overwrite=True,destination_dir=None):
     """

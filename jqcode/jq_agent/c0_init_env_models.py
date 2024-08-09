@@ -119,6 +119,7 @@ class XinferenceReranker(BaseDocumentCompressor):
                 valid_doc_list.append(d)
             else:
                 invalid_doc_list.append(d)
+       
         rerank_result = self._model.rerank(passages,query,top_n=self.top_n,return_documents=False,return_len=True)
         rerank_result_list = rerank_result["results"]
         # rerank_result["results"][0]['relevance_score']
@@ -184,7 +185,9 @@ class InitEnvModels:
         _LLM_MODEL_CARD = {"name":"qwen2-instruct","online":"http://10.1.150.105:9997/v1","local":"","dimensions":0,"max_tokens":32000,"base_url":"http://10.1.150.105:9997/v1"}
         _EMBEDDING_MODEL_CARD = {"name":"bce-embedding-base_v1","online":"maidalun1020/bce-embedding-base_v1","local":"/data/models/bce-embedding-base_v1","dimensions":768,"max_tokens":512,"base_url":"http://10.1.150.105:9997/v1"}
         _EMBEDDING_MODEL_8k_CARD = {"name":"jina-embeddings-v2-base-zh","online":"jinaai/jina-embeddings-v2-base-zh","local":"/data/models/jina-embeddings-v2-base-zh","dimensions":768,"max_tokens":8192,"base_url":"http://10.1.150.105:9997/v1"}
-        _RERANK_MODEL_CARD = {"name":"bce-reranker-base_v1","online":"maidalun1020/bce-reranker-base_v1","local":"/data/models/bce-reranker-base_v1","dimensions":512,"max_tokens":32000,"base_url":"http://10.1.150.105:9997"} ##Rerank: url要去掉"/v1"
+        # https://github.com/xorbitsai/inference/issues/1695 bce-reranker-base_v1的是514  经过测试，使用bce-rerank模型时，只要corpus里的文本总tensor长度超过514就会报错
+        _RERANK_MODEL_CARD = {"name":"jina-reranker-v2","online":"jinaai/jina-reranker-v2-base-multilingual","local":"maidalun1020/bce-reranker-base_v1","dimensions":768,"max_tokens":1026,"base_url":"http://10.1.150.105:9997"} ##Rerank: url要去掉"/v1"
+        # _RERANK_MODEL_CARD = {"name":"bce-reranker-base_v1","online":"maidalun1020/bce-reranker-base_v1","local":"/data/models/bce-reranker-base_v1","dimensions":512,"max_tokens":32000,"base_url":"http://10.1.150.105:9997"} ##Rerank: url要去掉"/v1"
 
         
         LLM_MODEL_CARD = os.getenv("LLM_MODEL_CARD",'')
@@ -219,7 +222,7 @@ class InitEnvModels:
         self.embedding_model_local = self.embedding_model_card['local']
         self.embedding_model_online = self.embedding_model_card['online']
         self.embedding_model_base_url = self.embedding_model_card.get('base_url',None) or self.base_url
-        self.embedding_model_name_or_path = self.embedding_model_local if Path(self.embedding_model_local).exists() else self.embedding_model_online
+        self.embedding_model_name_or_path = self.embedding_model_local if self.embedding_model_local and Path(self.embedding_model_local).exists() else self.embedding_model_online
 
 
         self.embedding_model_8k_name =self.embedding_model_8k_card['name']
@@ -228,7 +231,7 @@ class InitEnvModels:
         self.embedding_model_8k_local = self.embedding_model_8k_card['local']
         self.embedding_model_8k_online = self.embedding_model_8k_card['online']
         self.embedding_model_8k_base_url = self.embedding_model_8k_card.get('base_url',None) or self.base_url
-        self.embedding_model_8k_name_or_path = self.embedding_model_8k_local if Path(self.embedding_model_8k_local).exists() else self.embedding_model_8k_online
+        self.embedding_model_8k_name_or_path = self.embedding_model_8k_local if self.embedding_model_8k_local and Path(self.embedding_model_8k_local).exists() else self.embedding_model_8k_online
 
 
 
@@ -238,7 +241,7 @@ class InitEnvModels:
         self.rerank_model_local = self.rerank_model_card['local']
         self.rerank_model_online = self.rerank_model_card['online']
         self.rerank_model_base_url = self.rerank_model_card.get('base_url',None) or self.base_url[0:-3] ####Rerank: url要去掉"/v1"
-        self.rerank_model_name_or_path = self.rerank_model_local if Path(self.rerank_model_local).exists() else self.rerank_model_online
+        self.rerank_model_name_or_path = self.rerank_model_local if self.rerank_model_local and Path(self.rerank_model_local).exists() else self.rerank_model_online
         
         self.embed_model,self.embedding_model_8k,self.reranker = None,None,None
         self.embed_model,self.embedding_model_8k,self.reranker = self.get_emb_8k_rerank_model()

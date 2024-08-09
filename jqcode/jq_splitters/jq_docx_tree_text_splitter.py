@@ -22,6 +22,7 @@ from jqcode.jq_readers.jqkj_readers import JqkjSimpleDirectoryReader
 from jqcode.jq_readers.backend_reader_utils.jqkj_doc_tree_utils import jieba_pre_process,TreeNodeType,get_doc_tree_from_document
 from jqcode.jq_splitters.backend_splitter_utils.jq_chinese_recursive_text_splitter import JqChineseRecursiveTextSplitter
 from jqcode.jq_agent.tools.jq_web_search_engine import is_query_chinese
+from jqcode.jq_agent.c0_init_env_models import env_models_instance
 from jqcode.jq_utils.logger import jqkj_logger
 
 
@@ -156,7 +157,7 @@ class JqkjDocTreeTokenTextSplitter(MetadataAwareTextSplitter):
     # 注意：下面的chunk_size是已经去掉保留tokes后的，真正能够喂入模型的正常tokens数量
     chunk_size: int = Field(default=normal_tokens_chunk_size,description="每个文本块chunk的tokens数量大小", gt=0, )
     chunk_overlap: Union[int,float] = Field(default=DEFAULT_CHUNK_OVERLAP,description="两个文本块chunk可以重叠的数量大小或比例",gte=0,)
-    cr_text_splitter:JqChineseRecursiveTextSplitter = Field(default=JqChineseRecursiveTextSplitter(model_name=None,chunk_size=_default_normal_tokens_chunk_size,chunk_overlap=DEFAULT_CHUNK_OVERLAP),description="中英文文本分割器")
+    cr_text_splitter:JqChineseRecursiveTextSplitter = Field(default=env_models_instance.text_splitter,description="中英文文本分割器")
     tokens_len_func: Callable = Field(default=None,description="获取tokens数量")
  
     class Config:
@@ -174,7 +175,7 @@ class JqkjDocTreeTokenTextSplitter(MetadataAwareTextSplitter):
     ):
         """Initialize with parameters."""
         _normal_tokens_chunk_size = chunk_size - model_reserved_tokens_size
-        cr_text_splitter = JqChineseRecursiveTextSplitter(model_name=None,chunk_size=_normal_tokens_chunk_size,chunk_overlap=chunk_overlap)
+        cr_text_splitter = env_models_instance.text_splitter
         chunk_overlap = cr_text_splitter._chunk_overlap
         
 
@@ -825,7 +826,7 @@ if __name__ == "__main__":
    
 
 
-    st_reranker = SentenceTransformerRerank(top_n=top_n, model=reranker.model)
+    
     simple_reader = JqkjSimpleDirectoryReader(input_files=input_files,overwrite_existing_converted_files=False,required_exts=['.doc','.docx','.pdf'])
     documents = simple_reader.load_data()
     service_context = ServiceContext.from_defaults(llm=llm, embed_model=embed_model,node_parser=doc_tree_spiltter)
@@ -845,7 +846,8 @@ if __name__ == "__main__":
 
     retriever = RouterRetriever.from_defaults(retriever_tools=retriever_tools,service_context=service_context,select_multi=True)
     retrieved_nodes = retriever.retrieve(query0)
-    reranked_nodes = st_reranker.postprocess_nodes(retrieved_nodes, query_bundle=QueryBundle(query0))
+    # st_reranker = SentenceTransformerRerank(top_n=top_n, model=env_models_instance.rerank_model_name_or_path)
+    # reranked_nodes = st_reranker.postprocess_nodes(retrieved_nodes, query_bundle=QueryBundle(query0))
 
     # print(retrieved_nodes)
     # print(reranked_nodes)
