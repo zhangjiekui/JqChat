@@ -133,11 +133,11 @@ class JqChineseRecursiveTextSplitter(RecursiveCharacterTextSplitter):
             final_chunks.extend(merged_text)
         return [re.sub(r"\n{2,}", "\n", chunk.strip()) for chunk in final_chunks if chunk.strip()!=""]
 
-def _test__JqkjTokenizerWrapper():
+def _test__JqkjTokenizerWrapper(_tokenizer):
     import tiktoken
 
     text = "你好，世界！"
-    tokenizer_wrapper = _JqTokenizerWrapper()
+    tokenizer_wrapper = _JqTokenizerWrapper(_tokenizer)
     tokens = tokenizer_wrapper(text)
     print(tokens)
     print(tokenizer_wrapper.de_tokenize(tokens))
@@ -152,8 +152,9 @@ def _test__JqkjTokenizerWrapper():
     print(tokens2)
     print(tiktoken_enc.decode(tokens2))    
 
-def _test_JqkjChineseRecursiveTextSplitter():
+def _test_JqkjChineseRecursiveTextSplitter(_tokenizer):
     text_splitter = JqChineseRecursiveTextSplitter(
+        tokenizer=_tokenizer,
         chunk_size=200,
         chunk_overlap=0
     )
@@ -185,11 +186,14 @@ def _test_JqkjChineseRecursiveTextSplitter():
         print(i,id,text_splitter.tokenizer_wrapper.de_tokenize(id))
 
 if __name__ == "__main__":
-    _test__JqkjTokenizerWrapper()
-    _test_JqkjChineseRecursiveTextSplitter()
+    from jqcode.jq_agent.c0_init_env_models import env_models_instance
+    _tokenizer = env_models_instance._tokenizer
+    _test__JqkjTokenizerWrapper(_tokenizer)
+    _test_JqkjChineseRecursiveTextSplitter(_tokenizer)
 
     text='区块链功能实现层实现了区块链网络中各种具体的区块链功能逻辑。平台采用实体挂载组件的方式。一个节点可以装配若干功能组件实现节点的实际功能。账本组件负责记录发生在网络中的交易信息，包括状态数据库、历史数据库和索引数据库等信息。区块组件将排序后的交易填充为区块。节点支持客户端对指定事件进行监听，并由监听者对事件进行处理。共识组件主要提供对交易的全局排序。交易指的是通过调用链码实现对账本状态的一次改变。客户端可以通过发送交易请求来让分布式账本记录信息。背书组件对收到的来自客户端的请求（交易提案）按照自身的逻辑进行检查，以决策是否予以支持。验证组件对排序后的一批交易进行提交到账本之前最终的检查。PKI组件主要负责对数字证书进行管理，包括生成、撤销等。智能合约组件提供对智能合约的功能支撑，由合约框架、应用合约和系统合约组成。智能合约是作为交易的一部分保存在总账上的应用级的代码。合约框架提供支持特定编程语言（JAVA、GO）的智能合约运行环境。应用合约支持提供编写用户智能合约的支持接口。系统合约负责节点自身的处理逻辑，包括系统配置、背书、检验等系统级智能合约。'
     text_splitter = JqChineseRecursiveTextSplitter(
+        tokenizer=_tokenizer,
         chunk_size=100,
         chunk_overlap=0.2
     )
