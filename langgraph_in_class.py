@@ -228,8 +228,10 @@ class GraphAgent:
     
     def exists_action(self,state:GraphAgentState):
         result = state['messages'][-1]
+        finish_reason = "No Finish Reason"
         try:
             returned_tool_calling_nums = len(result.tool_calls)
+            finish_reason = result.response_metadata["finish_reason"]
         except:
             returned_tool_calling_nums = 0
         os.environ["rag_graph_next"] = ''
@@ -247,8 +249,8 @@ class GraphAgent:
                 os.environ['rag_args'] = tool_call_1["args"]['query']
                 return "Rag"
         else:
-            print('No returned tool_calling')
-            print(f'{type(result)}: {result.content}')
+            logger.info(f'No returned tool_calling and {finish_reason=}')
+            logger.info(f'{type(result)}: {result.content}')
             
         return returned_tool_calling_nums
     

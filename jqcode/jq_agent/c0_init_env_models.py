@@ -35,7 +35,7 @@ from langchain.retrievers import ContextualCompressionRetriever
 from langchain_core.messages import BaseMessage, HumanMessage,SystemMessage,ToolMessage,AIMessage
 from langchain.callbacks.base import BaseCallbackHandler
 from langchain_core.callbacks import StdOutCallbackHandler
-from jqcode.jq_splitters.backend_splitter_utils.jq_chinese_recursive_text_splitter import JqChineseRecursiveTextSplitter,_JqkjTokenizerWrapper
+from jqcode.jq_splitters.backend_splitter_utils.jq_chinese_recursive_text_splitter import JqChineseRecursiveTextSplitter
             
 
 from transformers import AutoTokenizer
@@ -119,7 +119,7 @@ class XinferenceReranker(BaseDocumentCompressor):
                 valid_doc_list.append(d)
             else:
                 invalid_doc_list.append(d)
-        rerank_result = self._model.rerank(passages,query,top_n=self.top_n,return_documents=True,return_len=True)
+        rerank_result = self._model.rerank(passages,query,top_n=self.top_n,return_documents=False,return_len=True)
         rerank_result_list = rerank_result["results"]
         # rerank_result["results"][0]['relevance_score']
         final_results = []
@@ -139,24 +139,6 @@ class XinferenceReranker(BaseDocumentCompressor):
 
 def replace_multiple_newlines(text):
     return re.sub(r'\n+', '\n', text)
-
-# region:废弃的方法
-# def clean_up_list_when_encounter_null_element(messages_a: list, messages_b: list | None, mode: Literal['replace','join']='join') -> list:
-#     if messages_b:
-#         if not isinstance(messages_b,list):
-#             messages_b = [messages_b]
-        
-#         if mode == 'replace':
-#             return messages_b
-        
-#         if not messages_a or messages_a == messages_b:
-#             return messages_b
-#         else:
-#             messages_a = [el for el in messages_a if el not in messages_b]
-#             return messages_a + messages_b
-#     else:
-#         return []
-# endregion
 
 def clean_up_list_when_encounter_null_element(messages_a: list, messages_b: list | None) -> list:
     # todo 可以考虑在messages_b中加入一个控制消息：如ControlMassage(content="replace")，取出来后，直接返回 messages_b[0:-1]
@@ -199,10 +181,10 @@ class InitEnvModels:
         self.api_type =os.getenv("OPENAI_API_TYPE",'open_ai')
         
 
-        _LLM_MODEL_CARD = {"name":"qwen2-instruct","online":"http://10.1.150.105:9997/v1","local":"","dimensions":0,"max_tokens":32000}
-        _EMBEDDING_MODEL_CARD = {"name":"bce-embedding-base_v1","online":"maidalun1020/bce-embedding-base_v1","local":"/data/models/bce-embedding-base_v1","dimensions":768,"max_tokens":512}
-        _EMBEDDING_MODEL_8k_CARD = {"name":"jina-embeddings-v2-base-zh","online":"jinaai/jina-embeddings-v2-base-zh","local":"/data/models/jina-embeddings-v2-base-zh","dimensions":768,"max_tokens":8192}
-        _RERANK_MODEL_CARD = {"name":"bce-reranker-base_v1","online":"maidalun1020/bce-reranker-base_v1","local":"/data/models/bce-reranker-base_v1","dimensions":512,"max_tokens":32000}
+        _LLM_MODEL_CARD = {"name":"qwen2-instruct","online":"http://10.1.150.105:9997/v1","local":"","dimensions":0,"max_tokens":32000,"base_url":"http://10.1.150.105:9997/v1"}
+        _EMBEDDING_MODEL_CARD = {"name":"bce-embedding-base_v1","online":"maidalun1020/bce-embedding-base_v1","local":"/data/models/bce-embedding-base_v1","dimensions":768,"max_tokens":512,"base_url":"http://10.1.150.105:9997/v1"}
+        _EMBEDDING_MODEL_8k_CARD = {"name":"jina-embeddings-v2-base-zh","online":"jinaai/jina-embeddings-v2-base-zh","local":"/data/models/jina-embeddings-v2-base-zh","dimensions":768,"max_tokens":8192,"base_url":"http://10.1.150.105:9997/v1"}
+        _RERANK_MODEL_CARD = {"name":"bce-reranker-base_v1","online":"maidalun1020/bce-reranker-base_v1","local":"/data/models/bce-reranker-base_v1","dimensions":512,"max_tokens":32000,"base_url":"http://10.1.150.105:9997"} ##Rerank: url要去掉"/v1"
 
         
         LLM_MODEL_CARD = os.getenv("LLM_MODEL_CARD",'')
@@ -226,14 +208,17 @@ class InitEnvModels:
         self.embedding_model_8k_card = EMBEDDING_MODEL_8k_CARD
         self.rerank_model_card = RERANK_MODEL_CARD
 
-        self.base_url= self.llm_model_card['online']
+        self.llm_model_base_url= self.llm_model_card['base_url']
         self.llm_model_name = self.llm_model_card['name']
+
+        self.base_url = self.llm_model_base_url # 如果是同一服务器上部署的大语言和Emb模型，可能会省略配置其他模型，直接用这个
 
         self.embedding_model_name = self.embedding_model_card['name']
         self.embedding_model_dimentions = self.embedding_model_card['dimensions']
         self.embedding_model_max_tokens = self.embedding_model_card['max_tokens']
         self.embedding_model_local = self.embedding_model_card['local']
         self.embedding_model_online = self.embedding_model_card['online']
+        self.embedding_model_base_url = self.embedding_model_card.get('base_url',None) or self.base_url
         self.embedding_model_name_or_path = self.embedding_model_local if Path(self.embedding_model_local).exists() else self.embedding_model_online
 
 
@@ -242,6 +227,7 @@ class InitEnvModels:
         self.embedding_model_8k_max_tokens = self.embedding_model_8k_card['max_tokens']
         self.embedding_model_8k_local = self.embedding_model_8k_card['local']
         self.embedding_model_8k_online = self.embedding_model_8k_card['online']
+        self.embedding_model_8k_base_url = self.embedding_model_8k_card.get('base_url',None) or self.base_url
         self.embedding_model_8k_name_or_path = self.embedding_model_8k_local if Path(self.embedding_model_8k_local).exists() else self.embedding_model_8k_online
 
 
@@ -251,12 +237,13 @@ class InitEnvModels:
         self.rerank_model_max_tokens = self.rerank_model_card['max_tokens']
         self.rerank_model_local = self.rerank_model_card['local']
         self.rerank_model_online = self.rerank_model_card['online']
+        self.rerank_model_base_url = self.rerank_model_card.get('base_url',None) or self.base_url[0:-3] ####Rerank: url要去掉"/v1"
         self.rerank_model_name_or_path = self.rerank_model_local if Path(self.rerank_model_local).exists() else self.rerank_model_online
         
         self.embed_model,self.embedding_model_8k,self.reranker = None,None,None
         self.embed_model,self.embedding_model_8k,self.reranker = self.get_emb_8k_rerank_model()
-        self.tokenizer = AutoTokenizer.from_pretrained(self.embedding_model_name_or_path)
-        self.text_splitter = JqChineseRecursiveTextSplitter(tokenizer_wrapper=_JqkjTokenizerWrapper(self.tokenizer),chunk_size=self.embedding_model_max_tokens,chunk_overlap=0.2)
+        self._tokenizer = AutoTokenizer.from_pretrained(self.embedding_model_name_or_path)
+        self.text_splitter = JqChineseRecursiveTextSplitter(self._tokenizer,chunk_size=self.embedding_model_max_tokens,chunk_overlap=0.2)
 
   
         
@@ -315,7 +302,7 @@ class InitEnvModels:
     # 直接使用OpenAI
     def get_openai_client(self):
         if not self.openai_client:
-            self.openai_client = OpenAI(base_url=self.base_url,api_key=self.api_key)
+            self.openai_client = OpenAI(base_url=self.llm_model_base_url,api_key=self.api_key)
             print(f'当前使用的模型base_url为:OpenAI, {self.openai_client.base_url}')
         return self.openai_client
 
@@ -324,7 +311,7 @@ class InitEnvModels:
         if not self.chat_model or temperature!=self.chat_model.temperature or max_tokens!=self.chat_model.max_tokens or streaming!=self.chat_model.streaming:
             self.chat_model = ChatOpenAI(
                 model_name=self.llm_model_name,
-                openai_api_base=self.base_url,    
+                openai_api_base=self.llm_model_base_url,    
                 openai_api_key= self.api_key,
                 streaming=True,
                 verbose=True,
@@ -412,17 +399,16 @@ class InitEnvModels:
     def _get_emb_8k_rerank_model_api(self):
         from xinference.client import Client
         from jqcode.jq_knowledge_manegement.chatchat.server.localai_embeddings import LocalAIEmbeddings
-        embed_model = LocalAIEmbeddings(model=self.embedding_model_name,api_key="NotNeed",base_url=self.base_url,embedding_ctx_length=self.embedding_model_max_tokens*8,chunk_size=self.embedding_model_max_tokens)
-        embedding_model_8k = LocalAIEmbeddings(model=self.embedding_model_8k_name,api_key="NotNeed",base_url=self.base_url,embedding_ctx_length=self.embedding_model_8k_max_tokens*4,chunk_size=self.embedding_model_8k_max_tokens)
+        embed_model = LocalAIEmbeddings(model=self.embedding_model_name,api_key="NotNeed",base_url=self.embedding_model_base_url,embedding_ctx_length=self.embedding_model_max_tokens*8,chunk_size=self.embedding_model_max_tokens)
+        embedding_model_8k = LocalAIEmbeddings(model=self.embedding_model_8k_name,api_key="NotNeed",base_url=self.embedding_model_8k_base_url,embedding_ctx_length=self.embedding_model_8k_max_tokens*4,chunk_size=self.embedding_model_8k_max_tokens)
         try:
-            client = Client(self.base_url[:-3]) #url要去掉"/v1"
+            client = Client(self.rerank_model_base_url) #url要去掉"/v1"
             xinfer_reranker = client.get_model(self.rerank_model_name)
+
             # BCERerank: compress_documents(documents: Sequence[Document],query: str)
             # xinference.client: model.rerank(corpus, query) https://inference.readthedocs.io/zh-cn/latest/index.html
             # https://github.com/xorbitsai/inference/blob/7d83300a7694a0262b634007ea4164ea753e466f/xinference/model/rerank/core.py
             reranker = XinferenceReranker(top_n=4,model=xinfer_reranker)
-
-
             # reranker.compress_documents = reranker.rerank
             query = "A man is eating pasta."
             corpus = ["A man is eating food.","A woman is playing violin."]
@@ -534,7 +520,9 @@ class InitEnvModels:
         reranker.top_n = final_docs_num
 
         if only_use_reranker:            
-            chunks_relevant = reranker.compress_documents(text_chunks,query)
+            _chunks_relevant = reranker.compress_documents(text_chunks,query)
+            # 只返回relevance_score>=score_threshold的
+            chunks_relevant = [d for d in _chunks_relevant if d.metadata.get("relevance_score",0)>=score_threshold]
         
         else:
             embed_model  = embed_model if embed_model else self.embed_model        
@@ -550,7 +538,7 @@ class InitEnvModels:
 
     # https://github.com/langchain-ai/langgraph/blob/main/examples/managing-conversation-history.ipynb
     def filter_and_get_messages_relevant_to_query(self,query:str,messages_list:List[BaseMessage],text_splitter=None,embed_model=None,reranker=None,
-                                                    if_reranking:bool=True,retriever_docs_num=10,final_docs_num=6 ,score_threshold=0.3,reserve_last_n_messages = 6, only_use_reranker=True):
+                                                    if_reranking:bool=True,retriever_docs_num=10,final_docs_num=6 ,score_threshold=0.5,reserve_last_n_messages = 6, only_use_reranker=True):
         if len(messages_list) > reserve_last_n_messages:
             unique_messages_list = []
             messages_content_set = set()
@@ -565,7 +553,7 @@ class InitEnvModels:
             unique_messages_list.reverse() 
             messages_list.reverse() # 前面messages_list顺序翻转了，所以这里还要翻转回来
 
-            if len(unique_messages_list) > final_docs_num: 
+            if len(unique_messages_list) > 0:  #final_docs_num
                 embed_model  = embed_model if embed_model else self.embed_model
                 reranker  = reranker if reranker else self.reranker 
                 docs_from_messages = [Document(page_content=message.content,metadata={"message_index":message_index}) for message_index, message in enumerate(unique_messages_list)]

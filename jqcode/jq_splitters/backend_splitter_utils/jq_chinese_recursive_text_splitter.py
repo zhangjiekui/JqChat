@@ -32,7 +32,7 @@ def _split_text_with_regex_from_end(
         splits = list(text)
     return [s for s in splits if s != ""]
 
-class _JqkjTokenizerWrapper():
+class _JqTokenizerWrapper():
     def __init__(self,tokenizer):
         self.tokenizer = tokenizer
 
@@ -57,7 +57,7 @@ class _JqkjTokenizerWrapper():
 class JqChineseRecursiveTextSplitter(RecursiveCharacterTextSplitter):
     def __init__(
             self,
-            tokenizer_wrapper:_JqkjTokenizerWrapper,
+            tokenizer:None,
             chunk_size: int = 500,
             chunk_overlap: float = 0.2,
             separators: Optional[List[str]] = [
@@ -89,7 +89,7 @@ class JqChineseRecursiveTextSplitter(RecursiveCharacterTextSplitter):
                 f"({chunk_size}), should be smaller."
             )
 
-        self.tokenizer_wrapper = tokenizer_wrapper  
+        self.tokenizer_wrapper = _JqTokenizerWrapper(tokenizer)  
         super().__init__(chunk_size=chunk_size,chunk_overlap=chunk_overlap,separators=separators,is_separator_regex=is_separator_regex,add_start_index=add_start_index,keep_separator=keep_separator, strip_whitespace=strip_whitespace, length_function = self.tokenizer_wrapper.tokens_len,**kwargs)
         
 
@@ -137,7 +137,7 @@ def _test__JqkjTokenizerWrapper():
     import tiktoken
 
     text = "你好，世界！"
-    tokenizer_wrapper = _JqkjTokenizerWrapper()
+    tokenizer_wrapper = _JqTokenizerWrapper()
     tokens = tokenizer_wrapper(text)
     print(tokens)
     print(tokenizer_wrapper.de_tokenize(tokens))
