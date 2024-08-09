@@ -846,8 +846,8 @@ if __name__ == "__main__":
 
     retriever = RouterRetriever.from_defaults(retriever_tools=retriever_tools,service_context=service_context,select_multi=True)
     retrieved_nodes = retriever.retrieve(query0)
-    # st_reranker = SentenceTransformerRerank(top_n=top_n, model=env_models_instance.rerank_model_name_or_path)
-    # reranked_nodes = st_reranker.postprocess_nodes(retrieved_nodes, query_bundle=QueryBundle(query0))
+    st_reranker = SentenceTransformerRerank(top_n=top_n, model=env_models_instance.rerank_model_name_or_path)
+    reranked_nodes = st_reranker.postprocess_nodes(retrieved_nodes, query_bundle=QueryBundle(query0))
 
     # print(retrieved_nodes)
     # print(reranked_nodes)
