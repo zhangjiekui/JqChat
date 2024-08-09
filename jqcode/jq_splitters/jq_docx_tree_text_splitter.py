@@ -846,6 +846,14 @@ if __name__ == "__main__":
 
     retriever = RouterRetriever.from_defaults(retriever_tools=retriever_tools,service_context=service_context,select_multi=True)
     retrieved_nodes = retriever.retrieve(query0)
+
+    """
+    需修改：/root/.virtualenvs/test/lib/python3.10/site-packages/llama_index/core/postprocessor/sbert_rerank.py
+            self._model = CrossEncoder(
+            model, max_length=DEFAULT_SENTENCE_TRANSFORMER_MAX_LENGTH, device=device,trust_remote_code=True,automodel_args={"torch_dtype": torch.float16},
+        )
+    以正确加载模型
+    """
     st_reranker = SentenceTransformerRerank(top_n=top_n, model=env_models_instance.rerank_model_name_or_path)
     reranked_nodes = st_reranker.postprocess_nodes(retrieved_nodes, query_bundle=QueryBundle(query0))
 

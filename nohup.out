@@ -1868,3 +1868,7 @@ pic_pic_images数量9,  w_pic_images数量0, 总数9  [DEBUG:jqkj_readers.py(318
 2024-08-08 02:10:12,099 jqcode.jq_knowledge_manegement.chatchat.server.chat.file_chat 951458 ERROR    Failed to add documents to faiss: tuple index out of range
 INFO:     127.0.0.1:46126 - "POST /knowledge_base/upload_temp_docs HTTP/1.1" 200 OK
 [2024-08-08 02:15:24,790] ERROR [snakemq.messaging:236] conn=61fd16 ident=None SnakeMQNoIdent('61fd16')
+INFO:     Shutting down
+INFO:     Waiting for application shutdown.
+INFO:     Application shutdown complete.
+INFO:     Finished server process [951458]
