@@ -18,9 +18,10 @@ from flask import Flask, request, jsonify, send_from_directory, Response
 from jqchat.kernel_program.main import APP_PORT as KERNEL_APP_PORT
 from jqcode.jq_agent.c0_init_env_models import env_models_instance
 from jqcode.jq_agent.graph_create_utils import user_question_is_related_to_coding_or_data_analyzing,llm
-from jqcode.jq_agent.run_super_graph import super_graph_compiled_async,arun_super_graph
-from langgraph_in_class import run_conversation
-from jqcode.jq_agent.jq_rag_agent_sub_graph import llm_chain,invoke_llm_config
+
+from langgraph_in_class import run_conversation,invoke_llm_config,chat_bot
+# from jqcode.jq_agent.jq_rag_agent_sub_graph import llm_chain,invoke_llm_config
+# from jqcode.jq_agent.run_super_graph import super_graph_compiled_async,arun_super_graph
 from langchain_core.pydantic_v1 import BaseModel, Field
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_core.messages import HumanMessage,SystemMessage,ToolMessage,AIMessage
@@ -400,8 +401,10 @@ def agent_entry():
     code, text, status = None, None, 200
     config = {"recursion_limit":25,"configurable": {"thread_id": user_id}}
 
-    initial_graph_state = asyncio.run(super_graph_compiled_async.aget_state(config=config)).values
-    messages = initial_graph_state.get('messages',[])
+    # initial_graph_state = asyncio.run(super_graph_compiled_async.aget_state(config=config)).values
+    # messages = initial_graph_state.get('messages',[])
+
+    messages = chat_bot.all_history_messages
     
     n_last_messages_num = 3
     if len(messages)>n_last_messages_num:
