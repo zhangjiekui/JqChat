@@ -1,22 +1,26 @@
 # source: https://learn.deeplearning.ai/courses/ai-agents-in-langgraph/lesson/3/langgraph-components
 print('参考：https://learn.deeplearning.ai/courses/ai-agents-in-langgraph/lesson/3/langgraph-components')
 from langgraph.graph import StateGraph, END
-from typing import TypedDict, Annotated, Literal, Optional, Union
+from typing import TypedDict, Annotated, Literal, Optional, Union, List
 from langchain_core.pydantic_v1 import BaseModel, Field
-
+from langchain_core.prompts import ChatPromptTemplate
 from langgraph.graph.message import add_messages
 from langchain_core.messages import AnyMessage, SystemMessage, HumanMessage, ToolMessage, AIMessage
 from langchain_openai import ChatOpenAI
 from langchain_community.tools.tavily_search import TavilySearchResults
 from langchain_openai import ChatOpenAI
 from langchain import hub
+from langchain.schema import Document
+from langchain_core.output_parsers import StrOutputParser
 from langchain_core.tools import tool
 from langgraph.checkpoint.sqlite import SqliteSaver
 from langgraph.checkpoint.aiosqlite import AsyncSqliteSaver
 from langchain_core.runnables import Runnable, RunnableConfig
-from jqcode.jq_agent.c0_init_env_models import env_models_instance,clean_up_list_when_encounter_null_element
+from jqcode.jq_agent.c0_init_env_models import env_models_instance,get_custom_handler,clean_up_list_when_encounter_null_element
 from jqcode.jq_agent.tools.jq_functions_and_tools import get_flight_number,python_repl_tool
-from jqcode.jq_agent.jq_rag_agent_sub_graph import rag_sub_graph
+# from jqcode.jq_agent.jq_rag_agent_sub_graph import rag_sub_graph
+from jqcode.jq_agent.tools.jq_retriever import retriever
+from jqcode.jq_agent.tools.jq_web_search_engine import get_web_search_documents,is_query_chinese,get_tavily_search_result_documents
 # from jqcode.jq_agent.jq_rag_agent_sub_graph import WEB_SEARCH,VECTORSTORE,CODE_GENERATION,CODE_EXECUTION
 import os
 import shortuuid
@@ -26,13 +30,34 @@ logger = jqkj_logger(__file__).get_logger()
 from dotenv import load_dotenv
 _ = load_dotenv()
 
+handlers = get_custom_handler()
+invoke_llm_config = {'callbacks' : handlers}    
+class GraphAgentState(TypedDict):
+    messages: Annotated[list[AnyMessage], add_messages]
+    question : str
+    question_related_messages: Annotated[list[AnyMessage], clean_up_list_when_encounter_null_element]
+    question_searched : dict
+    generation : str
+    documents : List[str]
+llm_model = env_models_instance.get_langchain_chat_model()
+
+prompt_llm = """You are an assistant for question-answering tasks. Answer the question based upon your knowledge in the language the user asked ."""
+# Prompt
+prompt = lambda x: ChatPromptTemplate.from_messages(
+    [
+        SystemMessage(prompt_llm),
+        HumanMessage(
+            f"'Context':\n{x['context']}\n'EndOfContext' \nQuestion: {x['question']} \nAnswer: "
+        )
+    ]
+)
+
+# LLM Chain
+llm_chain = prompt | llm_model | StrOutputParser()
+
 # region: Router Data model Class Definitions
 ### Begin: Router Data model Class Definitions
-class DIRECT_RESPONCE(BaseModel):
-    """
-    Direct response. Answer user directly if you do know how to response.
-    """
-    query: str = Field(description="The question user want you to answer.")
+
 
 class WEB_SEARCH(BaseModel):
     """
@@ -40,32 +65,507 @@ class WEB_SEARCH(BaseModel):
     """
     query: str = Field(description="The query to use when searching the internet.")
 
+def web_search(state:GraphAgentState):
+    """
+    Web search based on the re-phrased question.
+
+    Args:
+        state (dict): The current graph state
+
+    Returns:
+        state (dict): Updates documents key with appended web results
+    """
+
+    print("---WEB SEARCH---")
+    question = state["question"]
+    try:
+        query_generated = os.environ['rag_args']
+        os.environ['rag_args'] = ''
+        if os.environ['rag_args']:
+            print(f"os.environ['rag_args']必须置为'',但现在的值为{os.environ['rag_args']} ")
+            raise Exception
+        if not query_generated:
+            query_generated = llm_chain.invoke({"question": question,"context":'请生成合适并且简洁的搜索引擎查询关键词,不需要任何额外的解释或内容'},config=invoke_llm_config)
+    except:
+        query_generated = question
+    print(f'{question=}')
+    print(f'{query_generated=}')
+
+
+    # Web search
+    docs = get_web_search_documents(query_generated)
+    if docs[0].metadata.get("search_engine",None)!="tavily_search":
+        chunks_relevant = env_models_instance.split_and_get_chunks_relevant_from_documents(query=question,docs_list=docs,) #get embedding retriever and reranker results
+    else:
+       chunks_relevant = docs 
+    referens = []
+    filtered_source = []
+    if chunks_relevant:
+        _sources =[d.metadata.get("source",None) for d in chunks_relevant]
+        sources = set([s for s in _sources if s])
+        logger.info("相关的【网页标题】网址为:") 
+               
+        for s in sources:
+            title = "TavilySearchResult无标题"
+            for web_result in chunks_relevant:
+                if s == web_result.metadata.get("source",None):
+                    title = web_result.metadata.get("title","TavilySearchResult无标题")
+                    filtered_source.append(web_result)
+                    break
+            print(f'【{title}】{s}')
+            referens.append(s)
+    if referens:
+        referens_str = "   【参考网页为】:  \n"
+        for i,r in enumerate(referens):
+            # referens_str += f"    [{i+1}] <a href={r}>{r}</a>\n"
+            referens_str += f"    {i+1}. [{r}]({r})  \n"
+            
+        os.environ["REFERENCE"] = referens_str
+        print(f'{referens_str=}')
+    else:
+       os.environ["REFERENCE"] = '' 
+
+    return {"documents": filtered_source, "question_searched":{question:True}}     
+
+# def web_search(state:GraphAgentState):
+#     """
+#     Web search based on the re-phrased question.
+
+#     Args:
+#         state (dict): The current graph state
+
+#     Returns:
+#         state (dict): Updates documents key with appended web results
+#     """
+
+#     print("---WEB SEARCH---")
+#     question = state["question"]
+#     try:
+#         query_generated = os.environ['rag_args']
+#         os.environ['rag_args'] = ''
+#         if os.environ['rag_args']:
+#             print(f"os.environ['rag_args']必须置为'',但现在的值为{os.environ['rag_args']} ")
+#             raise Exception
+#         if not query_generated:
+#             query_generated = llm_model.invoke({"question": question,"context":'请生成合适并且简洁的搜索引擎查询关键词,不需要任何额外的解释或内容'},config=invoke_llm_config)
+#     except:
+#         query_generated = question
+#     print(f'{question=}')
+#     print(f'{query_generated=}')
+
+
+#     # Web search
+#     docs = get_web_search_documents(query_generated)
+#     chunks_relevant = env_models_instance.split_and_get_chunks_relevant_from_documents(query=question,docs_list=docs,) #get embedding retriever and reranker results
+#     referens = []
+#     if chunks_relevant:
+#         web_results = "\n".join([d.page_content for d in chunks_relevant])
+#         _sources =[d.metadata.get("source",None) for d in chunks_relevant]
+#         sources = set([s for s in _sources if s])
+#         print("相关的【网页标题】网址为:") 
+               
+#         for s in sources:
+#             title = "TavilySearchResult无标题"
+#             for web_result in chunks_relevant:
+#                 if s == web_result.metadata.get("source",None):
+#                     title = web_result.metadata.get("title","TavilySearchResult无标题")
+#                     break
+#             print(f'【{title}】{s}')
+#             referens.append(s)
+#     else:
+#         docs = get_tavily_search_result_documents(query_generated)
+#         web_results = "\n".join([d.page_content for d in docs])
+#         _sources =[d.metadata.get("source",None) for d in docs]
+#         sources = set([s for s in _sources if s])
+#         print("相关的【网页标题】网址为:")        
+#         for s in sources:
+#             title = "TavilySearchResult无标题"
+#             for web_result in chunks_relevant:
+#                 if s == web_result.metadata.get("source",None):
+#                     title = web_result.metadata.get("title","TavilySearchResult无标题")
+#                     break
+#             print(f'【{title}】{s}')
+#             referens.append(s)
+#     if referens:
+#         referens_str = "   【参考网页为】:  \n"
+#         for i,r in enumerate(referens):
+#             # referens_str += f"    [{i+1}] <a href={r}>{r}</a>\n"
+#             referens_str += f"    {i+1}. [{r}]({r})  \n"
+            
+#         os.environ["REFERENCE"] = referens_str
+#         print(f'{referens_str=}')
+#     # else:
+#     #    os.environ["REFERENCE"] = '' 
+
+#     if len(web_results)>500:
+#         web_results_summary = llm_chain.invoke({"question": f"请根据问题‘{question}’，提炼和归纳总结‘Context’的内容，去除与问题不相关的信息","context":web_results},config=invoke_llm_config)
+#         # print("对搜索结果的原始内容进行提炼和归纳总结，去除不相关的信息后得到的结果web_results_summary:\n")
+#         # print(web_results_summary)
+#     else:
+#         web_results_summary = web_results
+
+#     # todo: 需对doc进行split和检索（embedding和/或rerank）
+#     web_results_document = Document(page_content=web_results_summary)
+#     return {"documents": web_results_document, "question_searched":{question:True}}     
+#     # web_search_message = ToolMessage(content=web_results_summary,name='web_search',tool_call_id='0')   
+#     # return {"documents": web_results_document, "question_searched":{question:True},"messages":web_search_message}
+
+
 class VECTORSTORE(BaseModel):
     """
     A vectorstore containing documents related to 晶奇公司、安徽晶奇网络科技股份有限公司、医疗卫生、医疗健康、医疗服务、医疗政策、medical treatment & health. 凡是与晶奇公司、安徽晶奇网络科技股份有限公司及医疗健康相关的问题，都必须使用vectorstore工具。MUST use the vectorstore for questions on these topics.
     """
     query: str = Field(description="The query to use when searching the vectorstore.")
 
+def vectorstore(state:GraphAgentState):
+    """
+    Retrieve documents
+
+    Args:
+        state (dict): The current graph state
+
+    Returns:
+        state (dict): New key added to state, documents, that contains retrieved documents
+    """
+    print("---RETRIEVE---")
+    question = state["question"]
+
+    # Retrieval
+    documents = retriever.invoke(question,config=invoke_llm_config)
+    # retrieve_results = "\n".join([d["content"] for d in documents])
+    # 因为retrieve_results必去grade_documents节点过滤[workflow.add_edge("retrieve", "grade_documents")]，
+    # 所以此次不添加retrieve_message，而是到grade_documents节点，仅保留过滤后的
+    # retrieve_message = ToolMessage(content=retrieve_results,name='retrieve')
+    # return {"documents": documents, "question": question,"messages":retrieve_message}
+    return {"documents": documents, "question": question}
+
+
 class CODE_GENERATION(BaseModel):
     """
     Code Assistant/Code generation . Use programming code (preferred Python language) to slove a user question, if the question related to [code generating, file processing/analyzing, data exploring/analyzing/visualizing].
     """
     query: str = Field(description="The query to use when generating code.")
+def code_generation(state:GraphAgentState):
+    pass
+
 
 class CODE_EXECUTION(BaseModel):
     """
     Code execution/Code intepreter. When user providing a code snippet and asking for running/executing, w or w/o returning the result.
     """
     query: str = Field(description="The query to use when asking for running/executing a code snippet.")
-
+def code_execution(state:GraphAgentState):
+    pass
 ### End: Router Data model Class Definitions
 # endregion
+    
+
+# region: Graders
+    
+# 1. Coding Relavance Grader
+class GradeCodingRelavance(BaseModel):
+    """Binary classification for a user question is relevant to [code generating/executing,file processing/analyzing, data exploring/analyzing]."""
+    k: str = Field(description="Whether a user question is relevant to [code generating/executing,file processing/analyzing, data exploring/analyzing], k must be 'yes' or 'no'")
+
+prompt_coding_relevant_grader = """You are a grader assessing relevance of a user question to [code generating/executing,file processing/analyzing, data exploring/analyzing]. Response me with a simple JSON string can be directly consumed by  ‘json.loads’ method, must be ‘{{"k":"yes"}}’ or  ‘{{"k":"no"}}’,'yes' means a user question is related to Python code generating/code executing.No preamble or explaination."""
+structured_llm_coding_relevant_grader = llm_model.with_structured_output(GradeCodingRelavance,method='json_mode')
+
+coding_relevance_prompt = ChatPromptTemplate.from_messages(
+    [
+        ("system",prompt_coding_relevant_grader),
+        # SystemMessage(prompt_coding_relevant_grader), #就可以在提示语中不必使用‘{{"k":"yes"}}’
+        ("human", "User question: {question}")
+    ]
+)
+coding_relevance_grader = coding_relevance_prompt | structured_llm_coding_relevant_grader
+
+
+# 2. Retrieved Documents Relevance Grading
+class GradeDocumentsRelavance(BaseModel):
+    """Binary classification for relevance check on retrieved documents."""
+    k: str = Field(description="Whether Documents are relevant to the question, k must be 'yes' or 'no'")
+
+prompt_documents_relevant_grader = """You are a grader assessing relevance of a retrieved document to a user question. If the document contains keyword(s) or semantic meaning related to the user question, grade it as relevant. It does not need to be a stringent test.The goal is to filter out erroneous retrievals. Response me with a simple JSON string can be directly consumed by  ‘json.loads’ method, must be ‘{{"k":"yes"}}’ or  ‘{{"k":"no"}}’,'yes' means a retrieved document is related to a user question.No preamble or explaination."""
+structured_llm_documents_relevant_grader = llm_model.with_structured_output(GradeDocumentsRelavance,method='json_mode')
+retrieval_document_relevance_prompt = ChatPromptTemplate.from_messages(
+    [
+        ("system",prompt_documents_relevant_grader),
+        # SystemMessage(prompt_coding_relevant_grader), #就可以在提示语中不必使用‘{{"k":"yes"}}’
+        ("human", "Retrieved document: {document} \n\n User question: {question}")
+    ]
+)
+retrieval_document_relevance_grader = retrieval_document_relevance_prompt | structured_llm_documents_relevant_grader
+def grade_documents(state:GraphAgentState):
+    """
+    Determines whether the retrieved documents are relevant to the question.
+
+    Args:
+        state (dict): The current graph state
+
+    Returns:
+        state (dict): Updates documents key with only filtered relevant documents
+    """
+
+    print("---CHECK DOCUMENT RELEVANCE TO QUESTION---")
+    question = state["question"]
+    documents = state["documents"]
+
+    # Score each doc
+    filtered_docs = []
+    for d in documents:
+        try:
+            score = retrieval_document_relevance_grader.invoke({"question": question, "document": d.page_content},config=invoke_llm_config)
+            grade = score.k
+            if grade == "yes":
+                print("---GRADE: DOCUMENT RELEVANT---")
+                filtered_docs.append(d)
+            else:
+                print("---GRADE: DOCUMENT NOT RELEVANT---")
+                continue
+        except Exception as e:
+            print(f"---ERROR: 无法获取'retrieval_document_relevance_grader'的判别结果，详细错误信息如下:---")
+            print(e)
+            filtered_docs.append(d)
+    return {"documents": filtered_docs}
+    # relevance_filtered_results = "\n".join([d.page_content for d in filtered_docs])
+    # relevance_filtered_message = ToolMessage(content=relevance_filtered_results,name='grade_documents',tool_call_id='0')
+    # return {"documents": filtered_docs, "question": question, "messages":relevance_filtered_message}
+
+# 3. Decide to Generate if Retrieved Documents is Relevant Route to web_search
+def decide_to_generate(state:GraphAgentState):
+    """
+    Determines whether to generate an answer, or re-generate a question.
+
+    Args:
+        state (dict): The current graph state
+
+    Returns:
+        str: Binary decision for next node to call
+    """
+
+    print("---DECIDED TO GENERATE OR WEB SEARCH BASED ON HAVINE ANY DOCUMENTS RELEVANT TO QUESTION ---")
+    filtered_documents = state["documents"]
+
+    if not filtered_documents:
+        # All documents have been filtered check_relevance
+        # We will re-generate a new query
+        print("---DECISION: ALL DOCUMENTS ARE NOT RELEVANT TO QUESTION, WEB SEARCH---")
+        return "web_search"
+    else:
+        # We have relevant documents, so generate answer
+        print("---DECISION: GENERATE---")
+        return "generate"
+
+# 4. RAG Generation Chain
+# prompt参考自： https://docs.anthropic.com/en/prompt-library/cite-your-sources
+prompt_rag_part1 = "You are an assistant for question-answering tasks. Use the following retrieved documents to answer the question, each starting with a reference number like [x], where x is a number:"
+
+prompt_rag_part2 = """
+First, starting with "引用:  \n<br/>", find the quotes from the documents that are most relevant to answering the question, and then print them in numbered order. Each quote should be a relatively short summary sentence of the quoted document,and print in a seperated paragraph,by adding "  \n". 
+
+If there are no relevant quotes, write “No relevant quotes” instead.
+
+Then, answer the question, starting with "最终回答:  \n<br/>". Do not include or reference quoted content verbatim in the answer. Don’t say “According to Quote [1]” when answering. Instead make references to quotes relevant to each section of the answer solely by adding their bracketed reference numbers at the end of relevant quotes, If a section of the answer comes from multiple quotes, please list all applicable citations, like [1,2].
+
+Thus, the format of your overall response should look like what’s shown between the tags. Make sure to strictly follow the formatting and spacing exactly.
+
+"引用:  \n"
+
+[1] “Company X reported revenue of $12 million in 2021.  \n<br>  ”
+
+[2] “Almost 90% of revenue came from widget sales, with gadget sales making up the remaining 10%.  \n<br>  ”
+
+"最终回答:  \n"
+
+Company X earned $12 million[1].  Almost 90% of it was from widget sales[1,2]. 
+
+
+If the question cannot be answered by the document, say so.
+
+And you MUST answer the question, NEVER care about the year/time or tools/internet accessing limitations, Becuase you are provided enough tools/information/contexts to generate a resonable question.
+
+Other than code and specific names and citations, your answer must be written in chinese.
+
+"""
+
+def _gen_prompt_string(docs:List[Document]):
+    prompt = ""
+    for i,d in enumerate(docs):
+        prompt += f"\n[{i+1}]:\n" + d.page_content
+    return prompt
+
+prompt = lambda x: ChatPromptTemplate.from_messages(
+    [
+        SystemMessage(f'{prompt_rag_part1}{_gen_prompt_string(x["documents"])}\n{prompt_rag_part2}'),
+        HumanMessage(f'Question: {x["question"]}\nAnswer:',
+                     additional_kwargs={"documents": x["documents"]})
+    ]
+)
+# docs = [Document(page_content="1你好"), Document(page_content="2AI回答：你好，很高兴认识你"),Document(page_content="3欢迎继续提问")]
+# _prompt = _gen_prompt_string(docs)
+# print(_prompt)
+# p = prompt({'question':'my question',"documents":docs})
+# p.pretty_print()
+
+rag_node = prompt | llm_model | StrOutputParser()
+
+def generate(state:GraphAgentState):
+    """
+    Generate answer using the vectorstore
+
+    Args:
+        state (dict): The current graph state
+
+    Returns:
+        state (dict): New key added to state, generation, that contains LLM generation
+    """
+    print("---GENERATE---")
+    question = state["question"]
+    documents = state["documents"]
+    messages = state["question_related_messages"]
+    if not isinstance(documents, list):
+      documents = [documents]
+    # print("documents的内容：")
+    # for d in documents:
+    #     print(d.page_content)
+
+    # RAG generation
+    referens = []
+    _sources =[d.metadata.get("source",d.metadata.get("file_path_jq",None)) for d in documents]
+    sources = set([s for s in _sources if s])
+    referens = list(sources)
+
+    referens_str = "   【参考'type_placeholder'为】:  \n"
+    if referens:        
+        for i,r in enumerate(referens):
+            referens_str += f"    {i+1}. [{r}]({r})  \n"
+            if r.startswith("http"):
+                referens_str = referens_str.replace("'type_placeholder'","网页")                
+            else:
+                referens_str = referens_str.replace("'type_placeholder'","文档")
+
+        os.environ["REFERENCE"] = referens_str
+        print(f'{referens_str=}')
+    # else:
+    #    os.environ["REFERENCE"] = '' 
+
+
+
+    generation = rag_node.invoke({"documents": documents, "question": question, "messages":messages},config=invoke_llm_config)
+    # print(generation)
+    generation_message = ToolMessage(content=generation,name='generation',tool_call_id='0')
+    return {"documents": documents, "question": question, "generation": generation, "messages":generation_message,"question_related_messages":generation_message}
+
+
+
+
+# 5.Supported (Not Hallucination) Grader
+class GradeSupported(BaseModel):
+    """Binary classification for whether an answer is supported by a set of facts."""
+    k: str = Field(description="Whether answer is supported by the facts, k must be 'yes' or 'no'")
+
+prompt_answer_is_supported_by_documents_grader = """You are a grader assessing whether an answer is supported by a set of facts. Response me with a simple JSON string can be directly consumed by  ‘json.loads’ method, must be ‘{{"k":"yes"}}’ or  ‘{{"k":"no"}}’,'yes' means the answer is supported by the provided set of facts.No preamble or explaination. """
+structured_llm_answer_is_supported_by_documents_grader = llm_model.with_structured_output(GradeSupported,method='json_mode')
+answer_is_supported_by_documents_prompt = ChatPromptTemplate.from_messages(
+    [
+        ("system", prompt_answer_is_supported_by_documents_grader),
+        ("human", "Here are the set of facts: {documents} \n\n Here is the answer: {generation}"),
+    ]
+)
+answer_is_supported_by_documents_grader = answer_is_supported_by_documents_prompt | structured_llm_answer_is_supported_by_documents_grader
+
+class GradeAnswer(BaseModel):
+    """Binary classification to assess answer addresses question."""
+    k: str = Field(description="Whether answer addresses the question, k must be 'yes' or 'no'")
+
+prompt_answer_grader = """You are a grader assessing whether an answer addresses / resolves a question. Response me with a simple JSON string can be directly consumed by  ‘json.loads’ method, must be ‘{{"k":"yes"}}’ or  ‘{{"k":"no"}}’,'yes' means the answer addresses / resolves the question.No preamble or explaination."""
+structured_llm_answer_grader = llm_model.with_structured_output(GradeAnswer,method='json_mode')
+answer_prompt = ChatPromptTemplate.from_messages(
+    [
+        ("system",prompt_answer_grader),
+        ("human", "question: {question} \n\nanswer: {generation}"),
+    ]
+)
+answer_addresses_question_grader = answer_prompt | structured_llm_answer_grader
+
+def grade_generation_v_documents_and_question(state:GraphAgentState):
+    """
+    Determines whether the generation is grounded in the document and answers question.
+
+    Args:
+        state (dict): The current graph state
+
+    Returns:
+        str: Decision for next node to call
+    """
+
+    print("---CHECK HALLUCINATIONS---")
+    question = state["question"]
+    documents = state["documents"]
+    generation = state["generation"]
+
+    # print(f"{len(documents[0].page_content)=}")
+
+    # doc_num = len(documents)
+    # token_len = int(2000/doc_num)
+    # for i in range(doc_num):
+    #     content = documents[i].page_content[-token_len:]
+    #     documents[i].page_content = content
+     
+    # Check hallucination / answer_is_supported_by_documents    
+    try:
+        documents_contents = [d.page_content for d in documents]
+        documents_contents_str = "\n".join(documents_contents)
+        score = answer_is_supported_by_documents_grader.invoke({"documents": documents_contents_str, "generation": generation},config=invoke_llm_config)
+        grade = score.k
+    except Exception as e:
+        grade = "yes" # 继续按正常往下执行！
+        print(f"---ERROR: 无法获取'answer_is_supported_by_documents_grader'的判别结果，详细错误信息如下:---")
+        print(e)
+        print("---正常往下执行---") 
 
     
-class GraphAgentState(TypedDict):
-    messages: Annotated[list[AnyMessage], add_messages]
-    question_related_messages: Annotated[list[AnyMessage], clean_up_list_when_encounter_null_element]
-    question : str
+    if grade == "yes":
+        print("---DECISION: GENERATION IS GROUNDED IN DOCUMENTS---")
+        # Check question-answering
+        print("---GRADE GENERATION vs QUESTION---")       
+        
+        try:
+            score = answer_addresses_question_grader.invoke({"question": question,"generation": generation},config=invoke_llm_config)
+            grade = score.k
+        except Exception as e:
+            grade = "yes" # 继续按正常往下执行！
+            print(f"---ERROR: 无法获取'answer_grader'的判别结果，详细错误信息如下:---")
+            print(e)
+            print("---正常往下执行---") 
+
+        if grade == "yes":
+            print("---DECISION: GENERATION ADDRESSES QUESTION---")
+            return "useful"
+        else:
+            print("---DECISION: GENERATION DOES NOT ADDRESS QUESTION---")
+            
+            try:
+                question_has_searched = state["question_searched"][question]
+            except:
+                question_has_searched = False
+            
+            if question_has_searched:
+                print("---BUT WE HAVE WEB SEARCHED THE QUESTION, SO DIRECTLY ROUTE TO 'END' NODE---")
+                return "useful"
+            else:
+                return "not useful"
+    else:
+        # pprint.pprint("---DECISION: GENERATION IS NOT GROUNDED IN DOCUMENTS, RE-TRY---")
+        # return "not supported"
+        print("---DECISION: GENERATION IS NOT GROUNDED IN DOCUMENTS, BUT WE DO NOT RE-TRY (RE-GENERATION), JUST DIRECTLY TO 'END' NODE---")
+        return "not supported" # todo
+
+# endregion
+
+
+    
+    
 
 
 class GraphAgent:
@@ -76,7 +576,7 @@ class GraphAgent:
         _routing_tool_names = [tool.__name__ for tool in routing_tools_wrapped_in_class]
         _tool_names = _executable_tool_names + _routing_tool_names
         _tool_names_str = ','.join(_tool_names)
-        _system_message_content = f"Solve/Answer user's questions as best as you can. You have access to the following tools:{_tool_names_str}.You are allowed to make multiple calls (either together or in sequence)."
+        _system_message_content = f"Solve/Answer user's questions as best as you can in the language the user asked, preffered/default to Chinese. You have access to the following tools:{_tool_names_str}.You are allowed to make multiple calls (either together or in sequence)."
 
         if llm_model is None:
             llm_model = env_models_instance.get_langchain_chat_model()
@@ -171,14 +671,41 @@ class GraphAgent:
         graph = StateGraph(GraphAgentState)
         graph.add_node("llm",self.call_llm)
         graph.add_node("action", self.take_action)
-        graph.add_node("Rag", rag_sub_graph.compile())
+        graph.add_node("web_search", web_search)
+        graph.add_node("vectorstore", vectorstore )
+        graph.add_node("grade_documents", grade_documents )
+        graph.add_node("generate", generate)
+        graph.add_node("code_generation", code_generation )
+        graph.add_node("code_execution", code_execution )
+        # graph.add_node("", )
         graph.add_conditional_edges(
             "llm",
             self.exists_action,
-            {True: "action", False: END , "Rag":"Rag"}
+            {True: "action", False: END , "web_search": "web_search","vectorstore": "vectorstore","code_generation": "code_generation","code_execution": "code_execution"}
         )
         graph.add_edge("action", "llm")        
-        graph.add_edge("Rag", END)
+        graph.add_edge("web_search", "generate")
+        graph.add_edge("vectorstore","grade_documents" )
+        graph.add_edge("code_generation","code_execution")
+        graph.add_edge("code_execution", "llm")
+        graph.add_conditional_edges(
+            "grade_documents",
+            decide_to_generate,
+            {
+                "web_search": "web_search",
+                "generate": "generate",
+            },
+        )
+        graph.add_conditional_edges(
+            "generate",
+            grade_generation_v_documents_and_question,
+            {
+                # "not supported": "generate", # Hallucinations: re-generate 
+                "not supported": END, # todo
+                "not useful": "web_search", # Fails to answer question: fall-back to web-search 
+                "useful": END,
+            },
+        )
         graph.set_entry_point("llm")
         return graph.compile(checkpointer=self.memory)
     
@@ -244,10 +771,13 @@ class GraphAgent:
             tool_call_1_name = tool_call_1['name']
 
             if tool_call_1_name in self.routing_tool_names:
-                logger.info(f"Returned first ToolName is '{tool_call_1_name}', So routing to sub_graph 'Rag: {tool_call_1_name}' Node......")
-                os.environ["rag_graph_next"] = tool_call_1_name
+                # logger.info(f"Returned first ToolName is '{tool_call_1_name}', So routing to sub_graph 'Rag: {tool_call_1_name}' Node......")
+                # os.environ["rag_graph_next"] = tool_call_1_name
+                logger.info(f"Returned first ToolName is '{tool_call_1_name}', So routing to sub_graph '{tool_call_1_name}' Node......")
+                # os.environ["rag_graph_next"] = tool_call_1_name
                 os.environ['rag_args'] = tool_call_1["args"]['query']
-                return "Rag"
+                return tool_call_1_name.lower()
+                # return "Rag"
         else:
             logger.info(f'No returned tool_calling and {finish_reason=}')
             logger.info(f'{type(result)}: {result.content}')
@@ -318,18 +848,22 @@ def run_conversation(user_question:str,jqchat_agent:GraphAgent=chat_bot):
     print('====问题和答案====') 
     print(f"USER：{user_question}")
     answer = result['messages'][-1].content
-    print(f"AI：{answer}")
+    referens_str = os.getenv("REFERENCE", '')
+    os.environ["REFERENCE"]= ''
+    if referens_str:
+        answer = f'\n{referens_str}\n' + answer
+    print(f"AI：\n{answer}")
     return answer
     print('================='*5)
 
 
 if __name__ == "__main__":
     user_questions = [
-    '你好，我叫张结魁',
-    '合肥大蜀山',   
-    '请查询明天从合肥到上海的航班',
-    '请使用python_repl_tool来计算1到100的和',
-    '请调用python_repl_tool工具，一个计算1到100的和,另一个计算10的阶乘，并实际执行工具获取计算结果',
+    # '你好，我叫张结魁',
+    # '合肥大蜀山',   
+    # '请查询明天从合肥到上海的航班',
+    # '请使用python_repl_tool来计算1到100的和',
+    # '请调用python_repl_tool工具，一个计算1到100的和,另一个计算10的阶乘，并实际执行工具获取计算结果',
     "请使用tavily_search_tool工具搜索信息，回答问题：What is the weather in SF and LA? ",
     "Who won the super bowl in 2024? In what state is the winning team headquarters located?What is the GDP of that state? ",
     "还记得我叫什么吗？"

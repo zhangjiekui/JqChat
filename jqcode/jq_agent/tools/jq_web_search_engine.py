@@ -315,7 +315,7 @@ def get_tavily_search_result_documents(query,max_doc_nums=4):
     
     tavily_search = TavilySearchResults(max_results=max_doc_nums)
     docs = tavily_search.invoke({"query": query})
-    documents = [Document(page_content=doc['content'], metadata={"source": doc['url']}) for doc in docs]
+    documents = [Document(page_content=doc['content'], metadata={"source": doc['url'],"search_engine":"tavily_search"}) for doc in docs]
     return documents
 
 # 最终的方法调用，建议用户只调用该方法

@@ -47,7 +47,7 @@ class RagSubgraphState(TypedDict):
     Represents the state of our graph.
 
     Attributes:
-        # question: question
+        question: question
         generation: LLM generation
         documents: list of documents
         question_searched : dict
@@ -61,11 +61,10 @@ class RagSubgraphState(TypedDict):
     generation : str
     documents : List[str]
     question_searched : dict
+    # Messages have the type "list". 
+    # The `add_messages` function in the annotation defines how this state key should be updated
+    # (in this case, it appends messages to the list, rather than overwriting them)
     messages: Annotated[list[AnyMessage], add_messages]
-    
-        # Messages have the type "list". 
-        # The `add_messages` function in the annotation defines how this state key should be updated
-        # (in this case, it appends messages to the list, rather than overwriting them)
     question_related_messages: Annotated[list[AnyMessage], clean_up_list_when_encounter_null_element]
 
 ### Router Data model
