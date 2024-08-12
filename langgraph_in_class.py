@@ -30,7 +30,8 @@ logger = jqkj_logger(__file__).get_logger()
 from dotenv import load_dotenv
 _ = load_dotenv()
 
-handlers = get_custom_handler()
+DEBUG = False
+handlers = get_custom_handler() if DEBUG else []
 invoke_llm_config = {'callbacks' : handlers}    
 class GraphAgentState(TypedDict):
     messages: Annotated[list[AnyMessage], add_messages]
@@ -93,7 +94,7 @@ def web_search(state:GraphAgentState):
 
 
     # Web search
-    docs = get_web_search_documents(query_generated)
+    docs = get_web_search_documents(query_generated,max_doc_nums=6)
     if docs[0].metadata.get("search_engine",None)!="tavily_search":
         chunks_relevant = env_models_instance.split_and_get_chunks_relevant_from_documents(query=question,docs_list=docs,) #get embedding retriever and reranker results
     else:
@@ -361,21 +362,20 @@ def decide_to_generate(state:GraphAgentState):
 prompt_rag_part1 = "You are an assistant for question-answering tasks. Use the following retrieved documents to answer the question, each starting with a reference number like [x], where x is a number:"
 
 prompt_rag_part2 = """
-First, starting with "引用:  \n<br/>", find the quotes from the documents that are most relevant to answering the question, and then print them in numbered order. Each quote should be a relatively short summary sentence of the quoted document,and print in a seperated paragraph,by adding "  \n". 
+First, starting with "引用片段:  \n  ", find the quotes from the documents that are most relevant to answering the question, and then print them in numbered order. Each quote should be a relatively short summary sentence of the quoted document,and print in a seperated paragraph,by adding "  \n  ". 
 
 If there are no relevant quotes, write “No relevant quotes” instead.
 
-Then, answer the question, starting with "最终回答:  \n<br/>". Do not include or reference quoted content verbatim in the answer. Don’t say “According to Quote [1]” when answering. Instead make references to quotes relevant to each section of the answer solely by adding their bracketed reference numbers at the end of relevant quotes, If a section of the answer comes from multiple quotes, please list all applicable citations, like [1,2].
+Then, answer the question, starting with "最终回答:  \n  ". Do not include or reference quoted content verbatim in the answer. Don’t say “According to Quote [1]” when answering. Instead make references to quotes relevant to each section of the answer solely by adding their bracketed reference numbers at the end of relevant quotes, If a section of the answer comes from multiple quotes, please list all applicable citations, like [1,2].
 
 Thus, the format of your overall response should look like what’s shown between the tags. Make sure to strictly follow the formatting and spacing exactly.
 
-"引用:  \n"
+引用片段:   \n  
 
-[1] “Company X reported revenue of $12 million in 2021.  \n<br>  ”
-
-[2] “Almost 90% of revenue came from widget sales, with gadget sales making up the remaining 10%.  \n<br>  ”
-
-"最终回答:  \n"
+    [1] Company X reported revenue of $12 million in 2021.   \n  
+    [2] Almost 90% of revenue came from widget sales, with gadget sales making up the remaining 10%.   \n  
+    
+最终回答:   \n  
 
 Company X earned $12 million[1].  Almost 90% of it was from widget sales[1,2]. 
 
@@ -431,11 +431,11 @@ def generate(state:GraphAgentState):
 
     # RAG generation
     referens = []
-    _sources =[d.metadata.get("source",d.metadata.get("file_path_jq",None)) for d in documents]
-    sources = set([s for s in _sources if s])
+    sources =[d.metadata.get("source",d.metadata.get("file_path_jq",None)) for d in documents]
+    # sources = set([s for s in _sources if s])
     referens = list(sources)
 
-    referens_str = "   【参考'type_placeholder'为】:  \n"
+    referens_str = "参考'type_placeholder':  \n"
     if referens:        
         for i,r in enumerate(referens):
             referens_str += f"    {i+1}. [{r}]({r})  \n"
@@ -544,6 +544,7 @@ def grade_generation_v_documents_and_question(state:GraphAgentState):
             return "useful"
         else:
             print("---DECISION: GENERATION DOES NOT ADDRESS QUESTION---")
+            return "not useful"
             
             try:
                 question_has_searched = state["question_searched"][question]
