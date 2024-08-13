@@ -19,9 +19,8 @@ from jqchat.kernel_program.main import APP_PORT as KERNEL_APP_PORT
 from jqcode.jq_agent.c0_init_env_models import env_models_instance
 from jqcode.jq_agent.graph_create_utils import user_question_is_related_to_coding_or_data_analyzing,llm
 
-from langgraph_in_class import run_conversation,invoke_llm_config,chat_bot
-# from jqcode.jq_agent.jq_rag_agent_sub_graph import llm_chain,invoke_llm_config
-# from jqcode.jq_agent.run_super_graph import super_graph_compiled_async,arun_super_graph
+from langgraph_in_class import run_conversation,invoke_llm_config,chat_bot,message_buffer,question_rewrite_chain
+
 from langchain_core.pydantic_v1 import BaseModel, Field
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_core.messages import HumanMessage,SystemMessage,ToolMessage,AIMessage
@@ -52,44 +51,7 @@ os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 APP_PORT = int(os.environ.get("WEB_PORT", 8080))
 
 
-class LimitedLengthString:
-    def __init__(self, maxlen=2000):
-        self.data = deque()
-        self.len = 0
-        self.maxlen = maxlen
 
-    def append(self, string):
-        self.data.append(string)
-        self.len += len(string)
-        while self.len > self.maxlen:
-            popped = self.data.popleft()
-            self.len -= len(popped)
-
-    def get_string(self):
-        result = ''.join(self.data)
-        return result[-self.maxlen:]
-
-class QuestionReWrite(BaseModel):
-    """结合上下文context部分考虑重写原始问题，使得原始问题更加明确，仅仅需要返回问题本身，不要有任何额外的解释或内容：（1）如果原始问题中不明确的实体指代,如该公司，他，这个地方等，请重写原始问题，用明确的实体替换不明确的指代，但不要有任何的拓展；（2）否则，请直接返回原始问题本身。"""
-    # k: str = Field(description="是否需要重写问题, k的值必须是'yes' or 'no'，'yes'表示需要重写")
-    q: str = Field(description='返回格式必须为{"q":$question}:$question代表原始问题或重写后的问题内容，不要有任何额外的解释或内容')
-
-question_rewrite_system_prompt = "结合上下文context部分考虑重写原始问题，使得原始问题更加明确，仅仅需要返回问题本身，不要有任何额外的解释或内容：（1）如果原始问题中不明确的实体指代,如该公司，他，这个地方等，请重写原始问题，用明确的实体替换不明确的指代，但不要有任何的拓展；（2）否则，请直接返回原始问题本身。"
-question_rewrite_prompt = lambda x: ChatPromptTemplate.from_messages(
-    [
-        SystemMessage(question_rewrite_system_prompt),
-        HumanMessage(
-            f"'Context':\n{x['context']}\n'EndOfContext' \nQuestion: {x['question']} \nAnswer: "
-        )
-    ]
-)
-if isinstance(llm,ChatOllama):
-    question_rewrite_llm = llm.with_structured_output(QuestionReWrite)
-else:
-    question_rewrite_llm = llm.with_structured_output(QuestionReWrite,method="function_calling")
-question_rewrite_chain = question_rewrite_prompt | question_rewrite_llm
-
-message_buffer = LimitedLengthString()
 READER_MAP = {
     '.csv': pd.read_csv,
     '.tsv': pd.read_csv,
@@ -115,18 +77,25 @@ def allowed_file(filename):
 
 def inspect_file(filename: str) -> str:
     _, ext = os.path.splitext(filename)
+    only_filename = os.path.basename(filename)
     try:
         df = READER_MAP[ext.lower()](filename)
-        return f'The file contains the following columns: {", ".join(df.columns)}'
+        return f'文件“{only_filename}”包含以下列名: {", ".join(df.columns)}'
     except KeyError:
         return ''  # unsupported file type
     except Exception:
         return ''  # file reading failed. - Don't want to know why.
+    
+file_info = inspect_file('/data/projects/JqChat/workspace/0研发工单统计.xls')  
+print(file_info)  
 
-system_prompt=f"""请尽量使用中文来回答问题。Act as a data analyst hereby referred to as EXPERT with ten years of experience in the domain of data anylasis. Your role is to help inexperienced people explore/analyse data. Be sure to help the user understand what to focus on and give suggestions on where it would make sense to dig deeper.
-    If generating Python code, follow the instructions under [GENERATE_PYTHON_INSTRUCTIONS].
-        First, think step by step what you want to do and write it down in English.
-        Then generate valid Python code in a code block 
+system_prompt=f"""请尽量使用简体中文来解答用户问题。
+    Act as an EXPERT with ten years of experience in the domain of data anylasis, your role is to help inexperienced people explore/analyse data. 
+    Be sure to help the user understand what to focus on and give suggestions on where it would make sense to dig deeper.
+    If you need to use/generate Python code, follow the instructions under [GENERATE_PYTHON_INSTRUCTIONS].
+    GENERATE_PYTHON_INSTRUCTIONS:
+        First, think step by step what you want to do and write it down in Simplified Chinese.
+        Then generate valid Python code all in a code block 
         Make sure all code is valid - it will be run in a Jupyter Python 3 kernel environment. 
         MUST CHECK:
             Define every variable before you use it.
@@ -134,28 +103,27 @@ system_prompt=f"""请尽量使用中文来回答问题。Act as a data analyst h
                 import numpy as np
                 import pandas as pd
                 import seaborn as sns
-                import matplotlib.pyplot as plt                
+                import matplotlib.pyplot as plt
+                import plotly.express as px
+                import plotly.graph_objects as go                
         Following modules/packages are available:
-            For data munging, you can use 
-                'numpy', # numpy==1.26.2
-                'dateparser', # dateparser==1.2.0
-                'pandas', # pandas==1.5.3
-                'geopandas', # geopandas==0.14.1                
-            For pdf extraction, you can use
-                'PyPDF2', # PyPDF2==3.0.1
-                'pdfminer', # pdfminer==20191125
-                'pdfplumber', # pdfplumber==0.10.3
+            For data wrangling/munging, you can use 
+                'numpy',
+                'dateparser',
+                'pandas',
             For data visualization, you can use
-                'matplotlib', # matplotlib==3.8.4
-                'seaborn', # seaborn ==0.13.2
-        Be sure to generate charts with matplotlib. If you need geographical charts, use geopandas with the geopandas.datasets module.
+                'matplotlib',
+                'seaborn',
+                'plotly',
+        Be sure to generate charts with plotly/matplotlib/seaborn, plotly is preferred. But if you need geographical charts, use geopandas with the geopandas.datasets module.
         If the user has just uploaded a file, focus on the file that was most recently uploaded (and optionally all previously uploaded files)
     
-    Teacher mode: if the code modifies or produces a file, at the end of the code block insert a print statement that prints a link to it as HTML string: <a href='/download?file=INSERT_FILENAME_HERE'>Download file</a>. Replace INSERT_FILENAME_HERE with the actual filename.
+        If the code modifies or produces a file/image, please add a print statement at the end of the code block that prints a link to it as HTML string: <a href='/download?file=INSERT_FILENAME_HERE'>Download file</a>. Replace INSERT_FILENAME_HERE with the actual filename.
+    EndOf_GENERATE_PYTHON_INSTRUCTIONS
     """
 
 # todo:需同步更新readme中安装的软件包和这里的版本描述
-usual_imports = """import numpy as np \nimport pandas as pd\nimport seaborn as sns\nimport matplotlib.pyplot as plt\n"""
+usual_imports = """import numpy as np \nimport pandas as pd\nimport seaborn as sns\nimport matplotlib.pyplot as plt\nimport plotly.express as px\nimport plotly.graph_objects as go"""
 async def get_code(user_prompt, user_openai_key=env_models_instance.api_key, model=env_models_instance.llm_model_name):
 
     user_code_prompt = f"""First, here is a history of what I asked you to do earlier. 
@@ -164,7 +132,7 @@ async def get_code(user_prompt, user_openai_key=env_models_instance.api_key, mod
     {message_buffer.get_string()}
     ENDOFHISTORY.
     Aiming to help the user in the best possible way with the below [USER_PROMPT] do one of the following:
-    1. Write Python code, in a triple backtick Markdown code block, that supports what the user is trying to achieve. Use the instructions under [GENERATE_PYTHON_INSTRUCTIONS]
+    1. Write Python code, in a triple backtick Markdown code block, that supports what the user is trying to achieve. Follows the instructions under [GENERATE_PYTHON_INSTRUCTIONS]
     2. Answer the question the user asks.
     3. Ask follow-up questions to better understand what the user wants to achieve. 
     
@@ -240,7 +208,7 @@ async def get_chat(user_prompt, user_openai_key=env_models_instance.api_key, mod
     ENDOFHISTORY.
     {user_prompt}
     DO NOT GENERATE ANY CODE
-    Teacher mode: if the results return a link to a file that was generated, make sure to include the link in your answer.
+    If the results return a link to a file/image that was generated, make sure to include the link in your answer.
     """
 
     # print('user_chat_prompt:\n' + user_chat_prompt)
@@ -326,11 +294,7 @@ def proxy_kernel_manager(path):
         print('starting code execution')
         requestjson = request.get_json()
         code = requestjson.get('command',None)
-        if code:
-            code = usual_imports + code
-            requestjson = {'command': code}
-            print('在代码实际执行之前,增加导入常用的程序包，如numpy，pandas，seaborn，matplotlib.pyplot等')
-        else:
+        if not code:
             code = print('未生成实际代码')
             requestjson = {'command': code}
 
@@ -386,90 +350,103 @@ def agent_entry():
     print('============================================================')
     print('触发python_backend......jqchat/webapp/main.py#L335')
     user_prompt = request.json.get('prompt', '')
-    print('=='*30)
-    print(f'(IN Web) User Question: {user_prompt}')
-    model = env_models_instance.llm_model_name
-    user_openai_key = env_models_instance.api_key
+    # print('=='*30)
+    # print(f'(IN Web) User Question: {user_prompt}')
+    # model = env_models_instance.llm_model_name
+    # user_openai_key = env_models_instance.api_key
     #获取用户随机ID
     user_id=request.json.get('user',None)
     #获得文档ID
     doc_id=request.json.get('doc',None);
 
-    loop = asyncio.new_event_loop()
-    asyncio.set_event_loop(loop)
+    # loop = asyncio.new_event_loop()
+    # asyncio.set_event_loop(loop)
 
     code, text, status = None, None, 200
-    config = {"recursion_limit":25,"configurable": {"thread_id": user_id}}
+    # config = {"recursion_limit":25,"configurable": {"thread_id": user_id}}
 
     # initial_graph_state = asyncio.run(super_graph_compiled_async.aget_state(config=config)).values
     # messages = initial_graph_state.get('messages',[])
 
-    messages = chat_bot.all_history_messages
     
-    n_last_messages_num = 3
-    if len(messages)>n_last_messages_num:
-        n_last_messages = messages[-n_last_messages_num:]
-    else:
-        n_last_messages = messages
 
-    print(f"进入改写环节前的user_prompt={user_prompt}")
-    original_question = user_prompt
-    if n_last_messages:
-        history_messages_contents = [m.content for m in n_last_messages]
-        history_messages_context = '||'.join(history_messages_contents)
-        rewrited_question = ''
-        try:
-            result = question_rewrite_chain.invoke({"question": f"用户原始问题为：“{user_prompt}”","context":history_messages_context},config=invoke_llm_config)
-            print(f'question_rewrite_chain {result=}')
-            rewrited_question = result.q
+    text = run_conversation(user_question=user_prompt)
+    messages = chat_bot.get_all_history_messages()
+    for m in messages[::-1]:
+        if isinstance(m,ToolMessage):
+            if m.name == 'CODE_EXECUTION':
+                kwargs = m.additional_kwargs
+                question_id = kwargs.get("question_id")
+                if question_id == chat_bot.question_id:
+                    code = kwargs.get("code","")
+                    text = kwargs.get("code_text","")
 
-        except Exception as e:
-            print(f"question_rewrite_chain执行出现错误:{e},但忽略")
-            # prompt = "请结合下面的context部分考虑重写原始问题，使得原始问题更加明确，仅仅需要返回问题本身，不要有任何额外的解释或内容：（1）如果原始问题中不明确的实体指代,如该公司，他，这个地方等，请重写原始问题，用明确的实体替换不明确的指代，但不要有任何的拓展；（2）否则，请直接返回原始问题本身。"
-            # rewrited_question = llm_chain.invoke({"question": f"用户原始问题为：“{user_prompt}”\n{prompt}","context":history_messages_context},config=invoke_llm_config)
-        print(f"改写后得到的rewrited_question={rewrited_question}")
-        if rewrited_question:
-            user_prompt = rewrited_question   
-
-        print(f"original_question={original_question}")
-        print(f'history_messages_context={history_messages_context}')
-        print(f"rewrited_question={user_prompt}")
-
-    rewrited_feedback = ""
-    if user_prompt != original_question:
-        rewrited_feedback = f'【提示：对您的原始问题进行了改写：{original_question}  ==》 {user_prompt}】\n\n'
-
-    is_coding_related = user_question_is_related_to_coding_or_data_analyzing(question=user_prompt)
-    
-    HAS_DATA_FILE_UPLOADED = os.environ.get("HAS_DATA_FILE_UPLOADED", False)
-    if HAS_DATA_FILE_UPLOADED or is_coding_related:
-        code, text, status = loop.run_until_complete(get_code(user_prompt, user_openai_key, model))
-    
+    # pass
+    # n_last_messages_num = 3
+    # if len(messages)>n_last_messages_num:
+    #     n_last_messages = messages[-n_last_messages_num:]
     # else:
-    #     text, with_exception = arun_super_graph(question=user_prompt,config=config,super_graph_compiled_async=super_graph_compiled_async)
-    #     if with_exception:
-    #         if is_coding_related:
-    #             print('前面程序运行或判断出现了问题，下面试图使用Python代码方式来解决......')
-    #             code, text, status = loop.run_until_complete(get_code(user_prompt, user_openai_key, model))
+    #     n_last_messages = messages
 
-    else:
-        text = run_conversation(user_question=user_prompt)
+    # print(f"进入改写环节前的user_prompt={user_prompt}")
+    # original_question = user_prompt
+    # if n_last_messages:
+    #     history_messages_contents = [m.content for m in n_last_messages]
+    #     history_messages_context = '||'.join(history_messages_contents)
+    #     rewrited_question = ''
+    #     try:
+    #         result = question_rewrite_chain.invoke({"question": f"用户原始问题为：“{user_prompt}”","context":history_messages_context},config=invoke_llm_config)
+    #         print(f'question_rewrite_chain {result=}')
+    #         rewrited_question = result.q
+
+    #     except Exception as e:
+    #         print(f"question_rewrite_chain执行出现错误:{e},但忽略")
+    #         # prompt = "请结合下面的context部分考虑重写原始问题，使得原始问题更加明确，仅仅需要返回问题本身，不要有任何额外的解释或内容：（1）如果原始问题中不明确的实体指代,如该公司，他，这个地方等，请重写原始问题，用明确的实体替换不明确的指代，但不要有任何的拓展；（2）否则，请直接返回原始问题本身。"
+    #         # rewrited_question = llm_chain.invoke({"question": f"用户原始问题为：“{user_prompt}”\n{prompt}","context":history_messages_context},config=invoke_llm_config)
+    #     print(f"改写后得到的rewrited_question={rewrited_question}")
+    #     if rewrited_question:
+    #         user_prompt = rewrited_question   
+
+    #     print(f"original_question={original_question}")
+    #     print(f'history_messages_context={history_messages_context}')
+    #     print(f"rewrited_question={user_prompt}")
+
+    # rewrited_feedback = ""
+    # if user_prompt != original_question:
+    #     rewrited_feedback = f'【提示：对您的原始问题进行了改写：{original_question}  ==》 {user_prompt}】\n\n'
+
+    # is_coding_related = user_question_is_related_to_coding_or_data_analyzing(question=user_prompt)
+    
+    # HAS_DATA_FILE_UPLOADED = os.environ.get("HAS_DATA_FILE_UPLOADED", False)
+    # if HAS_DATA_FILE_UPLOADED or is_coding_related:
+    #     code, text, status = loop.run_until_complete(get_code(user_prompt, user_openai_key, model))
+    
+    # # else:
+    # #     text, with_exception = arun_super_graph(question=user_prompt,config=config,super_graph_compiled_async=super_graph_compiled_async)
+    # #     if with_exception:
+    # #         if is_coding_related:
+    # #             print('前面程序运行或判断出现了问题，下面试图使用Python代码方式来解决......')
+    # #             code, text, status = loop.run_until_complete(get_code(user_prompt, user_openai_key, model))
+
+    # else:
+    #     text = run_conversation(user_question=user_prompt)
 
 
-    print('~~'*30)
-    if code:
-        print('生成的Python代码为:')
-        print(code)
-    loop.close()
-    print('~~'*30)
-    print('=='*30)
-    # Append all messages to the message buffer for later use
-    message_buffer.append(user_prompt + "\n\n")
+    # print('~~'*30)
+    # if code:
+    #     print('生成的Python代码为:')
+    #     print(code)
+    # loop.close()
+    # print('~~'*30)
+    # print('=='*30)
+    # # Append all messages to the message buffer for later use
+    # message_buffer.append(user_prompt + "\n\n")
 
-    if rewrited_feedback:
-        text = rewrited_feedback + text
+    # if rewrited_feedback:
+    #     text = rewrited_feedback + text
 
-    return jsonify({'code': code, 'text': text}), status
+    return jsonify({'text': text}), status
+    # return jsonify({"code":code,'text': text}), status
 
 @app.route('/chat', methods=['POST'])
 def generate_chat(model=env_models_instance.llm_model_name):

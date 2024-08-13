@@ -167,7 +167,7 @@ def folder2db(
         #     for kb_file in kb_files:
         #         add_file_to_db(kb_file)
         #         print(f"已将 {kb_name}/{kb_file.filename} 添加到数据库")
-        # 以数据库中文件列表为基准，利用本地文件更新向量库
+        # 以数据库中的文件列表为基准，利用本地文件更新向量库
         elif mode == "update_in_db":
             files = kb.list_files()
             kb_files = file_to_kbfile(kb_name, files)

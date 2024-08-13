@@ -5,7 +5,8 @@ from typing import TypedDict, Annotated, Literal, Optional, Union, List
 from langchain_core.pydantic_v1 import BaseModel, Field
 from langchain_core.prompts import ChatPromptTemplate
 from langgraph.graph.message import add_messages
-from langchain_core.messages import AnyMessage, SystemMessage, HumanMessage, ToolMessage, AIMessage
+from langchain_core.messages import AnyMessage, SystemMessage, HumanMessage, ToolMessage,AIMessage
+from langchain_core.tools import ToolException
 from langchain_openai import ChatOpenAI
 from langchain_community.tools.tavily_search import TavilySearchResults
 from langchain_openai import ChatOpenAI
@@ -18,12 +19,15 @@ from langgraph.checkpoint.aiosqlite import AsyncSqliteSaver
 from langchain_core.runnables import Runnable, RunnableConfig
 from jqcode.jq_agent.c0_init_env_models import env_models_instance,get_custom_handler,clean_up_list_when_encounter_null_element
 from jqcode.jq_agent.tools.jq_functions_and_tools import get_flight_number,python_repl_tool
-# from jqcode.jq_agent.jq_rag_agent_sub_graph import rag_sub_graph
 from jqcode.jq_agent.tools.jq_retriever import retriever
 from jqcode.jq_agent.tools.jq_web_search_engine import get_web_search_documents,is_query_chinese,get_tavily_search_result_documents
-# from jqcode.jq_agent.jq_rag_agent_sub_graph import WEB_SEARCH,VECTORSTORE,CODE_GENERATION,CODE_EXECUTION
 import os
+import re
 import shortuuid
+from collections import deque
+
+from flask import request, jsonify,Response
+import requests
 
 from jqcode.jq_utils.logger import jqkj_logger
 logger = jqkj_logger(__file__).get_logger()
@@ -42,7 +46,7 @@ class GraphAgentState(TypedDict):
     documents : List[str]
 llm_model = env_models_instance.get_langchain_chat_model()
 
-prompt_llm = """You are an assistant for question-answering tasks. Answer the question based upon your knowledge in the language the user asked ."""
+prompt_llm = """You are an assistant for question-answering tasks. Answer the question based upon your knowledge in the language the user asked, preffered/default to Simplified Chinese."""
 # Prompt
 prompt = lambda x: ChatPromptTemplate.from_messages(
     [
@@ -56,9 +60,52 @@ prompt = lambda x: ChatPromptTemplate.from_messages(
 # LLM Chain
 llm_chain = prompt | llm_model | StrOutputParser()
 
+class LimitedLengthString:
+    def __init__(self, maxlen=8000):
+        self.data = deque()
+        self.len = 0
+        self.maxlen = maxlen
+
+    def append(self, contents:Union[str,List[str],List[AnyMessage]]):
+        if not isinstance(contents,list):
+            contents = [contents]
+        for content in contents:
+            content = content.content if isinstance(content,AnyMessage) else content
+            content = content.strip()
+            if content:
+                if content not in self.data:
+                    self.data.append(content)
+                    self.len += len(content)
+                    while self.len > self.maxlen:
+                        popped = self.data.popleft()
+                        self.len -= len(popped)
+                else:
+                    logger.info(f"LimitedLengthString中已经存在'{content}'，忽略此次操作")        
+
+    def get_string(self):
+        result = ''.join(self.data)
+        return result[-self.maxlen:]
+    
+message_buffer = LimitedLengthString()
+
 # region: Router Data model Class Definitions
 ### Begin: Router Data model Class Definitions
 
+class QuestionReWrite(BaseModel):
+    """结合上下文context部分考虑重写原始问题，使得原始问题更加明确，仅仅需要返回问题内容本身，不能有任何额外的解释或内容：（1）如果原始问题中不明确的实体指代,如该公司，他，这个地方等，请重写原始问题，用明确的实体替换不明确的指代，但不能有任何的解释或拓展；（2）否则，请直接返回原始问题本身。"""
+    q: str = Field(description='返回格式必须为{"q":$question}:直接使用问题内容替换$question代表，不能有任何额外的解释')
+
+question_rewrite_system_prompt = "结合上下文context部分考虑重写原始问题，使得原始问题更加明确，仅仅需要返回问题内容本身，不能有任何额外的解释或内容：（1）如果原始问题中不明确的实体指代,如该公司，他，这个地方等，请重写原始问题，用明确的实体替换不明确的指代，但不能有任何的解释或拓展；（2）否则，请直接返回原始问题本身。"
+question_rewrite_prompt = lambda x: ChatPromptTemplate.from_messages(
+    [
+        SystemMessage(question_rewrite_system_prompt),
+        HumanMessage(
+            f"'Context':\n{x['context']}\n'EndOfContext' \nQuestion: {x['question']} \nAnswer: "
+        )
+    ]
+)
+question_rewrite_llm = llm_model.with_structured_output(QuestionReWrite,method='json_mode')
+question_rewrite_chain = question_rewrite_prompt | question_rewrite_llm
 
 class WEB_SEARCH(BaseModel):
     """
@@ -128,90 +175,6 @@ def web_search(state:GraphAgentState):
 
     return {"documents": filtered_source, "question_searched":{question:True}}     
 
-# def web_search(state:GraphAgentState):
-#     """
-#     Web search based on the re-phrased question.
-
-#     Args:
-#         state (dict): The current graph state
-
-#     Returns:
-#         state (dict): Updates documents key with appended web results
-#     """
-
-#     print("---WEB SEARCH---")
-#     question = state["question"]
-#     try:
-#         query_generated = os.environ['rag_args']
-#         os.environ['rag_args'] = ''
-#         if os.environ['rag_args']:
-#             print(f"os.environ['rag_args']必须置为'',但现在的值为{os.environ['rag_args']} ")
-#             raise Exception
-#         if not query_generated:
-#             query_generated = llm_model.invoke({"question": question,"context":'请生成合适并且简洁的搜索引擎查询关键词,不需要任何额外的解释或内容'},config=invoke_llm_config)
-#     except:
-#         query_generated = question
-#     print(f'{question=}')
-#     print(f'{query_generated=}')
-
-
-#     # Web search
-#     docs = get_web_search_documents(query_generated)
-#     chunks_relevant = env_models_instance.split_and_get_chunks_relevant_from_documents(query=question,docs_list=docs,) #get embedding retriever and reranker results
-#     referens = []
-#     if chunks_relevant:
-#         web_results = "\n".join([d.page_content for d in chunks_relevant])
-#         _sources =[d.metadata.get("source",None) for d in chunks_relevant]
-#         sources = set([s for s in _sources if s])
-#         print("相关的【网页标题】网址为:") 
-               
-#         for s in sources:
-#             title = "TavilySearchResult无标题"
-#             for web_result in chunks_relevant:
-#                 if s == web_result.metadata.get("source",None):
-#                     title = web_result.metadata.get("title","TavilySearchResult无标题")
-#                     break
-#             print(f'【{title}】{s}')
-#             referens.append(s)
-#     else:
-#         docs = get_tavily_search_result_documents(query_generated)
-#         web_results = "\n".join([d.page_content for d in docs])
-#         _sources =[d.metadata.get("source",None) for d in docs]
-#         sources = set([s for s in _sources if s])
-#         print("相关的【网页标题】网址为:")        
-#         for s in sources:
-#             title = "TavilySearchResult无标题"
-#             for web_result in chunks_relevant:
-#                 if s == web_result.metadata.get("source",None):
-#                     title = web_result.metadata.get("title","TavilySearchResult无标题")
-#                     break
-#             print(f'【{title}】{s}')
-#             referens.append(s)
-#     if referens:
-#         referens_str = "   【参考网页为】:  \n"
-#         for i,r in enumerate(referens):
-#             # referens_str += f"    [{i+1}] <a href={r}>{r}</a>\n"
-#             referens_str += f"    {i+1}. [{r}]({r})  \n"
-            
-#         os.environ["REFERENCE"] = referens_str
-#         print(f'{referens_str=}')
-#     # else:
-#     #    os.environ["REFERENCE"] = '' 
-
-#     if len(web_results)>500:
-#         web_results_summary = llm_chain.invoke({"question": f"请根据问题‘{question}’，提炼和归纳总结‘Context’的内容，去除与问题不相关的信息","context":web_results},config=invoke_llm_config)
-#         # print("对搜索结果的原始内容进行提炼和归纳总结，去除不相关的信息后得到的结果web_results_summary:\n")
-#         # print(web_results_summary)
-#     else:
-#         web_results_summary = web_results
-
-#     # todo: 需对doc进行split和检索（embedding和/或rerank）
-#     web_results_document = Document(page_content=web_results_summary)
-#     return {"documents": web_results_document, "question_searched":{question:True}}     
-#     # web_search_message = ToolMessage(content=web_results_summary,name='web_search',tool_call_id='0')   
-#     # return {"documents": web_results_document, "question_searched":{question:True},"messages":web_search_message}
-
-
 class VECTORSTORE(BaseModel):
     """
     A vectorstore containing documents related to 晶奇公司、安徽晶奇网络科技股份有限公司、医疗卫生、医疗健康、医疗服务、医疗政策、medical treatment & health. 凡是与晶奇公司、安徽晶奇网络科技股份有限公司及医疗健康相关的问题，都必须使用vectorstore工具。MUST use the vectorstore for questions on these topics.
@@ -240,23 +203,189 @@ def vectorstore(state:GraphAgentState):
     # return {"documents": documents, "question": question,"messages":retrieve_message}
     return {"documents": documents, "question": question}
 
-
 class CODE_GENERATION(BaseModel):
     """
     Code Assistant/Code generation . Use programming code (preferred Python language) to slove a user question, if the question related to [code generating, file processing/analyzing, data exploring/analyzing/visualizing].
     """
-    query: str = Field(description="The query to use when generating code.")
-def code_generation(state:GraphAgentState):
-    pass
+    query: str = Field(description="The query to use when need to generate python code.")
 
+system_code_prompt=f"""请尽量使用简体中文来解答用户问题。
+    Act as an EXPERT with ten years of experience in the domain of data anylasis, your role is to help inexperienced people explore/analyse data. 
+    Be sure to help the user understand what to focus on and give suggestions on where it would make sense to dig deeper.
+    If you need to use/generate Python code, follow the instructions under [GENERATE_PYTHON_INSTRUCTIONS].
+    GENERATE_PYTHON_INSTRUCTIONS:
+        First, think step by step what you want to do and write it down in Simplified Chinese.
+        Then generate valid Python code all in a code block 
+        Make sure all code is valid - it will be run in a Jupyter Python 3 kernel environment. 
+        MUST CHECK:
+            Define every variable before you use it.
+            Import every module/package before you use it.such as:
+                import numpy as np
+                import pandas as pd
+                import seaborn as sns
+                import matplotlib.pyplot as plt
+                import plotly.express as px
+                import plotly.graph_objects as go                
+        Following modules/packages are available:
+            For data wrangling/munging, you can use 
+                'numpy',
+                'dateparser',
+                'pandas',
+            For data visualization, you can use
+                'matplotlib',
+                'seaborn',
+                'plotly',
+        Be sure to generate charts with plotly/matplotlib/seaborn, plotly is preferred. But if you need geographical charts, use geopandas with the geopandas.datasets module.
+        If the user has just uploaded a file, focus on the file that was most recently uploaded (and optionally all previously uploaded files)
+    
+        If the code modifies or produces a file/image, please add a print statement at the end of the code block that prints a link to it as HTML string: <a href='/download?file=INSERT_FILENAME_HERE'>Download file</a>. Replace INSERT_FILENAME_HERE with the actual filename.
+    EndOf_GENERATE_PYTHON_INSTRUCTIONS
+    """
+
+usual_imports = """import numpy as np\nimport pandas as pd\nimport seaborn as sns\nimport matplotlib.pyplot as plt\nimport plotly.express as px\nimport plotly.graph_objects as go"""
+
+usual_imports_list = usual_imports.split("\n")
+usual_imports_list_striped = [line.strip() for line in usual_imports_list]
+def merge_code_with_usual_imports(code:str,usual_imports_list=usual_imports_list_striped):
+    code_lines = code.split("\n")
+    code_lines_striped = [line.strip() for line in code_lines]
+
+    code_lines_is_import = [code_line for code_line in code_lines_striped if code_line.startswith('import')] 
+   
+    for code_line in usual_imports_list_striped:
+        if code_line not in code_lines_is_import:
+            code_lines_striped.insert(0,code_line)
+
+    code = "\n".join(code_lines_striped)
+    return code
+
+    
+
+def extract_code(text):
+    # Match triple backtick blocks first
+    triple_match = re.search(r'```(?:\w+\n)?(.+?)```', text, re.DOTALL)
+    if triple_match:
+        return triple_match.group(1).strip()
+    else:
+        # If no triple backtick blocks, match single backtick blocks
+        single_match = re.search(r'`(.+?)`', text, re.DOTALL)
+        if single_match:
+            return single_match.group(1).strip()
+        
+def code_generation(state:GraphAgentState):
+    user_question = state["question"]
+    question_related_messages = state["question_related_messages"]
+    message_buffer.append(question_related_messages)
+
+    user_code_prompt = f"""First, here is a history of what I asked you to do earlier. 
+    The actual user prompt follows after ENDOFHISTORY. 
+    History:
+    {message_buffer.get_string()}
+    ENDOFHISTORY.
+    Aiming to help the user in the best possible way with the below [USER_QUESTION] do one of the following:
+    1. Write Python code, in a triple backtick Markdown code block, that supports what the user is trying to achieve. Follows the system instructions between [GENERATE_PYTHON_INSTRUCTIONS] and [EndOf_GENERATE_PYTHON_INSTRUCTIONS]
+    2. Answer the question the user asks.
+    3. Ask follow-up questions to better understand what the user wants to achieve. 
+    
+    [USER_QUESTION]
+    {user_question}
+    """
+
+    sys_message = SystemMessage(content=system_code_prompt)
+    human_message = HumanMessage(content=user_code_prompt)
+    code,code_text = "",""
+    try:
+        code_generated = llm_model.invoke([sys_message,human_message])
+        code_text = code_generated.content.strip()        
+        code = extract_code(code_text)
+    except Exception as e:
+        logger.warning(f"请求code_generation时出现错误:{e}")
+    
+    if code:
+        logger.info('生成、抽取到的代码为：\n' + code)
+        code = merge_code_with_usual_imports(code) # 加入常用的imports，防止代码生成中出现的遗漏错误
+    code_message = ToolMessage(content=code,name='code_generation',tool_call_id ='0',additional_kwargs ={"code_text":code_text})
+    code_message = chat_bot.makeup_message_with_question_id_idx(code_message)
+
+    return {'messages':code_message,'question_related_messages':code_message}
 
 class CODE_EXECUTION(BaseModel):
     """
     Code execution/Code intepreter. When user providing a code snippet and asking for running/executing, w or w/o returning the result.
     """
     query: str = Field(description="The query to use when asking for running/executing a code snippet.")
+
 def code_execution(state:GraphAgentState):
-    pass
+    question =  state["question"]
+    question_related_messages = state["question_related_messages"]
+    last_message = question_related_messages[-1]
+    question_id = last_message.additional_kwargs.get('question_id','')
+    # todo
+    tool_call_id = "xxx"
+    tool_name = "CODE_EXECUTION"
+    
+    code = ''
+    code_text =''
+    if question_id == chat_bot.question_id:
+        if last_message.name == "code_generation" and len(last_message.content)>0:
+            code = last_message.content
+            code_text = last_message.additional_kwargs.get('code_text','')
+            # logger.debug("已存在code_generation生成的代码，忽略提取代码,开始执行代码......")
+            # # return {'messages':last_message,'question_related_messages':last_message}
+        else:
+            if isinstance(last_message,AIMessage):
+                try:
+                    code = last_message.tool_calls[0]['args']['query']                
+                except Exception as e:
+                    code = ''
+                    logger.warning(f"code_execution尝试从AIMessage的tool_calls中提取代码时出现错误:{e}")
+                if not code:
+                    m_text = last_message.content
+                    if m_text:
+                        try:
+                            code = extract_code(m_text)                            
+                        except Exception as e:
+                            code = ''
+                            logger.warning(f"code_execution尝试从用户消息内容中直接提取代码时出现错误:{e}")
+    try:
+        if code:
+            logger.debug("......开始执行代码......")
+            try:            
+                requestjson = {'command':code}
+                resp = requests.post(f'http://localhost:5011/api', json=requestjson)
+                result = resp.content
+                print(f"Kernel API执行代码得到的结果：{result}")
+            except Exception as e:
+                logger.error(f"提交代码到Kernel API执行出现错误:{e}")
+                logger.info(f"尝试使用python_repl_tool来执行...")       
+                result = python_repl_tool(code)
+                print(f"python_repl_tool执行代码得到的结果：{result}")
+                if "error" in result.lower():
+                    code = merge_code_with_usual_imports(code)
+                    result = python_repl_tool(code)
+                    if "error" in result.lower():
+                        raise Exception(result)
+            if result:
+                result = str(result) + "代码执行成功。除非是上下文中有非常明确和具体的内容，否则答案中不要出现任何关于图形图像生成显示，或者文件保存和下载方面的内容。因为这些条件都已经满足"
+            code_message = ToolMessage(content=result,name =tool_name,tool_call_id =tool_call_id,additional_kwargs ={"status":True,"code":code,"code_text":code_text})
+            code_message = chat_bot.makeup_message_with_question_id_idx(code_message)
+            return {'messages':code_message,'question_related_messages':code_message}
+
+        else:
+            raise Exception("code_execution无法获取可执行的代码！")        
+
+    except Exception as e:
+
+        error_prompt = f'执行工具调用出现错误:\n  工具名称：tool_name\n  调用参数：{code}\n  错误信息：{str(e)}\n'
+        makeup_tool_message = ToolMessage(tool_call_id=tool_call_id, name=tool_name,  content=error_prompt)
+        makeup_tool_message = chat_bot.makeup_message_with_question_id_idx(makeup_tool_message)
+        makeup_human_message = HumanMessage(content=f"对于用户问题:{question},上次的工具调用出现了错误，请仔细规划和思考，重新生成正确的工具名称和调用参数，避免出现同样的错误！")
+        makeup_human_message = chat_bot.makeup_message_with_question_id_idx(makeup_human_message)
+        results = [makeup_tool_message,makeup_human_message]
+        logger.info(f"工具调用执行异常，加入执行错误信息，返回到大模型,错误消息为:{e}")
+        return {'messages': results,'question_related_messages':results}       
+    
+
 ### End: Router Data model Class Definitions
 # endregion
     
@@ -374,7 +503,7 @@ Thus, the format of your overall response should look like what’s shown betwee
 
     [1] Company X reported revenue of $12 million in 2021.   \n  
     [2] Almost 90% of revenue came from widget sales, with gadget sales making up the remaining 10%.   \n  
-    
+
 最终回答:   \n  
 
 Company X earned $12 million[1].  Almost 90% of it was from widget sales[1,2]. 
@@ -384,7 +513,7 @@ If the question cannot be answered by the document, say so.
 
 And you MUST answer the question, NEVER care about the year/time or tools/internet accessing limitations, Becuase you are provided enough tools/information/contexts to generate a resonable question.
 
-Other than code and specific names and citations, your answer must be written in chinese.
+Other than code and specific names and citations, your answer must be written in Simplified Chinese.
 
 """
 
@@ -577,7 +706,7 @@ class GraphAgent:
         _routing_tool_names = [tool.__name__ for tool in routing_tools_wrapped_in_class]
         _tool_names = _executable_tool_names + _routing_tool_names
         _tool_names_str = ','.join(_tool_names)
-        _system_message_content = f"Solve/Answer user's questions as best as you can in the language the user asked, preffered/default to Chinese. You have access to the following tools:{_tool_names_str}.You are allowed to make multiple calls (either together or in sequence)."
+        _system_message_content = f"Solve/Answer user's questions as best as you can in the language the user asked, preffered/default to Simplified Chinese. You have access to the following tools:{_tool_names_str}.You are allowed to make multiple calls (either together or in sequence)."
 
         if llm_model is None:
             llm_model = env_models_instance.get_langchain_chat_model()
@@ -611,7 +740,7 @@ class GraphAgent:
             idx_in_a_question_epoch = self.set_message_idx_in_a_question_epoch()
         _dict = {"question_id":question_id,"idx_in_a_question_epoch":idx_in_a_question_epoch}
         if isinstance(Message_ClassOrInstance,AnyMessage):
-            Message_ClassOrInstance.additional_kwargs = _dict
+            Message_ClassOrInstance.additional_kwargs.update(_dict)
             message = Message_ClassOrInstance
         else: 
             message = Message_ClassOrInstance(content=content,additional_kwargs=_dict)
@@ -682,7 +811,7 @@ class GraphAgent:
         graph.add_conditional_edges(
             "llm",
             self.exists_action,
-            {True: "action", False: END , "web_search": "web_search","vectorstore": "vectorstore","code_generation": "code_generation","code_execution": "code_execution"}
+            {True: "action", False: END , "WEB_SEARCH": "web_search","VECTORSTORE": "vectorstore","CODE_GENERATION": "code_generation","CODE_EXECUTION": "code_execution"}
         )
         graph.add_edge("action", "llm")        
         graph.add_edge("web_search", "generate")
@@ -777,7 +906,7 @@ class GraphAgent:
                 logger.info(f"Returned first ToolName is '{tool_call_1_name}', So routing to sub_graph '{tool_call_1_name}' Node......")
                 # os.environ["rag_graph_next"] = tool_call_1_name
                 os.environ['rag_args'] = tool_call_1["args"]['query']
-                return tool_call_1_name.lower()
+                return tool_call_1_name
                 # return "Rag"
         else:
             logger.info(f'No returned tool_calling and {finish_reason=}')
@@ -811,8 +940,8 @@ class GraphAgent:
             message = self.model.invoke(messages,config=self.config)
             try: 
                 finish_reason = message.response_metadata["finish_reason"]
-                reason = 'a finish_reason of “length” means that the AI had more data to output but the limitations of that call prevented it from finishing'
                 if finish_reason ==  "length":
+                    reason = 'a finish_reason of “length” means that the AI had more data to output but the limitations of that call prevented it from finishing'
                     model_name = self.model.bound.model_name
                     max_tokens = self.model.bound.max_tokens
                     logger.warning(f'LLM({model_name})返回: finish_reason ==  "length" [{reason}]，当前设置的max_tokens={max_tokens}，请检查调整该设置')
@@ -824,7 +953,8 @@ class GraphAgent:
 
             question_related_messages.append(message)
             return {'messages': message,'question_related_messages':question_related_messages}
-        except:
+        except Exception as e:
+            logger.error(f'！！！大语言模型执行失败，请检查大语言模型接口服务状态！！！,错误消息为:{e}')
             for m in messages:
                 m.pretty_print()
         
@@ -860,15 +990,17 @@ def run_conversation(user_question:str,jqchat_agent:GraphAgent=chat_bot):
 
 if __name__ == "__main__":
     user_questions = [
+        '请直接执行代码：print("直接执行代码")',
+        '请使用Python来绘制sin(x)的曲线图',
     # '你好，我叫张结魁',
     # '合肥大蜀山',
     # '请搜索合肥大蜀山，然后提供详细介绍',   
     # '请查询明天从合肥到上海的航班',
     # '请使用python_repl_tool来计算1到100的和',
     # '请调用python_repl_tool工具，一个计算1到100的和,另一个计算10的阶乘，并实际执行工具获取计算结果',
-    "请使用tavily_search_tool工具搜索信息，回答问题：What is the weather in SF and LA? ",
-    "Who won the super bowl in 2024? In what state is the winning team headquarters located?What is the GDP of that state? ",
-    "还记得我叫什么吗？"
+    # "请使用tavily_search_tool工具搜索信息，回答问题：What is the weather in SF and LA? ",
+    # "Who won the super bowl in 2024? In what state is the winning team headquarters located?What is the GDP of that state? ",
+    # "还记得我叫什么吗？"
     ]
     
     for user_question in user_questions:

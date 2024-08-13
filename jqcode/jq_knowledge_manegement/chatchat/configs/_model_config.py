@@ -144,7 +144,7 @@ class ConfigModelFactory(core_config.ConfigFactory[ConfigModel]):
                 "score_threshold": 1.0,
                 "conclude_prompt": {
                     "with_result": '<指令>根据已知信息，简洁和专业的来回答问题。如果无法从中得到答案，请说 "根据已知信息无法回答该问题"，'
-                    "不允许在答案中添加编造成分，答案请使用中文。 </指令>\n"
+                    "不允许在答案中添加编造成分，答案请使用简体中文。 </指令>\n"
                     "<已知信息>{{ context }}</已知信息>\n"
                     "<问题>{{ question }}</问题>\n",
                     "without_result": "请你根据我的提问回答我的问题:\n"

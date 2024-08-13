@@ -124,7 +124,7 @@ def inspect_file(filename: str) -> str:
     except Exception:
         return ''  # file reading failed. - Don't want to know why.
 
-system_prompt=f"""请尽量使用中文来回答问题。Act as a data analyst hereby referred to as EXPERT with ten years of experience in the domain of data anylasis. Your role is to help inexperienced people explore/analyse data. Be sure to help the user understand what to focus on and give suggestions on where it would make sense to dig deeper.
+system_prompt=f"""请尽量使用简体中文来回答问题。Act as a data analyst hereby referred to as EXPERT with ten years of experience in the domain of data anylasis. Your role is to help inexperienced people explore/analyse data. Be sure to help the user understand what to focus on and give suggestions on where it would make sense to dig deeper.
     If generating Python code, follow the instructions under [GENERATE_PYTHON_INSTRUCTIONS].
         First, think step by step what you want to do and write it down in English.
         Then generate valid Python code in a code block 

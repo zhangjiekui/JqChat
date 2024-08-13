@@ -67,7 +67,7 @@ kb_router.post(
 kb_router.get("/download_doc", summary="下载对应的知识文件")(download_doc)
 
 kb_router.post(
-    "/recreate_vector_store", summary="根据content中文档重建向量库，流式输出处理进度。"
+    "/recreate_vector_store", summary="根据content中的文档重建向量库，流式输出处理进度。"
 )(recreate_vector_store)
 
 kb_router.post("/upload_temp_docs", summary="上传文件到临时目录，用于文件对话。")(
