@@ -44,6 +44,8 @@ python_repl = PythonREPLTool().run #这是原生的
 DEBUG = False
 handlers = get_custom_handler() if DEBUG else []
 invoke_llm_config = {'callbacks' : handlers}    
+llm_model = env_models_instance.get_langchain_chat_model()
+
 class GraphAgentState(TypedDict):
     messages: Annotated[list[AnyMessage], add_messages]
     question : str
@@ -51,21 +53,7 @@ class GraphAgentState(TypedDict):
     question_searched : dict
     generation : str
     documents : List[str]
-llm_model = env_models_instance.get_langchain_chat_model()
 
-prompt_llm = """You are an assistant for question-answering tasks. Answer the question based upon your knowledge in the language the user asked, preffered/default to Simplified Chinese."""
-# Prompt
-prompt = lambda x: ChatPromptTemplate.from_messages(
-    [
-        SystemMessage(prompt_llm),
-        HumanMessage(
-            f"'Context':\n{x['context']}\n'EndOfContext' \nQuestion: {x['question']} \nAnswer: "
-        )
-    ]
-)
-
-# LLM Chain
-llm_chain = prompt | llm_model | StrOutputParser()
 
 class LimitedLengthString:
     def __init__(self, maxlen=8000):
@@ -120,6 +108,18 @@ class WEB_SEARCH(BaseModel):
     """
     query: str = Field(description="The query to use when searching the internet.")
 
+prompt_llm = """You are an assistant for question-answering tasks. Answer the question based upon your knowledge in the language the user asked, preffered/default to Simplified Chinese."""
+# Prompt
+prompt = lambda x: ChatPromptTemplate.from_messages(
+    [
+        SystemMessage(prompt_llm),
+        HumanMessage(
+            f"'Context':\n{x['context']}\n'EndOfContext' \nQuestion: {x['question']} \nAnswer: "
+        )
+    ]
+)
+# LLM Chain for query regenerating
+llm_chain = prompt | llm_model | StrOutputParser()
 def web_search(state:GraphAgentState):
     """
     Web search based on the re-phrased question.
@@ -149,6 +149,9 @@ def web_search(state:GraphAgentState):
 
     # Web search
     docs = get_web_search_documents(query_generated,max_doc_nums=6)
+    if not docs:
+        return {"documents": [], "question_searched":{question:False}}
+    
     if docs[0].metadata.get("search_engine",None)!="tavily_search":
         chunks_relevant = env_models_instance.split_and_get_chunks_relevant_from_documents(query=question,docs_list=docs,) #get embedding retriever and reranker results
     else:
@@ -216,6 +219,16 @@ class CODE_GENERATION(BaseModel):
     """
     query: str = Field(description="The query to use when need to generate python code.")
 
+class CODE_EXECUTION(BaseModel):
+    """
+    Code execution/Code intepreter. When user providing a code snippet and asking for running/executing, w or w/o returning the result.
+    """
+    query: str = Field(description="The query to use when asking for running/executing a code snippet.")
+### End: Router Data model Class Definitions
+# endregion
+
+
+# region: Some utils mothods or varaiables
 system_code_prompt=f"""请尽量使用简体中文来解答用户问题。
     Act as an EXPERT with ten years of experience in the domain of data anylasis, your role is to help inexperienced people explore/analyse data. 
     Be sure to help the user understand what to focus on and give suggestions on where it would make sense to dig deeper.
@@ -266,8 +279,6 @@ def merge_code_with_usual_imports(code:str,usual_imports_list=usual_imports_list
     code = "\n".join(code_lines_striped)
     return code
 
-    
-
 def extract_code(text):
     # Match triple backtick blocks first
     triple_match = re.search(r'```(?:\w+\n)?(.+?)```', text, re.DOTALL)
@@ -278,49 +289,6 @@ def extract_code(text):
         single_match = re.search(r'`(.+?)`', text, re.DOTALL)
         if single_match:
             return single_match.group(1).strip()
-        
-def code_generation(state:GraphAgentState):
-    user_question = state["question"]
-    question_related_messages = state["question_related_messages"]
-    message_buffer.append(question_related_messages)
-
-    user_code_prompt = f"""First, here is a history of what I asked you to do earlier. 
-    The actual user prompt follows after ENDOFHISTORY. 
-    History:
-    {message_buffer.get_string()}
-    ENDOFHISTORY.
-    Aiming to help the user in the best possible way with the below [USER_QUESTION] do one of the following:
-    1. Write Python code, in a triple backtick Markdown code block, that supports what the user is trying to achieve. Follows the system instructions between [GENERATE_PYTHON_INSTRUCTIONS] and [EndOf_GENERATE_PYTHON_INSTRUCTIONS]
-    2. Answer the question the user asks.
-    3. Ask follow-up questions to better understand what the user wants to achieve. 
-    
-    [USER_QUESTION]
-    {user_question}
-    """
-
-    sys_message = SystemMessage(content=system_code_prompt)
-    human_message = HumanMessage(content=user_code_prompt)
-    code,code_text = "",""
-    try:
-        code_generated = llm_model.invoke([sys_message,human_message])
-        code_text = code_generated.content.strip()        
-        code = extract_code(code_text)
-    except Exception as e:
-        logger.warning(f"请求code_generation时出现错误:{e}")
-    
-    if code:
-        logger.info('生成、抽取到的代码为：\n' + code)
-        code = merge_code_with_usual_imports(code) # 加入常用的imports，防止代码生成中出现的遗漏错误
-    code_message = ToolMessage(content=code,name='code_generation',tool_call_id ='0',additional_kwargs ={"code_text":code_text})
-    code_message = chat_bot.makeup_message_with_question_id_idx(code_message)
-
-    return {'messages':code_message,'question_related_messages':code_message}
-
-class CODE_EXECUTION(BaseModel):
-    """
-    Code execution/Code intepreter. When user providing a code snippet and asking for running/executing, w or w/o returning the result.
-    """
-    query: str = Field(description="The query to use when asking for running/executing a code snippet.")
 
 def submit_code_to_ipykernel_api(code:str):
     # KERNEL_API_BASE = os.getenv("KERNEL_API_BASE",'http://localhost')
@@ -353,105 +321,11 @@ def display_code(code:str):
     """
     return _code
 
-def code_execution(state:GraphAgentState):
-    question =  state["question"]
-    question_related_messages = state["question_related_messages"]
-    last_message = question_related_messages[-1]
-    question_id = last_message.additional_kwargs.get('question_id','')
-    # todo
-    tool_call_id = "xxx"
-    tool_name = "CODE_EXECUTION"
-    
-    # 获取代码code和文本code_text
-    code = ''
-    code_text =''
-    message_content = '' #返回给大模型的消息内容
-    if question_id == chat_bot.question_id:
-        if last_message.name == "code_generation" and len(last_message.content)>0:
-            code = last_message.content
-            code_text = last_message.additional_kwargs.get('code_text','')
-            logger.info("code_execution已获取到由code_generation生成的代码。")
+# endregion: Some utils mothods or varaiables
 
-        else:
-            if isinstance(last_message,AIMessage):
-                try:
-                    code = last_message.tool_calls[0]['args']['query'].strip()
-                    if code:
-                        logger.info("code_execution已获取到由LLM ToolCalls生成的代码。")                        
-                    
-                    message_content = last_message.content.strip()
-                    if message_content:
-                        code_text = message_content + "\n" + display_code(code)
-                    else:
-                        code_text = display_code(code)
-
-                except Exception as e:
-                    code = ''
-                    code_text = ''
-                    logger.warning(f"code_execution尝试从AIMessage的tool_calls中提取代码时出现错误:{e}")
-                
-                if not code:
-                    m_text = last_message.content
-                    if m_text:
-                        try:
-                            code = extract_code(m_text)
-                            if code:
-                                logger.info("code_execution已获取到由LLM消息内容包含的代码。")
-                                code_text = m_text                               
-                        except Exception as e:
-                            code = ''
-                            code_text = ''
-                            logger.warning(f"code_execution尝试从用户消息内容中直接提取代码时出现错误:{e}")
-    try:
-        if code:
-            logger.debug("......开始提交和执行代码......") 
-            # 提交代码到ipykernel_api执行   
-            result = submit_code_to_ipykernel_api(code) #返回True或False
-            if result:
-                message_content = "ipykernel_api代码运行成功。"
-            # 提交代码到ipykernel_api执行，尝试本地来执行
-            if not result:
-                logger.info(f"......ipykernel_api代码运行失败......")
-                logger.info(f"......尝试使用python_repl来执行......")
-                # python_repl在本页代码开头处赋值的 
-                result = python_repl(code)
-
-                                
-                if "error" in result.lower():
-                    code = merge_code_with_usual_imports(code)
-                    # python_repl在本页代码开头处赋值的  
-                    result = python_repl(code)                                      
-                    if "error" in result.lower():
-                        raise Exception(result)
-                else:
-                    _result = result if result else "None"
-                    message_content = f"python_repl代码运行成功（但如有图像，由于环境限制无法直接展示,可在本地环境中运行上述代码）。运行结果为Observation:{_result}"
-            
-            code_message = ToolMessage(content=message_content,name =tool_name,tool_call_id =tool_call_id,additional_kwargs ={"status":True,"code":code,"code_text":code_text})
-            code_message = chat_bot.makeup_message_with_question_id_idx(code_message)            
-            return {'messages':code_message,'question_related_messages':code_message}
-
-        else:
-            raise Exception("code_execution无法获取可执行的代码！")        
-
-    except Exception as e:
-        logger.info(f"code_execution执行异常，加入执行错误信息，返回到大模型,错误消息为:{e}")
-        error_prompt = f'执行工具调用出现错误:\n  工具名称：tool_name\n  调用参数：{code}\n  错误信息：{str(e)}\n'
-        makeup_tool_message = ToolMessage(tool_call_id=tool_call_id, name=tool_name, content=error_prompt)
-        makeup_tool_message = chat_bot.makeup_message_with_question_id_idx(makeup_tool_message)
-        makeup_human_message = HumanMessage(content=f"对于用户问题:{question},上次的工具调用出现了错误，请仔细规划和思考，重新生成正确的工具名称和调用参数，避免出现同样的错误！")
-        makeup_human_message = chat_bot.makeup_message_with_question_id_idx(makeup_human_message)
-        # 下面的error_message仅仅是为了方便做code_execution的下一个节点导航使用
-        error_message = ToolMessage(content="",name =tool_name,tool_call_id =tool_call_id,additional_kwargs ={"status":False})
-        results = [makeup_tool_message,makeup_human_message,error_message]       
-        return {'messages': results,'question_related_messages':results}       
     
 
-### End: Router Data model Class Definitions
-# endregion
-    
-
-# region: Graders
+# region: Rags Related
     
 # 1. Coding Relavance Grader
 class GradeCodingRelavance(BaseModel):
@@ -752,15 +626,16 @@ def grade_generation_v_documents_and_question(state:GraphAgentState):
         print("---DECISION: GENERATION IS NOT GROUNDED IN DOCUMENTS, BUT WE DO NOT RE-TRY (RE-GENERATION), JUST DIRECTLY TO 'END' NODE---")
         return "not supported" # todo
 
-# endregion
+# endregion Rags Related
 
 
     
     
-
+executable_tools = [get_flight_number,python_repl_tool]
+route_tools = [WEB_SEARCH,VECTORSTORE,CODE_GENERATION,CODE_EXECUTION]
 
 class GraphAgent:
-    def __init__(self,executable_tools:list, routing_tools_wrapped_in_class:list, llm_model:ChatOpenAI=None, recursion_limit:int=25, memory_thread_id:str=shortuuid.uuid()) -> None:
+    def __init__(self,executable_tools:list=executable_tools, routing_tools_wrapped_in_class:list=route_tools, llm_model:ChatOpenAI=None, kb_base_dict="test", recursion_limit:int=25, memory_thread_id:str=shortuuid.uuid()) -> None:
         
     # region: 初始化
         _executable_tool_names = [tool.name for tool in executable_tools]
@@ -779,15 +654,17 @@ class GraphAgent:
         self.executable_tool_names = _executable_tool_names
         self.executable_tool_dict = {t.name: t for t in executable_tools} 
 
-        self.model = llm_model.bind_tools(self.all_tools)
-               
+        self.model = llm_model.bind_tools(self.all_tools)               
         self.system_message = [SystemMessage(content=_system_message_content)]
+        self.kb_base_dict = kb_base_dict
+
+        self.user_id = memory_thread_id
+        self.question_id:str= self.get_random_id()
         self.config =  {"recursion_limit":recursion_limit,"configurable": {"thread_id":memory_thread_id }}
         self.memory = SqliteSaver.from_conn_string("memory_checkpoints.sqlite")
         # self.memory = AsyncSqliteSaver.from_conn_string("memory_checkpoints.async_sqlite")
-        self.question_id:str= self.get_random_id()
+        
         self.message_idx_in_a_question_epoch = self.set_message_idx_in_a_question_epoch()
-
         self.graph = self.graph_definition()
         self.all_history_messages = self.get_all_history_messages()
         self.question_related_messages = self.get_question_related_messages_from_state()
@@ -866,8 +743,8 @@ class GraphAgent:
         graph.add_node("vectorstore", vectorstore )
         graph.add_node("grade_documents", grade_documents )
         graph.add_node("generate", generate)
-        graph.add_node("code_generation", code_generation )
-        graph.add_node("code_execution", code_execution )
+        graph.add_node("code_generation", self.code_generation )
+        graph.add_node("code_execution", self.code_execution )
         # graph.add_node("", )
 
         graph.set_entry_point("llm")
@@ -989,7 +866,6 @@ class GraphAgent:
                 status = last_message.additional_kwargs.get("status",False)
         return "end" if status else "llm"
 
-
     def call_llm(self,state: GraphAgentState):
         # 当前message
         input_message = state.get('messages')[-1]
@@ -1033,54 +909,187 @@ class GraphAgent:
             logger.error(f'！！！大语言模型执行失败，请检查大语言模型接口服务状态！！！,错误消息为:{e}')
             for m in messages:
                 m.pretty_print()
-        
-    # endregion: Graph定义
     
+    def code_generation(self,state:GraphAgentState):
+        user_question = state["question"]
+        question_related_messages = state["question_related_messages"]
+        message_buffer.append(question_related_messages)
+
+        user_code_prompt = f"""First, here is a history of what I asked you to do earlier. 
+        The actual user prompt follows after ENDOFHISTORY. 
+        History:
+        {message_buffer.get_string()}
+        ENDOFHISTORY.
+        Aiming to help the user in the best possible way with the below [USER_QUESTION] do one of the following:
+        1. Write Python code, in a triple backtick Markdown code block, that supports what the user is trying to achieve. Follows the system instructions between [GENERATE_PYTHON_INSTRUCTIONS] and [EndOf_GENERATE_PYTHON_INSTRUCTIONS]
+        2. Answer the question the user asks.
+        3. Ask follow-up questions to better understand what the user wants to achieve. 
+        
+        [USER_QUESTION]
+        {user_question}
+        """
+
+        sys_message = SystemMessage(content=system_code_prompt)
+        human_message = HumanMessage(content=user_code_prompt)
+        code,code_text = "",""
+        try:
+            code_generated = llm_model.invoke([sys_message,human_message])
+            code_text = code_generated.content.strip()        
+            code = extract_code(code_text)
+        except Exception as e:
+            logger.warning(f"请求code_generation时出现错误:{e}")
+        
+        if code:
+            logger.info('生成、抽取到的代码为：\n' + code)
+            code = merge_code_with_usual_imports(code) # 加入常用的imports，防止代码生成中出现的遗漏错误
+        code_message = ToolMessage(content=code,name='code_generation',tool_call_id ='0',additional_kwargs ={"code_text":code_text})
+        code_message = self.makeup_message_with_question_id_idx(code_message)
+
+        return {'messages':code_message,'question_related_messages':code_message}
+
+    def code_execution(self,state:GraphAgentState):
+        question =  state["question"]
+        question_related_messages = state["question_related_messages"]
+        last_message = question_related_messages[-1]
+        question_id = last_message.additional_kwargs.get('question_id','')
+        # todo
+        tool_call_id = "xxx"
+        tool_name = "CODE_EXECUTION"
+        
+        # 获取代码code和文本code_text
+        code = ''
+        code_text =''
+        message_content = '' #返回给大模型的消息内容
+        if question_id == self.question_id:
+            if last_message.name == "code_generation" and len(last_message.content)>0:
+                code = last_message.content
+                code_text = last_message.additional_kwargs.get('code_text','')
+                logger.info("code_execution已获取到由code_generation生成的代码。")
+
+            else:
+                if isinstance(last_message,AIMessage):
+                    try:
+                        code = last_message.tool_calls[0]['args']['query'].strip()
+                        if code:
+                            logger.info("code_execution已获取到由LLM ToolCalls生成的代码。")                        
+                        
+                        message_content = last_message.content.strip()
+                        if message_content:
+                            code_text = message_content + "\n" + display_code(code)
+                        else:
+                            code_text = display_code(code)
+
+                    except Exception as e:
+                        code = ''
+                        code_text = ''
+                        logger.warning(f"code_execution尝试从AIMessage的tool_calls中提取代码时出现错误:{e}")
+                    
+                    if not code:
+                        m_text = last_message.content
+                        if m_text:
+                            try:
+                                code = extract_code(m_text)
+                                if code:
+                                    logger.info("code_execution已获取到由LLM消息内容包含的代码。")
+                                    code_text = m_text                               
+                            except Exception as e:
+                                code = ''
+                                code_text = ''
+                                logger.warning(f"code_execution尝试从用户消息内容中直接提取代码时出现错误:{e}")
+        try:
+            if code:
+                logger.debug("......开始提交和执行代码......") 
+                # 提交代码到ipykernel_api执行   
+                result = submit_code_to_ipykernel_api(code) #返回True或False
+                if result:
+                    message_content = "ipykernel_api代码运行成功。"
+                # 提交代码到ipykernel_api执行，尝试本地来执行
+                if not result:
+                    logger.info(f"......ipykernel_api代码运行失败......")
+                    logger.info(f"......尝试使用python_repl来执行......")
+                    # python_repl在本页代码开头处赋值的 
+                    result = python_repl(code)
+
+                                    
+                    if "error" in result.lower():
+                        code = merge_code_with_usual_imports(code)
+                        # python_repl在本页代码开头处赋值的  
+                        result = python_repl(code)                                      
+                        if "error" in result.lower():
+                            raise Exception(result)
+                    else:
+                        _result = result if result else "None"
+                        message_content = f"python_repl代码运行成功（但如有图像，由于环境限制无法直接展示,可在本地环境中运行上述代码）。运行结果为Observation:{_result}"
+                
+                code_message = ToolMessage(content=message_content,name =tool_name,tool_call_id =tool_call_id,additional_kwargs ={"status":True,"code":code,"code_text":code_text})
+                code_message = self.makeup_message_with_question_id_idx(code_message)            
+                return {'messages':code_message,'question_related_messages':code_message}
+
+            else:
+                raise Exception("code_execution无法获取可执行的代码！")        
+
+        except Exception as e:
+            logger.info(f"code_execution执行异常，加入执行错误信息，返回到大模型,错误消息为:{e}")
+            error_prompt = f'执行工具调用出现错误:\n  工具名称：tool_name\n  调用参数：{code}\n  错误信息：{str(e)}\n'
+            makeup_tool_message = ToolMessage(tool_call_id=tool_call_id, name=tool_name, content=error_prompt)
+            makeup_tool_message = self.makeup_message_with_question_id_idx(makeup_tool_message)
+            makeup_human_message = HumanMessage(content=f"对于用户问题:{question},上次的工具调用出现了错误，请仔细规划和思考，重新生成正确的工具名称和调用参数，避免出现同样的错误！")
+            makeup_human_message = self.makeup_message_with_question_id_idx(makeup_human_message)
+            # 下面的error_message仅仅是为了方便做code_execution的下一个节点导航使用
+            error_message = ToolMessage(content="",name =tool_name,tool_call_id =tool_call_id,additional_kwargs ={"status":False})
+            results = [makeup_tool_message,makeup_human_message,error_message]       
+            return {'messages': results,'question_related_messages':results}       
+        
+    def run_conversation(self,user_question:str):
+        print('================='*5)
+        # logger.info(f"老的{self.question_id=}")
+        print(f"切记新的问题对话前，要先更新question_id！老的[{self.question_id=}]")
+        self.question_id = self.get_random_id()
+        print(f"USER[{self.user_id}]的问题{user_question} (新的question_id: [{self.question_id})]")
+        input_message = self.makeup_message_with_question_id_idx(HumanMessage,content=user_question)       
+        result = self.graph.invoke({"messages": [input_message],"question":user_question,"question_related_messages":[]},config=self.config)
+
+        print('====问题和答案====') 
+        print(f"USER[{self.user_id}]的问题:[{self.question_id}]:\n        {user_question}")
+        answer = result['messages'][-1].content
+        referens_str = os.getenv("REFERENCE", '')
+        os.environ["REFERENCE"]= ''
+        if referens_str:
+            answer = f'\n{referens_str}\n' + answer
+        print(f"==AI：\n        {answer}")
+        print('================='*5)
+        return answer
+    # endregion: Graph定义            
+        
+        
 
 
 
 tavily_search_tool = TavilySearchResults(max_results=4) #increased number of results
-executable_tools = [get_flight_number,python_repl_tool]
-route_tools = [WEB_SEARCH,VECTORSTORE,CODE_GENERATION,CODE_EXECUTION]
-chat_bot = GraphAgent(executable_tools=executable_tools,routing_tools_wrapped_in_class=route_tools)
+
+# 
 
 
-def run_conversation(user_question:str,jqchat_agent:GraphAgent=chat_bot):    
-    jqchat_agent.question_id = jqchat_agent.get_random_id()
-    print('================='*5)
-    print(f"USER：{user_question} (With question_id: {jqchat_agent.question_id})")
-    input_message = jqchat_agent.makeup_message_with_question_id_idx(HumanMessage,content=user_question)       
-    result = jqchat_agent.graph.invoke({"messages": [input_message],"question":user_question,"question_related_messages":[]},config=jqchat_agent.config)
-
-    print('====问题和答案====') 
-    print(f"USER：{user_question}")
-    answer = result['messages'][-1].content
-    referens_str = os.getenv("REFERENCE", '')
-    os.environ["REFERENCE"]= ''
-    if referens_str:
-        answer = f'\n{referens_str}\n' + answer
-    print(f"==AI：{answer}")
-    return answer
-    print('================='*5)
 
 
 if __name__ == "__main__":
     user_questions = [
-        '请直接执行代码：print("直接执行代码")',
+        '请直接执行代码：print("直接执行打印程序代码")',
         '请使用Python来绘制sin(x)的曲线图',
-    # '你好，我叫张结魁',
-    # '合肥大蜀山',
-    # '请搜索合肥大蜀山，然后提供详细介绍',   
-    # '请查询明天从合肥到上海的航班',
-    # '请使用python_repl_tool来计算1到100的和',
-    # '请调用python_repl_tool工具，一个计算1到100的和,另一个计算10的阶乘，并实际执行工具获取计算结果',
-    # "请使用tavily_search_tool工具搜索信息，回答问题：What is the weather in SF and LA? ",
-    # "Who won the super bowl in 2024? In what state is the winning team headquarters located?What is the GDP of that state? ",
-    # "还记得我叫什么吗？"
+        '你好，我叫张结魁',
+        '合肥大蜀山',
+        '请搜索合肥大蜀山，然后提供详细介绍',   
+        '请查询明天从合肥到上海的航班',
+        '请使用python_repl_tool来计算1到100的和',
+        '请调用python_repl_tool工具，一个计算1到100的和,另一个计算10的阶乘，并实际执行工具获取计算结果',
+        "请使用tavily_search_tool工具搜索信息，回答问题：What is the weather in SF and LA? ",
+        "Who won the super bowl in 2024? In what state is the winning team headquarters located?What is the GDP of that state? ",
+        "还记得我叫什么吗？"
     ]
-    
+    my_main_bot = GraphAgent(executable_tools=executable_tools,routing_tools_wrapped_in_class=route_tools)
+
     for user_question in user_questions:
-        answer = run_conversation(user_question=user_question )
+        answer = my_main_bot.run_conversation(user_question=user_question )
 
 
 # source: https://learn.deeplearning.ai/courses/ai-agents-in-langgraph/lesson/3/langgraph-components    

@@ -7,7 +7,6 @@ import re
 import logging
 import sys
 
-
 import pandas as pd
 
 from collections import deque
@@ -19,13 +18,13 @@ from jqchat.kernel_program.main import APP_PORT as KERNEL_APP_PORT
 from jqcode.jq_agent.c0_init_env_models import env_models_instance
 from jqcode.jq_agent.graph_create_utils import user_question_is_related_to_coding_or_data_analyzing,llm
 
-from langgraph_in_class import run_conversation,invoke_llm_config,chat_bot,message_buffer,question_rewrite_chain
+from langgraph_in_class import GraphAgent,invoke_llm_config,message_buffer,question_rewrite_chain
 
 from langchain_core.pydantic_v1 import BaseModel, Field
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_core.messages import HumanMessage,SystemMessage,ToolMessage,AIMessage
 from langchain_ollama import ChatOllama
-
+# region 打算删除的代码
 # HAS_DATA_FILE_UPLOADED = os.environ.get("HAS_DATA_FILE_UPLOADED", False)
 
 #todo 保留openai只是暂时不想改代码
@@ -45,7 +44,7 @@ elif openai.api_type == "azure":
         raise RuntimeError('AZURE_OPENAI_DEPLOYMENTS environment variable not set') from e
 else:
     raise ValueError(f'Invalid OPENAI_API_TYPE: {openai.api_type}')
-
+# endregion
 UPLOAD_FOLDER = 'workspace/'
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 APP_PORT = int(os.environ.get("WEB_PORT", 8080))
@@ -350,27 +349,19 @@ def agent_entry():
     print('============================================================')
     print('触发python_backend......jqchat/webapp/main.py#L335')
     user_prompt = request.json.get('prompt', '')
-    # print('=='*30)
-    # print(f'(IN Web) User Question: {user_prompt}')
-    # model = env_models_instance.llm_model_name
-    # user_openai_key = env_models_instance.api_key
     #获取用户随机ID
     user_id=request.json.get('user',None)
-    #获得文档ID
-    doc_id=request.json.get('doc',None);
+    #获得知识库的字典{"name": "test" , "discription":"测试方面的知识库",...}
+    kb_base_dict=request.json.get('doc',None);
+    print(f"{user_id=}")
 
-    # loop = asyncio.new_event_loop()
-    # asyncio.set_event_loop(loop)
-
-    
-    # config = {"recursion_limit":25,"configurable": {"thread_id": user_id}}
-
-    # initial_graph_state = asyncio.run(super_graph_compiled_async.aget_state(config=config)).values
-    # messages = initial_graph_state.get('messages',[])
-
-
-    text = run_conversation(user_question=user_prompt)
+    # user_id = 'fixed_user'
+    chat_bot = GraphAgent(memory_thread_id=user_id, kb_base_dict=kb_base_dict)
+    print(f"{chat_bot.user_id=}")
+    text = chat_bot.run_conversation(user_question=user_prompt)
+    # chat_bot.graph.update_state()
     messages = chat_bot.get_all_history_messages()
+
     last_message = messages[-1]
     if isinstance(last_message,ToolMessage):
         if last_message.name == 'CODE_EXECUTION':
@@ -380,9 +371,10 @@ def agent_entry():
                 code_text = kwargs.get("code_text","")
                 if code_text:
                     text = code_text + '\n' + text
+
  
     return jsonify({'text': text}), 200
-    # return jsonify({"code":code,'text': text}), status
+
 
 @app.route('/chat', methods=['POST'])
 def generate_chat(model=env_models_instance.llm_model_name):
