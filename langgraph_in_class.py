@@ -19,10 +19,12 @@ from langgraph.checkpoint.aiosqlite import AsyncSqliteSaver
 from langchain_core.runnables import Runnable, RunnableConfig
 from jqcode.jq_agent.c0_init_env_models import env_models_instance,get_custom_handler,clean_up_list_when_encounter_null_element
 from jqcode.jq_agent.tools.jq_functions_and_tools import get_flight_number,python_repl_tool
+from langchain_experimental.tools import PythonREPLTool
 from jqcode.jq_agent.tools.jq_retriever import retriever
 from jqcode.jq_agent.tools.jq_web_search_engine import get_web_search_documents,is_query_chinese,get_tavily_search_result_documents
 import os
 import re
+import json_repair
 import shortuuid
 from collections import deque
 
@@ -33,6 +35,11 @@ from jqcode.jq_utils.logger import jqkj_logger
 logger = jqkj_logger(__file__).get_logger()
 from dotenv import load_dotenv
 _ = load_dotenv()
+
+
+python_repl = PythonREPLTool().run #这是原生的
+# python_repl = python_repl_tool #这是我自己定义的，强制加入了print,已获取输出值
+# python_repl = eval
 
 DEBUG = False
 handlers = get_custom_handler() if DEBUG else []
@@ -237,8 +244,8 @@ system_code_prompt=f"""请尽量使用简体中文来解答用户问题。
                 'plotly',
         Be sure to generate charts with plotly/matplotlib/seaborn, plotly is preferred. But if you need geographical charts, use geopandas with the geopandas.datasets module.
         If the user has just uploaded a file, focus on the file that was most recently uploaded (and optionally all previously uploaded files)
-    
-        If the code modifies or produces a file/image, please add a print statement at the end of the code block that prints a link to it as HTML string: <a href='/download?file=INSERT_FILENAME_HERE'>Download file</a>. Replace INSERT_FILENAME_HERE with the actual filename.
+
+        If the code modifies or produces a file/image, you must save the file/image to location '{env_models_instance.workspace}', and add a print statement at the end of the code block that prints a link to it as HTML string: <a href='/download?file=INSERT_FILENAME_HERE'>下载文件</a>. Replace INSERT_FILENAME_HERE with the actual filename.
     EndOf_GENERATE_PYTHON_INSTRUCTIONS
     """
 
@@ -315,6 +322,37 @@ class CODE_EXECUTION(BaseModel):
     """
     query: str = Field(description="The query to use when asking for running/executing a code snippet.")
 
+def submit_code_to_ipykernel_api(code:str):
+    # KERNEL_API_BASE = os.getenv("KERNEL_API_BASE",'http://localhost')
+    # API_PORT = os.getenv("API_PORT",5011)
+    # kernel_api_url = f"{KERNEL_API_BASE}:{API_PORT}/api"
+    kernel_api_url = env_models_instance.kernel_api_url
+    # 故意制造错误，好测试本地执行的情况
+    # kernel_api_url = env_models_instance.kernel_api_url + "error"
+    requestjson = {'command':code}
+    # /data/projects/JqChat/jqchat/kernel_program/main.py中的handle_request方法
+    try:
+        resp = requests.post(kernel_api_url, json=requestjson)
+        result_dict = json_repair.loads(resp.content) #注意resp.content的类型为byte
+        result = result_dict.get("result",None)
+        if result=="success":
+            logger.info("代码提交执行成功！")
+            return True
+        else:
+            logger.error("代码提交执行失败！")
+            return False
+    except Exception as e:
+        logger.error(f"代码提交执行失败！错误信息为:{e}")
+        return False
+
+def display_code(code:str):
+    _code = f"""python    
+    ```
+    {code}
+    ```
+    """
+    return _code
+
 def code_execution(state:GraphAgentState):
     question =  state["question"]
     question_related_messages = state["question_related_messages"]
@@ -324,65 +362,88 @@ def code_execution(state:GraphAgentState):
     tool_call_id = "xxx"
     tool_name = "CODE_EXECUTION"
     
+    # 获取代码code和文本code_text
     code = ''
     code_text =''
+    message_content = '' #返回给大模型的消息内容
     if question_id == chat_bot.question_id:
         if last_message.name == "code_generation" and len(last_message.content)>0:
             code = last_message.content
             code_text = last_message.additional_kwargs.get('code_text','')
-            # logger.debug("已存在code_generation生成的代码，忽略提取代码,开始执行代码......")
-            # # return {'messages':last_message,'question_related_messages':last_message}
+            logger.info("code_execution已获取到由code_generation生成的代码。")
+
         else:
             if isinstance(last_message,AIMessage):
                 try:
-                    code = last_message.tool_calls[0]['args']['query']                
+                    code = last_message.tool_calls[0]['args']['query'].strip()
+                    if code:
+                        logger.info("code_execution已获取到由LLM ToolCalls生成的代码。")                        
+                    
+                    message_content = last_message.content.strip()
+                    if message_content:
+                        code_text = message_content + "\n" + display_code(code)
+                    else:
+                        code_text = display_code(code)
+
                 except Exception as e:
                     code = ''
+                    code_text = ''
                     logger.warning(f"code_execution尝试从AIMessage的tool_calls中提取代码时出现错误:{e}")
+                
                 if not code:
                     m_text = last_message.content
                     if m_text:
                         try:
-                            code = extract_code(m_text)                            
+                            code = extract_code(m_text)
+                            if code:
+                                logger.info("code_execution已获取到由LLM消息内容包含的代码。")
+                                code_text = m_text                               
                         except Exception as e:
                             code = ''
+                            code_text = ''
                             logger.warning(f"code_execution尝试从用户消息内容中直接提取代码时出现错误:{e}")
     try:
         if code:
-            logger.debug("......开始执行代码......")
-            try:            
-                requestjson = {'command':code}
-                resp = requests.post(f'http://localhost:5011/api', json=requestjson)
-                result = resp.content
-                print(f"Kernel API执行代码得到的结果：{result}")
-            except Exception as e:
-                logger.error(f"提交代码到Kernel API执行出现错误:{e}")
-                logger.info(f"尝试使用python_repl_tool来执行...")       
-                result = python_repl_tool(code)
-                print(f"python_repl_tool执行代码得到的结果：{result}")
+            logger.debug("......开始提交和执行代码......") 
+            # 提交代码到ipykernel_api执行   
+            result = submit_code_to_ipykernel_api(code) #返回True或False
+            if result:
+                message_content = "ipykernel_api代码运行成功。"
+            # 提交代码到ipykernel_api执行，尝试本地来执行
+            if not result:
+                logger.info(f"......ipykernel_api代码运行失败......")
+                logger.info(f"......尝试使用python_repl来执行......")
+                # python_repl在本页代码开头处赋值的 
+                result = python_repl(code)
+
+                                
                 if "error" in result.lower():
                     code = merge_code_with_usual_imports(code)
-                    result = python_repl_tool(code)
+                    # python_repl在本页代码开头处赋值的  
+                    result = python_repl(code)                                      
                     if "error" in result.lower():
                         raise Exception(result)
-            if result:
-                result = str(result) + "代码执行成功。除非是上下文中有非常明确和具体的内容，否则答案中不要出现任何关于图形图像生成显示，或者文件保存和下载方面的内容。因为这些条件都已经满足"
-            code_message = ToolMessage(content=result,name =tool_name,tool_call_id =tool_call_id,additional_kwargs ={"status":True,"code":code,"code_text":code_text})
-            code_message = chat_bot.makeup_message_with_question_id_idx(code_message)
+                else:
+                    _result = result if result else "None"
+                    message_content = f"python_repl代码运行成功（但如有图像，由于环境限制无法直接展示,可在本地环境中运行上述代码）。运行结果为Observation:{_result}"
+            
+            code_message = ToolMessage(content=message_content,name =tool_name,tool_call_id =tool_call_id,additional_kwargs ={"status":True,"code":code,"code_text":code_text})
+            code_message = chat_bot.makeup_message_with_question_id_idx(code_message)            
             return {'messages':code_message,'question_related_messages':code_message}
 
         else:
             raise Exception("code_execution无法获取可执行的代码！")        
 
     except Exception as e:
-
+        logger.info(f"code_execution执行异常，加入执行错误信息，返回到大模型,错误消息为:{e}")
         error_prompt = f'执行工具调用出现错误:\n  工具名称：tool_name\n  调用参数：{code}\n  错误信息：{str(e)}\n'
-        makeup_tool_message = ToolMessage(tool_call_id=tool_call_id, name=tool_name,  content=error_prompt)
+        makeup_tool_message = ToolMessage(tool_call_id=tool_call_id, name=tool_name, content=error_prompt)
         makeup_tool_message = chat_bot.makeup_message_with_question_id_idx(makeup_tool_message)
         makeup_human_message = HumanMessage(content=f"对于用户问题:{question},上次的工具调用出现了错误，请仔细规划和思考，重新生成正确的工具名称和调用参数，避免出现同样的错误！")
         makeup_human_message = chat_bot.makeup_message_with_question_id_idx(makeup_human_message)
-        results = [makeup_tool_message,makeup_human_message]
-        logger.info(f"工具调用执行异常，加入执行错误信息，返回到大模型,错误消息为:{e}")
+        # 下面的error_message仅仅是为了方便做code_execution的下一个节点导航使用
+        error_message = ToolMessage(content="",name =tool_name,tool_call_id =tool_call_id,additional_kwargs ={"status":False})
+        results = [makeup_tool_message,makeup_human_message,error_message]       
         return {'messages': results,'question_related_messages':results}       
     
 
@@ -808,6 +869,8 @@ class GraphAgent:
         graph.add_node("code_generation", code_generation )
         graph.add_node("code_execution", code_execution )
         # graph.add_node("", )
+
+        graph.set_entry_point("llm")
         graph.add_conditional_edges(
             "llm",
             self.exists_action,
@@ -817,7 +880,14 @@ class GraphAgent:
         graph.add_edge("web_search", "generate")
         graph.add_edge("vectorstore","grade_documents" )
         graph.add_edge("code_generation","code_execution")
-        graph.add_edge("code_execution", "llm")
+        
+        graph.add_conditional_edges(
+            "code_execution",
+            self.code_execution_passed,
+            {"end": END, "llm":"llm"}
+        )
+
+        # graph.add_edge("code_execution", "llm")
         graph.add_conditional_edges(
             "grade_documents",
             decide_to_generate,
@@ -836,7 +906,7 @@ class GraphAgent:
                 "useful": END,
             },
         )
-        graph.set_entry_point("llm")
+        
         return graph.compile(checkpointer=self.memory)
     
     def take_action(self, state:GraphAgentState):
@@ -901,19 +971,25 @@ class GraphAgent:
             tool_call_1_name = tool_call_1['name']
 
             if tool_call_1_name in self.routing_tool_names:
-                # logger.info(f"Returned first ToolName is '{tool_call_1_name}', So routing to sub_graph 'Rag: {tool_call_1_name}' Node......")
-                # os.environ["rag_graph_next"] = tool_call_1_name
-                logger.info(f"Returned first ToolName is '{tool_call_1_name}', So routing to sub_graph '{tool_call_1_name}' Node......")
-                # os.environ["rag_graph_next"] = tool_call_1_name
+                logger.info(f"Returned first ToolName is '{tool_call_1_name}', So routing to '{tool_call_1_name}' Node......")
                 os.environ['rag_args'] = tool_call_1["args"]['query']
                 return tool_call_1_name
-                # return "Rag"
+
         else:
             logger.info(f'No returned tool_calling and {finish_reason=}')
             logger.info(f'{type(result)}: {result.content}')
             
         return returned_tool_calling_nums
     
+    def code_execution_passed(self,state:GraphAgentState):
+        status = False
+        last_message = state['question_related_messages'][-1]
+        if isinstance(last_message,ToolMessage):
+            if last_message.name.lower() == 'code_execution':
+                status = last_message.additional_kwargs.get("status",False)
+        return "end" if status else "llm"
+
+
     def call_llm(self,state: GraphAgentState):
         # 当前message
         input_message = state.get('messages')[-1]
@@ -983,7 +1059,7 @@ def run_conversation(user_question:str,jqchat_agent:GraphAgent=chat_bot):
     os.environ["REFERENCE"]= ''
     if referens_str:
         answer = f'\n{referens_str}\n' + answer
-    print(f"AI：\n{answer}")
+    print(f"==AI：{answer}")
     return answer
     print('================='*5)
 

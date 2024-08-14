@@ -362,90 +362,26 @@ def agent_entry():
     # loop = asyncio.new_event_loop()
     # asyncio.set_event_loop(loop)
 
-    code, text, status = None, None, 200
+    
     # config = {"recursion_limit":25,"configurable": {"thread_id": user_id}}
 
     # initial_graph_state = asyncio.run(super_graph_compiled_async.aget_state(config=config)).values
     # messages = initial_graph_state.get('messages',[])
 
-    
 
     text = run_conversation(user_question=user_prompt)
     messages = chat_bot.get_all_history_messages()
-    for m in messages[::-1]:
-        if isinstance(m,ToolMessage):
-            if m.name == 'CODE_EXECUTION':
-                kwargs = m.additional_kwargs
-                question_id = kwargs.get("question_id")
-                if question_id == chat_bot.question_id:
-                    code = kwargs.get("code","")
-                    text = kwargs.get("code_text","")
-
-    # pass
-    # n_last_messages_num = 3
-    # if len(messages)>n_last_messages_num:
-    #     n_last_messages = messages[-n_last_messages_num:]
-    # else:
-    #     n_last_messages = messages
-
-    # print(f"进入改写环节前的user_prompt={user_prompt}")
-    # original_question = user_prompt
-    # if n_last_messages:
-    #     history_messages_contents = [m.content for m in n_last_messages]
-    #     history_messages_context = '||'.join(history_messages_contents)
-    #     rewrited_question = ''
-    #     try:
-    #         result = question_rewrite_chain.invoke({"question": f"用户原始问题为：“{user_prompt}”","context":history_messages_context},config=invoke_llm_config)
-    #         print(f'question_rewrite_chain {result=}')
-    #         rewrited_question = result.q
-
-    #     except Exception as e:
-    #         print(f"question_rewrite_chain执行出现错误:{e},但忽略")
-    #         # prompt = "请结合下面的context部分考虑重写原始问题，使得原始问题更加明确，仅仅需要返回问题本身，不要有任何额外的解释或内容：（1）如果原始问题中不明确的实体指代,如该公司，他，这个地方等，请重写原始问题，用明确的实体替换不明确的指代，但不要有任何的拓展；（2）否则，请直接返回原始问题本身。"
-    #         # rewrited_question = llm_chain.invoke({"question": f"用户原始问题为：“{user_prompt}”\n{prompt}","context":history_messages_context},config=invoke_llm_config)
-    #     print(f"改写后得到的rewrited_question={rewrited_question}")
-    #     if rewrited_question:
-    #         user_prompt = rewrited_question   
-
-    #     print(f"original_question={original_question}")
-    #     print(f'history_messages_context={history_messages_context}')
-    #     print(f"rewrited_question={user_prompt}")
-
-    # rewrited_feedback = ""
-    # if user_prompt != original_question:
-    #     rewrited_feedback = f'【提示：对您的原始问题进行了改写：{original_question}  ==》 {user_prompt}】\n\n'
-
-    # is_coding_related = user_question_is_related_to_coding_or_data_analyzing(question=user_prompt)
-    
-    # HAS_DATA_FILE_UPLOADED = os.environ.get("HAS_DATA_FILE_UPLOADED", False)
-    # if HAS_DATA_FILE_UPLOADED or is_coding_related:
-    #     code, text, status = loop.run_until_complete(get_code(user_prompt, user_openai_key, model))
-    
-    # # else:
-    # #     text, with_exception = arun_super_graph(question=user_prompt,config=config,super_graph_compiled_async=super_graph_compiled_async)
-    # #     if with_exception:
-    # #         if is_coding_related:
-    # #             print('前面程序运行或判断出现了问题，下面试图使用Python代码方式来解决......')
-    # #             code, text, status = loop.run_until_complete(get_code(user_prompt, user_openai_key, model))
-
-    # else:
-    #     text = run_conversation(user_question=user_prompt)
-
-
-    # print('~~'*30)
-    # if code:
-    #     print('生成的Python代码为:')
-    #     print(code)
-    # loop.close()
-    # print('~~'*30)
-    # print('=='*30)
-    # # Append all messages to the message buffer for later use
-    # message_buffer.append(user_prompt + "\n\n")
-
-    # if rewrited_feedback:
-    #     text = rewrited_feedback + text
-
-    return jsonify({'text': text}), status
+    last_message = messages[-1]
+    if isinstance(last_message,ToolMessage):
+        if last_message.name == 'CODE_EXECUTION':
+            kwargs = last_message.additional_kwargs
+            question_id = kwargs.get("question_id")
+            if question_id == chat_bot.question_id:
+                code_text = kwargs.get("code_text","")
+                if code_text:
+                    text = code_text + '\n' + text
+ 
+    return jsonify({'text': text}), 200
     # return jsonify({"code":code,'text': text}), status
 
 @app.route('/chat', methods=['POST'])

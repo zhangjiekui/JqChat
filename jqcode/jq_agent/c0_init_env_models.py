@@ -2,6 +2,7 @@
 import os
 import re
 import threading
+import pathlib
 from pathlib import Path
 from functools import lru_cache
 from typing import Annotated, List, TypedDict, Optional, Sequence,Literal, Any,Union
@@ -253,6 +254,12 @@ class InitEnvModels:
         self.ELASTIC_PASSWORD = os.getenv("ELASTIC_PASSWORD")
         self.CERT_FINGERPRINT = os.getenv("CERT_FINGERPRINT")
         self.ES_URL = os.getenv("ES_URL","https://localhost:9200")
+
+        KERNEL_API_BASE = os.getenv("KERNEL_API_BASE",'http://localhost')
+        API_PORT = os.getenv("API_PORT",5011)
+        self.kernel_api_url = f"{KERNEL_API_BASE}:{API_PORT}/api"
+        root_dir = pathlib.Path().resolve()
+        self.workspace = str(root_dir/'workspace/')
 
         # loade models:
         self.openai = None
