@@ -1,5 +1,5 @@
 # source: https://learn.deeplearning.ai/courses/ai-agents-in-langgraph/lesson/3/langgraph-components
-print('参考：https://learn.deeplearning.ai/courses/ai-agents-in-langgraph/lesson/3/langgraph-components')
+# print('参考：https://learn.deeplearning.ai/courses/ai-agents-in-langgraph/lesson/3/langgraph-components')
 from langgraph.graph import StateGraph, END
 from typing import TypedDict, Annotated, Literal, Optional, Union, List
 from langchain_core.pydantic_v1 import BaseModel, Field
@@ -27,15 +27,13 @@ import re
 import json_repair
 import shortuuid
 from collections import deque
-
 from flask import request, jsonify,Response
 import requests
-
 from jqcode.jq_utils.logger import jqkj_logger
-logger = jqkj_logger(__file__).get_logger()
 from dotenv import load_dotenv
-_ = load_dotenv()
 
+_ = load_dotenv()
+logger = jqkj_logger(__file__).get_logger()
 
 python_repl = PythonREPLTool().run #这是原生的
 # python_repl = python_repl_tool #这是我自己定义的，强制加入了print,已获取输出值
@@ -86,11 +84,12 @@ message_buffer = LimitedLengthString()
 # region: Router Data model Class Definitions
 ### Begin: Router Data model Class Definitions
 
-class QuestionReWrite(BaseModel):
-    """结合上下文context部分考虑重写原始问题，使得原始问题更加明确，仅仅需要返回问题内容本身，不能有任何额外的解释或内容：（1）如果原始问题中不明确的实体指代,如该公司，他，这个地方等，请重写原始问题，用明确的实体替换不明确的指代，但不能有任何的解释或拓展；（2）否则，请直接返回原始问题本身。"""
-    q: str = Field(description='返回格式必须为{"q":$question}:直接使用问题内容替换$question代表，不能有任何额外的解释')
-
-question_rewrite_system_prompt = "结合上下文context部分考虑重写原始问题，使得原始问题更加明确，仅仅需要返回问题内容本身，不能有任何额外的解释或内容：（1）如果原始问题中不明确的实体指代,如该公司，他，这个地方等，请重写原始问题，用明确的实体替换不明确的指代，但不能有任何的解释或拓展；（2）否则，请直接返回原始问题本身。"
+question_rewrite_system_prompt = """结合上下文context部分考虑重写原始问题，使得原始问题更加明确全面。
+    如果原始问题中有不明确的实体指代,如该公司，他，这个地方等，请尽量用明确的实体内容来替换掉不明确的实体指代。
+    如果不需要改写，请直接返回原始问题本身。
+    仅仅需要返回问题内容本身，绝不能有任何额外的解释或内容。
+    返回格式必须为Json:{"q":$question}，请使用改写后的问题内容替换$question
+    """
 question_rewrite_prompt = lambda x: ChatPromptTemplate.from_messages(
     [
         SystemMessage(question_rewrite_system_prompt),
@@ -99,8 +98,13 @@ question_rewrite_prompt = lambda x: ChatPromptTemplate.from_messages(
         )
     ]
 )
-question_rewrite_llm = llm_model.with_structured_output(QuestionReWrite,method='json_mode')
-question_rewrite_chain = question_rewrite_prompt | question_rewrite_llm
+# class QuestionReWrite(BaseModel):
+#     """结合上下文context部分考虑重写原始问题，使得原始问题更加明确，仅仅需要返回问题内容本身，不能有任何额外的解释或内容：（1）如果原始问题中不明确的实体指代,如该公司，他，这个地方等，请重写原始问题，用明确的实体替换不明确的指代，但不能有任何的解释或拓展；（2）否则，请直接返回原始问题本身。"""
+#     q: str = Field(description='返回格式必须为{"q":$question}:直接使用问题内容替换$question')
+
+# question_rewrite_llm = llm_model.with_structured_output(QuestionReWrite,method='json_mode')
+# question_rewrite_chain = question_rewrite_prompt | question_rewrite_llm
+question_rewrite_chain = question_rewrite_prompt | llm_model
 
 class WEB_SEARCH(BaseModel):
     """
@@ -660,6 +664,8 @@ class GraphAgent:
 
         self.user_id = memory_thread_id
         self.question_id:str= self.get_random_id()
+        self.question = ""
+        self.question_rewrited = ""
         self.config =  {"recursion_limit":recursion_limit,"configurable": {"thread_id":memory_thread_id }}
         self.memory = SqliteSaver.from_conn_string("memory_checkpoints.sqlite")
         # self.memory = AsyncSqliteSaver.from_conn_string("memory_checkpoints.async_sqlite")
@@ -725,8 +731,24 @@ class GraphAgent:
         self.all_history_messages = self._get_messages_from_state_by_key("messages") 
         return self.all_history_messages
     
-    def get_question_related_messages_from_state(self):
-        self.question_related_messages = self._get_messages_from_state_by_key("question_related_messages") 
+    def get_question_related_messages_from_state(self,question="",reserve_last_n_unique_messages=6):
+        self.question_related_messages = self._get_messages_from_state_by_key("question_related_messages")
+
+        if not self.question_related_messages:
+            messages = self.get_all_history_messages() ## 或者  messages = state['messages']
+            if messages:
+                if len(messages) == 1:
+                    self.question_related_messages = messages
+                else:
+                    question = question or self.question
+                    if not question:
+                        logger.warning('请传入非空的user question，或者先给self.question赋值')
+                    else:
+                        question_related_messages = env_models_instance.filter_and_get_messages_relevant_to_query(query=question,messages_list=messages,reserve_last_n_unique_messages = reserve_last_n_unique_messages)
+                        self.question_related_messages = question_related_messages
+
+            
+
         return self.question_related_messages
 
     def _get_messages_from_state_by_key(self,key:str):
@@ -838,7 +860,7 @@ class GraphAgent:
             finish_reason = result.response_metadata["finish_reason"]
         except:
             returned_tool_calling_nums = 0
-        os.environ["rag_graph_next"] = ''
+
 
         if returned_tool_calling_nums > 0:
             logger.debug(f'Returned {returned_tool_calling_nums} tool_calls')
@@ -854,7 +876,7 @@ class GraphAgent:
 
         else:
             logger.info(f'No returned tool_calling and {finish_reason=}')
-            logger.info(f'{type(result)}: {result.content}')
+            logger.info(f'{result.type.upper()}: {result.content}')
             
         return returned_tool_calling_nums
     
@@ -869,25 +891,16 @@ class GraphAgent:
     def call_llm(self,state: GraphAgentState):
         # 当前message
         input_message = state.get('messages')[-1]
-
-        question_related_messages = self.get_question_related_messages_from_state()
-        
-        if not question_related_messages:
-            # 获取历史相关message
-            # question_related_messages = self.makeup_message_with_question_id_idx(HumanMessage,content="makeup a question_related_messages")
-            
-            question = state['question']
-            messages = self.get_all_history_messages() ## 或者  messages = state['messages']    
-            # 注意设置reserve_last_n_messages = 1，也就是除最后1条消息外，全部的messages均视为历史messages
-            question_related_messages = env_models_instance.filter_and_get_messages_relevant_to_query(query=question,messages_list=messages,reserve_last_n_messages = 1)
-
+        # 获取历史相关message
+        question_related_messages = self.get_question_related_messages_from_state(user_question)
+        assert self.question_related_messages == question_related_messages,"self.get_question_related_messages_from_state方法里应同步更新了self.question_related_messages"        
         # 历史 + 当前
         if input_message not in question_related_messages:
             question_related_messages.append(input_message)
-
         if self.system_message:
             messages = self.system_message + question_related_messages
-            print(f"{len(messages)=}")
+            
+        logger.info(f"call_llm:调用LLM时的消息数为:{len(messages)}")
         try:    
             message = self.model.invoke(messages,config=self.config)
             try: 
@@ -898,15 +911,16 @@ class GraphAgent:
                     max_tokens = self.model.bound.max_tokens
                     logger.warning(f'LLM({model_name})返回: finish_reason ==  "length" [{reason}]，当前设置的max_tokens={max_tokens}，请检查调整该设置')
                     print(f'LLM({model_name})返回: finish_reason ==  "length" [{reason}]，当前设置的max_tokens={max_tokens}，请检查调整该设置值!')
-            except:
-                pass
+            except Exception as e:
+                logger.error("无法获取到finish_reason，错误消息为：{e}")
+                message.pretty_print()
 
             message = self.makeup_message_with_question_id_idx(message)
-
             question_related_messages.append(message)
             return {'messages': message,'question_related_messages':question_related_messages}
         except Exception as e:
-            logger.error(f'！！！大语言模型执行失败，请检查大语言模型接口服务状态！！！,错误消息为:{e}')
+            logger.error(f'！！！大语言模型执行失败，！！！错误消息为:{e}')
+            logger.error('请检查大语言模型接口服务状态,并查看传入的消息列表，如下：')            
             for m in messages:
                 m.pretty_print()
     
@@ -1019,7 +1033,7 @@ class GraphAgent:
                             raise Exception(result)
                     else:
                         _result = result if result else "None"
-                        message_content = f"python_repl代码运行成功（但如有图像，由于环境限制无法直接展示,可在本地环境中运行上述代码）。运行结果为Observation:{_result}"
+                        message_content = f"python_repl代码运行成功,运行结果为Observation:{_result} （但如有图像，由于环境限制无法直接展示,可在本地环境中运行上述代码）"
                 
                 code_message = ToolMessage(content=message_content,name =tool_name,tool_call_id =tool_call_id,additional_kwargs ={"status":True,"code":code,"code_text":code_text})
                 code_message = self.makeup_message_with_question_id_idx(code_message)            
@@ -1040,23 +1054,58 @@ class GraphAgent:
             results = [makeup_tool_message,makeup_human_message,error_message]       
             return {'messages': results,'question_related_messages':results}       
         
-    def run_conversation(self,user_question:str):
+    def run_conversation(self,user_question:str,allow_question_rewrite=True):
+        print('================='*5)
+        print('================='*5)
+        print(f"开始会话:{user_question}")
         print('================='*5)
         # logger.info(f"老的{self.question_id=}")
-        print(f"切记新的问题对话前，要先更新question_id！老的[{self.question_id=}]")
+        logger.debug(f"切记新的问题对话前，要先更新user_question 和 question_id！老的[{self.question_id=}]")
         self.question_id = self.get_random_id()
-        print(f"USER[{self.user_id}]的问题{user_question} (新的question_id: [{self.question_id})]")
-        input_message = self.makeup_message_with_question_id_idx(HumanMessage,content=user_question)       
-        result = self.graph.invoke({"messages": [input_message],"question":user_question,"question_related_messages":[]},config=self.config)
+        self.question = user_question #因为涉及获取question相关的历史消息，以及根据question相关的历史消息改写question（rewrite），放到self.question供调用
+        self.question_related_messages = self.get_question_related_messages_from_state(user_question,reserve_last_n_unique_messages=6)
+        
+        logger.warning("此处要默认可以改写问题，但实际需要获取用户是否运行改写的设置")
+                
+        self.question_rewrited = user_question #后面会使用self.question_rewrited提交给大模型，就要确保self.question_rewrited有值
+        if allow_question_rewrite:
+            if self.question_related_messages:
+                question_rewrited = ''            
+                rewrite_message_returned = None
+                # 尝试获取question_rewrited 
+                try:
+                    context = "\n".join([m.content for m in self.question_related_messages if m.content])
+                    rewrite_message_returned = question_rewrite_chain.invoke({'context':context,'question':user_question})
+                    json_content = json_repair.loads(rewrite_message_returned.content)
+                    if json_content:
+                        question_rewrited = json_content.get("q","")                
+                except Exception as e:
+                    logger.warning(f"尝试进行问题改写失败，错误消息为:{e}")
+                    if rewrite_message_returned:
+                        logger.info("======下面是大模型返回的消息内容======")
+                        rewrite_message_returned.pretty_print()
+                    else:
+                        logger.info("======大模型未能返回消息======")
+                # 处理question_rewrited 
+                if question_rewrited:
+                    if question_rewrited != self.question_rewrited:
+                        logger.warning(f"进行了问题改写:{self.question_rewrited} => {question_rewrited}")
+                        self.question_rewrited = question_rewrited ##仅在问题内容变化后，才赋值给self.question_rewrited，改写前已设置self.question_rewrited = user_question
 
-        print('====问题和答案====') 
-        print(f"USER[{self.user_id}]的问题:[{self.question_id}]:\n        {user_question}")
+        logger.debug(f"USER[id:{self.user_id}]的问题['{self.question_rewrited}'] (新的question_id: [{self.question_id})]")
+        input_message = self.makeup_message_with_question_id_idx(HumanMessage,content=self.question_rewrited)       
+        result = self.graph.invoke({"messages": [input_message],"question":self.question_rewrited,"question_related_messages":[]},config=self.config)
+        
+        logger.debug(f"==USER[id:{self.user_id}]的问题[id:{self.question_id}]，允许问题改写:{allow_question_rewrite}")
+        print(f'====问题和答案====')        
+        print(f"原始问题>>:{user_question}")
+        print(f"改写问题>>:{self.question_rewrited} [{allow_question_rewrite=}]")
         answer = result['messages'][-1].content
         referens_str = os.getenv("REFERENCE", '')
         os.environ["REFERENCE"]= ''
         if referens_str:
             answer = f'\n{referens_str}\n' + answer
-        print(f"==AI：\n        {answer}")
+        print(f"==AI回答:>>:{answer}")
         print('================='*5)
         return answer
     # endregion: Graph定义            

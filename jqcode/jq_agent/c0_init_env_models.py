@@ -547,64 +547,64 @@ class InitEnvModels:
         return chunks_relevant
 
     # https://github.com/langchain-ai/langgraph/blob/main/examples/managing-conversation-history.ipynb
-    def filter_and_get_messages_relevant_to_query(self,query:str,messages_list:List[BaseMessage],text_splitter=None,embed_model=None,reranker=None,
-                                                    if_reranking:bool=True,retriever_docs_num=10,final_docs_num=6 ,score_threshold=0.5,reserve_last_n_messages = 6, only_use_reranker=True):
-        if len(messages_list) > reserve_last_n_messages:
-            unique_messages_list = []
-            messages_content_set = set()
-            messages_list.reverse()
-            for message in messages_list[reserve_last_n_messages:]:
-                if isinstance(message,(HumanMessage,AIMessage)):                     # 只保留HumanMessage,AIMessage
-                    if message.content:                                              # 确保message.content不为空
-                        if message.content not in  messages_content_set:
-                            unique_messages_list.append(message)
-                            messages_content_set.add(message.content)
+    def filter_and_get_messages_relevant_to_query(self,query:str,messages_list:List[BaseMessage],reserve_last_n_unique_messages = 6,reserve_message_types:tuple=(HumanMessage,AIMessage),text_splitter=None,embed_model=None,reranker=None,
+                                                    if_reranking:bool=True,retriever_docs_num=10,final_docs_num=6 ,score_threshold=0.5, only_use_reranker=True):
+        if not messages_list:
+            return []
+        
+        unique_messages_list = []
+        messages_content_set = set()
+        messages_list.reverse()
+        for message in messages_list:
+            if isinstance(message,reserve_message_types):                     # 只保留HumanMessage,AIMessage
+                if message.content:                                              # 确保message.content不为空
+                    if message.content not in  messages_content_set:
+                        unique_messages_list.append(message)
+                        messages_content_set.add(message.content)        
+        unique_messages_list.reverse() 
+        messages_list.reverse() # 前面messages_list顺序翻转了，所以这里还要翻转回来
+        
+        if len(unique_messages_list) > reserve_last_n_unique_messages:
+
+            embed_model  = embed_model if embed_model else self.embed_model
+            reranker  = reranker if reranker else self.reranker
+            text_splitter  = text_splitter if text_splitter else self.text_splitter 
+
+            docs_from_messages = [Document(page_content=message.content,metadata={"message_index":message_index}) for message_index, message in enumerate(unique_messages_list)]
+            chunks_relevant = self.split_and_get_chunks_relevant_from_documents(query, docs_from_messages,text_splitter=text_splitter,reranker=reranker,
+                                                                        if_reranking=if_reranking,retriever_docs_num=retriever_docs_num, final_docs_num=final_docs_num,score_threshold=score_threshold,only_use_reranker=only_use_reranker)
+
+            if not chunks_relevant:
+                if reserve_last_n_unique_messages>0:
+                    last_n_unique_messages = unique_messages_list[-reserve_last_n_unique_messages:]
+                    return last_n_unique_messages
+
+            sorted_chunks_relevant = sorted(chunks_relevant, key=lambda x: (x.metadata['message_index'], x.metadata['start_index']))
             
-            unique_messages_list.reverse() 
-            messages_list.reverse() # 前面messages_list顺序翻转了，所以这里还要翻转回来
-
-            if len(unique_messages_list) > 0:  #final_docs_num
-                embed_model  = embed_model if embed_model else self.embed_model
-                reranker  = reranker if reranker else self.reranker 
-                docs_from_messages = [Document(page_content=message.content,metadata={"message_index":message_index}) for message_index, message in enumerate(unique_messages_list)]
-                if not text_splitter:
-                    text_splitter = self.text_splitter
-
-
-                chunks_relevant = self.split_and_get_chunks_relevant_from_documents(query, docs_from_messages,text_splitter=text_splitter,reranker=reranker,
-                                                                            if_reranking=if_reranking,retriever_docs_num=retriever_docs_num, final_docs_num=final_docs_num,score_threshold=score_threshold,only_use_reranker=only_use_reranker)
-
-                sorted_chunks_relevant = sorted(chunks_relevant, key=lambda x: (x.metadata['message_index'], x.metadata['start_index']))
-                messages_relevant = []
-
+            messages_relevant = []            
+            for chunk_relevant in sorted_chunks_relevant:
+                index = chunk_relevant.metadata['message_index']
+                # unique_messages_list[index].content = chunk_relevant.page_content #不能改变内容（即不能使用分块后的内容，否则可能无法获取完整的答案）
+                message_relevant = unique_messages_list[index]
+                if message_relevant not in messages_relevant:                               
+                    messages_relevant.append(message_relevant)
+                    # logger.info("--------------------------------") 
+                    # relevance_score = chunk_relevant.metadata.get('relevance_score',None)
+                    # message_relevant.pretty_print()
+                    # logger.info(f"^^^^^^^^^上条Message的{relevance_score=}^^^^^^^^^")                
                 
-                for chunk_relevant in sorted_chunks_relevant:
-                    index = chunk_relevant.metadata['message_index']
-                    # unique_messages_list[index].content = chunk_relevant.page_content #不能改变内容（即不能使用分块后的内容，否则可能无法获取完整的答案）
-                    message_relevant = unique_messages_list[index]
-                    if message_relevant not in messages_relevant:
-                        relevance_score = chunk_relevant.metadata.get('relevance_score',None)
-                        # print("--------------------------------")            
-                        messages_relevant.append(message_relevant)
-                        # message_relevant.pretty_print()
-                        # print(f"^^^^^^^^^上条Message的{relevance_score=}^^^^^^^^^")
-                   
-                
-                
-                print(f"++++++++++++++++++++++++++++++++++++++++++++【合并过滤后保留的{len(messages_relevant)}条 + 最近的{reserve_last_n_messages}条】消息++++++++++++++++++++++++++++++++++++++++++++")
-                if reserve_last_n_messages>0:
-                    last_n_messages = messages_list[-reserve_last_n_messages:]
-                    for last_message in last_n_messages:
+                logger.info(f"++++++++++++++++【根据相关性过滤后保留的[{len(messages_relevant)}]条 + 最近的last_n_unique_messages[{reserve_last_n_unique_messages}]条】消息++++++++++++++++")
+                if reserve_last_n_unique_messages>0:
+                    last_n_unique_messages = unique_messages_list[-reserve_last_n_unique_messages:]
+                    for last_message in last_n_unique_messages:
                         last_message_content = last_message.content
-                        # 防止之前的消息内容与当前消息内容一致
+                        # 防止之前的消息内容与当前消息内容一致,且要保证先后顺序，留下的确实是最近的
                         messages_relevant = [m for m in messages_relevant if m.content!=last_message_content]
-                        messages_relevant.append(last_message)
-                        
-                print(f"++++++++++++++++++++++++++++++++++++++++++++【过滤后保留的+最近的messages合并后，保留了{len(messages_relevant)}条】消息++++++++++++++++++++++++++++++++++++++++++++")
+                        messages_relevant.append(last_message)                        
+                logger.info(f"++++++++++++++++【根据相关性过滤后保留的[{len(messages_relevant)}]条 + 最近的last_n_unique_messages[{reserve_last_n_unique_messages}]条合并后，保留了[{len(messages_relevant)}]条】消息++++++++++++++++")
                 
-                print(f"============================================【为保留后的HumanMassage查询增加对应的AIMessage】消息===========================")
-                final_messages_relevant = []
-                
+                logger.info(f"================【为保留后的HumanMassage查询增加对应的AIMessage消息】：当前消息数[{len(messages_relevant)}]条================")
+                final_messages_relevant = []                                
                 for message in messages_relevant:
                     if message not in final_messages_relevant:
                         final_messages_relevant.append(message)
@@ -626,13 +626,19 @@ class InitEnvModels:
                                             break
                                     except:
                                         continue
-                if  last_message not in final_messages_relevant:
-                    final_messages_relevant.append(last_message)
+                logger.info(f"================【为保留后的HumanMassage查询增加对应的AIMessage消息】，增加后消息数[{len(final_messages_relevant)}]条================")
+                
+                logger.info(f"****************【无论如何，增加保留最后1条消息】，当前消息数[{len(final_messages_relevant)}]条****************")
+                last_message_of_messages_list = messages_list[-1]
+                if last_message_of_messages_list not in final_messages_relevant:
+                    final_messages_relevant.append(last_message_of_messages_list)
+                else:
+                    logger.info(f"****************【最后1条消息已经存在】****************")
+                logger.info(f"****************【无论如何，增加保留最后1条消息】，增加后消息数[{len(final_messages_relevant)}]条****************")
                 return final_messages_relevant
-            else:
-                return unique_messages_list
+
         else:
-            return messages_list
+            return unique_messages_list
         
 env_models_instance = InitEnvModels()
 

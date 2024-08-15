@@ -183,7 +183,7 @@ def run_webui(
 def run_kernel_program(started_event: mp.Event = None, run_mode: str = None):
     try:
         asyncio.run(kernel_program_main())
-        #started_event.set()
+        started_event.set()
     except Exception as e:
         logging.exception("Error running the kernel_program:")
         sys.exit(1)
