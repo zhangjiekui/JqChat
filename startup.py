@@ -337,13 +337,13 @@ async def start_main_server():
     kernel_started = manager.Event()
     if(args.kernel):
        process = Process(
-           target=kernel_program_main,
+           target=run_kernel_program,
            name=f"Kernel Server",
-        #   kwargs=dict(
-        #       started_event=kernel_started,
-        #       run_mode=run_mode,
-        #   ),
-           daemon=False,)  
+           kwargs=dict(
+            started_event=kernel_started,
+            run_mode=run_mode,
+           ),
+           daemon=True,)  
        processes["kernel"] = process
     # if(args.kernel):
     #     kernel_program_process = Process(target=run_kernel_program)
@@ -358,7 +358,7 @@ async def start_main_server():
                 started_event=api_started,
                 run_mode=run_mode,
             ),
-            daemon=False,
+            daemon=True,
         )    
         processes["api"] = process
     
@@ -384,22 +384,24 @@ async def start_main_server():
         # dump_server_info(after_start=False,args=args)
         try:
             if p := processes.get("kernel"):
+                logger.info(f"启动KERNEL服务：{p.name}")
                 p.start()
                 p.name = f"{p.name} ({p.pid})"
                 #kernel_started.wait()  # 等待kernel启动完成
-                logger.info(f"启动KERNEL服务：{p.name}")
+                
 
             if p := processes.get("api"):
+                logger.info(f"启动API服务：{ p.name}")
                 p.start()
                 p.name = f"{p.name} ({p.pid})"
-                #api_started.wait()  # 等待api.py启动完成
-                logger.info(f"启动API服务：{ p.name}")
+                api_started.wait()  # 等待api.py启动完成
 
             if p := processes.get("webui"):
+                logger.info(f"启动WEB服务：{p.name}")
                 p.start()
                 p.name = f"{p.name} ({p.pid})"
                 webui_started.wait()  # 等待webui.py启动完成
-                logger.info(f"启动WEB服务：{p.name}")
+               
 
             dump_server_info(after_start=True, args=args)
             # 等待所有进程退出
@@ -433,9 +435,8 @@ def main():
     sys.path.append(cwd)
     multiprocessing.freeze_support()
     logger.info(f"应用启动路径:{cwd}")
-    # from jqcode.jq_knowledge_manegement.chatchat.server.knowledge_base.migrate import create_tables
-
-    # create_tables()
+    from jqcode.jq_knowledge_manegement.chatchat.server.knowledge_base.migrate import create_tables
+    create_tables()
     if sys.version_info < (3, 10):
         loop = asyncio.get_event_loop()
     else:
@@ -446,9 +447,6 @@ def main():
     
         asyncio.set_event_loop(loop)
     loop.run_until_complete(start_main_server())
-    #asyncio.run(start_main_server())
-    # asyncio.wait(run_kernel_program())
-    #kernel_program_process = Process(target=run_kernel_program)
 
 if __name__ == "__main__":
     main()

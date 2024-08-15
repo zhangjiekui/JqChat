@@ -892,7 +892,7 @@ class GraphAgent:
         # 当前message
         input_message = state.get('messages')[-1]
         # 获取历史相关message
-        question_related_messages = self.get_question_related_messages_from_state(user_question)
+        question_related_messages = self.get_question_related_messages_from_state()
         assert self.question_related_messages == question_related_messages,"self.get_question_related_messages_from_state方法里应同步更新了self.question_related_messages"        
         # 历史 + 当前
         if input_message not in question_related_messages:
