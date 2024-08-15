@@ -6,7 +6,6 @@ import openai
 import streamlit as st
 from streamlit_chatbox import *
 from streamlit_extras.bottom_container import bottom
-from code_editor import code_editor
 
 
 from web.utils.utils import *
