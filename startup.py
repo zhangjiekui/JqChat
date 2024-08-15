@@ -339,10 +339,10 @@ async def start_main_server():
        process = Process(
            target=kernel_program_main,
            name=f"Kernel Server",
-           kwargs=dict(
-               started_event=kernel_started,
-               run_mode=run_mode,
-           ),
+        #   kwargs=dict(
+        #       started_event=kernel_started,
+        #       run_mode=run_mode,
+        #   ),
            daemon=False,)  
        processes["kernel"] = process
     # if(args.kernel):
@@ -386,19 +386,19 @@ async def start_main_server():
             if p := processes.get("kernel"):
                 p.start()
                 p.name = f"{p.name} ({p.pid})"
-                kernel_started.wait()  # 等待kernel启动完成
+                #kernel_started.wait()  # 等待kernel启动完成
                 logger.info(f"启动KERNEL服务：{p.name}")
 
             if p := processes.get("api"):
                 p.start()
                 p.name = f"{p.name} ({p.pid})"
-                api_started.wait()  # 等待api.py启动完成
+                #api_started.wait()  # 等待api.py启动完成
                 logger.info(f"启动API服务：{ p.name}")
 
             if p := processes.get("webui"):
                 p.start()
                 p.name = f"{p.name} ({p.pid})"
-                # webui_started.wait()  # 等待webui.py启动完成
+                webui_started.wait()  # 等待webui.py启动完成
                 logger.info(f"启动WEB服务：{p.name}")
 
             dump_server_info(after_start=True, args=args)

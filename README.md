@@ -42,6 +42,20 @@ conda config --add channels https://mirrors.aliyun.com/anaconda/pkgs/free/
 conda config --set show_channel_urls yes
 
 ```
+## VLLM
+```
+workon xinfer
+vllm serve LLM-Research/Mistral-Large-Instruct-2407-bnb-4bit --model shuyuej/Mistral-Large-Instruct-2407-GPTQ --quantization bitsandbytes  --tensor-parallel-size 4  --gpu-memory-utilization 0.95 --trust-remote-code
+```
+
+https://github.com/vllm-project/vllm/blob/22b39e11f2eca7dd70bcef3760cd5da149412d00/docs/source/serving/openai_compatible_server.md?plain=1#L114
+vLLM supports only named function calling in the chat completion API. The `tool_choice` options `auto` and `required` are **not yet supported** but on the roadmap.
+To use a named function you need to define the function in the `tools` parameter and call it in the `tool_choice` parameter.
+It is the callers responsibility to prompt the model with the tool information, vLLM will not automatically manipulate the prompt. **This may change in the future.**
+vLLM will use guided decoding to ensure the response matches the tool parameter object defined by the JSON schema in the `tools` parameter.
+Please refer to the OpenAI API reference documentation for more information.
+
+
 ## Lmdeploy 【经测试，存在问题】
 #### 安装
 ```
