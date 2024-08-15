@@ -352,13 +352,17 @@ def agent_entry():
     #获取用户随机ID
     user_id=request.json.get('user',None)
     #获得知识库的字典{"name": "test" , "discription":"测试方面的知识库",...}
-    kb_base_dict=request.json.get('doc',None);
+    kb_base_dict=request.json.get('doc',None)
+    allow_question_rewrite = request.json.get('allow_question_rewrite',True)
+
+
     print(f"{user_id=}")
 
     # user_id = 'fixed_user'
     chat_bot = GraphAgent(memory_thread_id=user_id, kb_base_dict=kb_base_dict)
     print(f"{chat_bot.user_id=}")
-    text = chat_bot.run_conversation(user_question=user_prompt)
+    # 由于问题改写在少数情况下可能不是用户想要的，所以应允许用户关闭
+    text = chat_bot.run_conversation(user_question=user_prompt,allow_question_rewrite=allow_question_rewrite)
     # chat_bot.graph.update_state()
     messages = chat_bot.get_all_history_messages()
 
