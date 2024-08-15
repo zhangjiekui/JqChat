@@ -740,9 +740,9 @@ class GraphAgent:
                 if len(messages) == 1:
                     self.question_related_messages = messages
                 else:
-                    question = question or self.question
+                    question = question or self.question_rewrited
                     if not question:
-                        logger.warning('请传入非空的user question，或者先给self.question赋值')
+                        logger.warning('请传入非空的user question，或者先给self.question_rewrited赋值')
                     else:
                         question_related_messages = env_models_instance.filter_and_get_messages_relevant_to_query(query=question,messages_list=messages,reserve_last_n_unique_messages = reserve_last_n_unique_messages)
                         self.question_related_messages = question_related_messages
@@ -892,7 +892,7 @@ class GraphAgent:
         # 当前message
         input_message = state.get('messages')[-1]
         # 获取历史相关message
-        question_related_messages = self.get_question_related_messages_from_state(user_question)
+        question_related_messages = self.get_question_related_messages_from_state()
         assert self.question_related_messages == question_related_messages,"self.get_question_related_messages_from_state方法里应同步更新了self.question_related_messages"        
         # 历史 + 当前
         if input_message not in question_related_messages:

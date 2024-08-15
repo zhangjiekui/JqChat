@@ -46,6 +46,9 @@ conda config --set show_channel_urls yes
 ```
 workon xinfer
 vllm serve LLM-Research/Mistral-Large-Instruct-2407-bnb-4bit --model shuyuej/Mistral-Large-Instruct-2407-GPTQ --quantization bitsandbytes  --tensor-parallel-size 4  --gpu-memory-utilization 0.95 --trust-remote-code
+
+
+vllm serve /data/xinference/cache/mistral-large-instruct-gptq-123b --model /data/xinference/cache/mistral-large-instruct-gptq-123b --quantization gptq  --tensor-parallel-size 4  --gpu-memory-utilization 0.95 --trust-remote-code
 ```
 
 https://github.com/vllm-project/vllm/blob/22b39e11f2eca7dd70bcef3760cd5da149412d00/docs/source/serving/openai_compatible_server.md?plain=1#L114
