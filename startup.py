@@ -334,20 +334,20 @@ async def start_main_server():
     def process_count():
         return len(processes)
     
-    #kernel_started = manager.Event()
-    #if(args.kernel):
-    #    process = Process(
-    #        target=kernel_program_main,
-    #        name=f"Kernel Server",
-    #        kwargs=dict(
-    #            started_event=kernel_started,
-    #            run_mode=run_mode,
-    #        ),
-    #        daemon=False,)  
-    #    processes["kernel"] = process
+    kernel_started = manager.Event()
     if(args.kernel):
-        kernel_program_process = Process(target=run_kernel_program)
-        processes["kernel"] = kernel_program_process
+       process = Process(
+           target=kernel_program_main,
+           name=f"Kernel Server",
+           kwargs=dict(
+               started_event=kernel_started,
+               run_mode=run_mode,
+           ),
+           daemon=False,)  
+       processes["kernel"] = process
+    # if(args.kernel):
+    #     kernel_program_process = Process(target=run_kernel_program)
+    #     processes["kernel"] = kernel_program_process
     
     api_started = manager.Event()
     if args.api:
@@ -386,7 +386,7 @@ async def start_main_server():
             if p := processes.get("kernel"):
                 p.start()
                 p.name = f"{p.name} ({p.pid})"
-                #kernel_started.wait()  # 等待kernel启动完成
+                kernel_started.wait()  # 等待kernel启动完成
                 logger.info(f"启动KERNEL服务：{p.name}")
 
             if p := processes.get("api"):
@@ -433,9 +433,9 @@ def main():
     sys.path.append(cwd)
     multiprocessing.freeze_support()
     logger.info(f"应用启动路径:{cwd}")
-    from jqcode.jq_knowledge_manegement.chatchat.server.knowledge_base.migrate import create_tables
+    # from jqcode.jq_knowledge_manegement.chatchat.server.knowledge_base.migrate import create_tables
 
-    create_tables()
+    # create_tables()
     if sys.version_info < (3, 10):
         loop = asyncio.get_event_loop()
     else:

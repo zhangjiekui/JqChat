@@ -6,6 +6,7 @@ import openai
 import streamlit as st
 from streamlit_chatbox import *
 from streamlit_extras.bottom_container import bottom
+from code_editor import code_editor
 
 
 from web.utils.utils import *
@@ -17,47 +18,12 @@ from jqcode.jq_knowledge_manegement.chatchat.server.knowledge_base.kb_service.ba
 chat_box = ChatBox(assistant_avatar=get_img_base64("chatchat_icon_blue_square_v2.png"))
 
 LOADER_DICT = {
-    "UnstructuredHTMLLoader": [".html", ".htm"],
-    "MHTMLLoader": [".mhtml"],
-    "TextLoader": [".md"],
-    "UnstructuredMarkdownLoader": [".md"],
     "JSONLoader": [".json"],
     "JSONLinesLoader": [".jsonl"],
     "CSVLoader": [".csv"],
-    # "FilteredCSVLoader": [".csv"], 如果使用自定义分割csv
-    "RapidOCRPDFLoader": [".pdf"],
-    "RapidOCRDocLoader": [".docx"],
-    "RapidOCRPPTLoader": [
-        ".ppt",
-        ".pptx",
-    ],
-    "RapidOCRLoader": [".png", ".jpg", ".jpeg", ".bmp"],
-    "UnstructuredFileLoader": [
-        ".eml",
-        ".msg",
-        ".rst",
-        ".rtf",
-        ".txt",
-        ".xml",
-        ".epub",
-        ".odt",
-        ".tsv",
-    ],
-    "UnstructuredEmailLoader": [".eml", ".msg"],
-    "UnstructuredEPubLoader": [".epub"],
     "UnstructuredExcelLoader": [".xlsx", ".xls", ".xlsd"],
-    "NotebookLoader": [".ipynb"],
-    "UnstructuredODTLoader": [".odt"],
-    "PythonLoader": [".py"],
-    "UnstructuredRSTLoader": [".rst"],
-    "UnstructuredRTFLoader": [".rtf"],
-    "SRTLoader": [".srt"],
-    "TomlLoader": [".toml"],
     "UnstructuredTSVLoader": [".tsv"],
-    "UnstructuredWordDocumentLoader": [".docx"],
     "UnstructuredXMLLoader": [".xml"],
-    "UnstructuredPowerPointLoader": [".ppt", ".pptx"],
-    "EverNoteLoader": [".enex"],
 }
 
 SUPPORTED_EXTS = [ext for sublist in LOADER_DICT.values() for ext in sublist]
@@ -112,15 +78,22 @@ def get_messages_history(
 
 
 @st.cache_data
-def upload_temp_docs(files, _api: ApiRequest) -> str:
+def upload_docs(user,knowbase_id,files, _api: ApiRequest) -> str:
     """
     将文件上传到临时目录，用于文件对话
     返回临时向量库ID
     """
-    return _api.upload_temp_docs(files).get("data", {}).get("id")
 
+    return _api.upload_docs(uid=user,knowledge_id=knowbase_id,files=files)
+#聊天
 def chat(query,user,doc:str,_api:ApiRequest)  :
     return _api.chat_chat(query=query,user=user,doc=doc)
+#执行code
+def code(code,user,_api:ApiRequest)  :
+    return _api.code_chat(code==code,user=user)
+#执行code
+def clear(user,_api:ApiRequest)  :
+    return _api.clear_chat(code==code,user=user)
 
 def dialogue_page(
     api: ApiRequest,
@@ -141,7 +114,21 @@ def dialogue_page(
     # st.write(chat_box.cur_chat_name)
     # st.write(st.session_state)
 
-
+    @st.experimental_dialog("上传文件", width="large")
+    def file_upload():
+        files = st.file_uploader("上传分析文件",
+            [i for ls in LOADER_DICT.values() for i in ls],
+            accept_multiple_files=True,
+            )
+        
+        if st.button("开始上传", disabled=len(files) == 0):
+            user=ctx.get("uid")
+            print(selected_kb)
+            response=upload_docs(user=user,knowbase_id=selected_kb,files=files,_api=api)
+            print(response)
+            st.info(f"{response['message']}")
+            # st.session_state["file_chat_id"] = upload_docs(user=user,files=files, api=api)
+        
     with st.sidebar:   
       
         try:
@@ -172,12 +159,12 @@ def dialogue_page(
             format_func=format_selected_kb,
                 index=selected_kb_index,
         )
-        files = st.file_uploader("上传知识文件：",
-                [i for ls in LOADER_DICT.values() for i in ls],
-                accept_multiple_files=True,
-                )
-        if st.button("开始上传", disabled=len(files) == 0):
-            st.session_state["file_chat_id"] = upload_temp_docs(files, api)
+        # files = st.file_uploader("上传知识文件：",
+        #         [i for ls in LOADER_DICT.values() for i in ls],
+        #         accept_multiple_files=True,
+        #         )
+        # if st.button("开始上传", disabled=len(files) == 0):
+        #     st.session_state["file_chat_id"] = upload_temp_docs(files, api)
 
     # Display chat messages from history on app rerun
     chat_box.output_messages()
@@ -187,6 +174,8 @@ def dialogue_page(
     with bottom():
         cols = st.columns([1, 0.2, 15,  1])
         prompt = cols[2].chat_input(chat_input_placeholder, key="prompt")
+        if cols[0].button(":page_facing_up:", help="上传文件"):
+           file_upload()
         
         if cols[-1].button(":wastebasket:", help="清空对话"):
             chat_box.reset_history()
@@ -201,14 +190,23 @@ def dialogue_page(
         print(prompt,user,doc)
         msg=chat(query=prompt,user=user,doc=doc,_api=api)
         chat_box.update_msg(msg["text"],streaming=False)
-        if("code" in msg):
-            chat_box.insert_msg(
-                  Markdown( # type: ignore
-                                    msg["code"],
-                                    in_expander=True,
-                                    state="complete",
-                                    title="生成代码",
-                                )
-                
-            )
+        # if("code" in msg and msg["code"] is not None):
+        #     #    with chat_box() :
+        #         response_dict=code_editor(code=f'int i',lang="python",theme="dark")
+        #         chat_box.insert_msg(
+        #                         Markdown( # type: ignore
+        #                             ...,
+        #                             in_expander=True,
+        #                             state="running",
+        #                             title="执行代码",
+        #                         )
+        #                     )
+        #         code_response=code(code=msg["code"],user=user,_api=api)
+        #         chat_box.update_msg(code_response["text"])
+        #         # chat_box.insert_msg(response_dict) 
+        #         # if(st.button("aaa")):
+        #         #     st.write("aaa")
+        #     # with chat_box:
+        #     #     st.write(response_dict)
+            
 

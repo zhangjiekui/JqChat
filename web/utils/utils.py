@@ -321,19 +321,49 @@ class ApiRequest:
         }
         response = self.post("/chat/completions", json=data, stream=False, **kwargs)
         return  self._get_response_value(response, as_json=True)
-
-    def upload_temp_docs(
+    # 执行代码相关操作
+    def code_chat(
+        self,
+        code: str,
+        user: str,
+        **kwargs,
+    ):
+        """
+        对应api.py/chat/chat接口
+        """
+        data = {
+            "code": code,
+            "user": user,
+        }
+        response = self.post("/chat/code", json=data, stream=False, **kwargs)
+        return  self._get_response_value(response, as_json=True)
+    # 执行代码相关操作
+    def clear_chat(
+        self,
+        user: str,
+        **kwargs,
+    ):
+        """
+        对应api.py/chat/chat接口
+        """
+        data = {
+            "user": user,
+        }
+        response = self.post("/chat/clear", json=data, stream=False, **kwargs)
+        return  self._get_response_value(response, as_json=True)
+    
+    
+    def upload_docs(
         self,
         files: List[Union[str, Path, bytes]],
         knowledge_id: str = None,
-        chunk_size=CHUNK_SIZE,
-        chunk_overlap=OVERLAP_SIZE,
-        zh_title_enhance=ZH_TITLE_ENHANCE,
+        uid : str=None,
+        **kwargs,
     ):
         """
-        对应api.py/knowledge_base/upload_tmep_docs接口
+        对应chat_routes upload接口
         """
-
+        
         def convert_file(file, filename=None):
             if isinstance(file, bytes):  # raw bytes
                 file = BytesIO(file)
@@ -347,13 +377,12 @@ class ApiRequest:
         files = [convert_file(file) for file in files]
         data = {
             "knowledge_id": knowledge_id,
-            "chunk_size": chunk_size,
-            "chunk_overlap": chunk_overlap,
-            "zh_title_enhance": zh_title_enhance,
+            "uid":uid,
+
         }
 
         response = self.post(
-            "/knowledge_base/upload_temp_docs",
+            "/chat/upload",
             data=data,
             files=[("files", (filename, file)) for filename, file in files],
         )
