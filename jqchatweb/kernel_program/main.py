@@ -17,11 +17,15 @@ from flask_cors import CORS  # Import the CORS library
 
 from dotenv import load_dotenv
 load_dotenv('.env')
-
-import jqchat.kernel_program.kernel_manager as kernel_manager
-import jqchat.kernel_program.config as config
-import jqchat.kernel_program.utils as utils
-
+try:
+    from jqchatweb.kernel_program.kernel_manager import cleanup_spawned_processes 
+    from jqchatweb.kernel_program import config
+    import jqchatweb.kernel_program.utils as utils
+except:
+    import config
+    import utils
+    import kernel_manager
+    from kernel_manager import cleanup_spawned_processes 
 
 APP_PORT = int(os.environ.get("API_PORT", 5011))
 
@@ -63,7 +67,7 @@ def start_kernel_manager():
         p.write("kernel_manager")
 
 def cleanup_kernel_program():
-    kernel_manager.cleanup_spawned_processes()
+    cleanup_spawned_processes()
 
 async def start_snakemq():
     global messaging
