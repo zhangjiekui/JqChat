@@ -394,13 +394,13 @@ async def start_main_server():
                 logger.info(f"启动API服务：{ p.name}")
                 p.start()
                 p.name = f"{p.name} ({p.pid})"
-                api_started.wait()  # 等待api.py启动完成
+                # api_started.wait()  # 等待api.py启动完成
 
             if p := processes.get("webui"):
                 logger.info(f"启动WEB服务：{p.name}")
                 p.start()
                 p.name = f"{p.name} ({p.pid})"
-                webui_started.wait()  # 等待webui.py启动完成
+                # webui_started.wait()  # 等待webui.py启动完成
                
 
             dump_server_info(after_start=True, args=args)

@@ -113,7 +113,7 @@ def dialogue_page(
     # st.write(chat_box.cur_chat_name)
     # st.write(st.session_state)
 
-    @st.experimental_dialog("上传文件", width="large")
+    @st.dialog("上传文件", width="large")
     def file_upload():
         files = st.file_uploader("上传分析文件",
             [i for ls in LOADER_DICT.values() for i in ls],
