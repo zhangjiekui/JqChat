@@ -1,5 +1,21 @@
 # The GPT web UI as a template based Flask app
+import os, sys,pathlib    
+# 添加这行代码
+
+def add_import_paths():
+    project_root_path = pathlib.Path().resolve()
+    p1 = project_root_path/'jqcode'
+    p2 = project_root_path/'jqchatweb'
+
+    added_paths = [project_root_path, p1, p2]
+    for p in added_paths:
+        sys.path.append(p)
+    return added_paths
+added_paths = add_import_paths()
+
 import os
+
+
 import requests
 import asyncio
 import json
@@ -13,8 +29,11 @@ from collections import deque
 
 from flask_cors import CORS
 from flask import Flask, request, jsonify, send_from_directory, Response
-
-from jqchat.kernel_program.main import APP_PORT as KERNEL_APP_PORT
+try:
+    from jqchatweb.kernel_program.main import APP_PORT as KERNEL_APP_PORT
+except:
+    from kernel_program.main import APP_PORT as KERNEL_APP_PORT
+    from jqchatweb.kernel_program.main import APP_PORT
 from jqcode.jq_agent.c0_init_env_models import env_models_instance
 from jqcode.jq_agent.graph_create_utils import user_question_is_related_to_coding_or_data_analyzing,llm
 
@@ -46,12 +65,6 @@ else:
     raise ValueError(f'Invalid OPENAI_API_TYPE: {openai.api_type}')
 # endregion
 
-import sys,os
-project_root_path = os.getcwd()
-p1 = '/data/projects/JqChat/jqcode'
-p2 = '/data/projects/JqChat/jqcode/jq_agent'
-for p in [project_root_path, p1, p2]:
-    sys.path.append(p)
 
 
 UPLOAD_FOLDER = 'workspace/'

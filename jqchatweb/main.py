@@ -3,14 +3,6 @@
 # webapp is a Flask app (in webapp/main.py relative to this main.py)
 # kernel_program is a Python script (in kernel_program/main.py relative to this main.py)
 
-import sys,os
-project_root_path = os.getcwd()
-p1 = '/data/projects/JqChat/jqcode'
-p2 = '/data/projects/JqChat/jqcode/jq_agent'
-for p in [project_root_path, p1, p2]:
-    sys.path.append(p)
-
-
 log_filename = "jqchat_ui.log"
 
 import warnings
@@ -21,10 +13,12 @@ import asyncio
 import time
 import webbrowser
 from multiprocessing import Process
-
-from jqchat.webapp.main import app, APP_PORT
-from jqchat.kernel_program.main import main as kernel_program_main, cleanup_kernel_program
-
+try:
+    from jqchatweb.webapp.main import app, APP_PORT
+    from jqchatweb.kernel_program.main import main as kernel_program_main, cleanup_kernel_program
+except:
+    from webapp.main import app, APP_PORT
+    from kernel_program.main import main as kernel_program_main, cleanup_kernel_program
 APP_URL = "http://localhost:%s" % APP_PORT
 def run_webapp():
     try:

@@ -16,13 +16,6 @@ from jupyter_client import BlockingKernelClient
 from dotenv import load_dotenv
 load_dotenv('.env')
 
-# 添加这行代码
-# /data/projects/JqChat/jqchatweb
-project_root_path = pathlib.Path().resolve()
-p1 = project_root_path/'jqcode'
-p2 = project_root_path/'jqchatweb'
-for p in [project_root_path, p1, p2]:
-    sys.path.append(p)
 try:
     from jqchatweb.kernel_program import utils
     from jqchatweb.kernel_program import config

@@ -1,3 +1,5 @@
+from import_path_utils import add_import_paths
+
 import asyncio
 import logging
 import logging.config

@@ -1,8 +1,12 @@
+import os,sys,pathlib
+project_root_path = pathlib.Path().resolve()
+p1 = project_root_path/'jqcode'
+p2 = project_root_path/'jqchatweb'
+for p in [project_root_path, p1, p2]:
+    sys.path.append(str(p))
 
-import os
 import re
 import threading
-import pathlib
 from pathlib import Path
 from functools import lru_cache
 from typing import Annotated, List, TypedDict, Optional, Sequence,Literal, Any,Union
@@ -37,7 +41,6 @@ from langchain_core.messages import BaseMessage, HumanMessage,SystemMessage,Tool
 from langchain.callbacks.base import BaseCallbackHandler
 from langchain_core.callbacks import StdOutCallbackHandler
 from jqcode.jq_splitters.backend_splitter_utils.jq_chinese_recursive_text_splitter import JqChineseRecursiveTextSplitter
-            
 
 from transformers import AutoTokenizer
 from pydantic.v1 import PrivateAttr
