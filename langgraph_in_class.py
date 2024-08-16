@@ -658,7 +658,8 @@ class GraphAgent:
         self.executable_tool_names = _executable_tool_names
         self.executable_tool_dict = {t.name: t for t in executable_tools} 
 
-        self.model = llm_model.bind_tools(self.all_tools)               
+        self.model = llm_model.bind_tools(self.all_tools)
+
         self.system_message = [SystemMessage(content=_system_message_content)]
         self.kb_base_dict = kb_base_dict
 

@@ -45,7 +45,16 @@ conda config --set show_channel_urls yes
 ## VLLM
 ```
 workon xinfer
-vllm serve LLM-Research/Mistral-Large-Instruct-2407-bnb-4bit --model shuyuej/Mistral-Large-Instruct-2407-GPTQ --quantization bitsandbytes  --tensor-parallel-size 4  --gpu-memory-utilization 0.95 --trust-remote-code
+vllm serve /data/xinference/cache/mistral-large-instruct-gptq-123b --model TechxGenus/Mistral-Large-Instruct-2407-GPTQ  --tensor-parallel-size 4  --gpu-memory-utilization 0.98 --max_model_len 3000 --quantization gptq_marlin --enforce-eager --served-model-name mistral qwen2-instruct --port 9999 --api-key abc123
+能跑起来，但应用到项目中，存在很多问题
+#### Mistral-large
+python -m vllm.entrypoints.openai.api_server     --host 0.0.0.0     --model /data/xinference/cache/mistral-large-instruct-gptq-123b     --quantization gptq_marlin     --port 9999     --max-model-len 3000     --gpu-memory-utilization 0.98     --tensor-parallel-size 4     --served-model-name mistral qwen2-instruct      --enforce-eager      --api-key abc123
+
+#### Mistral-Nemo
+VLLM_ATTENTION_BACKEND=XFORMERS python -m vllm.entrypoints.openai.api_server --model AI-ModelScope/Mistral-Nemo-Instruct-2407 --gpu-memory-utilization 0.75 --host 0.0.0.0 --port 9999 -tp 4 --max-model-len 17000 --served-model-name mistral qwen2-instruct --trust-remote-code --enable-prefix-caching
+
+
+在bashrc中增加 export VLLM_API_KEY=abc123
 
 
 vllm serve /data/xinference/cache/mistral-large-instruct-gptq-123b --model /data/xinference/cache/mistral-large-instruct-gptq-123b --quantization gptq  --tensor-parallel-size 4  --gpu-memory-utilization 0.95 --trust-remote-code

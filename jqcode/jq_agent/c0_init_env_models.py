@@ -179,7 +179,7 @@ class InitEnvModels:
         assert self.env_loaded, "环境变量没有正确载入！"
         
         self.ollama_host = os.getenv("OLLAMA_HOST",'http://localhost:11434')
-        self.api_key =os.getenv("OPENAI_API_KEY",'NotNeeded')
+        self.api_key =os.getenv("OPENAI_API_KEY",'abc123')
         self.api_type =os.getenv("OPENAI_API_TYPE",'open_ai')
         
 
@@ -214,6 +214,8 @@ class InitEnvModels:
 
         self.llm_model_base_url= self.llm_model_card['base_url']
         self.llm_model_name = self.llm_model_card['name']
+        self.llm_model_max_tokens = self.llm_model_card['max_tokens']
+
 
         self.base_url = self.llm_model_base_url # 如果是同一服务器上部署的大语言和Emb模型，可能会省略配置其他模型，直接用这个
 
@@ -313,13 +315,19 @@ class InitEnvModels:
     def get_openai_client(self):
         if not self.openai_client:
             self.openai_client = OpenAI(base_url=self.llm_model_base_url,api_key=self.api_key)
-            print(f'当前使用的模型base_url为:OpenAI, {self.openai_client.base_url}')
+            print(f'当前使用的LLM模型base_url为:OpenAI, {self.openai_client.base_url}')
         return self.openai_client
 
 
-    def get_langchain_chat_model(self, temperature=0.0, max_tokens=32000, streaming=True):
-        if not self.chat_model or temperature!=self.chat_model.temperature or max_tokens!=self.chat_model.max_tokens or streaming!=self.chat_model.streaming:
-            self.chat_model = ChatOpenAI(
+    def get_langchain_chat_model(self, temperature=0.01, max_tokens=None, streaming=True):
+        if max_tokens:
+            if max_tokens!=self.llm_model_max_tokens:
+                logger.warning(f"您现在请求的llm {max_tokens=}，与环境配置中的{self.llm_model_max_tokens=}不同，请确认！")
+        else:
+            max_tokens = self.llm_model_max_tokens
+
+
+        self.chat_model = ChatOpenAI(
                 model_name=self.llm_model_name,
                 openai_api_base=self.llm_model_base_url,    
                 openai_api_key= self.api_key,
@@ -329,7 +337,7 @@ class InitEnvModels:
                 max_tokens=max_tokens,
                 
             )
-        print(f'当前使用的模型为:Langchain ChatOpenAI, {self.chat_model.model_name}, API_URL为{self.chat_model.openai_api_base}')
+        logger.info(f'当前使用的LLM模型为:Langchain ChatOpenAI, {self.chat_model.model_name}, API_URL为{self.chat_model.openai_api_base}')
         return self.chat_model
     # model_name = "llama3-groq-tool-use:8b-q8_0"
     # model_name = "adrienbrault/gorilla-openfunctions-v2:Q6_K"
@@ -344,25 +352,7 @@ class InitEnvModels:
         if tools:
             return ollama_chat_model.bind_tools(tools)        
         return ollama_chat_model
-    
-   
-    # todo: embedding_model_8k with langchain
-
-    # # todo: add api的方式: /data/projects/JqChat/jqcode/jq_knowledge_manegement/chatchat/server/localai_embeddings.py
-    # def get_local_path_or_model_name(self,model_type:Literal['embedding','embedding8k','rerank']):
-    #     if model_type == 'embedding':
-    #         model_card = self.embedding_model_card
-    #     elif model_type == 'embedding8k':
-    #         model_card = self.embedding_model_8k_card
-    #     elif model_type == 'rerank':
-    #         model_card = self.rerank_model_card
-    #     else:
-    #         raise Exception(f"{model_type}必须是['embedding','embedding8k','rerank']之一")
-        
-    #     local_path = model_card.get("local",'')
-    #     name_or_path = local_path if Path(local_path).exists() else model_card["name"]
-    #     return name_or_path
-        
+ 
     def _get_emb_8k_rerank_model(self,embedding_model_name=None, embedding_model_name_8k=None, rerank_model_name=None, device = ['cpu','cpu','cpu'],final_docs_num_reranked=4): #device = ['cuda:1','cuda:2''cuda:3']
         name_or_path = embedding_model_name if embedding_model_name else self.embedding_model_name_or_path       
         if 'bge' in name_or_path: 
