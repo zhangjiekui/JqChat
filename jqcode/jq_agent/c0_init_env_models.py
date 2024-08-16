@@ -339,11 +339,11 @@ class InitEnvModels:
             )
         logger.info(f'当前使用的LLM模型为:Langchain ChatOpenAI, {self.chat_model.model_name}, API_URL为{self.chat_model.openai_api_base}')
         return self.chat_model
+    
     # model_name = "llama3-groq-tool-use:8b-q8_0"
     # model_name = "adrienbrault/gorilla-openfunctions-v2:Q6_K"
     # model_name = "allenporter/xlam:7b"
-    model_name = "mistral-large:latest"
-    
+    model_name = "mistral-large:latest"    
     def get_ollama_chat_model(self,model_name = model_name,temperature=0.5,top_p=0.65, tools:list = None,verbose=True):
         ollama_chat_model = ChatOllama(model=model_name,temperature=temperature,top_p=top_p,verbose=verbose)
         print("-------ollama_chat_model详细信息-------")

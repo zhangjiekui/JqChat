@@ -23,23 +23,23 @@ def get_flight_number(origin:str,destination:str,date:date) -> str:
     Args:
         origin:(str) 出发地/城市，例如合肥
         destination:(str) 目的地/城市，例如北京
-        date:(date) 飞行日期， 例如2024-08-03.如果日期是不确定的描述，如明天、后天等，请先调用工具'python_repl_tool'进行计算，并且返回python datetime.date类型结果
+        date:(date) 飞行日期， 例如2024-08-03.如果日期是不确定的描述，如明天、后天等，请先调用工具'python_repl_tool'或者'CODE_GENERATION'进行计算，并且返回python datetime.date类型结果
     """
     result = f"东方航空MU5646 【{date}】"
     logger.info(f"'get_flight_number'执行结果: {result}")
     return result
 
 # @tool
-# def get_flight_number(origin:str,destination:str) -> str:
+# def get_flight_number(origin:str,destination:str,date:date) -> str:
 #     """
-#     根据输入的出发地(origin),目的地(destination),返回航班号。
+#     根据输入的出发地(origin),目的地(destination),日期(date),返回航班号。重要:当前日期是{current_date}，日期(date)只接受python datetime.date类型输入。如果日期是不确定的描述，如明天、后天等，请先使用工具'python_repl_tool'进行计算，并且返回python datetime.date类型结果，具体格式示例如下：2024-04-03。
 #     Args:
 #         origin:(str) 出发地/城市，例如合肥
-#         destination:(str) 目的地/城市，例如北京        
+#         destination:(str) 目的地/城市，例如北京
+#         date:(date) 飞行日期， 例如2024-08-03.如果日期是不确定的描述，如明天、后天等，请先调用工具'CODE_GENERATION'来获取日期，并且返回python datetime.date类型结果
 #     """
-#     current_date = str(datetime.now().date())
-#     result = f"东方航空MU5646 【测试使用, 日期{current_date}】"
-#     print(f"GetFlightNumberTool Result: {result}")
+#     result = f"东方航空MU5646 【{date}】"
+#     logger.info(f"'get_flight_number'执行结果: {result}")
 #     return result
 
 current_date = str(datetime.now().date())
@@ -53,7 +53,9 @@ get_flight_number.description= get_flight_number.description.replace("{current_d
 @tool
 def python_repl_tool(query:str) -> str: 
     """
-    A Python shell. Use this to execute Input(query:str) python commands. 
+    A Python shell. Use this to execute Input(query:str) python commands, but only suitable for simple question. 
+    Waring: 'CODE_GENERATION' tool is much powerful, please use 'CODE_GENERATION' tool for drawing images, plotting graphs/charts, data file processing/analyzing/saving. 
+
         Input: query:str.Python code. You must use '\n' to seperate each code line
     
         Output: you MUST using `print($code or value$)` to print out at least one value (mostly in the last line), or multiple values as needed to better answer/solve the user's problem.For examples:

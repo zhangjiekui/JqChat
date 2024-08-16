@@ -7,7 +7,7 @@ import os
 from fastapi.responses import JSONResponse
 import asyncio
 import logging
-from jqchat.chat_prompt import *
+from jqcode.chat_prompt import *
 from jqcode.jq_knowledge_manegement.chatchat.server.db.repository.knowledge_base_repository import get_kb_detail
 from langchain_core.messages import ToolMessage
 

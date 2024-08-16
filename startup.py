@@ -1,18 +1,47 @@
 import asyncio
 import logging
 import logging.config
-import multiprocessing
 import multiprocessing as mp
+from multiprocessing import Process,Event
 import os
 import sys
 # project_root = '/data/projects/JqChat'
 # sys.path.insert(0, project_root)
 # # print(sys.path)
-
+from jqcode.jq_knowledge_manegement.chatchat.server.knowledge_base.migrate import create_tables
 from contextlib import asynccontextmanager
-from multiprocessing import Process
-from jqchat.kernel_program.main import main as kernel_program_main,APP_PORT
 
+from jqchat.kernel_program.main import main as kernel_program_main,APP_PORT
+from jqcode.jq_knowledge_manegement.chatchat.configs import API_SERVER, LOG_PATH, MODEL_PLATFORMS
+from jqcode.jq_knowledge_manegement.chatchat.server.api_server.server_app import create_app
+from jqcode.jq_knowledge_manegement.chatchat.server.utils import set_httpx_config
+import uvicorn
+from jqcode.jq_knowledge_manegement.chatchat.utils import (
+    get_config_dict,
+    get_log_file,
+    get_timestamp_ms,
+)
+import signal
+import time
+
+import platform
+
+import langchain
+import argparse
+from typing import Dict, List
+
+from fastapi import FastAPI
+from jqcode.jq_knowledge_manegement.chatchat.configs import VERSION
+from jqcode.jq_knowledge_manegement.chatchat.server.utils import api_address, webui_address
+
+from jqcode.jq_knowledge_manegement.chatchat.configs import LOG_PATH
+from jqcode.jq_knowledge_manegement.chatchat.configs import LOG_PATH, MODEL_PLATFORMS, WEBUI_SERVER
+from jqcode.jq_knowledge_manegement.chatchat.server.utils import set_httpx_config
+try:
+    # for streamlit >= 1.12.1
+    from streamlit.web import bootstrap
+except ImportError:
+    from streamlit import bootstrap
 logger = logging.getLogger()
 
 
@@ -25,13 +54,10 @@ except:
     pass
 
 
-import argparse
-from typing import Dict, List
-
-from fastapi import FastAPI
 
 
-def _set_app_event(app: FastAPI, started_event: mp.Event = None):
+
+def _set_app_event(app: FastAPI, started_event:Event = None):
     @asynccontextmanager
     async def lifespan(app: FastAPI):
         if started_event is not None:
@@ -41,18 +67,10 @@ def _set_app_event(app: FastAPI, started_event: mp.Event = None):
     app.router.lifespan_context = lifespan
 
 def run_api_server(
-    started_event: mp.Event = None, run_mode: str = None
+    started_event:Event = None, run_mode: str = None
 ):
-    import uvicorn
-    from jqcode.jq_knowledge_manegement.chatchat.utils import (
-        get_config_dict,
-        get_log_file,
-        get_timestamp_ms,
-    )
 
-    from jqcode.jq_knowledge_manegement.chatchat.configs import API_SERVER, LOG_PATH, MODEL_PLATFORMS
-    from jqcode.jq_knowledge_manegement.chatchat.server.api_server.server_app import create_app
-    from jqcode.jq_knowledge_manegement.chatchat.server.utils import set_httpx_config
+
 
     logger.info(f"Api MODEL_PLATFORMS: {MODEL_PLATFORMS}")
     set_httpx_config()
@@ -75,14 +93,7 @@ def run_api_server(
 def run_webui(
     started_event: mp.Event = None, run_mode: str = None
 ):
-    from jqcode.jq_knowledge_manegement.chatchat.utils import (
-        get_config_dict,
-        get_log_file,
-        get_timestamp_ms,
-    )
 
-    from jqcode.jq_knowledge_manegement.chatchat.configs import LOG_PATH, MODEL_PLATFORMS, WEBUI_SERVER
-    from jqcode.jq_knowledge_manegement.chatchat.server.utils import set_httpx_config
 
     logger.info(f"Webui MODEL_PLATFORMS: {MODEL_PLATFORMS}")
     set_httpx_config()
@@ -162,11 +173,7 @@ def run_webui(
             "lite",
         ]
     args+=["--gatherUsageStats","False"]
-    try:
-        # for streamlit >= 1.12.1
-        from streamlit.web import bootstrap
-    except ImportError:
-        from streamlit import bootstrap
+
 
     logging_conf = get_config_dict(
         "INFO",
@@ -180,7 +187,7 @@ def run_webui(
     started_event.set()
     
 #run kernel for code
-def run_kernel_program(started_event: mp.Event = None, run_mode: str = None):
+def run_kernel_program(started_event: Event = None, run_mode: str = None):
     try:
         asyncio.run(kernel_program_main())
         started_event.set()
@@ -232,12 +239,7 @@ def parse_args() -> argparse.ArgumentParser:
 
 
 def dump_server_info(after_start=False, args=None):
-    import platform
 
-    import langchain
-
-    from jqcode.jq_knowledge_manegement.chatchat.configs import VERSION
-    from jqcode.jq_knowledge_manegement.chatchat.server.utils import api_address, webui_address
 
     print("=" * 30 + "Langchain-Chatchat Configuration" + "=" * 30)
     print(f"操作系统：{platform.platform()}.")
@@ -259,16 +261,7 @@ def dump_server_info(after_start=False, args=None):
 
 
 async def start_main_server():
-    import signal
-    import time
 
-    from jqcode.jq_knowledge_manegement.chatchat.utils import (
-        get_config_dict,
-        get_log_file,
-        get_timestamp_ms,
-    )
-
-    from jqcode.jq_knowledge_manegement.chatchat.configs import LOG_PATH
 
     logging_conf = get_config_dict(
         "INFO",
@@ -358,7 +351,7 @@ async def start_main_server():
                 started_event=api_started,
                 run_mode=run_mode,
             ),
-            daemon=True,
+            daemon=False,
         )    
         processes["api"] = process
     
@@ -394,13 +387,13 @@ async def start_main_server():
                 logger.info(f"启动API服务：{ p.name}")
                 p.start()
                 p.name = f"{p.name} ({p.pid})"
-                # api_started.wait()  # 等待api.py启动完成
+                api_started.wait()  # 等待api.py启动完成
 
             if p := processes.get("webui"):
                 logger.info(f"启动WEB服务：{p.name}")
                 p.start()
                 p.name = f"{p.name} ({p.pid})"
-                # webui_started.wait()  # 等待webui.py启动完成
+                webui_started.wait()  # 等待webui.py启动完成
                
 
             dump_server_info(after_start=True, args=args)
@@ -433,9 +426,9 @@ def main():
     # 添加这行代码
     cwd = os.getcwd()
     sys.path.append(cwd)
-    multiprocessing.freeze_support()
+    mp.freeze_support()
     logger.info(f"应用启动路径:{cwd}")
-    from jqcode.jq_knowledge_manegement.chatchat.server.knowledge_base.migrate import create_tables
+    
     create_tables()
     if sys.version_info < (3, 10):
         loop = asyncio.get_event_loop()

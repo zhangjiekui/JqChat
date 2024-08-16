@@ -36,7 +36,7 @@ from jqcode.jq_knowledge_manegement.chatchat.configs import (
     log_verbose,
 )
 from jqcode.jq_knowledge_manegement.chatchat.server.pydantic_v2 import BaseModel, Field
-
+from jqcode.jq_knowledge_manegement.chatchat.configs import API_SERVER
 logger = logging.getLogger()
 
 
@@ -536,12 +536,16 @@ def MakeFastAPIOffline(
 
 
 def api_address() -> str:
-    from jqcode.jq_knowledge_manegement.chatchat.configs import API_SERVER
+    
 
     host = API_SERVER["host"]
     if host == "0.0.0.0":
         host = "127.0.0.1"
     port = API_SERVER["port"]
+
+    print(port)
+    if port == 8501:
+        pass
     return f"http://{host}:{port}"
 
 

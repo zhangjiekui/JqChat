@@ -112,7 +112,7 @@ class WEB_SEARCH(BaseModel):
     """
     query: str = Field(description="The query to use when searching the internet.")
 
-prompt_llm = """You are an assistant for question-answering tasks. Answer the question based upon your knowledge in the language the user asked, preffered/default to Simplified Chinese."""
+prompt_llm = """You are an assistant for question-answering tasks. Answer the question based upon your knowledge in the language the user asked, preferred/default to Simplified Chinese."""
 # Prompt
 prompt = lambda x: ChatPromptTemplate.from_messages(
     [
@@ -636,6 +636,7 @@ def grade_generation_v_documents_and_question(state:GraphAgentState):
     
     
 executable_tools = [get_flight_number,python_repl_tool]
+executable_tools = [get_flight_number]
 route_tools = [WEB_SEARCH,VECTORSTORE,CODE_GENERATION,CODE_EXECUTION]
 
 class GraphAgent:
@@ -646,7 +647,7 @@ class GraphAgent:
         _routing_tool_names = [tool.__name__ for tool in routing_tools_wrapped_in_class]
         _tool_names = _executable_tool_names + _routing_tool_names
         _tool_names_str = ','.join(_tool_names)
-        _system_message_content = f"Solve/Answer user's questions as best as you can in the language the user asked, preffered/default to Simplified Chinese. You have access to the following tools:{_tool_names_str}.You are allowed to make multiple calls (either together or in sequence)."
+        _system_message_content = f"Solve/Answer user's questions as best as you can in the language the user asked, preferred/default to Simplified Chinese. You have access to the following tools:{_tool_names_str}.You are allowed to make multiple calls (either together or in sequence).Choice Guidelines: 'CODE_GENERATION' is preferred rather than 'python_repl_tool' for drawing images, plotting graphs/charts, data file processing/analyzing/saving."
 
         if llm_model is None:
             llm_model = env_models_instance.get_langchain_chat_model()

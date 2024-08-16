@@ -2,6 +2,17 @@
 
 # webapp is a Flask app (in webapp/main.py relative to this main.py)
 # kernel_program is a Python script (in kernel_program/main.py relative to this main.py)
+
+import sys,os
+project_root_path = os.getcwd()
+p1 = '/data/projects/JqChat/jqcode'
+p2 = '/data/projects/JqChat/jqcode/jq_agent'
+for p in [project_root_path, p1, p2]:
+    sys.path.append(p)
+
+
+log_filename = "jqchat_ui.log"
+
 import warnings
 warnings.filterwarnings('ignore',"Glyph")
 import sys
@@ -15,8 +26,6 @@ from jqchat.webapp.main import app, APP_PORT
 from jqchat.kernel_program.main import main as kernel_program_main, cleanup_kernel_program
 
 APP_URL = "http://localhost:%s" % APP_PORT
-log_filename = "jqchat_ui.log"
-
 def run_webapp():
     try:
         app.run(host="0.0.0.0", port=APP_PORT, use_reloader=False)

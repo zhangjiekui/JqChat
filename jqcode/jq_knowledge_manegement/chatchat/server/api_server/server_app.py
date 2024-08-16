@@ -1,7 +1,7 @@
 import argparse
 import os
 from typing import Literal
-
+from jqcode.chat_routes import chat_router
 import uvicorn
 from fastapi import Body, FastAPI
 from fastapi.middleware.cors import CORSMiddleware
@@ -9,9 +9,10 @@ from fastapi.staticfiles import StaticFiles
 from starlette.responses import RedirectResponse
 
 from jqcode.jq_knowledge_manegement.chatchat.configs import CHATCHAT_ROOT, MEDIA_PATH, OPEN_CROSS_DOMAIN, VERSION
-# from jqcode.jq_knowledge_manegement.chatchat.server.api_server.chat_routes import chat_router
+
 from jqcode.jq_knowledge_manegement.chatchat.server.api_server.kb_routes import kb_router
-from jqchat.chat_routes import chat_router
+# from jqcode.jq_knowledge_manegement.chatchat.server.api_server.chat_routes import chat_router
+
 # from jqcode.jq_knowledge_manegement.chatchat.server.api_server.openai_routes import openai_router
 # from jqcode.jq_knowledge_manegement.chatchat.server.api_server.server_routes import server_router
 # from jqcode.jq_knowledge_manegement.chatchat.server.api_server.tool_routes import tool_router
@@ -40,9 +41,9 @@ def create_app(run_mode: str = None):
 
     app.include_router(chat_router)
     app.include_router(kb_router)
-    # app.include_router(tool_router)
-    # app.include_router(openai_router)
-    # app.include_router(server_router)
+    # # app.include_router(tool_router)
+    # # app.include_router(openai_router)
+    # # app.include_router(server_router)
 
     # 其它接口
     app.post(

@@ -45,6 +45,15 @@ elif openai.api_type == "azure":
 else:
     raise ValueError(f'Invalid OPENAI_API_TYPE: {openai.api_type}')
 # endregion
+
+import sys,os
+project_root_path = os.getcwd()
+p1 = '/data/projects/JqChat/jqcode'
+p2 = '/data/projects/JqChat/jqcode/jq_agent'
+for p in [project_root_path, p1, p2]:
+    sys.path.append(p)
+
+
 UPLOAD_FOLDER = 'workspace/'
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 APP_PORT = int(os.environ.get("WEB_PORT", 8080))
@@ -352,7 +361,7 @@ def agent_entry():
     #获取用户随机ID
     user_id=request.json.get('user',None)
     #获得知识库的字典{"name": "test" , "discription":"测试方面的知识库",...}
-    kb_base_dict=request.json.get('doc',None)
+    kb_base_dict=request.json.get('doc','es_test')
     allow_question_rewrite = request.json.get('allow_question_rewrite',True)
 
 
@@ -363,9 +372,8 @@ def agent_entry():
     print(f"{chat_bot.user_id=}")
     # 由于问题改写在少数情况下可能不是用户想要的，所以应允许用户关闭
     text = chat_bot.run_conversation(user_question=user_prompt,allow_question_rewrite=allow_question_rewrite)
-    # chat_bot.graph.update_state()
+    code = ''
     messages = chat_bot.get_all_history_messages()
-
     last_message = messages[-1]
     if isinstance(last_message,ToolMessage):
         if last_message.name == 'CODE_EXECUTION':
@@ -373,11 +381,12 @@ def agent_entry():
             question_id = kwargs.get("question_id")
             if question_id == chat_bot.question_id:
                 code_text = kwargs.get("code_text","")
+                code = kwargs.get("code","")
                 if code_text:
                     text = code_text + '\n' + text
 
  
-    return jsonify({'text': text}), 200
+    return jsonify({'code':code,'text': text}), 200
 
 
 @app.route('/chat', methods=['POST'])
