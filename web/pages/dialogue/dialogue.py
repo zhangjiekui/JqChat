@@ -2,9 +2,8 @@ import uuid
 from typing import Dict, List
 
 # from audio_recorder_streamlit import audio_recorder
-import openai
 import streamlit as st
-from streamlit_chatbox import *
+from streamlit_chatbox import ChatBox
 from streamlit_extras.bottom_container import bottom
 
 
@@ -189,7 +188,13 @@ def dialogue_page(
         print(prompt,user,doc)
         msg=chat(query=prompt,user=user,doc=doc,_api=api)
         chat_box.update_msg(msg["text"],streaming=False)
-        # if("code" in msg and msg["code"] is not None):
+        if("code" in msg and msg["code"] is not None):
+            # 获取可能存在的图片，这个图片
+            img=code()
+            img_tag =(
+                    f'<img src="data:image/jpeg;base64,{msg["text"]}" width="300">'
+                )
+            chat_box.ai_say(img_tag)
         #     #    with chat_box() :
         #         response_dict=code_editor(code=f'int i',lang="python",theme="dark")
         #         chat_box.insert_msg(

@@ -422,7 +422,7 @@ def iter_over_async(ait, loop=None):
 
 def MakeFastAPIOffline(
     app: FastAPI,
-    static_dir=Path(__file__).parent / "api_server" / "static",
+    static_dir=Path(__file__).parent / "static",
     static_url="/static-offline-docs",
     docs_url: Optional[str] = "/docs",
     redoc_url: Optional[str] = "/redoc",
@@ -536,14 +536,10 @@ def MakeFastAPIOffline(
 
 
 def api_address() -> str:
-    
-
     host = API_SERVER["host"]
     if host == "0.0.0.0":
         host = "127.0.0.1"
     port = API_SERVER["port"]
-
-    print(port)
     if port == 8501:
         pass
     return f"http://{host}:{port}"

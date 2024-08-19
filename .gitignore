@@ -29,7 +29,8 @@ jqcode/jq_readers/.outputdocs/
 
 __pycache__/
 
-checkpoints.*
+memory_checkpoints.*
 .NLTK_DATA/
+workspace/
 
 

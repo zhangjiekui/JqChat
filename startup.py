@@ -1,5 +1,3 @@
-from import_path_utils import add_import_paths
-
 import asyncio
 import logging
 import logging.config
@@ -9,9 +7,9 @@ import os, sys
 from jqcode.jq_knowledge_manegement.chatchat.server.knowledge_base.migrate import create_tables
 from contextlib import asynccontextmanager
 import pathlib
-from jqchatweb.kernel_program.main import main as kernel_program_main,APP_PORT
+from kernel_program.main import main as kernel_program_main,APP_PORT
 from jqcode.jq_knowledge_manegement.chatchat.configs import API_SERVER, LOG_PATH, MODEL_PLATFORMS
-from jqcode.jq_knowledge_manegement.chatchat.server.api_server.server_app import create_app
+from jqcode.api_server.server_app import create_app
 from jqcode.jq_knowledge_manegement.chatchat.server.utils import set_httpx_config
 import uvicorn
 from jqcode.jq_knowledge_manegement.chatchat.utils import (
@@ -26,7 +24,6 @@ import platform
 
 import langchain
 import argparse
-from typing import Dict, List
 
 from fastapi import FastAPI
 from jqcode.jq_knowledge_manegement.chatchat.configs import VERSION
@@ -315,7 +312,7 @@ async def start_main_server():
         args.api = True
         args.api_worker = False
         args.webui = True
-        args.kernel = False
+        args.kernel = True
 
     if len(sys.argv) > 1:
         logger.info(f"正在启动服务：")
@@ -378,7 +375,7 @@ async def start_main_server():
                 logger.info(f"启动KERNEL服务：{p.name}")
                 p.start()
                 p.name = f"{p.name} ({p.pid})"
-                #kernel_started.wait()  # 等待kernel启动完成
+                # kernel_started.wait()  # 等待kernel启动完成
                 
 
             if p := processes.get("api"):
@@ -424,12 +421,14 @@ def main():
     # 添加这行代码
     project_root_path = pathlib.Path().resolve()
     p1 = project_root_path/'jqcode'
-    p2 = project_root_path/'jqchatweb'
-    for p in [project_root_path, p1, p2]:
+    p2=project_root_path/'kernel_program'
+    for p in [project_root_path, p1]:
         sys.path.append(p)
 
+    print(project_root_path,p1,p2)
+    print("```"*20)
     mp.freeze_support()
-    logger.info(f"应用启动路径:{project_root_path}")
+    print(f"应用启动路径:{project_root_path}")
     
     create_tables()
     if sys.version_info < (3, 10):
