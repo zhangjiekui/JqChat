@@ -287,9 +287,10 @@ class InitEnvModels:
             print('\n\n')
             print('=*'*20)
             env_dir = find_dotenv()
+            if not env_dir:
+                root_dir = pathlib.Path().resolve()
+                env_dir = root_dir/'JqChat/.env'
             print(f"项目.env文件路径：{env_dir}")
-            # root_dir = pathlib.Path(__file__).resolve().parent.parent.parent
-            # env_dir = root_dir/'.env'
             dotenv_loaded = load_dotenv(env_dir)
             if dotenv_loaded:
                 print(f"=*=* load_dotenv('{env_dir}')成功！")

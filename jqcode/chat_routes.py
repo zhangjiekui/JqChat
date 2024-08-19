@@ -42,6 +42,7 @@ def completions(
     chat_bot = GraphAgent(memory_thread_id=user_id, kb_base_dict=kb_base_dict)
     print(f"{chat_bot.user_id=}")
     text = chat_bot.run_conversation(user_question=user_prompt)
+    code = ''
     # chat_bot.graph.update_state()
     messages = chat_bot.get_all_history_messages()
 
@@ -52,11 +53,11 @@ def completions(
             question_id = kwargs.get("question_id")
             if question_id == chat_bot.question_id:
                 code_text = kwargs.get("code_text","")
+                code = kwargs.get("code","")
                 if code_text:
                     text = code_text + '\n' + text
 
-
-    return JSONResponse(content={"text":text},status_code=200)
+    return JSONResponse(content={"text":text,"code":code},status_code=200)
 
 @chat_router.post('/upload',summary="上传接口")
 async def upload_file(

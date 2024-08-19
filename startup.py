@@ -52,7 +52,7 @@ except:
 
 
 
-def _set_app_event(app: FastAPI, started_event:Event = None):
+def _set_app_event(app: FastAPI, started_event:Event = None): # type: ignore
     @asynccontextmanager
     async def lifespan(app: FastAPI):
         if started_event is not None:
@@ -62,7 +62,7 @@ def _set_app_event(app: FastAPI, started_event:Event = None):
     app.router.lifespan_context = lifespan
 
 def run_api_server(
-    started_event:Event = None, run_mode: str = None
+    started_event:Event = None, run_mode: str = None # type: ignore
 ):
 
 
@@ -86,7 +86,7 @@ def run_api_server(
 
 
 def run_webui(
-    started_event: mp.Event = None, run_mode: str = None
+    started_event: Event = None, run_mode: str = None # type: ignore
 ):
 
 
@@ -182,7 +182,7 @@ def run_webui(
     started_event.set()
     
 #run kernel for code
-def run_kernel_program(started_event: Event = None, run_mode: str = None):
+def run_kernel_program(started_event: Event = None, run_mode: str = None): # type: ignore
     try:
         asyncio.run(kernel_program_main())
         started_event.set()

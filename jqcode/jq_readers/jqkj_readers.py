@@ -43,11 +43,10 @@ from llama_index.core.readers.file.base import default_file_metadata_func
 from jqcode.jq_readers.backend_reader_utils.jqkj_docs_converter import convert_file_to_docx
 from jqcode.jq_readers.backend_reader_utils.jqkj_doc_tree_utils import find_nearest_parent_but_not_TableOrImageNode,TreeNodeType
 from jqcode.jq_readers.backend_reader_utils.jqkj_doc_tree_utils import compare_with_zip_docx2img,get_paras_in_table
+from jqcode.jq_readers.backend_reader_utils.pyemf3project.pyemf3 import EMF
+from jqcode.jq_readers.backend_reader_utils.pyemf3project.pyemf3.emr import EXTTEXTOUTW
 
 from rapidocr_onnxruntime import RapidOCR
-
-from pyemf3project.pyemf3 import EMF
-from pyemf3project.pyemf3.emr import EXTTEXTOUTW
 
 from jqcode.jq_utils.logger import jqkj_logger
 logger = jqkj_logger(__file__).get_logger()
@@ -557,18 +556,18 @@ def _test_JqkjDocxReader(file_paths=[fr"/media/temp/发票识别接口文档.md"
 
 def _test_JqkjSimpleDirectoryReader():
     
-    convert_file_paths=[# fr'/data/projects/JqChat/jqcode/jq_readers/.testinputdocs/厦门市智慧民政一体化平台项目建设方案 V3.6.docx',
-                        fr'/data/projects/JqChat/jqcode/jq_readers/.testinputdocs/UserGuide.pdf',
-                        fr'/data/projects/JqChat/jqcode/jq_readers/.testinputdocs/AAMIS_项目总体计划_120925.doc',
+    convert_file_paths=[# fr'/data/projects/JqChatV2/JqChat/jqcode/jq_readers/.test_files/.testinputdocs/厦门市智慧民政一体化平台项目建设方案 V3.6.docx',
+                        fr'/data/projects/JqChatV2/JqChat/jqcode/jq_readers/.test_files/.testinputdocs/UserGuide.pdf',
+                        fr'/data/projects/JqChatV2/JqChat/jqcode/jq_readers/.test_files/.testinputdocs/AAMIS_项目总体计划_120925.doc',
                         fr"/media/temp/发票识别接口文档.md"
                         ]
     
     
 
-    simple_reader = JqkjSimpleDirectoryReader(input_files = convert_file_paths,output_dir_for_converted_files=fr"/data/projects/JqChat/jqcode/jq_readers/.outputdocs")
+    simple_reader = JqkjSimpleDirectoryReader(input_files = convert_file_paths,output_dir_for_converted_files=fr"/data/projects/JqChatV2/JqChat/jqcode/jq_readers/.test_files/.outputdocs")
     documents1 = simple_reader.load_data()
     # print(len(documents1))
-    input_file_dir = fr'/data/projects/JqChat/jqcode/jq_readers/.testinputdocs'
+    input_file_dir = fr'/data/projects/JqChatV2/JqChat/jqcode/jq_readers/.test_files/.testinputdocs'
     simple_reader2 = JqkjSimpleDirectoryReader(input_file_dir,exclude_hidden = False)
     documents2 = simple_reader2.load_data()
     print(len(documents2))
@@ -589,7 +588,7 @@ if __name__ == "__main__":
     #                                    ])
     
     # documents0 = _test_JqkjDocxReader([
-    #                                 fr'/data/projects/JqChat/jqcode/jq_readers/.testinputdocs/UserGuide_new.docx',
+    #                                 fr'/data/projects/JqChatV2/JqChat/jqcode/jq_readers/.test_files/.testinputdocs/UserGuide.docx',
     #                                 ])
 
 

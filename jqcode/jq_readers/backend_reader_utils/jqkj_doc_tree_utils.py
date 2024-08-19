@@ -145,21 +145,22 @@ def print_n_nodes(node:Node,n=50):
 
 def jieba_pre_process(text:Optional[Union[str, List[str]]]):
     logger.debug(f"JiebaInput:{text}")
-    _cut_results = []
+    # 需要去除的中英文标点符号
+    punctuation = '!,.:;?！，。：；？、…'
+    cut_results = []
     if isinstance(text, str):
         r=jieba.lcut_for_search(text)
-        _cut_results = [item for item in r if len(item.replace(' ',''))>0]
+        _cut_result = [item for item in r if len(item.replace(' ',''))>0]
+        cut_results = [item for item in _cut_result if item not in punctuation]
     elif isinstance(text, list):        
         for t in text:
             r=jieba.lcut_for_search(t)
-            cut_result = [item for item in r if len(item.replace(' ',''))>0]
-            _cut_results.append(cut_result)
+            _cut_result = [item for item in r if len(item.replace(' ',''))>0]
+            cut_result = [item for item in _cut_result if item not in punctuation]
+            cut_results.append(cut_result)
     else:
         raise TypeError('text must be str or list[str]')    
     
-    # 需要去除的中英文标点符号
-    punctuation = '!,.:;?！，。：；？、…'
-    cut_results = [item for item in _cut_results if item not in punctuation]
     logger.debug(f"JiebaOutput:{cut_results}")
     return cut_results
 
@@ -288,7 +289,7 @@ def _test_jieba_pre_process():
 
 def _test_get_docx_paragraph_page_number(print_interval_only_page_breaks=10,print_interval_all=100):
     print('\n=================test_get_docx_paragraph_page_number:start=================')
-    document = DocxDocument(fr'/data/projects/JqChat/jqcode/jq_readers/.testinputdocs/UserGuide_new.docx')
+    document = DocxDocument(fr'/data/projects/JqChatV2/JqChat/jqcode/jq_readers/.test_files/.testinputdocs/UserGuide.docx')
     # document = DocxDocument(fr'd:/JqkjKB/jqkjfiles/outputs/outputfiles/converted_docx/UserGuide_p2.docx')
     # document = Document(fr'd:/JqkjKB/jqkjfiles/outputs/outputfiles/converted_docx/厦门市智慧民政一体化平台项目建设方案 V3.6_p2.docx')
     # document.save('temp_for_pages.docx')
@@ -315,22 +316,22 @@ def _test_get_docx_paragraph_page_number(print_interval_only_page_breaks=10,prin
 
     print(f'一共{len(document.paragraphs)}个段落（document.paragraphs）')
 
-def _valid_returned_obj_types(document = DocxDocument(fr'/data/projects/JqChat/jqcode/jq_readers/.testinputdocs/UserGuide.docx')):
+def _valid_returned_obj_types(document = DocxDocument(fr'/data/projects/JqChatV2/JqChat/jqcode/jq_readers/.test_files/.testinputdocs/UserGuide.docx')):
     types=set()
     for b in get_all_paragraghs_paras_plus_paras_in_table(document):
         types.add(type(b))
     print(types)
     return types
 
-def _test_docx2img(word_path=fr'd:/JqkjKB/jqkjfiles/outputs/outputfiles/converted_docx/厦门市智慧民政一体化平台项目建设方案 V3.6.docx'):
+def _test_docx2img(word_path=fr'/data/projects/JqChatV2/JqChat/jqcode/jq_readers/.test_files/.testinputdocs/厦门市智慧民政一体化平台项目建设方案 V3.6.docx'):
     pics=compare_with_zip_docx2img(word_path,result_path=None)
     print(pics)
 
 
 if __name__ == "__main__":
-    # _test_jieba_pre_process()
+    _test_jieba_pre_process()
     # _test_get_docx_paragraph_page_number(print_interval_only_page_breaks=1,print_interval_all=1)
-    # types=_valid_returned_obj_types()
+    types=_valid_returned_obj_types()
     _test_docx2img()
 
 
