@@ -3,7 +3,7 @@
 ### 本地
 
 ```sh
-cd /data/projects/JqChat
+cd /data/projects/JqChatV2/JqChat
 git add .
 git commit -a
 ```
@@ -20,7 +20,11 @@ sudo kill -9 {pid}
 ```
 ## 添加项目路径
 ```
-export PYTHONPATH=$PYTHONPATH:/data/projects/JqChat:/data/projects/JqChat/jqcode:/data/projects/JqChat/jqchatweb
+export PYTHONPATH=$PYTHONPATH:/data/projects/JqChatV2/JqChat:/data/projects/JqChatV2/JqChat/jqcode:/data/projects/JqChatV2/JqChat/kernel_program:/data/projects/JqChatV2/JqChat/web
+```
+or
+```
+export PYTHONPATH=/data/projects/JqChatV2/JqChat:/data/projects/JqChatV2/JqChat/jqcode:/data/projects/JqChatV2/JqChat/kernel_program:/data/projects/JqChatV2/JqChat/web
 ```
 ## linux系统环境变量
 
