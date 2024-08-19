@@ -1,10 +1,4 @@
 import os,sys,pathlib
-project_root_path = pathlib.Path().resolve()
-p1 = project_root_path/'jqcode'
-p2 = project_root_path/'jqchatweb'
-for p in [project_root_path, p1, p2]:
-    sys.path.append(str(p))
-
 import re
 import threading
 from pathlib import Path

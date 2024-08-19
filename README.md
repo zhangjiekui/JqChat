@@ -18,7 +18,10 @@ git push
 sudo lsof -i :{port}
 sudo kill -9 {pid}
 ```
-
+## 添加项目路径
+```
+export PYTHONPATH=$PYTHONPATH:/data/projects/JqChat:/data/projects/JqChat/jqcode:/data/projects/JqChat/jqchatweb
+```
 ## linux系统环境变量
 
 ```
