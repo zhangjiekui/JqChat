@@ -10,7 +10,7 @@ from jqcode.jq_agent.c0_init_env_models import env_models_instance
 from jqcode.jq_utils.logger import jqkj_logger
 logger = jqkj_logger(__file__).get_logger()
 
-def get_retriever(index_name:str=None,doc_id_or_path:List[str]=None,add_to_kb=True,top_n:int=6,source_id_key='source',required_exts=['.doc','.docx','.pdf','.md']):
+def get_retriever(index_name:str=None,chat_on_docs_list:List[str]=None,add_docs_list_to_kb=True,top_n:int=6,source_id_key='source',required_exts=['.doc','.docx','.pdf','.md']):
     
     llm = env_models_instance.chat_model
     embed_model = env_models_instance.embed_model
@@ -20,12 +20,12 @@ def get_retriever(index_name:str=None,doc_id_or_path:List[str]=None,add_to_kb=Tr
     lc_documents = None
     doc_id_or_path_exists = []
     compression_retriever = None
-    if doc_id_or_path:
-        doc_id_or_path = [Path(item) for item in doc_id_or_path]
-        doc_id_or_path_exists = [item for item in doc_id_or_path if Path.exists(item)]
-        doc_id_or_path_not_exists = [item for item in doc_id_or_path if not Path.exists(item)]
+    if chat_on_docs_list:
+        chat_on_docs_list = [Path(item) for item in chat_on_docs_list]
+        doc_id_or_path_exists = [item for item in chat_on_docs_list if Path.exists(item)]
+        doc_id_or_path_not_exists = [item for item in chat_on_docs_list if not Path.exists(item)]
         if len(doc_id_or_path_exists)==0:
-            logger.warning(f"'{doc_id_or_path=}'中不存在的任何有效文件路径，请检查确认！")
+            logger.warning(f"'{chat_on_docs_list=}'中不存在的任何有效文件路径，请检查确认！")
         else:
             if doc_id_or_path_not_exists:
                 logger.warning(f"以下文件路径并不存在，请检查确认！'{doc_id_or_path_not_exists=}'")
@@ -38,11 +38,11 @@ def get_retriever(index_name:str=None,doc_id_or_path:List[str]=None,add_to_kb=Tr
             lc_documents = [schema.Document(page_content=node.text,metadata={**node.metadata,**{"source":node.metadata['original_source_jq']}}) for node in nodes]
     
     if index_name:
-        if add_to_kb:
+        if add_docs_list_to_kb:
             if lc_documents:
                 vectorstore = env_models_instance.get_es_searchstore_index_documents(documents=lc_documents, embedding=embed_model,index_name=index_name,source_id_key=source_id_key)
             else:
-                logger.warning(f"您的选择是将文件加入知识库('{add_to_kb=}')，但实际上并未获取到可入库的文件('{lc_documents=}')，请检查确认！")
+                logger.warning(f"您的选择是将文件加入知识库('{add_docs_list_to_kb=}')，但实际上并未获取到可入库的文件('{lc_documents=}')，请检查确认！")
                 # 与下面的代码内容是一致的
                 es_connection = env_models_instance.get_es_connection()
                 if not es_connection.indices.exists(index=index_name):

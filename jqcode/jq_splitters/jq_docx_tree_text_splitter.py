@@ -855,7 +855,7 @@ if __name__ == "__main__":
     # compression_retriever = ContextualCompressionRetriever(base_compressor=compressor, base_retriever=ensemble_retriever)
 
     index_name='test_doc_tree_reader'
-    compression_retriever = get_retriever(index_name=index_name,doc_id_or_path=input_files,add_to_kb=False)
+    compression_retriever = get_retriever(index_name=index_name,chat_on_docs_list=input_files,add_docs_list_to_kb=False)
     # chain_type:stuff、refine、map_reduce 和 map_rerank
     qa_chain_RetrievalQA = RetrievalQA.from_chain_type(llm,retriever=compression_retriever,return_source_documents=True, chain_type="stuff")
 

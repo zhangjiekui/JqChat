@@ -36,10 +36,14 @@ def completions(
     print('============================================================')
     kb_base=get_kb_detail(doc_id)
       #获得知识库的字典{"name": "test" , "discription":"测试方面的知识库",...}
-    kb_base_dict={}
+    kb_base_dict={"name": 'index_for_upload_files' , "vs_type":"ES","discription":"A vectorstore/knowledge base containing documents related to 晶奇公司、安徽晶奇网络科技股份有限公司、医疗卫生、医疗健康、医疗服务、医疗政策、medical treatment & health. 凡是与晶奇公司、安徽晶奇网络科技股份有限公司及医疗健康相关的问题，都必须使用vectorstore工具。MUST use the vectorstore for questions on these topics."}
     if(len(kb_base)>0):
         kb_base_dict={"name": kb_base['kb_name'] , "vs_type":kb_base['vs_type'],"discription":kb_base['kb_info']}
-    chat_bot = GraphAgent(memory_thread_id=user_id, kb_base_dict=kb_base_dict)
+    chat_on_docs_list = [fr'/data/projects/JqChatV2/JqChat/jqcode/jq_readers/.test_files/.testinputdocs/PPQA000_质量保证过程.doc',
+                         fr'/data/projects/JqChatV2/JqChat/jqcode/jq_readers/.test_files/.testinputdocs/A方案.docx'
+                         ]
+    add_docs_list_to_kb = False
+    chat_bot = GraphAgent(memory_thread_id=user_id, kb_base_dict=kb_base_dict,chat_on_docs_list=chat_on_docs_list,add_docs_list_to_kb=add_docs_list_to_kb)
     print(f"{chat_bot.user_id=}")
     text = chat_bot.run_conversation(user_question=user_prompt)
     code = ''
@@ -56,8 +60,8 @@ def completions(
                 code = kwargs.get("code","")
                 if code_text:
                     text = code_text + '\n' + text
-
-    return JSONResponse(content={"text":text,"code":code},status_code=200)
+    return JSONResponse(content={"text":text},status_code=200)
+    # return JSONResponse(content={"text":text,"code":code},status_code=200)
 
 @chat_router.post('/upload',summary="上传接口")
 async def upload_file(

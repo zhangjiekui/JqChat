@@ -20,7 +20,8 @@ from langchain_core.runnables import Runnable, RunnableConfig
 from jqcode.jq_agent.c0_init_env_models import env_models_instance,get_custom_handler,clean_up_list_when_encounter_null_element
 from jqcode.jq_agent.tools.jq_functions_and_tools import get_flight_number,python_repl_tool
 from langchain_experimental.tools import PythonREPLTool
-from jqcode.jq_agent.tools.jq_retriever import retriever
+from jqcode.jq_agent.tools.jq_retriever import get_retriever
+
 from jqcode.jq_agent.tools.jq_web_search_engine import get_web_search_documents,is_query_chinese,get_tavily_search_result_documents
 import os
 import re
@@ -189,33 +190,7 @@ def web_search(state:GraphAgentState):
 
     return {"documents": filtered_source, "question_searched":{question:True}}     
 
-class VECTORSTORE(BaseModel):
-    """
-    A vectorstore containing documents related to 晶奇公司、安徽晶奇网络科技股份有限公司、医疗卫生、医疗健康、医疗服务、医疗政策、medical treatment & health. 凡是与晶奇公司、安徽晶奇网络科技股份有限公司及医疗健康相关的问题，都必须使用vectorstore工具。MUST use the vectorstore for questions on these topics.
-    """
-    query: str = Field(description="The query to use when searching the vectorstore.")
 
-def vectorstore(state:GraphAgentState):
-    """
-    Retrieve documents
-
-    Args:
-        state (dict): The current graph state
-
-    Returns:
-        state (dict): New key added to state, documents, that contains retrieved documents
-    """
-    print("---RETRIEVE---")
-    question = state["question"]
-
-    # Retrieval
-    documents = retriever.invoke(question,config=invoke_llm_config)
-    # retrieve_results = "\n".join([d["content"] for d in documents])
-    # 因为retrieve_results必去grade_documents节点过滤[workflow.add_edge("retrieve", "grade_documents")]，
-    # 所以此次不添加retrieve_message，而是到grade_documents节点，仅保留过滤后的
-    # retrieve_message = ToolMessage(content=retrieve_results,name='retrieve')
-    # return {"documents": documents, "question": question,"messages":retrieve_message}
-    return {"documents": documents, "question": question}
 
 class CODE_GENERATION(BaseModel):
     """
@@ -637,13 +612,27 @@ def grade_generation_v_documents_and_question(state:GraphAgentState):
     
 executable_tools = [get_flight_number,python_repl_tool]
 executable_tools = [get_flight_number]
-route_tools = [WEB_SEARCH,VECTORSTORE,CODE_GENERATION,CODE_EXECUTION]
+route_tools = [WEB_SEARCH,CODE_GENERATION,CODE_EXECUTION]
 
 class GraphAgent:
-    def __init__(self,executable_tools:list=executable_tools, routing_tools_wrapped_in_class:list=route_tools, llm_model:ChatOpenAI=None, kb_base_dict="test", recursion_limit:int=25, memory_thread_id:str=shortuuid.uuid()) -> None:
+    def __init__(self,executable_tools:list=executable_tools, routing_tools_wrapped_in_class:list=route_tools, llm_model:ChatOpenAI=None,chat_on_docs_list:List[str]=None,add_docs_list_to_kb:bool=True, kb_base_dict:dict={"name": 'index_for_upload_files' , "vs_type":"ES","discription":"A vectorstore/knowledge base containing documents related to 晶奇公司、安徽晶奇网络科技股份有限公司、医疗卫生、医疗健康、医疗服务、医疗政策、medical treatment & health. 凡是与晶奇公司、安徽晶奇网络科技股份有限公司及医疗健康相关的问题，都必须使用vectorstore工具。MUST use the vectorstore for questions on these topics."}, recursion_limit:int=25, memory_thread_id:str=shortuuid.uuid()) -> None:
         
     # region: 初始化
-        _executable_tool_names = [tool.name for tool in executable_tools]
+        # 获取知识库相关的信息
+        self.kb_base_dict = kb_base_dict
+        self.index_name = self.kb_base_dict.get("name",None)
+        self.discription = self.kb_base_dict.get("discription",None)
+        self.chat_on_docs_list = chat_on_docs_list
+        self.add_docs_list_to_kb = add_docs_list_to_kb
+
+        self.retriever = get_retriever(index_name=self.index_name,chat_on_docs_list=self.chat_on_docs_list,add_docs_list_to_kb=self.add_docs_list_to_kb,top_n=6,source_id_key='source',required_exts=['.doc','.docx','.pdf','.md'])
+
+               
+        self.VECTORSTORE.__doc__ = self.discription
+        # 将self.VECTORSTORE加入
+        routing_tools_wrapped_in_class+=[self.VECTORSTORE]
+
+        _executable_tool_names = [tool.name for tool in executable_tools]        
         _routing_tool_names = [tool.__name__ for tool in routing_tools_wrapped_in_class]
         _tool_names = _executable_tool_names + _routing_tool_names
         _tool_names_str = ','.join(_tool_names)
@@ -662,8 +651,7 @@ class GraphAgent:
         self.model = llm_model.bind_tools(self.all_tools)
 
         self.system_message = [SystemMessage(content=_system_message_content)]
-        self.kb_base_dict = kb_base_dict
-
+        
         self.user_id = memory_thread_id
         self.question_id:str= self.get_random_id()
         self.question = ""
@@ -756,7 +744,36 @@ class GraphAgent:
     def _get_messages_from_state_by_key(self,key:str):
         messages = self.graph.get_state(config=self.config).values[key] 
         return messages
-    # endregion   
+    
+    class VECTORSTORE(BaseModel):
+        """
+        将会动态的来赋值，被替换掉
+        """
+        query: str = Field(description="The query to use when searching the vectorstore.")
+
+    def vectorstore(self,state:GraphAgentState):
+        """
+        Retrieve documents
+
+        Args:
+            state (dict): The current graph state
+
+        Returns:
+            state (dict): New key added to state, documents, that contains retrieved documents
+        """
+        print("---RETRIEVE---")
+        question = state["question"]
+
+        # Retrieval
+        documents = self.retriever.invoke(question,config=invoke_llm_config)
+        # retrieve_results = "\n".join([d["content"] for d in documents])
+        # 因为retrieve_results必去grade_documents节点过滤[workflow.add_edge("retrieve", "grade_documents")]，
+        # 所以此次不添加retrieve_message，而是到grade_documents节点，仅保留过滤后的
+        # retrieve_message = ToolMessage(content=retrieve_results,name='retrieve')
+        # return {"documents": documents, "question": question,"messages":retrieve_message}
+        return {"documents": documents, "question": question}
+
+    # endregion 类内方法  
     
     # region:Graph定义
     def graph_definition(self,):
@@ -764,7 +781,7 @@ class GraphAgent:
         graph.add_node("llm",self.call_llm)
         graph.add_node("action", self.take_action)
         graph.add_node("web_search", web_search)
-        graph.add_node("vectorstore", vectorstore )
+        graph.add_node("vectorstore", self.vectorstore )
         graph.add_node("grade_documents", grade_documents )
         graph.add_node("generate", generate)
         graph.add_node("code_generation", self.code_generation )

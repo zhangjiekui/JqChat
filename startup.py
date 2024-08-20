@@ -422,8 +422,10 @@ def main():
     project_root_path = pathlib.Path().resolve()
     p1 = project_root_path/'jqcode'
     p2=project_root_path/'kernel_program'
-    for p in [project_root_path, p1]:
-        sys.path.append(p)
+    p3=project_root_path/'web'
+    for p in [project_root_path, p1,p2,p3]:
+        if str(p) not in sys.path: 
+            sys.path.append(str(p))
 
     print(project_root_path,p1,p2)
     print("```"*20)
