@@ -147,6 +147,7 @@ def get_pre_title_nodes_text(cur_node,cur_title_node,pre_title_node,cur_ancestor
 
 class JqkjDocTreeTokenTextSplitter(MetadataAwareTextSplitter):
     logger.warning('JqkjDocTreeTokenTextSplitter TODO:\n一、方便获取和检索、对照\n（1）将每个文档的doc_tree存储到磁盘，以根节点ID命名；\n（2）在每个chunks->Documnet中增加cur_node_id,parent_node_id,root_node_id；\n二、代码测试、修正\n (1)目前发现文本有不正常的截断【已解决】； \n（2）代码本身优化\n')
+    
     _default_normal_tokens_chunk_size = DEFAULT_CHUNK_SIZE - DEFAULT_MODEL_RESERVED_TOKENS_SIZE
 
     model_reserved_tokens_size: int = Field(default=DEFAULT_MODEL_RESERVED_TOKENS_SIZE , description="为嵌入模型预留的tokens(如BOS、EOS)数量。")    
@@ -163,8 +164,8 @@ class JqkjDocTreeTokenTextSplitter(MetadataAwareTextSplitter):
     def __init__(
         self,
         cr_text_splitter:JqChineseRecursiveTextSplitter,
-        chunk_size: int = DEFAULT_CHUNK_SIZE,
-        chunk_overlap: Union[int,float] = DEFAULT_CHUNK_OVERLAP,
+        # chunk_size: int = DEFAULT_CHUNK_SIZE,
+        # chunk_overlap: Union[int,float] = DEFAULT_CHUNK_OVERLAP,
         model_reserved_tokens_size: int = DEFAULT_MODEL_RESERVED_TOKENS_SIZE,    
         callback_manager: Optional[CallbackManager] = None,
         include_metadata: bool = True,
@@ -172,8 +173,10 @@ class JqkjDocTreeTokenTextSplitter(MetadataAwareTextSplitter):
         id_func: Optional[Callable[[int, Document], str]] = None,
     ):
         """Initialize with parameters."""
-        _normal_tokens_chunk_size = chunk_size - model_reserved_tokens_size
+        chunk_size = cr_text_splitter._chunk_size
         chunk_overlap = cr_text_splitter._chunk_overlap
+        _normal_tokens_chunk_size = chunk_size - model_reserved_tokens_size
+        
         
 
         callback_manager = callback_manager or CallbackManager([])
@@ -213,8 +216,8 @@ class JqkjDocTreeTokenTextSplitter(MetadataAwareTextSplitter):
     def from_defaults(
         cls,
         cr_text_splitter:JqChineseRecursiveTextSplitter,
-        chunk_size: int = DEFAULT_CHUNK_SIZE,
-        chunk_overlap: Union[int,float] = DEFAULT_CHUNK_OVERLAP,
+        # chunk_size: int = DEFAULT_CHUNK_SIZE,
+        # chunk_overlap: Union[int,float] = DEFAULT_CHUNK_OVERLAP,
         model_reserved_tokens_size: int = DEFAULT_MODEL_RESERVED_TOKENS_SIZE,
         callback_manager: Optional[CallbackManager] = None,
         include_metadata: bool = True,
@@ -225,8 +228,8 @@ class JqkjDocTreeTokenTextSplitter(MetadataAwareTextSplitter):
         callback_manager = callback_manager or CallbackManager([])
         return cls(
             cr_text_splitter,
-            chunk_size = chunk_size,
-            chunk_overlap = chunk_overlap,
+            # chunk_size = chunk_size,
+            # chunk_overlap = chunk_overlap,
             model_reserved_tokens_size = model_reserved_tokens_size, 
             callback_manager = callback_manager,
             include_metadata = include_metadata,
@@ -276,6 +279,7 @@ class JqkjDocTreeTokenTextSplitter(MetadataAwareTextSplitter):
 
 
     def _parse_node_on_tree(self, lm_base_node: BaseNode, doc_tree: AnytreeNode, cutoff_ratio_as_chunk=0.8,get_to_first_title_directly=False) -> List[BaseNode]:
+        
         chunks_saved = [] #存储“已经处理好的Chunks”
         text_cached =''   # 累积起来的待分割的文本
         cur_text = ''     # 当前读入的文本（可能包含Ancestors节点的标题目录文本）
@@ -568,7 +572,7 @@ class JqkjDocTreeTokenTextSplitter(MetadataAwareTextSplitter):
 
 
         
-        file_path_docx = lm_base_node.metadata.get("file_path",None) or lm_base_node.metadata.get("file_path_jq",None)
+        file_path_docx = lm_base_node.metadata.get("original_source_converted_jq",None) or lm_base_node.metadata.get("file_path",None)
         if not file_path_docx:
             logger.error(f'lm_base_node的metadata(dict)中不存在key:"file_path"或"file_path_jq",lm_base_node的内容如下:\n{lm_base_node}')
         file_path_txt = file_path_docx.replace('.docx', '.txt')
@@ -583,7 +587,7 @@ class JqkjDocTreeTokenTextSplitter(MetadataAwareTextSplitter):
         
         # 更新原document node的信息        
         lm_base_node.text = updated_text
-        lm_base_node.metadata["file_path"] = file_path_txt
+        lm_base_node.metadata["file_path_chunks_to_txt_jq"] = file_path_txt
         lm_base_node.metadata["file_path_docx_jq"] = file_path_docx
 
         _metadata = lm_base_node.metadata
@@ -783,20 +787,27 @@ if __name__ == "__main__":
     from jqcode.jq_splitters.backend_splitter_utils.jq_sentence_transformers_tokentextsplitter import SentenceTransformersTokenTextSplitter
     from jqcode.jq_agent.c0_init_env_models import env_models_instance
     from jqcode.jq_readers.jqkj_readers import JqkjSimpleDirectoryReader
-    embed_model,embedding_model_8k,reranker = env_models_instance.get_emb_8k_rerank_model()
-    llm = env_models_instance.get_langchain_chat_model()
+    # llama_index的实现 https://docs.llamaindex.ai/en/stable/examples/retrievers/bm25_retriever.html
+    from llama_index.core import StorageContext,VectorStoreIndex,ServiceContext    
+    from llama_index.core.indices.vector_store.retrievers.retriever import VectorIndexRetriever
+    from llama_index.core.tools import RetrieverTool
+    from llama_index.core.postprocessor import SentenceTransformerRerank
+    from llama_index.core import QueryBundle
+    from llama_index.core.retrievers  import RouterRetriever
+    
+    from llama_index.retrievers.bm25 import BM25Retriever as LM_BM25Retriever
 
-    st_splitter=SentenceTransformersTokenTextSplitter(emb_model_instance=embed_model,tokens_per_chunk=100,chunk_overlap=0.2)
-    cr_text_splitter = st_splitter.chinese_recursive_text_splitter
-    doc_tree_spiltter = JqkjDocTreeTokenTextSplitter.from_defaults(cr_text_splitter=env_models_instance.text_splitter)
-    # doc_tree_spiltter = env_models_instance
+    from jqcode.jq_agent.tools.jq_retriever import get_retriever
+
+    
     top_n = 4
     # input_file_dir = fr'/data/projects/JqChat/jqcode/jq_readers/.testinputdocs_debug'
-    input_file_dir = fr'/data/projects/JqChat/jqcode/jq_readers/.testinputdocs'
-    input_files = [fr'/data/projects/JqChat/jqcode/jq_readers/.testinputdocs/厦门市智慧民政一体化平台项目建设方案 V3.6.docx']
-    input_files = [fr'/data/projects/JqChat/jqcode/jq_readers/.testinputdocs/A方案.docx']
-    input_files = [fr'/data/projects/JqChat/jqcode/jq_readers/.testinputdocs/InstallationGuide.docx']
-    input_files = [fr'/data/projects/JqChatV2/JqChat/jqcode/jq_readers/.test_files/.testinputdocs/PPQA000_质量保证过程.doc']   
+    input_file_dir = fr'/data/projects/JqChatV2/JqChat/jqcode/jq_readers/.test_files/.testinputdocs'
+    
+    input_files = [fr'/data/projects/JqChatV2/JqChat/jqcode/jq_readers/.test_files/.testinputdocs/A方案.docx'] 
+    # input_files += [fr'/data/projects/JqChatV2/JqChat/jqcode/jq_readers/.test_files/.testinputdocs/InstallationGuide.docx']
+    input_files += [fr'/data/projects/JqChatV2/JqChat/jqcode/jq_readers/.test_files/.testinputdocs/PPQA000_质量保证过程.doc'] 
+    # input_files += [fr'/data/projects/JqChatV2/JqChat/jqcode/jq_readers/.test_files/.testinputdocs/厦门市智慧民政一体化平台项目建设方案 V3.6.docx']  
 
     query0 = "晶奇公司的应急技术服务电话？"
     query1 = "晶奇公司在哪一年获得ISO9001国际质量体系认证？"
@@ -812,64 +823,39 @@ if __name__ == "__main__":
     qs = [query0,query1,query2,query3,query4,query5,query6,query7,query8,query9]
     # qs = [query7]
 
-    # llama_index的实现 https://docs.llamaindex.ai/en/stable/examples/retrievers/bm25_retriever.html
-    from llama_index.core import StorageContext,VectorStoreIndex,ServiceContext    
-    from llama_index.core.indices.vector_store.retrievers.retriever import VectorIndexRetriever
-    from llama_index.core.tools import RetrieverTool
-    from llama_index.core.postprocessor import SentenceTransformerRerank
-    from llama_index.core import QueryBundle
-    from llama_index.core.retrievers  import RouterRetriever
-    
-    from llama_index.retrievers.bm25 import BM25Retriever as LM_BM25Retriever
-    # from llama_index.legacy.retrievers import BM25Retriever
+
     
    
 
 
-    
-    simple_reader = JqkjSimpleDirectoryReader(input_files=input_files,overwrite_existing_converted_files=False,required_exts=['.doc','.docx','.pdf'])
-    documents = simple_reader.load_data()
-    service_context = ServiceContext.from_defaults(llm=llm, embed_model=embed_model,node_parser=doc_tree_spiltter)
-    nodes = service_context.node_parser.get_nodes_from_documents(documents)
-    # # initialize storage context (by default it's in-memory)
-    # storage_context = StorageContext.from_defaults()
-    # storage_context.docstore.add_documents(nodes)
-    # st_reranker = SentenceTransformerRerank(top_n=top_n, model=reranker.model)
-    # vector_index = VectorStoreIndex(nodes=nodes,storage_context=storage_context,service_context=service_context)
-    # vector_retriever = VectorIndexRetriever(index=vector_index,similarity_top_k=top_n)
-    # # We can pass in the index, doctore, or list of nodes to create the retriever
-    # bm25_retriever  = LM_BM25Retriever.from_defaults(nodes=nodes, similarity_top_k=top_n) 
-    # retriever_tools = [
-    #     RetrieverTool.from_defaults(retriever=vector_retriever,description="适用于大部分情形,Useful in most cases"),
-    #     RetrieverTool.from_defaults(retriever=bm25_retriever,description="适用于搜索特定信息、事实信息,Useful if searching about specific information")
-    #     ] 
+    # doc_tree_spiltter = env_models_instance.doc_tree_spiltter
+    llm = env_models_instance.chat_model
+    # embed_model = env_models_instance.embed_model
+    # reranker = env_models_instance.reranker
+    # simple_reader = JqkjSimpleDirectoryReader(input_files=input_files,overwrite_existing_converted_files=False,required_exts=['.doc','.docx','.pdf'])
+    # documents = simple_reader.load_data()
+    # service_context = ServiceContext.from_defaults(llm=llm, embed_model=embed_model,node_parser=doc_tree_spiltter)
+    # nodes = service_context.node_parser.get_nodes_from_documents(documents)
 
-    # retriever = RouterRetriever.from_defaults(retriever_tools=retriever_tools,service_context=service_context,select_multi=True)
-    # retrieved_nodes = retriever.retrieve(query0)
-    # reranked_nodes = st_reranker.postprocess_nodes(retrieved_nodes, query_bundle=QueryBundle(query0))
+    # # retriever_tools = [
+    # #     RetrieverTool.from_defaults(retriever=vector_retriever,description="适用于大部分情形,Useful in most cases"),
+    # #     RetrieverTool.from_defaults(retriever=bm25_retriever,description="适用于搜索特定信息、事实信息,Useful if searching about specific information")
+    # #     ] 
 
-    # print(retrieved_nodes)
-    # print(reranked_nodes)
+    # lc_documents = [schema.Document(page_content=node.text,metadata=node.metadata) for node in nodes]
 
-    lc_all_text_splits = [i.text for i in nodes]
-    lc_documents = [schema.Document(page_content=node.text,metadata=node.metadata) for node in nodes]
-    # from langchain_community.vectorstores import FAISS
-    # vectorstore = FAISS.from_documents(documents=lc_documents, embedding=embed_model)
+    # vectorstore = env_models_instance.get_es_searchstore_index_documents(documents=lc_documents, embedding=embed_model,index_name="test_doc_tree_reader",source_id_key='file_path')
+    # retriever = vectorstore.as_retriever(search_type="similarity", search_kwargs={"k":top_n})
+    # bm25_retriever = LC_BM25Retriever.from_documents(lc_documents,preprocess_func=jieba_pre_process)  
+    # bm25_retriever.k = top_n
 
-    vectorstore = env_models_instance.get_es_searchstore_index_documents(documents=lc_documents, embedding=embed_model,index_name="test_doc_tree_reader",source_id_key='file_path')
-    retriever = vectorstore.as_retriever(search_type="similarity", search_kwargs={"k":top_n})
-    # bm25_retriever = LC_BM25Retriever.from_texts(lc_all_text_splits,preprocess_func=jieba_pre_process)
-    bm25_retriever = LC_BM25Retriever.from_documents(lc_documents,preprocess_func=jieba_pre_process)  
-    bm25_retriever.k = top_n
+    # # 初始化集成检索器  
+    # ensemble_retriever = EnsembleRetriever(retrievers=[bm25_retriever, retriever], weights=[0.3, 0.7])
+    # compressor = reranker   
+    # compression_retriever = ContextualCompressionRetriever(base_compressor=compressor, base_retriever=ensemble_retriever)
 
-    # 初始化集成检索器  
-    ensemble_retriever = EnsembleRetriever(retrievers=[bm25_retriever, retriever], weights=[0.3, 0.7])
-    # compressor = BgeRerank(top_n = top_n) 
-    compressor = reranker   
-    compression_retriever = ContextualCompressionRetriever(base_compressor=compressor, base_retriever=ensemble_retriever)
-
-
-
+    index_name='test_doc_tree_reader'
+    compression_retriever = get_retriever(index_name=index_name,doc_id_or_path=input_files,add_to_kb=False)
     # chain_type:stuff、refine、map_reduce 和 map_rerank
     qa_chain_RetrievalQA = RetrievalQA.from_chain_type(llm,retriever=compression_retriever,return_source_documents=True, chain_type="stuff")
 
@@ -895,7 +881,7 @@ if __name__ == "__main__":
     # 下面是我想的提示词：
     # '你是一个忠实的客服专家，回答问题应尽量简洁，不超过100字，并尽量忠实引用Context和Question中的原文，如果无法回答，就说不知道，不要捏造答案。以下是问题：
 
-    def chain_qa_fun(query,chain=qa_chain_RetrievalQA):
+    def chain_qa_fun(query,chain=qa_chain_RetrievalQA,limited_to_files=None):
         print(f'   -----------询问：{query}-------------')
         # query = prompt + query
         r = chain({"query": query})
@@ -906,6 +892,8 @@ if __name__ == "__main__":
         print(f'共检索到{len(hits)}篇文档：')
         for i,h in enumerate(hits):
             print(f'文档片段[{i+1}](relevance_score:{h.metadata["relevance_score"]:.3f}):\n{h.page_content}')
+            if input_files:
+                assert h.metadata["source"] in input_files, f"检索出的文档片段必须属于文件范围内!\n文档片段详情：\n{h}\n限定的文件范围:\n{input_files}"
         print('   -----------最终回答-------------')
         print(r['result'])
         print('\n\n')
@@ -914,4 +902,4 @@ if __name__ == "__main__":
 
     # qs = [query9]
     for q in qs:
-        chain_qa_fun(q)
+        chain_qa_fun(q,limited_to_files=input_files)

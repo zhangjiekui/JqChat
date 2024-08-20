@@ -35,6 +35,7 @@ from langchain_core.messages import BaseMessage, HumanMessage,SystemMessage,Tool
 from langchain.callbacks.base import BaseCallbackHandler
 from langchain_core.callbacks import StdOutCallbackHandler
 from jqcode.jq_splitters.backend_splitter_utils.jq_chinese_recursive_text_splitter import JqChineseRecursiveTextSplitter
+from jqcode.jq_splitters.jq_docx_tree_text_splitter import JqkjDocTreeTokenTextSplitter
 
 from transformers import AutoTokenizer
 from pydantic.v1 import PrivateAttr
@@ -245,8 +246,10 @@ class InitEnvModels:
         
         self.embed_model,self.embedding_model_8k,self.reranker = None,None,None
         self.embed_model,self.embedding_model_8k,self.reranker = self.get_emb_8k_rerank_model()
+        
         self._tokenizer = AutoTokenizer.from_pretrained(self.embedding_model_name_or_path)
         self.text_splitter = JqChineseRecursiveTextSplitter(self._tokenizer,chunk_size=self.embedding_model_max_tokens,chunk_overlap=0.2)
+        self.doc_tree_spiltter = JqkjDocTreeTokenTextSplitter.from_defaults(cr_text_splitter=self.text_splitter)
 
   
         

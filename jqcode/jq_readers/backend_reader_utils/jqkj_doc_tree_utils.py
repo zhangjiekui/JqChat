@@ -144,7 +144,7 @@ def print_n_nodes(node:Node,n=50):
 
 
 def jieba_pre_process(text:Optional[Union[str, List[str]]]):
-    logger.debug(f"JiebaInput:{text}")
+    # logger.debug(f"JiebaInput:{text}")
     # 需要去除的中英文标点符号
     punctuation = '!,.:;?！，。：；？、…'
     cut_results = []
@@ -161,7 +161,7 @@ def jieba_pre_process(text:Optional[Union[str, List[str]]]):
     else:
         raise TypeError('text must be str or list[str]')    
     
-    logger.debug(f"JiebaOutput:{cut_results}")
+    # logger.debug(f"JiebaOutput:{cut_results}")
     return cut_results
 
 

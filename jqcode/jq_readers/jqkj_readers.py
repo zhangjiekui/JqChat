@@ -79,7 +79,7 @@ class JqkjDocxReader(BaseReader):
                     self.orginal_filepath_extra_info = {'original_source_jq':str(file_path),'source':str(self.file_path)}
                 else:                    
                     self.file_path =  file_path
-                    self.orginal_filepath_extra_info = {'original_source_jq':'','source':str(self.file_path)}
+                    self.orginal_filepath_extra_info = {'original_source_jq':str(file_path),'source':str(self.file_path)}
             else:
                 logger.error(f"文件不存在:{file_path}")
 
@@ -102,8 +102,10 @@ class JqkjDocxReader(BaseReader):
         return_type:str ='LC', #'LC' or 'LM',  'LC'代表返回langchain的格式，'LM'代表返回llama_index的格式
         
         """
-        file_path = Path(file_path)
+        doc_id = ''
+        file_path = Path(file_path)        
         if file_path.exists():
+            doc_id = str(file_path)
             ext = file_path.suffix
 
             if ext in ['.pdf','.doc','.md']:
@@ -111,34 +113,37 @@ class JqkjDocxReader(BaseReader):
                 
                 # self.file_path为转换后的docx文件路径
                 self.file_path =  input_filepaths_exist_and_replaced_by_docx_if_converted[0]
-                self.orginal_filepath_extra_info = {'original_source_jq':str(file_path),'source':str(self.file_path)}
+                self.orginal_filepath_extra_info = {'original_source_jq':doc_id,'original_source_converted_jq':str(self.file_path)}
             elif ext in ['.docx']:
                 self.file_path =  file_path
-                self.orginal_filepath_extra_info = {'original_source_jq':'','source':str(self.file_path)}
+                self.orginal_filepath_extra_info = {'original_source_jq':doc_id,'original_source_converted_jq':str(self.file_path)}
             else:
                 logger.error(f"JqkjDocxReader暂只支持['.pdf','.doc','.md','.docx'],无法读取[{ext}]文件")
         else:
             logger.error(f"文件不存在:{file_path}")
 
-        
-        doc = self.DocumentFunc(self.file_path)
-        text = "\n".join([paragraph.text for paragraph in doc.paragraphs if len(paragraph.text.strip())>0])
-        doc_tree,df_table_list = self.parse_docx_into_tree(doc,self.file_path)
-        
-        # 'original_source_jq'(转换前的文件pdf/doc/md的文件路径，如果本就是docx文件,则为空),'source':docx文件路径
-        metadata = {"file_name_jq": file_path.name,"file_doc_object_jq":doc,"file_doc_tree_jq":doc_tree,'df_table_list_jq':df_table_list,"file_path_jq":str(file_path)}
-        # metadata = {"file_doc_tree_jq":doc_tree}
-        if extra_info is not None:
-            metadata.update(extra_info)
-        
-        if self.orginal_filepath_extra_info is not None:
-            metadata.update(self.orginal_filepath_extra_info)
+        if self.file_path.exists() and doc_id:
+            doc = self.DocumentFunc(self.file_path)
+            text = "\n".join([paragraph.text for paragraph in doc.paragraphs if len(paragraph.text.strip())>0])
+            doc_tree,df_table_list = self.parse_docx_into_tree(doc,self.file_path)
+            
+            # 'original_source_jq'(转换前的文件pdf/doc/md的文件路径，如果本就是docx文件,则为空),'original_source_converted_jq':转换后的docx文件路径
+            metadata = {"file_name_jq": file_path.name,"file_doc_object_jq":doc,"file_doc_tree_jq":doc_tree,'df_table_list_jq':df_table_list}
+            if extra_info is not None:
+                metadata.update(extra_info)
+            
+            if self.orginal_filepath_extra_info is not None:
+                metadata.update(self.orginal_filepath_extra_info)
 
-        _keys = list(metadata.keys())
-        document = LmDocument(text=text, metadata=metadata)
-        document.excluded_embed_metadata_keys.extend(_keys)
-        document.excluded_llm_metadata_keys.extend(_keys)
-        return [document]
+            _keys = list(metadata.keys())
+            original_source_jq = metadata.get("original_source_jq",None)
+            assert doc_id == original_source_jq,f"{doc_id=}与{original_source_jq=}必须一致"
+            document = LmDocument(text=text, metadata=metadata,doc_id=doc_id)
+            document.excluded_embed_metadata_keys.extend(_keys)
+            document.excluded_llm_metadata_keys.extend(_keys)
+            return [document]
+        else:
+            return []
     
     def parse_docx_into_tree(self, docx_document:DocxDocument,file_path: Path) -> Node:
         # metadata = docx_document.metadata
@@ -456,7 +461,7 @@ class JqkjSimpleDirectoryReader(SimpleDirectoryReader):
     input_dir: Optional[str] = None,
     input_files: Optional[List] = None,
     output_dir_for_converted_files: Optional[str] = None,
-    overwrite_existing_converted_files: bool = True,
+    overwrite_existing_converted_files: bool = False,
     exclude: Optional[List] = ['~*.*','$*.*'],
     exclude_hidden: bool = True,
     errors: str = "ignore",
@@ -504,11 +509,7 @@ class JqkjSimpleDirectoryReader(SimpleDirectoryReader):
             for i,file in enumerate(input_filepaths_exist_and_replaced_by_docx_if_converted):                     
                 file = str(file)
                 original_file = str(input_filepaths_exist[i])
-
-                original = ''   
-                if file!=original_file:
-                    original = original_file
-                converted_files_metadata[file] = {'original_source_jq':original}
+                converted_files_metadata[file] = {'original_source_jq':original_file}
                         
                     
             self.input_files = input_filepaths_exist_and_replaced_by_docx_if_converted
