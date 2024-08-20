@@ -15,6 +15,7 @@ def get_retriever(index_name:str=None,chat_on_docs_list:List[str]=None,add_docs_
     llm = env_models_instance.chat_model
     embed_model = env_models_instance.embed_model
     reranker = env_models_instance.reranker
+    es_connection = env_models_instance.get_es_connection()
     
     vectorstore = None
     lc_documents = None
@@ -29,9 +30,52 @@ def get_retriever(index_name:str=None,chat_on_docs_list:List[str]=None,add_docs_
         else:
             if doc_id_or_path_not_exists:
                 logger.warning(f"以下文件路径并不存在，请检查确认！'{doc_id_or_path_not_exists=}'")
+            filter_by_files = [str(file) for file in doc_id_or_path_exists]
+            files_to_be_add_to_index = []
+            if index_name:
+                if es_connection.indices.exists(index=index_name):
+                    
+                    query = {
+                            "query": {
+                                # "term": {"metadata.source.keyword": filter_by_files},
+                                "term": {"metadata.source": filter_by_files},
+                                "term": {"_index": index_name},
+                            },
+                            "size":10000,# 注意设置size，默认返回10个。
+
+                        }
+                    all_results_in_the_index = es_connection.search(index=index_name, body=query)
+                    all_hits = all_results_in_the_index['hits']['hits']
+                    all_metadatas = [hit["_source"]["metadata"]  for hit in all_hits]
+                    file_path_set_without_extention = set()
+                    for metadata in all_metadatas:
+                        file_key = ''
+                        if "source" in metadata.keys():
+                            file_key = "source"
+                        elif "original_source_jq" in metadata.keys():
+                            file_key = "original_source_jq"
+                        # elif "file_path_jq" in metadata.keys():
+                        #     file_key = "file_path_jq"
+                        else:
+                            raise Exception('Langchain Document的metadata不存在key:"source"或"original_source_jq"')
+                        file_path = metadata[file_key]
+                        file_path_set_without_extention.add(file_path[0:-len(Path(file_path).suffix)]) 
+                        filter_by_files_without_extention = [file_path[0:-len(Path(file_path).suffix)] for file_path in filter_by_files]
+
+                    for i, file in enumerate(filter_by_files_without_extention):                        
+                        if file not in file_path_set_without_extention:
+                            files_to_be_add_to_index.append(filter_by_files[i])
+
+                    filter_by_files = files_to_be_add_to_index
+
+
+
+
+
+
+
             doc_tree_spiltter = env_models_instance.doc_tree_spiltter
-            doc_id_or_path_exists = [str(file) for file in doc_id_or_path_exists]
-            simple_reader = JqkjSimpleDirectoryReader(input_files=doc_id_or_path_exists,overwrite_existing_converted_files=False,required_exts=required_exts)
+            simple_reader = JqkjSimpleDirectoryReader(input_files=filter_by_files,overwrite_existing_converted_files=False,required_exts=required_exts)
             documents = simple_reader.load_data()
             service_context = ServiceContext.from_defaults(llm=llm, embed_model=embed_model,node_parser=doc_tree_spiltter)
             nodes = service_context.node_parser.get_nodes_from_documents(documents)
@@ -44,16 +88,15 @@ def get_retriever(index_name:str=None,chat_on_docs_list:List[str]=None,add_docs_
             else:
                 logger.warning(f"您的选择是将文件加入知识库('{add_docs_list_to_kb=}')，但实际上并未获取到可入库的文件('{lc_documents=}')，请检查确认！")
                 # 与下面的代码内容是一致的
-                es_connection = env_models_instance.get_es_connection()
+                
                 if not es_connection.indices.exists(index=index_name):
                     logger.warning(f"'{index_name}'不存在,请确认您的选择！")
                 else:
                     vectorstore = env_models_instance.get_es_searchstore(es_connection=es_connection,embedding=embed_model,index_name=index_name)
         else:
             if lc_documents:
-                vectorstore = env_models_instance.get_es_searchstore_index_documents(documents=lc_documents, embedding=embed_model,index_name="index_for_upload_files",source_id_key=source_id_key)
+                vectorstore = env_models_instance.get_es_searchstore_index_documents(documents=lc_documents, embedding=embed_model,index_name="temp_index_for_upload_files",source_id_key=source_id_key)
             else:
-                es_connection = env_models_instance.get_es_connection()
                 if not es_connection.indices.exists(index=index_name):
                     logger.warning(f"'{index_name}'不存在,请确认您的选择！")
                 else:

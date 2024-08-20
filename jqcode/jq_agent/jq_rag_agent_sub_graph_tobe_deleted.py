@@ -389,7 +389,7 @@ def generate(state:RagSubgraphState):
 
     # RAG generation
     referens = []
-    _sources =[d.metadata.get("source",d.metadata.get("file_path_jq",None)) for d in documents]
+    _sources =[d.metadata.get("source",d.metadata.get("source",None)) for d in documents]
     sources = set([s for s in _sources if s])
     referens = list(sources)
     if referens:

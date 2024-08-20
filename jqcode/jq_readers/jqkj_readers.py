@@ -70,6 +70,7 @@ class JqkjDocxReader(BaseReader):
             )
         self.DocumentFunc = DocxDocumentFunc
         self.orginal_filepath_extra_info = None
+        self.file_path = file_path
         if file_path:
             file_path = Path(file_path)
             if file_path.exists():
@@ -102,27 +103,31 @@ class JqkjDocxReader(BaseReader):
         return_type:str ='LC', #'LC' or 'LM',  'LC'代表返回langchain的格式，'LM'代表返回llama_index的格式
         
         """
-        doc_id = ''
+        self.file_path = file_path
         file_path = Path(file_path)        
         if file_path.exists():
-            doc_id = str(file_path)
-            ext = file_path.suffix
 
-            if ext in ['.pdf','.doc','.md']:
-                input_filepaths_exist,input_filepaths_exist_and_replaced_by_docx_if_converted = convert_file_to_docx(file_path,overwrite=False)
+        # 如果是经过JqkjSimpleDirectoryReader，其实已经处理了original_source_jq，这里这需要处理自身的情形
+            raise Exception("todo")
+
+        #     doc_id = str(file_path)
+        #     ext = file_path.suffix
+
+        #     if ext in ['.pdf','.doc','.md']:
+        #         input_filepaths_exist,input_filepaths_exist_and_replaced_by_docx_if_converted = convert_file_to_docx(file_path,overwrite=False)
                 
-                # self.file_path为转换后的docx文件路径
-                self.file_path =  input_filepaths_exist_and_replaced_by_docx_if_converted[0]
-                self.orginal_filepath_extra_info = {'original_source_jq':doc_id,'original_source_converted_jq':str(self.file_path)}
-            elif ext in ['.docx']:
-                self.file_path =  file_path
-                self.orginal_filepath_extra_info = {'original_source_jq':doc_id,'original_source_converted_jq':str(self.file_path)}
-            else:
-                logger.error(f"JqkjDocxReader暂只支持['.pdf','.doc','.md','.docx'],无法读取[{ext}]文件")
-        else:
-            logger.error(f"文件不存在:{file_path}")
+        #         # self.file_path为转换后的docx文件路径
+        #         self.file_path =  input_filepaths_exist_and_replaced_by_docx_if_converted[0]
+        #         self.orginal_filepath_extra_info = {'original_source_jq':doc_id,'original_source_converted_jq':str(self.file_path)}
+        #     elif ext in ['.docx']:
+        #         self.file_path =  file_path
+        #         self.orginal_filepath_extra_info = {'original_source_jq':doc_id,'original_source_converted_jq':str(self.file_path)}
+        #     else:
+        #         logger.error(f"JqkjDocxReader暂只支持['.pdf','.doc','.md','.docx'],无法读取[{ext}]文件")
+        # else:
+        #     logger.error(f"文件不存在:{file_path}")
 
-        if self.file_path.exists() and doc_id:
+        # if self.file_path.exists() and doc_id:
             doc = self.DocumentFunc(self.file_path)
             text = "\n".join([paragraph.text for paragraph in doc.paragraphs if len(paragraph.text.strip())>0])
             doc_tree,df_table_list = self.parse_docx_into_tree(doc,self.file_path)
@@ -136,9 +141,7 @@ class JqkjDocxReader(BaseReader):
                 metadata.update(self.orginal_filepath_extra_info)
 
             _keys = list(metadata.keys())
-            original_source_jq = metadata.get("original_source_jq",None)
-            assert doc_id == original_source_jq,f"{doc_id=}与{original_source_jq=}必须一致"
-            document = LmDocument(text=text, metadata=metadata,doc_id=doc_id)
+            document = LmDocument(text=text, metadata=metadata)
             document.excluded_embed_metadata_keys.extend(_keys)
             document.excluded_llm_metadata_keys.extend(_keys)
             return [document]
@@ -542,7 +545,7 @@ def _test_JqkjDocxReader(file_paths=[fr"/media/temp/发票识别接口文档.md"
         trees.append(doc_tree)
         df_tables.append(df_table_list)
         
-        logger.debug(f"=========输出[{document.metadata['file_path_jq']}]中的部分内容=========")
+        logger.debug(f"=========输出[{document.metadata['source']}]中的部分内容=========")
         n=100
         logger.debug('---'*10+f"输出document.text前{n}字符"+'---'*10)
         logger.debug(f"{document.text[:n]}")

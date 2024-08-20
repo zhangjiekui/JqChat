@@ -572,9 +572,9 @@ class JqkjDocTreeTokenTextSplitter(MetadataAwareTextSplitter):
 
 
         
-        file_path_docx = lm_base_node.metadata.get("original_source_converted_jq",None) or lm_base_node.metadata.get("file_path",None)
+        file_path_docx = lm_base_node.metadata.get("source",None) or lm_base_node.metadata.get("original_source_jq",None)
         if not file_path_docx:
-            logger.error(f'lm_base_node的metadata(dict)中不存在key:"file_path"或"file_path_jq",lm_base_node的内容如下:\n{lm_base_node}')
+            logger.error(f'lm_base_node的metadata(dict)中不存在key:"source"或"original_source_jq",lm_base_node的内容如下:\n{lm_base_node}')
         file_path_txt = file_path_docx.replace('.docx', '.txt')
         file_path_txt_preview = file_path_docx.replace('.docx', '_preview.txt')
 
@@ -854,7 +854,7 @@ if __name__ == "__main__":
     # compressor = reranker   
     # compression_retriever = ContextualCompressionRetriever(base_compressor=compressor, base_retriever=ensemble_retriever)
 
-    index_name='test_doc_tree_reader'
+    index_name='index_for_upload_files'
     compression_retriever = get_retriever(index_name=index_name,chat_on_docs_list=input_files,add_docs_list_to_kb=False)
     # chain_type:stuff、refine、map_reduce 和 map_rerank
     qa_chain_RetrievalQA = RetrievalQA.from_chain_type(llm,retriever=compression_retriever,return_source_documents=True, chain_type="stuff")
