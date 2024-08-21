@@ -95,7 +95,7 @@ class JqkjDocxReader(BaseReader):
         
         """
         self.file_path = file_path # 为了兼容chatchat，必须增加的属性
-        doc_original = file_path         # 因self.file_path和file_path下面都可能会变，所以先保留原始的到doc_id
+        doc_original = str(file_path)         # 因self.file_path和file_path下面都可能会变，所以先保留原始的到doc_id
         file_path = Path(file_path)        
         if file_path.exists():
 
@@ -122,8 +122,8 @@ class JqkjDocxReader(BaseReader):
             doc_tree,df_table_list = self.parse_docx_into_tree(doc,self.file_path)
             
             # 'original_source_jq'(转换前的文件pdf/doc/md的文件路径，如果本就是docx文件,则与original_source_converted_jq一致),
-            # 'original_source_converted_jq':转换后的docx文件路径
-            # 'source'键是为了与chatchat中的reader保持一致的
+            # 'source'键是为了与chatchat中的reader保持一致的，取值与'original_source_jq'一致
+            # 'original_source_converted_jq':转换后的docx文件路径            
             metadata = {"file_name_jq": file_path.name,"file_doc_object_jq":doc,"file_doc_tree_jq":doc_tree,'df_table_list_jq':df_table_list}
             if extra_info is not None:
                 metadata.update(extra_info)
