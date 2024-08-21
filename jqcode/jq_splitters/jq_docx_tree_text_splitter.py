@@ -854,7 +854,7 @@ if __name__ == "__main__":
     # compressor = reranker   
     # compression_retriever = ContextualCompressionRetriever(base_compressor=compressor, base_retriever=ensemble_retriever)
 
-    index_name='index_for_upload_files'
+    index_name='temp_index_for_upload_files'
     compression_retriever = get_retriever(index_name=index_name,chat_on_docs_list=input_files,add_docs_list_to_kb=False)
     # chain_type:stuff、refine、map_reduce 和 map_rerank
     qa_chain_RetrievalQA = RetrievalQA.from_chain_type(llm,retriever=compression_retriever,return_source_documents=True, chain_type="stuff")

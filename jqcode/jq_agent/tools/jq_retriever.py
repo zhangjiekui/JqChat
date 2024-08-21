@@ -79,7 +79,7 @@ def get_retriever(index_name:str=None,chat_on_docs_list:List[str]=None,add_docs_
             documents = simple_reader.load_data()
             service_context = ServiceContext.from_defaults(llm=llm, embed_model=embed_model,node_parser=doc_tree_spiltter)
             nodes = service_context.node_parser.get_nodes_from_documents(documents)
-            lc_documents = [schema.Document(page_content=node.text,metadata={**node.metadata,**{"source":node.metadata['original_source_jq']}}) for node in nodes]
+            lc_documents = [schema.Document(page_content=node.text,metadata=node.metadata) for node in nodes]
     
     if index_name:
         if add_docs_list_to_kb:
