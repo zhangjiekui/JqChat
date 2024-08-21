@@ -5,7 +5,8 @@ Contains parsers for docx, pdf files.
 """
 # from jqkjlibs.configs import general_config
 # general_config.VERBOSE = True
-
+import os
+from datetime import datetime
 from pathlib import Path
 from os.path import basename,dirname,join
 from typing import Dict, List, Optional,Callable
@@ -71,18 +72,19 @@ class JqkjDocxReader(BaseReader):
         self.DocumentFunc = DocxDocumentFunc
         self.orginal_filepath_extra_info = None
         self.file_path = file_path # 为了兼容chatchat，必须增加的属性
-        if file_path:
-            file_path = Path(file_path)
-            if file_path.exists():
-                if file_path.suffix in ['.pdf','.doc','.md']:
-                    input_filepaths_exist,input_filepaths_exist_and_replaced_by_docx_if_converted = convert_file_to_docx(file_path,overwrite=False)
-                    self.file_path =  input_filepaths_exist_and_replaced_by_docx_if_converted[0]
-                    self.orginal_filepath_extra_info = {'original_source_jq':str(file_path),'source':str(self.file_path)} #'source'键是为了与chatchat中的reader保持一致的
-                else:                    
-                    self.file_path =  file_path
-                    self.orginal_filepath_extra_info = {'original_source_jq':str(file_path),'source':str(self.file_path)} #'source'键是为了与chatchat中的reader保持一致的
-            else:
-                logger.error(f"文件不存在:{file_path}")
+        # 下面的代码放到load_data中统一处理
+        # if file_path:
+        #     file_path = Path(file_path)
+        #     if file_path.exists():
+        #         if file_path.suffix in ['.pdf','.doc','.md']:
+        #             input_filepaths_exist,input_filepaths_exist_and_replaced_by_docx_if_converted = convert_file_to_docx(file_path,overwrite=False)
+        #             self.file_path =  input_filepaths_exist_and_replaced_by_docx_if_converted[0]
+        #             self.orginal_filepath_extra_info = {'original_source_jq':str(file_path),'source':str(file_path),'original_source_converted_jq':str(self.file_path)} #'source'键是为了与chatchat中的reader保持一致的
+        #         else:                    
+        #             self.file_path =  file_path
+        #             self.orginal_filepath_extra_info = {'original_source_jq':str(file_path),'source':str(file_path),'original_source_converted_jq':str(self.file_path)} #'source'键是为了与chatchat中的reader保持一致的
+        #     else:
+        #         logger.error(f"文件不存在:{file_path}")
 
     def load(self, extra_info: Optional[Dict] = None) -> List[LmDocument]:
         """Parse docx file."""
@@ -119,11 +121,10 @@ class JqkjDocxReader(BaseReader):
         if self.file_path.exists() and doc_original:
             doc = self.DocumentFunc(self.file_path)
             text = "\n".join([paragraph.text for paragraph in doc.paragraphs if len(paragraph.text.strip())>0])
-            doc_tree,df_table_list = self.parse_docx_into_tree(doc,self.file_path)
-            
+            doc_tree,df_table_list = self.parse_docx_into_tree(doc,self.file_path)            
             # 'original_source_jq'(转换前的文件pdf/doc/md的文件路径，如果本就是docx文件,则与original_source_converted_jq一致),
             # 'source'键是为了与chatchat中的reader保持一致的，取值与'original_source_jq'一致
-            # 'original_source_converted_jq':转换后的docx文件路径            
+            # 'original_source_converted_jq':转换后的docx文件路径   
             metadata = {"file_name_jq": file_path.name,"file_doc_object_jq":doc,"file_doc_tree_jq":doc_tree,'df_table_list_jq':df_table_list}
             if extra_info is not None:
                 metadata.update(extra_info)
@@ -133,6 +134,12 @@ class JqkjDocxReader(BaseReader):
                 # 所以此处判断'original_source_jq'键是否已经存在，如果不存在，才能更新
                 if 'original_source_jq' not in metadata.keys():
                     metadata.update(self.orginal_filepath_extra_info)
+
+            if 'file_size' not in metadata.keys():
+                # 调用/root/.virtualenvs/test/lib/python3.10/site-packages/llama_index/legacy/readers/file/base.py
+                # default_file_metadata_func方法，来获取文件default_file_metadata
+                default_file_metadata = default_file_metadata_func(doc_original)
+                metadata.update(default_file_metadata)
 
             _keys = list(metadata.keys())
             document = LmDocument(text=text, metadata=metadata)
@@ -506,7 +513,7 @@ class JqkjSimpleDirectoryReader(SimpleDirectoryReader):
             for i,file in enumerate(input_filepaths_exist_and_replaced_by_docx_if_converted):                     
                 file = str(file)
                 original_file = str(input_filepaths_exist[i])
-                converted_files_metadata[file] = {'original_source_jq':original_file,'source':original_file} #'source'键是为了与chatchat中的reader保持一致的
+                converted_files_metadata[file] = {'original_source_jq':original_file,'source':original_file,'original_source_converted_jq':file} #'source'键是为了与chatchat中的reader保持一致的
                         
                     
             self.input_files = input_filepaths_exist_and_replaced_by_docx_if_converted
@@ -571,26 +578,17 @@ def _test_JqkjSimpleDirectoryReader():
     print(len(documents2))
     return documents1,documents2
 
+def _test_get_retriever():
+    from jqcode.jq_agent.tools.jq_retriever import get_retriever
+    input_files = [fr'/data/projects/JqChatV2/JqChat/jqcode/jq_readers/.test_files/.testinputdocs/A方案.docx'] 
+    input_files += [fr'/data/projects/JqChatV2/JqChat/jqcode/jq_readers/.test_files/.testinputdocs/PPQA000_质量保证过程.doc']   
+    index_name='temp_index_for_upload_files'
+    compression_retriever = get_retriever(index_name=index_name,chat_on_docs_list=input_files,add_docs_list_to_kb=False)     
+    print(type(compression_retriever))
 if __name__ == "__main__":
 
-    _test_JqkjDocxReader()
-    # _test_JqkjSimpleDirectoryReader()
-    # [fr'd:/JqkjKB/jqkjfiles/outputs/outputfiles/converted_docx/厦门市智慧民政一体化平台项目建设方案 V3.6.docx']
+    # _test_JqkjDocxReader()
+    # documents1,documents2 = _test_JqkjSimpleDirectoryReader()
+    # print(f"{len(documents1)=}")
+    _test_get_retriever()
 
-
-    # documents0 = _test_JqkjDocxReader([fr"D:\JqkjKB\jqkjfiles\outputs\outputfiles\converted_docx\A方案.docx",
-    #                                    fr'd:/JqkjKB/jqkjfiles/outputs/outputfiles/converted_docx/厦门市智慧民政一体化平台项目建设方案 V3.6.docx',
-    #                                    fr'd:/JqkjKB/jqkjfiles/outputs/outputfiles/converted_docx/UserGuide.docx',
-    #                                    fr'd:/JqkjKB/jqkjfiles/outputs/outputfiles/converted_docx/InstallationGuide.docx',
-    #                                    fr'd:/JqkjKB/jqkjfiles/outputs/outputfiles/converted_docx/baichuan.docx',
-    #                                    ])
-    
-    # documents0 = _test_JqkjDocxReader([
-    #                                 fr'/data/projects/JqChatV2/JqChat/jqcode/jq_readers/.test_files/.testinputdocs/UserGuide.docx',
-    #                                 ])
-
-
-    documents1,documents2 = _test_JqkjSimpleDirectoryReader()
-
-
-    print(len(documents1))

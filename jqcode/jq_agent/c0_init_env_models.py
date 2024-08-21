@@ -17,8 +17,10 @@ from itertools import groupby
 from elasticsearch import Elasticsearch
 from langchain_core.documents import Document
 from langchain_elasticsearch import ElasticsearchStore
+from elasticsearch.helpers.vectorstore import DenseVectorStrategy,BM25Strategy
 from langchain.indexes import SQLRecordManager, index
 from langchain_elasticsearch.chat_history import ElasticsearchChatMessageHistory
+
 # from langchain_community.chat_models import ChatOllama
 from langchain_ollama import ChatOllama
 
@@ -30,6 +32,7 @@ from langchain.text_splitter import RecursiveCharacterTextSplitter
 from langchain_core.messages import BaseMessage
 from langchain_community.vectorstores import FAISS
 from langchain_community.vectorstores.utils import DistanceStrategy
+
 from langchain.retrievers import ContextualCompressionRetriever
 from langchain_core.messages import BaseMessage, HumanMessage,SystemMessage,ToolMessage,AIMessage
 from langchain.callbacks.base import BaseCallbackHandler
@@ -282,8 +285,7 @@ class InitEnvModels:
 
         self.all_indices = None
         self.all_indices = self.get_all_knowledge_base()
-        self.strategy = ElasticsearchStore.ApproxRetrievalStrategy(hybrid=False) 
-
+        self.strategy = DenseVectorStrategy(hybrid=False)
 
     def load_project_env(self):
         if not self.env_loaded: 
@@ -462,7 +464,7 @@ class InitEnvModels:
     def get_es_searchstore(self,embedding=None,es_connection=None,index_name='',strategy=None):
         embedding = embedding if embedding else self.get_emb_8k_rerank_model()[0]
         es_connection = es_connection if es_connection else self.get_es_connection()
-        strategy = strategy if strategy else ElasticsearchStore.ApproxRetrievalStrategy(hybrid=False)
+        strategy = strategy if strategy else self.strategy
         index_name = index_name if index_name else 'test_doc_tree_reader'    
         es_searchstore = ElasticsearchStore(es_connection=es_connection, index_name=index_name, embedding=embedding,strategy=strategy)
         return es_searchstore

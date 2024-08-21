@@ -891,7 +891,8 @@ if __name__ == "__main__":
         print('   -----------检索结果-------------')
         print(f'共检索到{len(hits)}篇文档：')
         for i,h in enumerate(hits):
-            print(f'文档片段[{i+1}](relevance_score:{h.metadata["relevance_score"]:.3f}):\n{h.page_content}')
+            # print(f'文档片段[{i+1}](relevance_score:{h.metadata["relevance_score"]:.3f}):\n{h.page_content}')
+            print(f'文档片段[{i+1}](relevance_score:{h.metadata["relevance_score"]:.3f})')
             if input_files:
                 assert h.metadata["source"] in input_files, f"检索出的文档片段必须属于文件范围内!\n文档片段详情：\n{h}\n限定的文件范围:\n{input_files}"
         print('   -----------最终回答-------------')
