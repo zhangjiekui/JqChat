@@ -411,7 +411,7 @@ class InitEnvModels:
             # BCERerank: compress_documents(documents: Sequence[Document],query: str)
             # xinference.client: model.rerank(corpus, query) https://inference.readthedocs.io/zh-cn/latest/index.html
             # https://github.com/xorbitsai/inference/blob/7d83300a7694a0262b634007ea4164ea753e466f/xinference/model/rerank/core.py
-            reranker = XinferenceReranker(top_n=4,model=xinfer_reranker)
+            reranker = XinferenceReranker(top_n=6,model=xinfer_reranker)
             # reranker.compress_documents = reranker.rerank
             query = "A man is eating pasta."
             corpus = ["A man is eating food.","A woman is playing violin."]

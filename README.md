@@ -416,3 +416,7 @@ https://github.com/dadoonet/fscrawler
 pip install elasticsearch -U
 https://github.com/elastic/elasticsearch-py 
 
+### elasticsearch-dsl-py
+pip install elasticsearch-dsl -U
+https://github.com/elastic/elasticsearch-dsl-py
+

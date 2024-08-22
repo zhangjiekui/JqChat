@@ -570,14 +570,14 @@ class JqkjDocTreeTokenTextSplitter(MetadataAwareTextSplitter):
                             # cur_title_node,pre_title_node,cur_ancestors_text_placeholder,pre_ancestors_text_placeholder = get_pre_title_nodes_text(cur_node,cur_title_node=cur_title_node,pre_title_node=pre_title_node,cur_ancestors_text_placeholder=cur_ancestors_text_placeholder,pre_ancestors_text_placeholder=pre_ancestors_text_placeholder)
                             text_cached = cur_ancestors_text_placeholder + column_names + row
 
-
         
         file_path_docx = lm_base_node.metadata.get("source",None) or lm_base_node.metadata.get("original_source_jq",None)
         if not file_path_docx:
             logger.error(f'lm_base_node的metadata(dict)中不存在key:"source"或"original_source_jq",lm_base_node的内容如下:\n{lm_base_node}')
-        file_path_txt = file_path_docx.replace('.docx', '.txt')
-        file_path_txt_preview = file_path_docx.replace('.docx', '_preview.txt')
-
+        file_path_txt = file_path_docx+'.txt'
+        file_path_txt_preview = file_path_docx+'_preview.txt'
+        # file_path_txt = file_path_docx.replace('.docx', '.txt')
+        # file_path_txt_preview = file_path_docx.replace('.docx', '_preview.txt')
         updated_text = '\n\n'.join(chunks_saved)
         # 切分后的结果保存到文本文件
         with open(file_path_txt,'w',encoding='utf-8') as f:
@@ -853,15 +853,7 @@ if __name__ == "__main__":
     # ensemble_retriever = EnsembleRetriever(retrievers=[bm25_retriever, retriever], weights=[0.3, 0.7])
     # compressor = reranker   
     # compression_retriever = ContextualCompressionRetriever(base_compressor=compressor, base_retriever=ensemble_retriever)
-
-    index_name='temp_index_for_upload_files'
-    compression_retriever = get_retriever(index_name=index_name,chat_on_docs_list=input_files,add_docs_list_to_kb=False)
-    # chain_type:stuff、refine、map_reduce 和 map_rerank
-    qa_chain_RetrievalQA = RetrievalQA.from_chain_type(llm,retriever=compression_retriever,return_source_documents=True, chain_type="stuff")
-
-    from langchain.chains.question_answering.stuff_prompt import system_template
-    logger.info(f"USING SYSTEM PROMPY from /root/miniconda3/envs/test/lib/python3.9/site-packages/langchain/chains/question_answering/stuff_prompt.py")
-    logger.info(f"USING ‘REVICED’ SYSTEM PROMPY:\n{system_template}")
+    
     # 下面是智谱Chatglm的提示词
     # 作为一名智能客服，请你记住【】中的知识库内容，并根据知识库内容用简洁和专业的来回答用户问题。如果无法从中得到答案，请说 “根据已知信息无法回答该问题” 或 “没有提供足够的相关信息”，不允许在答案中添加编造成分，答案请使用中文。
             
@@ -880,6 +872,15 @@ if __name__ == "__main__":
 
     # 下面是我想的提示词：
     # '你是一个忠实的客服专家，回答问题应尽量简洁，不超过100字，并尽量忠实引用Context和Question中的原文，如果无法回答，就说不知道，不要捏造答案。以下是问题：
+    index_name='yqli'
+    compression_retriever = get_retriever(index_name=index_name,chat_on_docs_list=input_files,add_docs_list_to_kb=True)
+    # chain_type:stuff、refine、map_reduce 和 map_rerank
+    qa_chain_RetrievalQA = RetrievalQA.from_chain_type(llm,retriever=compression_retriever,return_source_documents=True, chain_type="stuff")
+
+    from langchain.chains.question_answering.stuff_prompt import system_template
+    logger.info(f"USING SYSTEM PROMPY from /root/miniconda3/envs/test/lib/python3.9/site-packages/langchain/chains/question_answering/stuff_prompt.py")
+    logger.info(f"USING ‘REVICED’ SYSTEM PROMPY:\n{system_template}")
+
 
     def chain_qa_fun(query,chain=qa_chain_RetrievalQA,limited_to_files=None):
         print(f'   -----------询问：{query}-------------')
