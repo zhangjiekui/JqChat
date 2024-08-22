@@ -376,15 +376,6 @@ pip install "numpy>=1.24,<1.25" "dateparser>=1.1,<1.2" "pandas>=1.5,<1.6" "geopa
 
 <img src="https://github.com/ricklamers/gpt-code-ui/assets/1309307/c29c504a-a7ed-4ae0-9360-d7224bc3e3d6" alt="GPT-Code logo" width="100%" />
 
-## Features
-
-- File upload
-- File download
-- Context awareness (it can refer to your previous messages)
-- Generate code
-- Run code (Python kernel)
-- Model switching (GPT-3.5 and GPT-4)
-
 ## Misc.
 
 ### Using .env for OpenAI key and `OPENAI_API_BASE` for local model api
@@ -415,3 +406,13 @@ Simply ask the OpenAI model to do something and it will generate & execute the c
 Read the [blog post](https://ricklamers.io/posts/gpt-code) to find out more. This is the tech architecture:
 
 <img src="https://github.com/zhangjiekui/AgentRagChatCI/blob/main/frontend/public/assets/tech-architecture-diagram.png" alt="Tech Architecture Diagram" width=600 />
+
+## 相关的项目资源
+
+### File System Crawler for Elasticsearch  
+https://github.com/dadoonet/fscrawler  
+
+### Elasticsearch Python Client
+pip install elasticsearch -U
+https://github.com/elastic/elasticsearch-py 
+

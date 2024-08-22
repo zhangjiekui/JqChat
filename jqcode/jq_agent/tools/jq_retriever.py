@@ -69,20 +69,39 @@ def get_retriever(index_name:str=None,chat_on_docs_list:List[str]=None,add_docs_
             
             filter_by_files = [str(file) for file in doc_paths_exists]
             # !!!下面的代码不要删除，以后要用!!!
-            #region 测试插入整个文档，为父子文档做技术准备,顺便测试JqkjDocxReader
-            # from jqcode.jq_readers.jqkj_readers import JqkjDocxReader
-            # for file in filter_by_files:
-            #     jq_file_reader = JqkjDocxReader(file_path=file)
-            #     doc = jq_file_reader.load()[0]
-            #     _metadata = doc.metadata
-            #     del _metadata['file_doc_object_jq']
-            #     del _metadata['file_doc_tree_jq']
-            #     del _metadata['df_table_list_jq']
-            #     doc_index_dict = {"text":doc.text,"id":"my_id",
-            #                       "metadata":_metadata
-            #                     }
-            #     result = es_connection.index(index=index_destination,body=doc_index_dict)
-            #endregion 测试插入整个文档，为父子文档做技术准备,顺便测试JqkjDocxReader
+            # region 测试插入整个文档，为父子文档做技术准备,顺便测试JqkjDocxReader
+            
+            # 可参考：https://www.elastic.co/guide/en/elasticsearch/client/python-api/current/getting-started-python.html#_installation
+            from jqcode.jq_readers.jqkj_readers import JqkjDocxReader
+            from anytree.exporter import JsonExporter,DictExporter
+            import shortuuid
+            files_index = "files_on_es"
+            anytree_json_exporter = JsonExporter(indent=2, sort_keys=True)
+            anytree_dict_exporter = DictExporter()
+            if not es_connection.indices.exists(index=files_index):
+                es_connection.indices.create(index=files_index)
+            for file in filter_by_files:
+                                
+                jq_file_reader = JqkjDocxReader(file_path=file)                
+                doc = jq_file_reader.load()[0]
+                if doc:
+                    random_id = shortuuid.uuid()
+                    file_id = f"{random_id}({file})" 
+                    print(file_id)
+                    _metadata = doc.metadata
+                    # del _metadata['df_table_list_jq']
+                    # del _metadata['file_doc_object_jq']
+                    df_table_list_jq = _metadata.pop('df_table_list_jq',None)
+                    file_doc_object_jq = _metadata.pop('file_doc_object_jq',None)
+                    doc_tree = _metadata.pop('file_doc_tree_jq',None)
+                    # doc_tree_json = anytree_json_exporter.export(doc_tree)
+                    doc_tree_dict = anytree_dict_exporter.export(doc_tree) 
+                    
+                    doc_index_dict = {"id":file_id,"metadata":_metadata,"text":doc.text,"json_tree_dict":doc_tree_dict}
+                    index_result = es_connection.index(index=index_destination,body=doc_index_dict)
+            get_result = es_connection.get(index=index_destination, id="my_id")
+            
+            # endregion 测试插入整个文档，为父子文档做技术准备,顺便测试JqkjDocxReader
             # !!!上面的代码不要删除，以后要用!!!
 
             files_to_be_add_to_index = []            
