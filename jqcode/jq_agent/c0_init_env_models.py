@@ -55,7 +55,7 @@ os.environ['TAVILY_API_KEY'] = "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"
 
 class XinferenceReranker(BaseDocumentCompressor):
     client: str = 'Xinference'
-    top_n: int = 4
+    top_n: int = 10
     """Number of documents to return."""
     model: Any=None
     """Xinference Rerank Model Instance to use for reranking."""
@@ -68,7 +68,7 @@ class XinferenceReranker(BaseDocumentCompressor):
 
     def __init__(
         self,
-        top_n: int = 4,
+        top_n: int = 6,
         model:Any =None,
         **kwargs
     ):
@@ -80,7 +80,7 @@ class XinferenceReranker(BaseDocumentCompressor):
         self,
         documents: List[str],
         query: str,
-        top_n: Optional[int]=4,
+        top_n: Optional[int]= 6,        
         max_chunks_per_doc: Optional[int]=None,
         return_documents: Optional[bool]=True,
         return_len: Optional[bool]=True,
@@ -93,6 +93,7 @@ class XinferenceReranker(BaseDocumentCompressor):
         self,
         documents: Union[Sequence[Document],Sequence[str]],
         query: str,
+        threshold:float = 0.2, #"""相关性阈值，低于此值的文档不返回."""
         callbacks: Optional[Callbacks] = None,
     ) -> Sequence[Document]:
         """
@@ -111,7 +112,6 @@ class XinferenceReranker(BaseDocumentCompressor):
         doc_list = list(documents)
         passages = []
         valid_doc_list = []
-        invalid_doc_list = []
 
         doc_list = [Document(page_content=d) if isinstance(d,str) else d for d in doc_list]
         for d in doc_list:
@@ -119,23 +119,18 @@ class XinferenceReranker(BaseDocumentCompressor):
             if isinstance(passage, str) and len(passage) > 0:
                 passages.append(passage.replace('\n', ' '))
                 valid_doc_list.append(d)
-            else:
-                invalid_doc_list.append(d)
        
         rerank_result = self._model.rerank(passages,query,top_n=self.top_n,return_documents=False,return_len=True)
         rerank_result_list = rerank_result["results"]
-        # rerank_result["results"][0]['relevance_score']
         final_results = []
         for result in rerank_result_list:
             score =  result['relevance_score']
-            doc_id = result['index']
-            doc = valid_doc_list[doc_id]
-            doc.metadata.update({"relevance_score":score})
-            final_results.append(doc)
-        for doc in invalid_doc_list:
-            doc.metadata.update({"relevance_score":0.0})
-            final_results.append(doc)
-        
+            if score>=threshold:
+                doc_id = result['index']
+                doc = valid_doc_list[doc_id]
+                doc.metadata.update({"relevance_score":score})
+                final_results.append(doc)
+       
         final_results = final_results[:self.top_n]
         return final_results
 

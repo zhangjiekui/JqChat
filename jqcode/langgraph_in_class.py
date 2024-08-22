@@ -625,7 +625,7 @@ class GraphAgent:
         self.chat_on_docs_list = chat_on_docs_list
         self.add_docs_list_to_kb = add_docs_list_to_kb
 
-        self.retriever = get_retriever(index_name=self.index_name,chat_on_docs_list=self.chat_on_docs_list,add_docs_list_to_kb=self.add_docs_list_to_kb,top_n=6,source_id_key='source',required_exts=['.doc','.docx','.pdf','.md'])
+        self.retriever = get_retriever(index_name=self.index_name,chat_on_docs_list=self.chat_on_docs_list,add_docs_list_to_kb=self.add_docs_list_to_kb,top_n=10,source_id_key='source',required_exts=['.doc','.docx','.pdf','.md'])
 
                
         self.VECTORSTORE.__doc__ = self.discription

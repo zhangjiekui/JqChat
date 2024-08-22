@@ -420,3 +420,6 @@ https://github.com/elastic/elasticsearch-py
 pip install elasticsearch-dsl -U
 https://github.com/elastic/elasticsearch-dsl-py
 
+### Searx.space元搜索引擎聚合地址
+https://searx.space/
+

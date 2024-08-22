@@ -873,7 +873,8 @@ if __name__ == "__main__":
     # 下面是我想的提示词：
     # '你是一个忠实的客服专家，回答问题应尽量简洁，不超过100字，并尽量忠实引用Context和Question中的原文，如果无法回答，就说不知道，不要捏造答案。以下是问题：
     index_name='yqli'
-    compression_retriever = get_retriever(index_name=index_name,chat_on_docs_list=input_files,add_docs_list_to_kb=True)
+    # compression_retriever = get_retriever(index_name=index_name,chat_on_docs_list=input_files,add_docs_list_to_kb=True)
+    compression_retriever = get_retriever(index_name=index_name)
     # chain_type:stuff、refine、map_reduce 和 map_rerank
     qa_chain_RetrievalQA = RetrievalQA.from_chain_type(llm,retriever=compression_retriever,return_source_documents=True, chain_type="stuff")
 
@@ -893,9 +894,10 @@ if __name__ == "__main__":
         print(f'共检索到{len(hits)}篇文档：')
         for i,h in enumerate(hits):
             # print(f'文档片段[{i+1}](relevance_score:{h.metadata["relevance_score"]:.3f}):\n{h.page_content}')
-            print(f'文档片段[{i+1}](relevance_score:{h.metadata["relevance_score"]:.3f})')
+            print(f'【{h.metadata.get("file_name",None) or h.metadata.get("source",None)}】文档片段[{i+1}](relevance_score:{h.metadata["relevance_score"]:.3f})')
             if input_files:
-                assert h.metadata["source"] in input_files, f"检索出的文档片段必须属于文件范围内!\n文档片段详情：\n{h}\n限定的文件范围:\n{input_files}"
+                if h.metadata["source"] not in input_files:
+                    logger.warning(f"检索出的文档片段不在指定文件范围内!限定的文件范围:\n{input_files}")
         print('   -----------最终回答-------------')
         print(r['result'])
         print('\n\n')

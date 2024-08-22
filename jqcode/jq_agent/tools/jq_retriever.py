@@ -3,6 +3,8 @@ from pathlib import Path
 from llama_index.core import ServiceContext
 from langchain import schema
 from elasticsearch import Elasticsearch
+from langchain_elasticsearch import ElasticsearchStore
+from elasticsearch.helpers.vectorstore import DenseVectorStrategy,BM25Strategy
 from langchain.retrievers import EnsembleRetriever,ContextualCompressionRetriever
 from langchain_community.retrievers import ElasticSearchBM25Retriever
 from llama_index.core.readers.file.base import default_file_metadata_func
@@ -21,10 +23,10 @@ def get_retriever(index_name:str=None,chat_on_docs_list:List[str]=None,add_docs_
 
     assert index_name, f"'index_name'参数不得为空，连接Elasticsearch检索时需要！"
     
-    vectorstore = None
+    default_vectorstore = None
     lc_documents = None
     doc_paths_exists = []
-    retriever = None    
+    vector_retriever = None    
 
 # 如果是chat on docs, 则获取基于文件过滤的retriever
     if chat_on_docs_list:
@@ -49,8 +51,16 @@ def get_retriever(index_name:str=None,chat_on_docs_list:List[str]=None,add_docs_
                 index_destination = default_temp_index_name
                 logger.warning(f"您还没有选择将文件上传到知识库'{index_name=}'，将使用默认的临时知识库{default_temp_index_name=}来处理。")
             
+            _RESERVED_FILTER_BY_FILES = []
+            for doc in doc_paths_exists:
+                suffix = doc.suffix
+                assert suffix in required_exts,f"{doc}还不是支持的文件类型{required_exts}"
+                _RESERVED_FILTER_BY_FILES.append(doc)
+                if doc.suffix !='.docx':
+                    docx = str(doc.parent/doc.stem) + '.docx'
+                    _RESERVED_FILTER_BY_FILES.append(docx)
             
-            RESERVED_FILTER_BY_FILES = [str(file) for file in doc_paths_exists]
+            RESERVED_FILTER_BY_FILES = [str(file) for file in _RESERVED_FILTER_BY_FILES]
             
             existed_files_maybe_need_indexing = [str(file) for file in doc_paths_exists]
             files_to_be_add_to_index = []            
@@ -155,70 +165,88 @@ def get_retriever(index_name:str=None,chat_on_docs_list:List[str]=None,add_docs_
 
         # 4、上传已经读取和处理的文件（这些文件知识库中还不存在），目标index为前面已经判断处理过的index_destination
         if lc_documents:
-            vectorstore = env_models_instance.get_es_searchstore_index_documents(documents=lc_documents, embedding=embed_model,index_name=index_destination,
+            default_vectorstore = env_models_instance.get_es_searchstore_index_documents(documents=lc_documents, embedding=embed_model,index_name=index_destination,
                                                                                  es_connection=es_connection,clear_before_add_index=True,source_id_key=source_id_key)
         else:
-            vectorstore = env_models_instance.get_es_searchstore(es_connection=es_connection,embedding=embed_model,index_name=index_destination)   
+            default_vectorstore = env_models_instance.get_es_searchstore(es_connection=es_connection,embedding=embed_model,index_name=index_destination)   
     
-        if vectorstore and RESERVED_FILTER_BY_FILES:
+        if default_vectorstore and RESERVED_FILTER_BY_FILES:
                 filters = {"terms":{f"metadata.{source_id_key}.keyword": RESERVED_FILTER_BY_FILES}} 
-                retriever = vectorstore.as_retriever(search_type="similarity", search_kwargs={"k":top_n,"filter":filters})
+                vector_retriever = default_vectorstore.as_retriever(search_type="similarity", search_kwargs={"k":top_n,"filter":filters})
             #region:文件过滤检索器的测试
-                file_list = [RESERVED_FILTER_BY_FILES[0]]
-                filters = {"terms":{f"metadata.{source_id_key}.keyword": file_list}}
-                retriever = vectorstore.as_retriever(search_type="similarity_score_threshold", search_kwargs={'k':20,'score_threshold': 0.8,'filter':filters})
-                result =retriever.invoke("晶奇公司的应急技术服务电话？")
-                files = [d.metadata['file_name'] for d in result]
-                uni_files = set(files)
-                print(f"基于{file_list}进行检索，共检索到{len(files)}个文件，检索出的Unique文件为:{uni_files}")
+                # file_list = [RESERVED_FILTER_BY_FILES[0]]
+                # filters = {"terms":{f"metadata.{source_id_key}.keyword": file_list}}
+                # vector_retriever = default_vectorstore.as_retriever(search_type="similarity_score_threshold", search_kwargs={'k':20,'score_threshold': 0.8,'filter':filters})
+                # result =vector_retriever.invoke("晶奇公司的应急技术服务电话？")
+                # files = [d.metadata['file_name'] for d in result]
+                # uni_files = set(files)
+                # print(f"基于{file_list}进行检索，共检索到{len(files)}个文件，检索出的Unique文件为:{uni_files}")
 
-                retriever = vectorstore.as_retriever(search_type="similarity_score_threshold", search_kwargs={'k':20,'score_threshold': 0.73,'filter':filters})
-                result =retriever.invoke("晶奇公司的应急技术服务电话？")
-                files = [d.metadata['file_name'] for d in result]
-                uni_files = set(files)
-                print(f"还是基于{file_list}进行检索，但改变了'score_threshold'，共检索到{len(files)}个文件，检索出的Unique文件为:{uni_files}")
+                # vector_retriever = default_vectorstore.as_retriever(search_type="similarity_score_threshold", search_kwargs={'k':20,'score_threshold': 0.73,'filter':filters})
+                # result =vector_retriever.invoke("晶奇公司的应急技术服务电话？")
+                # files = [d.metadata['file_name'] for d in result]
+                # uni_files = set(files)
+                # print(f"还是基于{file_list}进行检索，但改变了'score_threshold'，共检索到{len(files)}个文件，检索出的Unique文件为:{uni_files}")
 
-                file_list = [RESERVED_FILTER_BY_FILES[1]]
-                filters = {"terms":{f"metadata.{source_id_key}.keyword": file_list}}
-                retriever = vectorstore.as_retriever(search_type="similarity", search_kwargs={'k':20,'score_threshold': 0.8,'filter':filters})
-                result =retriever.invoke("晶奇公司的应急技术服务电话？")
-                files = [d.metadata['file_name'] for d in result]
-                uni_files = set(files)
-                print(f"基于{file_list}进行检索，共检索到{len(files)}个文件，检索出的Unique文件为:{uni_files}")
+                # file_list = [RESERVED_FILTER_BY_FILES[1]]
+                # filters = {"terms":{f"metadata.{source_id_key}.keyword": file_list}}
+                # vector_retriever = default_vectorstore.as_retriever(search_type="similarity", search_kwargs={'k':20,'score_threshold': 0.8,'filter':filters})
+                # result =vector_retriever.invoke("晶奇公司的应急技术服务电话？")
+                # files = [d.metadata['file_name'] for d in result]
+                # uni_files = set(files)
+                # print(f"基于{file_list}进行检索，共检索到{len(files)}个文件，检索出的Unique文件为:{uni_files}")
 
-                file_list = RESERVED_FILTER_BY_FILES
-                filters = {"terms":{f"metadata.{source_id_key}.keyword": file_list}}
-                retriever = vectorstore.as_retriever(search_type="similarity", search_kwargs={'k':20,'score_threshold': 0.8,'filter':filters})
-                result =retriever.invoke("晶奇公司的应急技术服务电话？")
-                files = [d.metadata['file_name'] for d in result]
-                uni_files = set(files)
-                print(f"基于{file_list}进行检索，共检索到{len(files)}个文件，检索出的Unique文件为:{uni_files}")      
+                # file_list = RESERVED_FILTER_BY_FILES
+                # filters = {"terms":{f"metadata.{source_id_key}.keyword": file_list}}
+                # vector_retriever = default_vectorstore.as_retriever(search_type="similarity", search_kwargs={'k':20,'score_threshold': 0.8,'filter':filters})
+                # result =vector_retriever.invoke("晶奇公司的应急技术服务电话？")
+                # files = [d.metadata['file_name'] for d in result]
+                # uni_files = set(files)
+                # print(f"基于{file_list}进行检索，共检索到{len(files)}个文件，检索出的Unique文件为:{uni_files}")      
             #endregion:文件过滤检索器的测试
 
 
 # 如果没有获取到基于文件过滤的retriever，则正常初始化基于整个知识库的retriever,index必须为用户指定的index_name
-    if not retriever:
-        vectorstore = env_models_instance.get_es_searchstore(es_connection=es_connection,embedding=embed_model,index_name=index_name)
-        retriever = vectorstore.as_retriever(search_type="similarity", search_kwargs={"k":top_n})
+    if not vector_retriever:
+        default_vectorstore = env_models_instance.get_es_searchstore(es_connection=es_connection,embedding=embed_model,index_name=index_name)
+        vector_retriever = default_vectorstore.as_retriever(search_type="similarity", search_kwargs={"k":top_n})
 
 
-    # compression_retriever：目前只是单一retriever加了reranker
-    # todo: 集成检索器 # ensemble_retriever = EnsembleRetriever(retrievers=[retriever,带实现的第二], weights=[0.3, 0.7])
-    compression_retriever = ContextualCompressionRetriever(base_compressor=reranker, base_retriever=retriever)
-
+    # 单一retriever
+    # compression_retriever = ContextualCompressionRetriever(base_compressor=reranker, base_retriever=vector_retriever)
+    # 集成检索器retriever #
+    identical_index_name = vector_retriever.vectorstore._store.index
+    identical_search_kwargs = vector_retriever.search_kwargs     
+    bm25_vectorstore = ElasticsearchStore(es_connection=es_connection, index_name=identical_index_name, strategy=ElasticsearchStore.BM25RetrievalStrategy())
+    bm25_retriever = bm25_vectorstore.as_retriever(search_kwargs=identical_search_kwargs)
+    ensemble_retriever = EnsembleRetriever(retrievers=[bm25_retriever,vector_retriever], weights=[0.3, 0.7])
+    compression_retriever = ContextualCompressionRetriever(base_compressor=reranker, base_retriever=ensemble_retriever)
     if not compression_retriever:
         logger.warning(f"未能获取到有效的Retriever：'{compression_retriever=}")
     return compression_retriever
 
 if __name__ == "__main__":
     input_files = [fr'/data/projects/JqChatV2/JqChat/jqcode/jq_readers/.test_files/.testinputdocs/A方案.docx'] 
-    input_files += [fr'/data/projects/JqChatV2/JqChat/jqcode/jq_readers/.test_files/.testinputdocs/PPQA000_质量保证过程.doc']   
-    index_name='test'
-    compression_retriever = get_retriever(index_name=index_name,chat_on_docs_list=input_files,add_docs_list_to_kb=False) 
-    docs = compression_retriever.invoke("晶奇公司在哪一年获得ISO9001国际质量体系认证？")    
+    input_files += [fr'/data/projects/JqChatV2/JqChat/jqcode/jq_readers/.test_files/.testinputdocs/PPQA000_质量保证过程.doc']
+    # input_files = []   
+    index_name='health'
+    compression_retriever = get_retriever(index_name=index_name,chat_on_docs_list=input_files,add_docs_list_to_kb=True) 
+    # docs1 = compression_retriever.invoke("晶奇公司在哪一年获得ISO9001国际质量体系认证？")
+    docs1 = compression_retriever.invoke("组织级质量保证计划审查")
+    docs2 = compression_retriever.invoke("各类医疗卫生机构规范化处置能力。完善重大疫情医疗废物应急处置机制")
+    # docs2用以测试是否返回文档确实限定在了给定的文件列表范围内,因为index_name='health'包含了很多其他的文档
 
-    print(f'共检索到{len(docs)}篇文档：') 
-    for i,h in enumerate(docs):
-        print(f'文档片段[{i+1}](relevance_score:{h.metadata["relevance_score"]:.3f}):\n{h.page_content[:100]}')
-        # print(f'文档片段[{i+1}](relevance_score:{h.metadata["relevance_score"]:.3f})') 
-        print('~~~~~~~~~~~'*5)       
+    # 构建非过滤检索器
+    compression_retriever.base_retriever.retrievers[0].search_kwargs={}
+    compression_retriever.base_retriever.retrievers[1].search_kwargs={}
+    docs3 = compression_retriever.invoke("各类医疗卫生机构规范化处置能力。完善重大疫情医疗废物应急处置机制")
+ 
+    for docs in [docs1,docs2,docs3]:
+        print("&&&&&&&&&&&&&&&&&&&&&")
+        print(f'共检索到{len(docs)}篇文档：') 
+        for i,h in enumerate(docs):
+            print(f'【{h.metadata.get("file_name",None) or h.metadata.get("source",None)}】文档片段[{i+1}](relevance_score:{h.metadata["relevance_score"]:.3f}):\n{h.page_content[:100]}')
+            # print(f'文档片段[{i+1}](relevance_score:{h.metadata["relevance_score"]:.3f})') 
+            print('~~~~~~~~~~~'*5)  
+    print("结论：经过反复测试：文档过滤、集成检索、重排序都是Work的，但确实会有少数情况下(发生在文档相关性很低的时候)，会返回给定列表外的文档！") 
+    print("建议：在reranker中增加相关性阈值过滤(如须>=0.2,已经添加了，效果很好)！确实需要严格过滤的话，可以自己再写几行代码进行过滤。")    

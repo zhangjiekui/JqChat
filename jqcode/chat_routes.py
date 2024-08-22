@@ -36,7 +36,7 @@ def completions(
     print('============================================================')
     kb_base=get_kb_detail(doc_id)
       #获得知识库的字典{"name": "test" , "discription":"测试方面的知识库",...}
-    kb_base_dict={"name": 'index_for_upload_files' , "vs_type":"ES","discription":"A vectorstore/knowledge base containing documents related to 晶奇公司、安徽晶奇网络科技股份有限公司、医疗卫生、医疗健康、医疗服务、医疗政策、medical treatment & health. 凡是与晶奇公司、安徽晶奇网络科技股份有限公司及医疗健康相关的问题，都必须使用vectorstore工具。MUST use the vectorstore for questions on these topics."}
+    kb_base_dict={"name": doc_id , "vs_type":"ES","discription":"A vectorstore/knowledge base containing documents related to 晶奇公司、安徽晶奇网络科技股份有限公司、医疗卫生、医疗健康、医疗服务、医疗政策、medical treatment & health. 凡是与晶奇公司、安徽晶奇网络科技股份有限公司及医疗健康相关的问题，都必须使用vectorstore工具。MUST use the vectorstore for questions on these topics."}
     if(len(kb_base)>0):
         kb_base_dict={"name": kb_base['kb_name'] , "vs_type":kb_base['vs_type'],"discription":kb_base['kb_info']}
     chat_on_docs_list = [fr'/data/projects/JqChatV2/JqChat/jqcode/jq_readers/.test_files/.testinputdocs/PPQA000_质量保证过程.doc',
@@ -48,6 +48,8 @@ def completions(
     text = chat_bot.run_conversation(user_question=user_prompt)
     code = ''
     # chat_bot.graph.update_state()
+
+    # returned_str
     messages = chat_bot.get_all_history_messages()
 
     last_message = messages[-1]
