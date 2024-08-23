@@ -316,7 +316,7 @@ def _test_get_docx_paragraph_page_number(print_interval_only_page_breaks=10,prin
 
     print(f'一共{len(document.paragraphs)}个段落（document.paragraphs）')
 
-def _valid_returned_obj_types(document = DocxDocument(fr'/data/projects/JqChatV2/JqChat/jqcode/jq_readers/.test_files/.testinputdocs/UserGuide.docx')):
+def _valid_returned_obj_types(document = None):
     types=set()
     for b in get_all_paragraghs_paras_plus_paras_in_table(document):
         types.add(type(b))
@@ -331,7 +331,7 @@ def _test_docx2img(word_path=fr'/data/projects/JqChatV2/JqChat/jqcode/jq_readers
 if __name__ == "__main__":
     _test_jieba_pre_process()
     # _test_get_docx_paragraph_page_number(print_interval_only_page_breaks=1,print_interval_all=1)
-    types=_valid_returned_obj_types()
+    # types=_valid_returned_obj_types()
     _test_docx2img()
 
 

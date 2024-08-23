@@ -39,6 +39,8 @@ from langchain.callbacks.base import BaseCallbackHandler
 from langchain_core.callbacks import StdOutCallbackHandler
 from jqcode.jq_splitters.backend_splitter_utils.jq_chinese_recursive_text_splitter import JqChineseRecursiveTextSplitter
 from jqcode.jq_splitters.jq_docx_tree_text_splitter import JqkjDocTreeTokenTextSplitter
+from langchain_text_splitters import Language
+
 
 from transformers import AutoTokenizer
 from pydantic.v1 import PrivateAttr
@@ -55,7 +57,7 @@ os.environ['TAVILY_API_KEY'] = "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"
 
 class XinferenceReranker(BaseDocumentCompressor):
     client: str = 'Xinference'
-    top_n: int = 10
+    top_n: int = 6
     """Number of documents to return."""
     model: Any=None
     """Xinference Rerank Model Instance to use for reranking."""
@@ -248,6 +250,8 @@ class InitEnvModels:
         self._tokenizer = AutoTokenizer.from_pretrained(self.embedding_model_name_or_path)
         self.text_splitter = JqChineseRecursiveTextSplitter(self._tokenizer,chunk_size=self.embedding_model_max_tokens,chunk_overlap=0.2)
         self.doc_tree_spiltter = JqkjDocTreeTokenTextSplitter.from_defaults(cr_text_splitter=self.text_splitter)
+
+        # code_splitter = self.text_splitter.from_language(language=Language.PYTHON,tokenizer=self._tokenizer)
 
   
         

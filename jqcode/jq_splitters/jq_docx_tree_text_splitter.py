@@ -289,7 +289,7 @@ class JqkjDocTreeTokenTextSplitter(MetadataAwareTextSplitter):
 
         max_chunk_size = self.normal_tokens_chunk_size #tokes限额
         tokens_cutoff = self.normal_tokens_chunk_size  #tokes余额，会变动
-
+        # lm_base_node.excluded_embed_metadata_keys.remove('file_name')
         metadata_str = self._get_metadata_str(lm_base_node)
         metadata_str_tokens_num = self.tokens_len_func(metadata_str)  
 
@@ -606,6 +606,8 @@ class JqkjDocTreeTokenTextSplitter(MetadataAwareTextSplitter):
     def _parse_node_on_text(self, node: BaseNode, cutoff_ratio_as_chunk=0.8,get_to_first_title_directly=False) -> List[BaseNode]:
         text = node.text
         chunks = self.cr_text_splitter.split_text(text)
+        # from langchain_text_splitters import Language
+        # code_splitter = self.cr_text_splitter.from_language(language=Language.PYTHON,tokenizer=self.cr_text_splitter.tokenizer_wrapper.tokenizer)
         # return chunks
         llama_index_nodes = [TextNode(text=chunk) for chunk in chunks]           
         return llama_index_nodes
@@ -709,7 +711,7 @@ class JqkjDocTreeTokenTextSplitter(MetadataAwareTextSplitter):
         return splitted_nodes
     
     def _parse_node(self, node: BaseNode, sub_nodes_chunk_size=8192,cutoff_ratio_as_chunk=0.8,get_to_first_title_directly=False) -> List[BaseNode]:
-
+        # return self._parse_node_on_text(node) #为了方便跳到_parse_node_on_text方法进行测试
         doc_tree = get_doc_tree_from_document(node)
         if doc_tree:
             llama_index_nodes = self._parse_node_on_tree(node, doc_tree, cutoff_ratio_as_chunk,get_to_first_title_directly)       
@@ -873,8 +875,8 @@ if __name__ == "__main__":
     # 下面是我想的提示词：
     # '你是一个忠实的客服专家，回答问题应尽量简洁，不超过100字，并尽量忠实引用Context和Question中的原文，如果无法回答，就说不知道，不要捏造答案。以下是问题：
     index_name='yqli'
-    # compression_retriever = get_retriever(index_name=index_name,chat_on_docs_list=input_files,add_docs_list_to_kb=True)
-    compression_retriever = get_retriever(index_name=index_name)
+    compression_retriever = get_retriever(index_name=index_name,chat_on_docs_list=input_files,add_docs_list_to_kb=False)
+    # compression_retriever = get_retriever(index_name=index_name)
     # chain_type:stuff、refine、map_reduce 和 map_rerank
     qa_chain_RetrievalQA = RetrievalQA.from_chain_type(llm,retriever=compression_retriever,return_source_documents=True, chain_type="stuff")
 

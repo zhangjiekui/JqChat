@@ -15,7 +15,7 @@ from jqcode.jq_utils.logger import jqkj_logger
 logger = jqkj_logger(__file__).get_logger()
 
 def get_retriever(index_name:str=None,chat_on_docs_list:List[str]=None,add_docs_list_to_kb=True,default_temp_index_name:str="temp_index_for_upload_files",
-                  top_n:int=10,source_id_key='source',required_exts=['.doc','.docx','.pdf','.md']):
+                  top_k:int=10,source_id_key='source',required_exts=['.doc','.docx','.pdf','.md']):
     llm = env_models_instance.chat_model
     embed_model = env_models_instance.embed_model
     reranker = env_models_instance.reranker
@@ -172,7 +172,7 @@ def get_retriever(index_name:str=None,chat_on_docs_list:List[str]=None,add_docs_
     
         if default_vectorstore and RESERVED_FILTER_BY_FILES:
                 filters = {"terms":{f"metadata.{source_id_key}.keyword": RESERVED_FILTER_BY_FILES}} 
-                vector_retriever = default_vectorstore.as_retriever(search_type="similarity", search_kwargs={"k":top_n,"filter":filters})
+                vector_retriever = default_vectorstore.as_retriever(search_type="similarity", search_kwargs={"k":top_k,"filter":filters})
             #region:文件过滤检索器的测试
                 # file_list = [RESERVED_FILTER_BY_FILES[0]]
                 # filters = {"terms":{f"metadata.{source_id_key}.keyword": file_list}}
@@ -209,7 +209,7 @@ def get_retriever(index_name:str=None,chat_on_docs_list:List[str]=None,add_docs_
 # 如果没有获取到基于文件过滤的retriever，则正常初始化基于整个知识库的retriever,index必须为用户指定的index_name
     if not vector_retriever:
         default_vectorstore = env_models_instance.get_es_searchstore(es_connection=es_connection,embedding=embed_model,index_name=index_name)
-        vector_retriever = default_vectorstore.as_retriever(search_type="similarity", search_kwargs={"k":top_n})
+        vector_retriever = default_vectorstore.as_retriever(search_type="similarity", search_kwargs={"k":top_k})
 
 
     # 单一retriever
