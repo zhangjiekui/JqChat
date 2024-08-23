@@ -2,7 +2,8 @@
 #直接使用DictExporter和DictImporter会存在问题，所以使用YAML Import/Export作为中转
 #参照https://anytree.readthedocs.io/en/latest/tricks/yaml.html 
 import yaml
-import shortuuid 
+import shortuuid
+import copy 
 from anytree.exporter import DictExporter
 from anytree.importer import DictImporter
 from anytree import RenderTree
@@ -10,13 +11,25 @@ from pathlib import Path
 
 from jqcode.jq_agent.c0_init_env_models import env_models_instance
 from jqcode.jq_readers.jqkj_readers import JqkjSimpleDirectoryReader
+from jqcode.jq_agent.tools.jq_retriever import get_retriever
+
+from langchain.schema import Document as LcDocument
+from llama_index.core import ServiceContext
 from base64 import b64encode,b64decode
 
 from elasticsearch import Elasticsearch, helpers
 
+from jqcode.jq_utils.logger import jqkj_logger
+logger = jqkj_logger(__file__).get_logger()
+
 anytree_dict_exporter = DictExporter()
 anytree_dict_importer = DictImporter()
 es_connection = env_models_instance.get_es_connection()
+llm = env_models_instance.chat_model
+doc_tree_spiltter = env_models_instance.doc_tree_spiltter
+embed_model = env_models_instance.embed_model
+reranker = env_models_instance.reranker
+
 files_index = "bulk_files_on_es"
 
 if not es_connection.indices.exists(index=files_index):
@@ -25,66 +38,108 @@ if not es_connection.indices.exists(index=files_index):
 # input_files = [fr'/data/projects/JqChatV2/JqChat/jqcode/jq_readers/.test_files/.testinputdocs/A方案.docx'] 
 # input_files += [fr'/data/projects/JqChatV2/JqChat/jqcode/jq_readers/.test_files/.testinputdocs/PPQA000_质量保证过程.doc'] 
 
+
 input_dir="/data/projects/JqChatV2/JqChat/jqcode/jq_readers/.test_files/.testinputdocs"
-simple_reader = JqkjSimpleDirectoryReader(input_dir=input_dir, overwrite_existing_converted_files=False,required_exts=['.doc','.docx','.pdf','.txt','.py'],exclude_hidden=False)
-documents = simple_reader.load_data()
-reader_successed_files = [d.metadata['source'] for d in documents]
+def reader_load_files(dir:str=input_dir):
+    simple_reader = JqkjSimpleDirectoryReader(input_dir=input_dir, overwrite_existing_converted_files=False,required_exts=['.doc','.docx','.pdf','.txt','.py'],exclude_hidden=False)
+    lm_documents = simple_reader.load_data()
+    return lm_documents
 
-actions_list = []
-es_index_doc_id_list = []
-for document in documents:
-    file_path = document.metadata['source']
-    ext = Path(file_path).suffix
-    es_index_doc_id = shortuuid.uuid()
+def upload_file_documents_to_es(lm_documents:list):
 
-    file_b64 = None
-    with open(file_path, 'rb') as file: 
-        file_data = file.read()
-        file_b64 = b64encode(file_data).decode('utf-8')
+    actions_list = []
+    es_index_doc_id_list = []
+    for document in lm_documents:
+        file_path = document.metadata['source']
+        ext = Path(file_path).suffix
+        es_index_doc_id = shortuuid.uuid()
 
-    added_metadata = {"file_extension":ext,'es_index_name':files_index,"es_index_doc_id":es_index_doc_id}
-    document.metadata.update(added_metadata)
+        file_b64 = None
+        with open(file_path, 'rb') as file: 
+            file_data = file.read()
+            file_b64 = b64encode(file_data).decode('utf-8')
 
-    index_metadata = document.metadata
-    _df_table_list_jq = index_metadata.pop('df_table_list_jq',None)
-    _file_doc_object_jq = index_metadata.pop('file_doc_object_jq',None)
-    doc_tree = index_metadata.pop('file_doc_tree_jq',None)
+        added_metadata = {"file_extension":ext,'es_index_name':files_index,"es_index_doc_id":es_index_doc_id}
+        document.metadata.update(added_metadata)
 
-    doc_tree_yaml = ''
-    if doc_tree:
-        doc_tree_dict = anytree_dict_exporter.export(doc_tree)
-        doc_tree_yaml = yaml.dump(doc_tree_dict, default_flow_style=False)
+        index_metadata = copy.deepcopy(document.metadata)
+        _df_table_list_jq = index_metadata.pop('df_table_list_jq',None)
+        _file_doc_object_jq = index_metadata.pop('file_doc_object_jq',None)
+        doc_tree = index_metadata.pop('file_doc_tree_jq',None)
 
-    document_dict = {"metadata":index_metadata,"text":document.text,"doc_tree_yaml":doc_tree_yaml,"file_original":file_b64}
-    action = {"_index":files_index, "_id":es_index_doc_id, "_source":document_dict}
-    actions_list.append(action)
-    es_index_doc_id_list.append(es_index_doc_id)
+        doc_tree_yaml = ''
+        if doc_tree:
+            doc_tree_dict = anytree_dict_exporter.export(doc_tree)
+            doc_tree_yaml = yaml.dump(doc_tree_dict, default_flow_style=False)
 
-helpers.bulk(es_connection, actions_list)
-print(es_index_doc_id_list)
-print("=====上传======"*5)
+        document_dict = {"metadata":index_metadata,"text":document.text,"doc_tree_yaml":doc_tree_yaml,"file_original":file_b64}
+        action = {"_index":files_index, "_id":es_index_doc_id, "_source":document_dict}
+        actions_list.append(action)
+        es_index_doc_id_list.append(es_index_doc_id)
 
-es_index_doc_id_list=['ZtqWHXgbEubnEEnbtkfeza', 'GNcgbhSkMS82AjckFKqHXW', 'bQvgLmxtKuRcWzwMxCCZ9m', 'DxPQC7vbEDVdAo3AmYX8Ei', 'NpM9GUf3nuwZg2R97R3QdQ', 'GmScwyhBPdf7JSUtk7zNUZ', 'bNFn6UKHuXjddWaRCVhVe4', 'KxPKLVxSAU6jFkhH5Q6Wxz', 'XxQ8AShxXse7ix6PVgbSKR']
-print("======下载====="*5)  
-for i,index_id in enumerate(es_index_doc_id_list):  
-   result = es_connection.get(index=files_index, id=index_id)
-   print(result.body['_id'],result.body['_source']['metadata']['source'])
-   
-   doc_tree_yqml = result.body['_source']['doc_tree_yaml']
-#    print(f"{doc_tree_yqml=}")   
-   if doc_tree_yqml:
-        doc_tree_dict = yaml.load(doc_tree_yqml, Loader=yaml.Loader)  
-        doc_tree = anytree_dict_importer.import_(doc_tree_dict)
-        print(RenderTree(doc_tree,maxlevel=1))
-   
-   file_b64 = result.body['_source']['file_original'].encode('utf-8')
-   ext = result.body['_source']['metadata']['file_extension']
-   fpath = fr'/data/projects/JqChatV2/workspace/{i}{ext}'
-   print(f"{fpath=}") 
-   with open(fpath, "wb") as fp:
-        fp.write(b64decode(file_b64))
+    helpers.bulk(es_connection, actions_list)
+    print(es_index_doc_id_list)
+    print("=====上传完成======"*5)
+    return lm_documents,es_index_doc_id_list
+
+def splitter_split_documents(lm_documents:list):
+    service_context = ServiceContext.from_defaults(llm=llm, embed_model=embed_model,node_parser=doc_tree_spiltter)
+    nodes = service_context.node_parser.get_nodes_from_documents(lm_documents)
+    lc_documents = [LcDocument(page_content=node.text,metadata=node.metadata) for node in nodes]
+    return lc_documents
+
+def embedding_and_indexing_to_es(lc_documents:list,index_name="test_doc_tree_reader"):
+    vectorstore = env_models_instance.get_es_searchstore_index_documents(documents=lc_documents, embedding=embed_model,index_name="test_doc_tree_reader",source_id_key='source')
+    return vectorstore
+
+def run_a_query_test(query,retriever,llm=llm):    
+    from jqcode.jq_splitters.jq_docx_tree_text_splitter import chain_qa_fun    
+    result = chain_qa_fun(query=query,retriever=retriever,llm=llm)
+    return result
+
+def download_file_documents_to_local(es_index_doc_id_list):
+    # es_index_doc_id_list=['ZtqWHXgbEubnEEnbtkfeza', 'GNcgbhSkMS82AjckFKqHXW', 'bQvgLmxtKuRcWzwMxCCZ9m', 'DxPQC7vbEDVdAo3AmYX8Ei', 'NpM9GUf3nuwZg2R97R3QdQ', 'GmScwyhBPdf7JSUtk7zNUZ', 'bNFn6UKHuXjddWaRCVhVe4', 'KxPKLVxSAU6jFkhH5Q6Wxz', 'XxQ8AShxXse7ix6PVgbSKR']
+    print("======下载====="*5)  
+    for i,index_id in enumerate(es_index_doc_id_list):  
+        result = es_connection.get(index=files_index, id=index_id)
+        print(result.body['_id'],result.body['_source']['metadata']['source'])
+        
+        doc_tree_yqml = result.body['_source']['doc_tree_yaml']
+        #    print(f"{doc_tree_yqml=}")   
+        if doc_tree_yqml:
+                doc_tree_dict = yaml.load(doc_tree_yqml, Loader=yaml.Loader)  
+                doc_tree = anytree_dict_importer.import_(doc_tree_dict)
+                print(RenderTree(doc_tree,maxlevel=1))
+        
+        file_b64 = result.body['_source']['file_original'].encode('utf-8')
+        ext = result.body['_source']['metadata']['file_extension']
+        fpath = fr'/data/projects/JqChatV2/workspace/{i}{ext}'
+        print(f"{fpath=}") 
+        with open(fpath, "wb") as fp:
+                fp.write(b64decode(file_b64))
 
 
+if __name__ == "__main__":
+    from_beginning = False
 
-# endregion 测试插入整个文档，为父子文档做技术准备,顺便测试JqkjDocxReader
-# !!!上面的代码不要删除，以后要用!!!
+    if from_beginning:
+        # 从头开始的
+        lm_documents = reader_load_files()
+        lm_documents_with_added_index_info_metadata,es_index_doc_id_list = upload_file_documents_to_es(lm_documents)
+        lc_documents = splitter_split_documents(lm_documents_with_added_index_info_metadata)
+        print(len(lc_documents))
+        vectorstore = embedding_and_indexing_to_es(lc_documents,index_name="test_doc_tree_reader")
+        # 已经入库了
+
+    # （1）基于返回的vectorstore，直接检索回答    
+        compression_retriever = get_retriever(vectorstore=vectorstore,index_name=None)
+    else:
+    # （2）基于知识库名来重新连接，检索回答    
+        compression_retriever = get_retriever(vectorstore=None,index_name="test_doc_tree_reader")
+
+    query = "安徽省食品药品监督管理局行政审批系统项目总体计划的版本号是多少，批准人是谁？"
+    answer,hits = run_a_query_test(query,retriever=compression_retriever)
+
+    print(answer) 
+
+

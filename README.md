@@ -423,3 +423,8 @@ https://github.com/elastic/elasticsearch-dsl-py
 ### Searx.space元搜索引擎聚合地址
 https://searx.space/
 
+
+### 基于VLLM的Functionary函数调用模型可以无缝使用，并且是本地python文件运行的，好调试
+### 基于Ollama的返回的是dict，需要自己解析成工具调用，但正确率似乎很高
+https://github.com/MeetKai/functionary
+

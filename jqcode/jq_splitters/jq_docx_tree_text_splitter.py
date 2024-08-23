@@ -117,9 +117,18 @@ def get_possible_zh_title_for_previous_sibling(cur_node,title_max_word_length=20
     if previous_sibling:
         previous_sibling_text = previous_sibling.text.strip() + '\n'
         other_conditions = previous_sibling.is_leaf and previous_sibling.type == TreeNodeType.TEXT and 'Heading' not in previous_sibling.style
-        if 'List Paragraph' in previous_sibling.style or other_conditions:       
+        
+        previous_sibling_style = ''
+        try:#
+            previous_sibling_style = previous_sibling.style
+            # print(f"previous_sibling.style是可能存在的，{previous_sibling.style}")    
+        except:
+            logger.warning(f'Tree Node previous_sibling 没有style，获取previous_sibling.style失败！')
+
+        if 'List Paragraph' in previous_sibling_style or other_conditions:   
             if is_possible_title(text=previous_sibling_text,title_max_word_length=title_max_word_length):
                 get_possible_zh_title = previous_sibling_text
+ 
     return get_possible_zh_title
 
 def _get_pre_title_nodes_text(pre_title_nodes,normal_text:bool=False):
@@ -209,7 +218,11 @@ class JqkjDocTreeTokenTextSplitter(MetadataAwareTextSplitter):
                 metadata_str = embed_metadata_str
             else:
                 metadata_str = llm_metadata_str
-        return metadata_str
+        
+        logger.warning(f"{metadata_str=}")
+        raise Exception("暂时不管metadata_str，目前为止都没有实际价值")
+        # return metadata_str
+        return ""
 
 
     @classmethod
@@ -289,9 +302,11 @@ class JqkjDocTreeTokenTextSplitter(MetadataAwareTextSplitter):
 
         max_chunk_size = self.normal_tokens_chunk_size #tokes限额
         tokens_cutoff = self.normal_tokens_chunk_size  #tokes余额，会变动
+        # 暂时不管metadata_str，目前为止都没有实际价值
         # lm_base_node.excluded_embed_metadata_keys.remove('file_name')
-        metadata_str = self._get_metadata_str(lm_base_node)
-        metadata_str_tokens_num = self.tokens_len_func(metadata_str)  
+        # metadata_str = self._get_metadata_str(lm_base_node)
+        # metadata_str_tokens_num = self.tokens_len_func(metadata_str) 
+        metadata_str_tokens_num =0 
 
         pre_title_node = None
         cur_title_node = None
@@ -604,13 +619,23 @@ class JqkjDocTreeTokenTextSplitter(MetadataAwareTextSplitter):
         # return chunks_saved
 
     def _parse_node_on_text(self, node: BaseNode, cutoff_ratio_as_chunk=0.8,get_to_first_title_directly=False) -> List[BaseNode]:
-        text = node.text
-        chunks = self.cr_text_splitter.split_text(text)
-        # from langchain_text_splitters import Language
-        # code_splitter = self.cr_text_splitter.from_language(language=Language.PYTHON,tokenizer=self.cr_text_splitter.tokenizer_wrapper.tokenizer)
-        # return chunks
-        llama_index_nodes = [TextNode(text=chunk) for chunk in chunks]           
-        return llama_index_nodes
+        splitter = self.cr_text_splitter
+        if node.metadata.get("file_extension","") == '.py':
+            from langchain_text_splitters import Language
+            splitter = self.cr_text_splitter.from_language(language=Language.PYTHON,tokenizer=self.cr_text_splitter.tokenizer_wrapper.tokenizer)
+        text = node.text        
+        chunks = splitter.split_text(text)
+
+        _metadata = node.metadata
+        # 更新原document node的信息        
+        # 因为不是doc_tree，所以不存在下列键值
+        # del _metadata['file_doc_object_jq']
+        # del _metadata['file_doc_tree_jq']
+        # del _metadata['df_table_list_jq']
+
+        llama_index_nodes = [TextNode(text=chunk,metadata = _metadata ,excluded_embed_metadata_keys=node.excluded_embed_metadata_keys,excluded_llm_metadata_keys=node.excluded_llm_metadata_keys) for chunk in chunks]
+        return llama_index_nodes    
+
 
     def _parse_file_into_sub_nodes(self, lm_base_node: BaseNode, doc_tree: AnytreeNode, sub_nodes_chunk_size=8192, cutoff_ratio_as_chunk=0.8,get_to_first_title_directly=True)-> List[AnytreeNode]:
         # node_levels_list= [[node.name for node in children] for children in LevelOrderGroupIter(doc_tree)]
@@ -779,7 +804,29 @@ class JqkjDocTreeTokenTextSplitter(MetadataAwareTextSplitter):
             event.on_end(payload={EventPayload.CHUNKS: chunks})
 
         return chunks
+
+def chain_qa_fun(query,retriever,llm,input_files=[]):
+    from langchain.chains import RetrievalQA
+    chain = RetrievalQA.from_chain_type(llm,retriever=retriever,return_source_documents=True, chain_type="stuff")
+    print(f'   -----------询问：{query}-------------')
+    # query = prompt + query
+    r = chain({"query": query})
     
+    # print(r['query'])
+    hits = r['source_documents']
+    print('\n\n')
+    print('   -----------检索结果-------------')
+    print(f'共检索到{len(hits)}篇文档：')
+    for i,h in enumerate(hits):
+        # print(f'文档片段[{i+1}](relevance_score:{h.metadata["relevance_score"]:.3f}):\n{h.page_content}')
+        print(f'【{h.metadata.get("file_name",None) or h.metadata.get("source",None)}】文档片段[{i+1}](relevance_score:{h.metadata["relevance_score"]:.3f})')
+        if input_files:
+            if h.metadata["source"] not in input_files:
+                logger.warning(f"检索出的文档片段不在指定文件范围内!限定的文件范围:\n{input_files}")
+    print('   -----------最终回答-------------') 
+    answer = r['result']    
+    return answer,hits
+
 if __name__ == "__main__":
     from langchain import schema
     from langchain.retrievers import EnsembleRetriever
@@ -885,7 +932,8 @@ if __name__ == "__main__":
     logger.info(f"USING ‘REVICED’ SYSTEM PROMPY:\n{system_template}")
 
 
-    def chain_qa_fun(query,chain=qa_chain_RetrievalQA,limited_to_files=None):
+    def chain_qa_fun(query,retriever=compression_retriever,limited_to_files=None):
+        chain = RetrievalQA.from_chain_type(llm,retriever=retriever,return_source_documents=True, chain_type="stuff")
         print(f'   -----------询问：{query}-------------')
         # query = prompt + query
         r = chain({"query": query})

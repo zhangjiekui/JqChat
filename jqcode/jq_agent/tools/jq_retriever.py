@@ -14,22 +14,24 @@ from jqcode.jq_agent.c0_init_env_models import env_models_instance
 from jqcode.jq_utils.logger import jqkj_logger
 logger = jqkj_logger(__file__).get_logger()
 
-def get_retriever(index_name:str=None,chat_on_docs_list:List[str]=None,add_docs_list_to_kb=True,default_temp_index_name:str="temp_index_for_upload_files",
+def get_retriever(vectorstore:ElasticsearchStore=None,index_name:str=None,chat_on_docs_list:List[str]=None,add_docs_list_to_kb=True,default_temp_index_name:str="temp_index_for_upload_files",
                   top_k:int=10,source_id_key='source',required_exts=['.doc','.docx','.pdf','.md']):
+    
     llm = env_models_instance.chat_model
     embed_model = env_models_instance.embed_model
     reranker = env_models_instance.reranker
     es_connection = env_models_instance.get_es_connection()
-
-    assert index_name, f"'index_name'参数不得为空，连接Elasticsearch检索时需要！"
-    
-    default_vectorstore = None
     lc_documents = None
     doc_paths_exists = []
     vector_retriever = None    
 
+# 如果是已经有了vectorstore
+    if vectorstore:
+        vector_retriever = vectorstore.as_retriever(search_type="similarity", search_kwargs={"k":top_k})
+
 # 如果是chat on docs, 则获取基于文件过滤的retriever
-    if chat_on_docs_list:
+    elif chat_on_docs_list:
+        assert index_name, f"'index_name'参数不得为空，连接Elasticsearch检索时需要！"
         chat_on_docs_list = [Path(item) for item in chat_on_docs_list]
         doc_paths_exists = [item for item in chat_on_docs_list if Path.exists(item)]
         doc_paths_not_exists = [item for item in chat_on_docs_list if not Path.exists(item)]
@@ -205,13 +207,16 @@ def get_retriever(index_name:str=None,chat_on_docs_list:List[str]=None,add_docs_
                 # print(f"基于{file_list}进行检索，共检索到{len(files)}个文件，检索出的Unique文件为:{uni_files}")      
             #endregion:文件过滤检索器的测试
 
+    else:
+        assert vector_retriever is None,"临时性的处理逻辑"
 
-# 如果没有获取到基于文件过滤的retriever，则正常初始化基于整个知识库的retriever,index必须为用户指定的index_name
+# 如果没有获取到基于文件过滤的retriever，也没有提供可用的vectorstore
+# 则返回一个默认的基于整个知识库的retriever,index必须为用户指定的index_name
     if not vector_retriever:
         default_vectorstore = env_models_instance.get_es_searchstore(es_connection=es_connection,embedding=embed_model,index_name=index_name)
         vector_retriever = default_vectorstore.as_retriever(search_type="similarity", search_kwargs={"k":top_k})
 
-
+# 增强：集成检索器和重排序
     # 单一retriever
     # compression_retriever = ContextualCompressionRetriever(base_compressor=reranker, base_retriever=vector_retriever)
     # 集成检索器retriever #
