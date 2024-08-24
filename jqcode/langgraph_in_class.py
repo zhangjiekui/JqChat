@@ -837,7 +837,7 @@ class GraphAgent:
             logger.debug(f"    Tool_name:{tool_name}")
             logger.debug(f"    Tool_args: {tool_args}")
             tool_call_id = t["id"]
-            
+            print(f"{tool_call_id=}")            
             try:
                 if not tool_name in self.executable_tool_dict:      # check for bad tool name from LLM                
                     result = f"返回了错误的工具名称'{tool_name}'，工具名必须是{self.executable_tool_names}中的一个"  # instruct LLM to retry if bad
@@ -865,7 +865,7 @@ class GraphAgent:
                 # results = results + [makeup_ai_message,makeup_tool_message,makeup_human_message]
                 results = results + [makeup_tool_message,makeup_human_message]
                 logger.info("工具调用执行异常，加入执行错误信息，返回到大模型")
-                return {'messages': results,'question_related_messages':results}   
+                # return {'messages': results,'question_related_messages':results}   
             
 
         logger.info("工具调用执行正常，返回到大模型")
@@ -880,14 +880,13 @@ class GraphAgent:
         except:
             returned_tool_calling_nums = 0
 
-
         if returned_tool_calling_nums > 0:
             logger.debug(f'Returned {returned_tool_calling_nums} tool_calls')
             if returned_tool_calling_nums>1:
-                logger.info(f'!!! 惊喜: Multitple  tool_calls !!!')
+                logger.info(f'!!! 惊喜: Multitple({returned_tool_calling_nums=}) tool_calls !!!')
+            
             tool_call_1 = result.tool_calls[0]
             tool_call_1_name = tool_call_1['name']
-
             if tool_call_1_name in self.routing_tool_names:
                 logger.info(f"Returned first ToolName is '{tool_call_1_name}', So routing to '{tool_call_1_name}' Node......")
                 os.environ['rag_args'] = tool_call_1["args"]['query']
@@ -895,9 +894,9 @@ class GraphAgent:
 
         else:
             logger.info(f'No returned tool_calling and {finish_reason=}')
-            logger.info(f'{result.type.upper()}: {result.content}')
-            
-        return returned_tool_calling_nums
+            logger.info(f'{result.type.upper()}: {result.content}')            
+        exists_action_or_not = True if returned_tool_calling_nums>0 else False
+        return exists_action_or_not
     
     def code_execution_passed(self,state:GraphAgentState):
         status = False
@@ -1142,6 +1141,7 @@ tavily_search_tool = TavilySearchResults(max_results=4) #increased number of res
 
 if __name__ == "__main__":
     user_questions = [
+        '请查询明天从合肥到上海的航班,以及南昌到北京的航班',
         '请直接执行代码：print("直接执行打印程序代码")',
         '请使用Python来绘制sin(x)的曲线图',
         '你好，我叫张结魁',

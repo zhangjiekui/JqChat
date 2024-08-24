@@ -1,13 +1,10 @@
 ## Git同步
-
 ### 本地
-
 ```sh
 cd /data/projects/JqChatV2/JqChat
 git add .
 git commit -a
 ```
-
 ### 同步
 
 ```sh
@@ -26,97 +23,22 @@ or
 ```
 export PYTHONPATH=/data/projects/JqChatV2/JqChat:/data/projects/JqChatV2/JqChat/jqcode:/data/projects/JqChatV2/JqChat/kernel_program:/data/projects/JqChatV2/JqChat/web
 ```
-## linux系统环境变量
-
-```
-export CUDA_VISIBLE_DEVICES='0,1,2,3'
-export LM_USE_MODELSCOPE=True
-export XINFERENCE_DISABLE_VLLM=0
-export VLLM_USE_MODELSCOPE=True
-export HF_ENDPOINT=https://hf-mirror.com
-export OLLAMA_MODEL_DIR=/data/ollama_modles
-export RAY_DEDUP_LOGS=0
-export XINFERENCE_MODEL_SRC=modelscope
-export XINFERENCE_HOME=/data/xinference
-```
-## pip / conda源
-
-```
-pip config set global.index-url https://mirrors.aliyun.com/pypi/simple/
-
-conda config --add channels https://mirrors.aliyun.com/anaconda/pkgs/main/
-conda config --add channels https://mirrors.aliyun.com/anaconda/pkgs/free/
-conda config --set show_channel_urls yes
-
-```
-## VLLM
-```
-workon xinfer
-vllm serve /data/xinference/cache/mistral-large-instruct-gptq-123b --model TechxGenus/Mistral-Large-Instruct-2407-GPTQ  --tensor-parallel-size 4  --gpu-memory-utilization 0.98 --max_model_len 3000 --quantization gptq_marlin --enforce-eager --served-model-name mistral qwen2-instruct --port 9999 --api-key abc123
-能跑起来，但应用到项目中，存在很多问题
-#### Mistral-large
-python -m vllm.entrypoints.openai.api_server     --host 0.0.0.0     --model /data/xinference/cache/mistral-large-instruct-gptq-123b     --quantization gptq_marlin     --port 9999     --max-model-len 3000     --gpu-memory-utilization 0.98     --tensor-parallel-size 4     --served-model-name mistral qwen2-instruct      --enforce-eager      --api-key abc123
-
-#### Mistral-Nemo
-VLLM_ATTENTION_BACKEND=XFORMERS python -m vllm.entrypoints.openai.api_server --model AI-ModelScope/Mistral-Nemo-Instruct-2407 --gpu-memory-utilization 0.75 --host 0.0.0.0 --port 9999 -tp 4 --max-model-len 17000 --served-model-name mistral qwen2-instruct --trust-remote-code --enable-prefix-caching
-
-
-在bashrc中增加 export VLLM_API_KEY=abc123
-
-
-vllm serve /data/xinference/cache/mistral-large-instruct-gptq-123b --model /data/xinference/cache/mistral-large-instruct-gptq-123b --quantization gptq  --tensor-parallel-size 4  --gpu-memory-utilization 0.95 --trust-remote-code
-```
-
-https://github.com/vllm-project/vllm/blob/22b39e11f2eca7dd70bcef3760cd5da149412d00/docs/source/serving/openai_compatible_server.md?plain=1#L114
-vLLM supports only named function calling in the chat completion API. The `tool_choice` options `auto` and `required` are **not yet supported** but on the roadmap.
-To use a named function you need to define the function in the `tools` parameter and call it in the `tool_choice` parameter.
-It is the callers responsibility to prompt the model with the tool information, vLLM will not automatically manipulate the prompt. **This may change in the future.**
-vLLM will use guided decoding to ensure the response matches the tool parameter object defined by the JSON schema in the `tools` parameter.
-Please refer to the OpenAI API reference documentation for more information.
-
-
-## Lmdeploy 【经测试，存在问题】
-#### 安装
-```
-workon xinfer
-pip install lmdeploy
-```
-#### 使用modelscope下载模型
-```
-pip install modelscope
-nano ~/.bashrc
-export LMDEPLOY_USE_MODELSCOPE=True
-source ~/.bashrc
-```
-#### 部署API服务
-
-https://github.com/InternLM/lmdeploy/blob/main/docs/zh_cn/llm/api_server.md
-https://github.com/InternLM/lmdeploy/blob/main/docs/zh_cn/llm/api_server_tools.md
-
-参数：lmdeploy serve api_server -h
-```
-lmdeploy serve api_server Shanghai_AI_Laboratory/internlm2_5-20b-chat --server-port 9997 --tp 4 --log-level DEBUG
-```
-#### LMDeploy支持的Function/Tool Calling模型
-LMDeploy 支持 InternLM2, InternLM2.5 和 Llama3.1 模型的工具调用
 
 ## Xinference LLM
-
 #### 当前使用版本
-原版/最新版是xinference 0.12.3 (2024-06-28)
-
-**注意【qwen2  的72B Int4 gptq/awq  对应的max_seq_len=32000 & gpu_memory_utilization=0.90,gptq准确率和推理效率都更优】**
+**注意【qwen2 72B Int4 gptq/awq对应的max_seq_len=32000 & gpu_memory_utilization=0.90时,gptq准确率和推理效率都更优】**
 ### 本地Pip安装运行
 
 运行 xinference 框架服务
 ```
 workon xinfer
 nohup xinference-local -H 0.0.0.0 --log-level debug  >> /data/xinference/xinfer.log 2>&1 & 
-
+```
+```
 tail -f /data/xinference/xinfer.log
-
+```
+```
 ps -ef | grep 'xinference-local'     找到包含了【xinfer/bin/xinference-local -H 0.0.0.0】对应行的pid 然后 sudo kill -9 
-
 ```
 运行加载 qwen2-instruct 模型ok
 ```
@@ -194,6 +116,29 @@ max_model_len默认值4096，可能会报错误： Input prompt (4108 tokens) is
 Initializing an LLM engine： max_seq_len=4096
 RayWorkerVllm：If you are running out of memory, consider decreasing `gpu_memory_utilization` or enforcing eager mode. You can also reduce the `max_num_seqs` as needed to decrease memory usage.
 
+## linux系统环境变量
+
+```
+export CUDA_VISIBLE_DEVICES='0,1,2,3'
+export LM_USE_MODELSCOPE=True
+export XINFERENCE_DISABLE_VLLM=0
+export VLLM_USE_MODELSCOPE=True
+export HF_ENDPOINT=https://hf-mirror.com
+export OLLAMA_MODEL_DIR=/data/ollama_modles
+export RAY_DEDUP_LOGS=0
+export XINFERENCE_MODEL_SRC=modelscope
+export XINFERENCE_HOME=/data/xinference
+```
+## pip / conda源
+
+```
+pip config set global.index-url https://mirrors.aliyun.com/pypi/simple/
+
+conda config --add channels https://mirrors.aliyun.com/anaconda/pkgs/main/
+conda config --add channels https://mirrors.aliyun.com/anaconda/pkgs/free/
+conda config --set show_channel_urls yes
+
+```
 
 ## Ollama
 Ollama(V0.3+) now supports tool calling: https://ollama.com/blog/tool-support 
@@ -427,4 +372,57 @@ https://searx.space/
 ### 基于VLLM的Functionary函数调用模型可以无缝使用，并且是本地python文件运行的，好调试
 ### 基于Ollama的返回的是dict，需要自己解析成工具调用，但正确率似乎很高
 https://github.com/MeetKai/functionary
+
+
+
+## VLLM
+```
+workon xinfer
+vllm serve /data/xinference/cache/mistral-large-instruct-gptq-123b --model TechxGenus/Mistral-Large-Instruct-2407-GPTQ  --tensor-parallel-size 4  --gpu-memory-utilization 0.98 --max_model_len 3000 --quantization gptq_marlin --enforce-eager --served-model-name mistral qwen2-instruct --port 9999 --api-key abc123
+能跑起来，但应用到项目中，存在很多问题
+#### Mistral-large
+python -m vllm.entrypoints.openai.api_server     --host 0.0.0.0     --model /data/xinference/cache/mistral-large-instruct-gptq-123b     --quantization gptq_marlin     --port 9999     --max-model-len 3000     --gpu-memory-utilization 0.98     --tensor-parallel-size 4     --served-model-name mistral qwen2-instruct      --enforce-eager      --api-key abc123
+
+#### Mistral-Nemo
+VLLM_ATTENTION_BACKEND=XFORMERS python -m vllm.entrypoints.openai.api_server --model AI-ModelScope/Mistral-Nemo-Instruct-2407 --gpu-memory-utilization 0.75 --host 0.0.0.0 --port 9999 -tp 4 --max-model-len 17000 --served-model-name mistral qwen2-instruct --trust-remote-code --enable-prefix-caching
+
+
+在bashrc中增加 export VLLM_API_KEY=abc123
+
+
+vllm serve /data/xinference/cache/mistral-large-instruct-gptq-123b --model /data/xinference/cache/mistral-large-instruct-gptq-123b --quantization gptq  --tensor-parallel-size 4  --gpu-memory-utilization 0.95 --trust-remote-code
+```
+
+https://github.com/vllm-project/vllm/blob/22b39e11f2eca7dd70bcef3760cd5da149412d00/docs/source/serving/openai_compatible_server.md?plain=1#L114
+vLLM supports only named function calling in the chat completion API. The `tool_choice` options `auto` and `required` are **not yet supported** but on the roadmap.
+To use a named function you need to define the function in the `tools` parameter and call it in the `tool_choice` parameter.
+It is the callers responsibility to prompt the model with the tool information, vLLM will not automatically manipulate the prompt. **This may change in the future.**
+vLLM will use guided decoding to ensure the response matches the tool parameter object defined by the JSON schema in the `tools` parameter.
+Please refer to the OpenAI API reference documentation for more information.
+
+
+## Lmdeploy 【经测试，存在问题】
+#### 安装
+```
+workon xinfer
+pip install lmdeploy
+```
+#### 使用modelscope下载模型
+```
+pip install modelscope
+nano ~/.bashrc
+export LMDEPLOY_USE_MODELSCOPE=True
+source ~/.bashrc
+```
+#### 部署API服务
+
+https://github.com/InternLM/lmdeploy/blob/main/docs/zh_cn/llm/api_server.md
+https://github.com/InternLM/lmdeploy/blob/main/docs/zh_cn/llm/api_server_tools.md
+
+参数：lmdeploy serve api_server -h
+```
+lmdeploy serve api_server Shanghai_AI_Laboratory/internlm2_5-20b-chat --server-port 9997 --tp 4 --log-level DEBUG
+```
+#### LMDeploy支持的Function/Tool Calling模型
+LMDeploy 支持 InternLM2, InternLM2.5 和 Llama3.1 模型的工具调用
 
