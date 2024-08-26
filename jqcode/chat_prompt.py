@@ -16,20 +16,13 @@ UPLOAD_FOLDER = 'workspace/'
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 APP_PORT = int(os.environ.get("WEB_PORT", 8080))
 
-
 READER_MAP = {
     '.csv': pd.read_csv,
-    '.tsv': pd.read_csv,
     '.xlsx': pd.read_excel,
     '.xls': pd.read_excel,
-    '.xml': pd.read_xml,
-    '.json': pd.read_json,
-    '.hdf': pd.read_hdf,
-    '.hdf5': pd.read_hdf,
-    '.feather': pd.read_feather,
-    '.parquet': pd.read_parquet,
-    '.pkl': pd.read_pickle,
-    '.sql': pd.read_sql,
+    '.docx':pd.read_hdf,
+    '.doc':pd.read_hdf,
+    '.pdf':pd.read_hdf
 }
 
 def allowed_file(filename):

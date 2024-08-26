@@ -32,8 +32,20 @@ reranker = env_models_instance.reranker
 
 files_index = "bulk_files_on_es"
 
-if not es_connection.indices.exists(index=files_index):
-    es_connection.indices.create(index=files_index)
+
+smartcn_index="smartcn_test_doc_tree_reader"
+if not es_connection.indices.exists(index=smartcn_index):
+    settings = {
+        "analysis": {
+            "analyzer": {
+                "default": {
+                     "type": "smartcn"
+                     }
+            }
+        }
+    }
+
+    es_connection.indices.create(index=smartcn_index,settings=settings)
 
 # input_files = [fr'/data/projects/JqChatV2/JqChat/jqcode/jq_readers/.test_files/.testinputdocs/A方案.docx'] 
 # input_files += [fr'/data/projects/JqChatV2/JqChat/jqcode/jq_readers/.test_files/.testinputdocs/PPQA000_质量保证过程.doc'] 
@@ -88,8 +100,8 @@ def splitter_split_documents(lm_documents:list):
     lc_documents = [LcDocument(page_content=node.text,metadata=node.metadata) for node in nodes]
     return lc_documents
 
-def embedding_and_indexing_to_es(lc_documents:list,index_name="test_doc_tree_reader"):
-    vectorstore = env_models_instance.get_es_searchstore_index_documents(documents=lc_documents, embedding=embed_model,index_name="test_doc_tree_reader",source_id_key='source')
+def embedding_and_indexing_to_es(lc_documents:list,index_name=smartcn_index):
+    vectorstore = env_models_instance.get_es_searchstore_index_documents(documents=lc_documents, embedding=embed_model,index_name=index_name,source_id_key='source')
     return vectorstore
 
 def run_a_query_test(query,retriever,llm=llm):    
@@ -120,7 +132,14 @@ def download_file_documents_to_local(es_index_doc_id_list):
 
 
 if __name__ == "__main__":
-    from_beginning = False
+
+    # mapping = es_connection.indices.get_mapping(index=smartcn_index)
+    
+    # # 打印映射信息
+    # print(mapping)
+
+
+    from_beginning = True
 
     if from_beginning:
         # 从头开始的
@@ -128,15 +147,19 @@ if __name__ == "__main__":
         lm_documents_with_added_index_info_metadata,es_index_doc_id_list = upload_file_documents_to_es(lm_documents)
         lc_documents = splitter_split_documents(lm_documents_with_added_index_info_metadata)
         print(len(lc_documents))
-        vectorstore = embedding_and_indexing_to_es(lc_documents,index_name="test_doc_tree_reader")
+        vectorstore = embedding_and_indexing_to_es(lc_documents,index_name=smartcn_index)
         # 已经入库了
 
     # （1）基于返回的vectorstore，直接检索回答    
         compression_retriever = get_retriever(vectorstore=vectorstore,index_name=None)
     else:
     # （2）基于知识库名来重新连接，检索回答    
-        compression_retriever = get_retriever(vectorstore=None,index_name="test_doc_tree_reader")
+        compression_retriever = get_retriever(vectorstore=None,index_name=smartcn_index)
 
+    # 打印映射信息
+    settings = es_connection.indices.get_settings(index=smartcn_index) 
+    print(settings)
+    
     query = "安徽省食品药品监督管理局行政审批系统项目总体计划的版本号是多少，批准人是谁？"
     answer,hits = run_a_query_test(query,retriever=compression_retriever)
 

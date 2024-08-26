@@ -1,0 +1,18 @@
+
+PUT index template/default
+{
+    "index patterns":["*"],
+    "template":{
+        "settings":{
+            "index":{
+                "analysis":{
+                    "analyzer":{
+                        "default":{
+                            "type":"smartcn"
+                        }
+                    }
+                }
+            }
+        }
+    }
+}

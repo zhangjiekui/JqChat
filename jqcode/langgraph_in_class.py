@@ -85,7 +85,7 @@ message_buffer = LimitedLengthString()
 # region: Router Data model Class Definitions
 ### Begin: Router Data model Class Definitions
 
-question_rewrite_system_prompt = """结合上下文context部分考虑重写原始问题，使得原始问题更加明确全面。
+question_rewrite_system_prompt = """结合上下文context部分考虑重写原始问题，使得原始问题更加明确全面，但要保留原始问题的本来意思或意图。
     如果原始问题中有不明确的实体指代,如该公司，他，这个地方等，请尽量用明确的实体内容来替换掉不明确的实体指代。
     如果不需要改写，请直接返回原始问题本身。
     仅仅需要返回问题内容本身，绝不能有任何额外的解释或内容。
@@ -99,12 +99,6 @@ question_rewrite_prompt = lambda x: ChatPromptTemplate.from_messages(
         )
     ]
 )
-# class QuestionReWrite(BaseModel):
-#     """结合上下文context部分考虑重写原始问题，使得原始问题更加明确，仅仅需要返回问题内容本身，不能有任何额外的解释或内容：（1）如果原始问题中不明确的实体指代,如该公司，他，这个地方等，请重写原始问题，用明确的实体替换不明确的指代，但不能有任何的解释或拓展；（2）否则，请直接返回原始问题本身。"""
-#     q: str = Field(description='返回格式必须为{"q":$question}:直接使用问题内容替换$question')
-
-# question_rewrite_llm = llm_model.with_structured_output(QuestionReWrite,method='json_mode')
-# question_rewrite_chain = question_rewrite_prompt | question_rewrite_llm
 question_rewrite_chain = question_rewrite_prompt | llm_model
 
 class WEB_SEARCH(BaseModel):
@@ -611,7 +605,7 @@ def grade_generation_v_documents_and_question(state:GraphAgentState):
     
     
 executable_tools = [get_flight_number,python_repl_tool]
-executable_tools = [get_flight_number]
+# executable_tools = [get_flight_number]
 route_tools = [WEB_SEARCH,CODE_GENERATION,CODE_EXECUTION]
 
 class GraphAgent:
@@ -636,7 +630,7 @@ class GraphAgent:
         _routing_tool_names = [tool.__name__ for tool in routing_tools_wrapped_in_class]
         _tool_names = _executable_tool_names + _routing_tool_names
         _tool_names_str = ','.join(_tool_names)
-        _system_message_content = f"Solve/Answer user's questions as best as you can in the language the user asked, preferred/default to Simplified Chinese. You have access to the following tools:{_tool_names_str}.You are allowed to make multiple calls (either together or in sequence).Choice Guidelines: 'CODE_GENERATION' is preferred rather than 'python_repl_tool' for drawing images, plotting graphs/charts, data file processing/analyzing/saving."
+        _system_message_content = f"Solve/Answer user's questions as best as you can in the language the user asked, preferred/default to Simplified Chinese. You have access to the following tools:{_tool_names_str}.You are allowed to make multiple calls (either together or in sequence).Choice Guidelines: 'CODE_GENERATION' is preferred rather than 'python_repl_tool' for drawing images, plotting graphs/charts, data file processing/analyzing/saving, Otherwise, please use 'python_repl_tool'."
 
         if llm_model is None:
             llm_model = env_models_instance.get_langchain_chat_model()
@@ -889,7 +883,6 @@ class GraphAgent:
             tool_call_1_name = tool_call_1['name']
             if tool_call_1_name in self.routing_tool_names:
                 logger.info(f"Returned first ToolName is '{tool_call_1_name}', So routing to '{tool_call_1_name}' Node......")
-                os.environ['rag_args'] = tool_call_1["args"]['query']
                 return tool_call_1_name
 
         else:
@@ -1072,7 +1065,7 @@ class GraphAgent:
             results = [makeup_tool_message,makeup_human_message,error_message]       
             return {'messages': results,'question_related_messages':results}       
         
-    def run_conversation(self,user_question:str,allow_question_rewrite=True):
+    def run_conversation(self,user_question:str,allow_question_rewrite=False):
         print('================='*5)
         print('================='*5)
         print(f"开始会话:{user_question}")

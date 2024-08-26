@@ -333,7 +333,7 @@ class InitEnvModels:
                 model_name=self.llm_model_name,
                 openai_api_base=self.llm_model_base_url,    
                 openai_api_key= self.api_key,
-                streaming=True,
+                streaming=streaming,
                 verbose=True,
                 temperature=temperature,
                 max_tokens=max_tokens,
