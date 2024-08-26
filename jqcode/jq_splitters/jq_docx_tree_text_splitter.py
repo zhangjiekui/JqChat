@@ -922,7 +922,7 @@ if __name__ == "__main__":
     # 下面是我想的提示词：
     # '你是一个忠实的客服专家，回答问题应尽量简洁，不超过100字，并尽量忠实引用Context和Question中的原文，如果无法回答，就说不知道，不要捏造答案。以下是问题：
     index_name='yqli'
-    compression_retriever = get_retriever(index_name=index_name,chat_on_docs_list=input_files,add_docs_list_to_kb=False)
+    compression_retriever = get_retriever(index_name=index_name,chat_on_docs_list=input_files,add_docs_list_to_kb=True)
     # compression_retriever = get_retriever(index_name=index_name)
     # chain_type:stuff、refine、map_reduce 和 map_rerank
     qa_chain_RetrievalQA = RetrievalQA.from_chain_type(llm,retriever=compression_retriever,return_source_documents=True, chain_type="stuff")

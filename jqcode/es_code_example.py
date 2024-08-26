@@ -35,17 +35,48 @@ files_index = "bulk_files_on_es"
 
 smartcn_index="smartcn_test_doc_tree_reader"
 if not es_connection.indices.exists(index=smartcn_index):
+    # settings = {
+    #     "index": {"analysis.analyzer.default.type": "smartcn","analysis.search_analyzer.default.type": "smartcn"}
+    #     }
     settings = {
-        "analysis": {
-            "analyzer": {
-                "default": {
-                     "type": "smartcn"
-                     }
-            }
+        "index": {"analysis.analyzer.default.type": "ik_max_word","analysis.search_analyzer.default.type": "ik_smart"}
         }
-    }
 
     es_connection.indices.create(index=smartcn_index,settings=settings)
+# 目前还不能默认应用到index接到和search阶段
+default_result = es_connection.indices.analyze(text="中华人民共和国国歌")
+default_analyzer_result = es_connection.indices.analyze(text="中华人民共和国国歌",index=smartcn_index)
+default_analyzer_result2 = es_connection.indices.analyze(text="中华人民共和国国歌",analyzer='ik_max_word')
+smartcn_analyzer_result = es_connection.indices.analyze(text="中华人民共和国国歌",analyzer='smartcn')
+
+# default_search_result = es_connection.search(query="中华人民共和国国歌",index=smartcn_index)
+
+# 在kibana中进行测试
+# GET /smartcn_test_doc_tree_reader/_analyze
+# {
+#   "field":"source",
+#   "text":"中华人民共和国国歌"
+# }
+
+# 结果为：
+# {
+#   "tokens": [
+#     {
+#       "token": "中华人民共和国",
+#       "start_offset": 0,
+#       "end_offset": 7,
+#       "type": "word",
+#       "position": 0
+#     },
+#     {
+#       "token": "国歌",
+#       "start_offset": 7,
+#       "end_offset": 9,
+#       "type": "word",
+#       "position": 1
+#     }
+#   ]
+# }
 
 # input_files = [fr'/data/projects/JqChatV2/JqChat/jqcode/jq_readers/.test_files/.testinputdocs/A方案.docx'] 
 # input_files += [fr'/data/projects/JqChatV2/JqChat/jqcode/jq_readers/.test_files/.testinputdocs/PPQA000_质量保证过程.doc'] 

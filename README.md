@@ -342,6 +342,7 @@ bin/elasticsearch-plugin list
 2、安装
 2.1 安装smartcn 【for Chinese or mixed Chinese-English text https://www.elastic.co/guide/en/elasticsearch/plugins/current/analysis-smartcn.html】  
 bin/elasticsearch-plugin install analysis-smartcn 
+bin/elasticsearch-plugin install https://get.infini.cloud/elasticsearch/analysis-ik/8.15.0
 
 2.2 restart Elasticsearch to activate any plugins installed
 如果直接reatert不行，可以先stop再start

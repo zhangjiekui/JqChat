@@ -71,6 +71,13 @@ def get_retriever(vectorstore:ElasticsearchStore=None,index_name:str=None,chat_o
             # 得到真正的files_to_be_add_to_index
 
         # region 2、在知识库中查询是否已经存在拟上传的文件
+            if not es_connection.indices.exists(index=index_destination):
+                settings = {
+                    "index": {"analysis.analyzer.default.type": "ik_max_word","analysis.search_analyzer.default.type": "ik_smart"}
+                    }
+
+                es_connection.indices.create(index=index_destination,settings=settings)
+
             if es_connection.indices.exists(index=index_destination): 
             # region 保留用做测试   
                 # query0= {
@@ -234,8 +241,8 @@ if __name__ == "__main__":
     input_files = [fr'/data/projects/JqChatV2/JqChat/jqcode/jq_readers/.test_files/.testinputdocs/A方案.docx'] 
     input_files += [fr'/data/projects/JqChatV2/JqChat/jqcode/jq_readers/.test_files/.testinputdocs/PPQA000_质量保证过程.doc']
     # input_files = []   
-    index_name='health'
-    compression_retriever = get_retriever(index_name=index_name,chat_on_docs_list=input_files,add_docs_list_to_kb=True) 
+    index_name="smartcn_test_doc_tree_reader"
+    compression_retriever = get_retriever(index_name=index_name,chat_on_docs_list=input_files,add_docs_list_to_kb=False) 
     # docs1 = compression_retriever.invoke("晶奇公司在哪一年获得ISO9001国际质量体系认证？")
     docs1 = compression_retriever.invoke("组织级质量保证计划审查")
     docs2 = compression_retriever.invoke("各类医疗卫生机构规范化处置能力。完善重大疫情医疗废物应急处置机制")
