@@ -1,3 +1,5 @@
+from threading import Timer
+import time
 import uuid
 from typing import Dict, List
 
@@ -15,13 +17,13 @@ from jqcode.jq_knowledge_manegement.chatchat.server.knowledge_base.kb_service.ba
 
 chat_box = ChatBox(assistant_avatar=get_img_base64("chatchat_icon_blue_square_v2.png"))
 
+code_message:str=None
+
 LOADER_DICT = {
-    "JSONLoader": [".json"],
-    "JSONLinesLoader": [".jsonl"],
     "CSVLoader": [".csv"],
-    "UnstructuredExcelLoader": [".xlsx", ".xls", ".xlsd"],
-    "UnstructuredTSVLoader": [".tsv"],
-    "UnstructuredXMLLoader": [".xml"],
+    "ExcelLoader": [".xlsx", ".xls"],
+    "WordLoader": [".doc","docx"],
+    "PdfLoader": [".pdf"],
 }
 
 SUPPORTED_EXTS = [ext for sublist in LOADER_DICT.values() for ext in sublist]
@@ -48,50 +50,44 @@ def rerun():
     st.rerun()
 
 
-def get_messages_history(
-    history_len: int, content_in_expander: bool = False
-) -> List[Dict]:
-    """
-    返回消息历史。
-    content_in_expander控制是否返回expander元素中的内容，一般导出的时候可以选上，传入LLM的history不需要
-    """
-
-    def filter(msg):
-        content = [
-            x for x in msg["elements"] if x._output_method in ["markdown", "text"]
-        ]
-        if not content_in_expander:
-            content = [x for x in content if not x._in_expander]
-        content = [x.content for x in content]
-
-        return {
-            "role": msg["role"],
-            "content": "\n\n".join(content),
-        }
-
-    messages = chat_box.filter_history(history_len=history_len, filter=filter)
-    if sys_msg := st.session_state.get("system_message"):
-        messages = [{"role": "system", "content": sys_msg}] + messages
-    return messages
-
-
 @st.cache_data
-def upload_docs(user,knowbase_id,files, _api: ApiRequest) -> str:
+def upload_docs(user,knowledge_id,files, _api: ApiRequest) -> str:
     """
     将文件上传到临时目录，用于文件对话
     返回临时向量库ID
     """
-
-    return _api.upload_docs(uid=user,knowledge_id=knowbase_id,files=files)
+    return _api.upload_docs(uid=user,knowledge_id=knowledge_id,files=files)
 #聊天
-def chat(query,user,doc:str,_api:ApiRequest)  :
-    return _api.chat_chat(query=query,user=user,doc=doc)
+def chat(code_message,query,user,doc:str,files,_api:ApiRequest)  :
+    response=_api.chat_chat(code_message=code_message,query=query,user=user,doc=doc,files=files)
+    return response
+
 #执行code
-def code(code,user,_api:ApiRequest)  :
-    return _api.code_chat(code==code,user=user)
+def code(user,_api:ApiRequest)  :
+    return _api.code_chat(user=user)
+
 #执行code
 def clear(user,_api:ApiRequest)  :
     return _api.clear_chat(code==code,user=user)
+#从后台获取code执行的结果
+def get_execute_result(api:ApiRequest):
+    ctx = chat_box.context
+    for i in range(3) :
+        ctx = chat_box.context
+        user=ctx.get("uid")
+        response=code(user=user,_api=api)
+        if(len(response["results"])>0):
+            for result in response["results"]:
+                if (result["type"] == "message" or result["type"]  == "message_raw") and result["value"]  != 'Kernel is ready.':
+                    # inject context
+                    code_message=result["value"]
+                    ctx['code_message']=code_message
+                    chat_box.ai_say(code_message)
+                else :
+                    pic=  f'<img src="data:{result["type"]};base64,{result["value"]}" width="300">'
+                    chat_box.ai_say(pic)
+            return
+        time.sleep(1)
 
 def dialogue_page(
     api: ApiRequest,
@@ -99,18 +95,20 @@ def dialogue_page(
 ):
     ctx = chat_box.context
     ctx.setdefault("uid", uuid.uuid4().hex)
-    ctx.setdefault("file_chat_id", None)
-    st.session_state.setdefault("cur_conv_name", chat_box.cur_chat_name)
-    st.session_state.setdefault("last_conv_name", chat_box.cur_chat_name)
+    # 初始化文件ID和执行代码结果为None
+    ctx.setdefault("files", [])
+    ctx.setdefault("code_message",'')
+    # st.session_state.setdefault("cur_conv_name", chat_box.cur_chat_name)
+    # st.session_state.setdefault("last_conv_name", chat_box.cur_chat_name)
 
-    # sac on_change callbacks not working since st>=1.34
-    if st.session_state.cur_conv_name != st.session_state.last_conv_name:
-        save_session(st.session_state.last_conv_name)
-        restore_session(st.session_state.cur_conv_name)
-        st.session_state.last_conv_name = st.session_state.cur_conv_name
+    # # sac on_change callbacks not working since st>=1.34
+    # if st.session_state.cur_conv_name != st.session_state.last_conv_name:
+    #     save_session(st.session_state.last_conv_name)
+    #     restore_session(st.session_state.cur_conv_name)
+    #     st.session_state.last_conv_name = st.session_state.cur_conv_name
 
-    # st.write(chat_box.cur_chat_name)
-    # st.write(st.session_state)
+    # # st.write(chat_box.cur_chat_name)
+    # # st.write(st.session_state)
 
     @st.dialog("上传文件", width="large")
     def file_upload():
@@ -118,14 +116,16 @@ def dialogue_page(
             [i for ls in LOADER_DICT.values() for i in ls],
             accept_multiple_files=True,
             )
-        
-        if st.button("开始上传", disabled=len(files) == 0):
+        choose_knowbase= st.checkbox(f"是否纳入知识库({selected_kb})？")
+        if st.button("开始上传", disabled = len(files) == 0 ):
             user=ctx.get("uid")
-            print(selected_kb)
-            response=upload_docs(user=user,knowbase_id=selected_kb,files=files,_api=api)
+            knowledge_id=None
+            if choose_knowbase:
+                knowledge_id=selected_kb
+            response=upload_docs(user=user,knowledge_id=knowledge_id,files=files,_api=api)
             print(response)
             st.info(f"{response['message']}")
-            # st.session_state["file_chat_id"] = upload_docs(user=user,files=files, api=api)
+            chat_box.context['files']=response['files']
         
     with st.sidebar:   
       
@@ -177,6 +177,9 @@ def dialogue_page(
         
         if cols[-1].button(":wastebasket:", help="清空对话"):
             chat_box.reset_history()
+             #清空code执行回复信息和文件
+            ctx['files']=[]
+            ctx['code_message']=''
             return
         
     #简洁的对话，待完善 
@@ -185,32 +188,13 @@ def dialogue_page(
         chat_box.ai_say("正在思考中...")
         user=ctx.get("uid")
         doc=str(selected_kb)
-        print(prompt,user,doc)
-        msg=chat(query=prompt,user=user,doc=doc,_api=api)
-        chat_box.update_msg(msg["text"],streaming=False)
-        if("code" in msg and msg["code"] is not None):
-            # 获取可能存在的图片，这个图片
-            img=code()
-            img_tag =(
-                    f'<img src="data:image/jpeg;base64,{msg["text"]}" width="300">'
-                )
-            chat_box.ai_say(img_tag)
-        #     #    with chat_box() :
-        #         response_dict=code_editor(code=f'int i',lang="python",theme="dark")
-        #         chat_box.insert_msg(
-        #                         Markdown( # type: ignore
-        #                             ...,
-        #                             in_expander=True,
-        #                             state="running",
-        #                             title="执行代码",
-        #                         )
-        #                     )
-        #         code_response=code(code=msg["code"],user=user,_api=api)
-        #         chat_box.update_msg(code_response["text"])
-        #         # chat_box.insert_msg(response_dict) 
-        #         # if(st.button("aaa")):
-        #         #     st.write("aaa")
-        #     # with chat_box:
-        #     #     st.write(response_dict)
-            
-
+        code_message=ctx.get('code_message')
+        files=ctx.get('files')
+        msg=chat(code_message=code_message,query=prompt,user=user,doc=doc,files=files,_api=api)
+        chat_box.update_msg(msg["text"],streaming=False) 
+        #清空code执行回复信息和文件
+        ctx['files']=[]
+        ctx['code_message']=''
+        if 'code' in msg and msg['code'] != None:
+            get_execute_result(api)
+    # get_execute_result(api)

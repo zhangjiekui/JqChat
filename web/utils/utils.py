@@ -306,6 +306,8 @@ class ApiRequest:
     # 对话相关操作
     def chat_chat(
         self,
+        code_message:str,
+        files:List[str],
         query: str,
         user: str,
         doc: str,
@@ -317,14 +319,15 @@ class ApiRequest:
         data = {
             "query": query,
             "user": user,
-            "doc":doc
+            "doc":doc,
+            "code_message":code_message,
+            "files":files
         }
         response = self.post("/chat/completions", json=data, stream=False, **kwargs)
         return  self._get_response_value(response, as_json=True)
     # 执行代码相关操作
     def code_chat(
         self,
-        code: str,
         user: str,
         **kwargs,
     ):
@@ -332,7 +335,6 @@ class ApiRequest:
         对应api.py/chat/chat接口
         """
         data = {
-            "code": code,
             "user": user,
         }
         response = self.post("/chat/code", json=data, stream=False, **kwargs)
