@@ -76,7 +76,7 @@ def get_execute_result(api:ApiRequest):
         ctx = chat_box.context
         user=ctx.get("uid")
         response=code(user=user,_api=api)
-        if(len(response["results"])>0):
+        if('results' in response and len(response["results"])>0):
             for result in response["results"]:
                 if (result["type"] == "message" or result["type"]  == "message_raw") and result["value"]  != 'Kernel is ready.':
                     # inject context
