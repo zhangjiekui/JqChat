@@ -32,7 +32,7 @@ from flask import request, jsonify,Response
 import requests
 from jqcode.jq_utils.logger import jqkj_logger
 from dotenv import load_dotenv
-
+import time
 _ = load_dotenv()
 logger = jqkj_logger(__file__).get_logger()
 
@@ -279,6 +279,9 @@ def submit_code_to_ipykernel_api(code:str):
         result = result_dict.get("result",None)
         if result=="success":
             logger.info("代码提交执行成功！")
+            time.sleep(1)
+            resp = requests.get(kernel_api_url)
+            print(resp)
             return True
         else:
             logger.error("代码提交执行失败！")
@@ -286,6 +289,13 @@ def submit_code_to_ipykernel_api(code:str):
     except Exception as e:
         logger.error(f"代码提交执行失败！错误信息为:{e}")
         return False
+    
+    try:
+        resp = requests.get(kernel_api_url)
+        print(resp)
+        # results = [result_queue.get() for _ in range(result_queue.qsize())]
+    except:
+        pass
 
 def display_code(code:str):
     _code = f"""python    

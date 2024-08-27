@@ -20,7 +20,8 @@ from dotenv import load_dotenv
 from kernel_program.kernel_manager import cleanup_spawned_processes 
 from kernel_program import config
 import kernel_program.utils as utils
-
+from jqcode.jq_utils.logger import jqkj_logger
+jqlogger = jqkj_logger(__file__).get_logger()
 load_dotenv('.env')
 APP_PORT = int(os.environ.get("API_PORT", 5011))
 
@@ -75,6 +76,8 @@ async def start_snakemq():
         if message["type"] == "status":
             if message["value"] == "ready":
                 logger.debug("Kernel is ready.")
+                jqlogger.info("Kernel is ready.")
+                print("Kernel is ready.")
                 result_queue.put({
                     "value":"Kernel is ready.",
                     "type": "message"
@@ -83,6 +86,7 @@ async def start_snakemq():
         elif message["type"] in ["message", "message_raw", "image/png", "image/jpeg"]:
             # TODO: 1:1 kernel <> channel mapping
             logger.debug("%s of type %s" % (message["value"], message["type"]))
+            jqlogger.info("%s of type %s" % (message["value"], message["type"]))
 
             result_queue.put({
                 "value": message["value"],
@@ -91,6 +95,7 @@ async def start_snakemq():
 
     messaging.on_message_recv.add(on_recv)
     logger.info("Starting snakemq loop")
+    jqlogger.info("Starting snakemq loop")
 
     def send_queued_messages():
         while True:
@@ -123,9 +128,7 @@ def handle_request():
         return jsonify({"results": results})
     elif request.method == "POST":
         data = request.json
-
         send_queue.put(data)
-
         return jsonify({"result": "success"})
     
 @app.route("/restart", methods=["POST"])
@@ -145,8 +148,15 @@ async def main():
     # # flask_thread.start()
     # # Run in background
     # await start_snakemq()
-    await asyncio.gather(start_kernel_manager(),run_flask_app(),start_snakemq())
+    #await asyncio.gather(start_kernel_manager(),run_flask_app(),start_snakemq())
+    start_kernel_manager()
+    await start_snakemq()
+    # Run Flask app in a separate thread
+    flask_thread = threading.Thread(target=run_flask_app)
+    flask_thread.start()
 
+    # Run in background
+    #await start_snakemq()
 
 def run_flask_app():
     app.run(host="0.0.0.0", port=APP_PORT)

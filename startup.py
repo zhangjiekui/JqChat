@@ -7,7 +7,7 @@ import os, sys
 from jqcode.jq_knowledge_manegement.chatchat.server.knowledge_base.migrate import create_tables
 from contextlib import asynccontextmanager
 import pathlib
-from kernel_program.main import main as kernel_program_main,APP_PORT
+from kernel_program.main import cleanup_kernel_program,main as kernel_program_main,APP_PORT
 from jqcode.jq_knowledge_manegement.chatchat.configs import API_SERVER, LOG_PATH, MODEL_PLATFORMS
 from jqcode.api_server.server_app import create_app
 from jqcode.jq_knowledge_manegement.chatchat.server.utils import set_httpx_config
@@ -182,10 +182,10 @@ def run_webui(
     started_event.set()
     
 #run kernel for code
-def run_kernel_program(started_event: Event = None, run_mode: str = None): # type: ignore
+def run_kernel_program(): # type: ignore
     try:
         asyncio.run(kernel_program_main())
-        started_event.set()
+        #started_event.set()
     except Exception as e:
         logging.exception("Error running the kernel_program:")
         sys.exit(1)
@@ -283,7 +283,7 @@ async def start_main_server():
     signal.signal(signal.SIGINT, handler("SIGINT"))
     signal.signal(signal.SIGTERM, handler("SIGTERM"))
 
-    mp.set_start_method("spawn")
+    #p.set_start_method("spawn")
     manager = mp.Manager()
     run_mode = None
 
@@ -297,22 +297,18 @@ async def start_main_server():
         args.api = True
         args.api_worker = True
         args.webui = True
-        args.kernel = True
     elif args.all_api:
         args.api = True
         args.api_worker = True
         args.webui = False
-        args.kernel = True
     elif args.api:
         args.api = True
         args.api_worker = False
         args.webui = False
-        args.kernel = True
     if args.lite:
         args.api = True
         args.api_worker = False
         args.webui = True
-        args.kernel = True
 
     if len(sys.argv) > 1:
         logger.info(f"正在启动服务：")
@@ -322,20 +318,8 @@ async def start_main_server():
     def process_count():
         return len(processes)
     
-    kernel_started = manager.Event()
-    if(args.kernel):
-       process = Process(
-           target=run_kernel_program,
-           name=f"Kernel Server",
-           kwargs=dict(
-            started_event=kernel_started,
-            run_mode=run_mode,
-           ),
-           daemon=True,)  
-       processes["kernel"] = process
-    # if(args.kernel):
-    #     kernel_program_process = Process(target=run_kernel_program)
-    #     processes["kernel"] = kernel_program_process
+    kernel_program_process = Process(target=run_kernel_program)
+    processes["kernel"] = kernel_program_process
     
     api_started = manager.Event()
     if args.api:
@@ -375,7 +359,7 @@ async def start_main_server():
                 logger.info(f"启动KERNEL服务：{p.name}")
                 p.start()
                 p.name = f"{p.name} ({p.pid})"
-                # kernel_started.wait()  # 等待kernel启动完成
+                kernel_started.wait()  # 等待kernel启动完成
                 
 
             if p := processes.get("api"):
@@ -434,8 +418,17 @@ def main():
     print("```"*20)
     mp.freeze_support()
     
-    
     create_tables()
+
+    #kernel_program_process = Process(target=run_kernel_program)
+    #try:
+    #    kernel_program_process.start()
+    #    kernel_program_process.join()
+    #except KeyboardInterrupt:
+    #    cleanup_kernel_program()
+    #    kernel_program_process.terminate()
+    #    kernel_program_process.join()
+
     if sys.version_info < (3, 10):
         loop = asyncio.get_event_loop()
     else:
@@ -446,6 +439,6 @@ def main():
     
         asyncio.set_event_loop(loop)
     loop.run_until_complete(start_main_server())
-
+    
 if __name__ == "__main__":
     main()
