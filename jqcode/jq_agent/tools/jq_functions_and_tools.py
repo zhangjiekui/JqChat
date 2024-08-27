@@ -127,7 +127,7 @@ def python_repl_tool(query:str) -> str:
             raise ToolException(f"No observation was found. Maybe you should add `print($value)` in you python code?")
 
 
-print("\n###增加了ToolException处理函数_handle_error function")
+# print("\n###增加了ToolException处理函数_handle_error function")
 def _handle_error(error: ToolException) -> str:
     return (
         "The following errors occurred during tool execution:"
@@ -164,8 +164,8 @@ excutable_tool_names_str = ','.join([tool.name for tool in excutable_tools])
 
 
 # print(excutable_tools_descriptions_str)
-print(f'\n本次程序中提供的所有可用的工具列表:\n {excutable_tool_names_str}')
-print("=================== system_prompt ===================")
+# print(f'\n本次程序中提供的所有可用的工具列表:\n {excutable_tool_names_str}')
+# print("=================== system_prompt ===================")
 system_prompt = f"""You are a helpful tool assistant. You have access to the following tools: 
             \n\n{excutable_tools_descriptions_str}\n\nUse a json blob to specify a tool by providing an action key (tool name) and an action_input key (tool input). Use the provided tools if necessary to get flight number, write and execute python code to answer questions.Valid "action" values: "Final Answer" or {excutable_tool_names_str}\n\nProvide only ONE action per $JSON_BLOB, as shown:```\n{{\n  "action": $TOOL_NAME,\n  "action_input": $INPUT\n}}\n```\n\nFollow this format:\n\nQuestion: input question to answer\nThought: consider previous and subsequent steps\nAction:\n```\n$JSON_BLOB\n```\nObservation: action result\n... (repeat Thought/Action/Observation N times)\nThought: I know what to respond\nAction: "\n```\n{{\n"  "action": "Final Answer",\n  "action_input": "Final response to human"\n}}\n\nBegin! Reminder to ALWAYS respond with a valid json blob of a single action. Respond directly if appropriate. Format is Action:```$JSON_BLOB```then Observation
             """

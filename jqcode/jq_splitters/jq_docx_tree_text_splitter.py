@@ -154,9 +154,7 @@ def get_pre_title_nodes_text(cur_node,cur_title_node,pre_title_node,cur_ancestor
             cur_ancestors_text_placeholder = _get_pre_title_nodes_text(cur_node.ancestors[1:]) #[1:] 去除文件名根节点
     return cur_title_node,pre_title_node,cur_ancestors_text_placeholder,pre_ancestors_text_placeholder
 
-class JqkjDocTreeTokenTextSplitter(MetadataAwareTextSplitter):
-    logger.warning('JqkjDocTreeTokenTextSplitter TODO:\n一、方便获取和检索、对照\n（1）将每个文档的doc_tree存储到磁盘，以根节点ID命名；\n（2）在每个chunks->Documnet中增加cur_node_id,parent_node_id,root_node_id；\n二、代码测试、修正\n (1)目前发现文本有不正常的截断【已解决】； \n（2）代码本身优化\n')
-    
+class JqkjDocTreeTokenTextSplitter(MetadataAwareTextSplitter):  
     _default_normal_tokens_chunk_size = DEFAULT_CHUNK_SIZE - DEFAULT_MODEL_RESERVED_TOKENS_SIZE
 
     model_reserved_tokens_size: int = Field(default=DEFAULT_MODEL_RESERVED_TOKENS_SIZE , description="为嵌入模型预留的tokens(如BOS、EOS)数量。")    

@@ -1,4 +1,8 @@
+import warnings
+warnings.filterwarnings("ignore")
+
 import os,sys,pathlib
+os.environ['USER_AGENT'] = 'myagent'
 import re
 import threading
 from pathlib import Path
@@ -286,6 +290,8 @@ class InitEnvModels:
         self.all_indices = self.get_all_knowledge_base()
         self.strategy = DenseVectorStrategy(hybrid=False)
 
+        self.default_chinese_analyzer_settings = {"index": {"analysis.analyzer.default.type": "ik_max_word","analysis.search_analyzer.default.type": "ik_smart"}}
+
     def load_project_env(self):
         if not self.env_loaded: 
             print('\n\n')
@@ -328,7 +334,6 @@ class InitEnvModels:
         else:
             max_tokens = self.llm_model_max_tokens
 
-
         self.chat_model = ChatOpenAI(
                 model_name=self.llm_model_name,
                 openai_api_base=self.llm_model_base_url,    
@@ -342,19 +347,6 @@ class InitEnvModels:
         logger.info(f'当前使用的LLM模型为:Langchain ChatOpenAI, {self.chat_model.model_name}, API_URL为{self.chat_model.openai_api_base}')
         return self.chat_model
     
-    # model_name = "llama3-groq-tool-use:8b-q8_0"
-    # model_name = "adrienbrault/gorilla-openfunctions-v2:Q6_K"
-    # model_name = "allenporter/xlam:7b"
-    model_name = "mistral-large:latest"    
-    def get_ollama_chat_model(self,model_name = model_name,temperature=0.5,top_p=0.65, tools:list = None,verbose=True):
-        ollama_chat_model = ChatOllama(model=model_name,temperature=temperature,top_p=top_p,verbose=verbose)
-        print("-------ollama_chat_model详细信息-------")
-        print(f'       ==Get ollama_chat_model successfully. model_name={model_name}, ollama_host = {self.ollama_host}')
-        print("-------ollama_chat_model详细信息-------")
-        if tools:
-            return ollama_chat_model.bind_tools(tools)        
-        return ollama_chat_model
- 
     def _get_emb_8k_rerank_model(self,embedding_model_name=None, embedding_model_name_8k=None, rerank_model_name=None, device = ['cpu','cpu','cpu'],final_docs_num_reranked=4): #device = ['cuda:1','cuda:2''cuda:3']
         name_or_path = embedding_model_name if embedding_model_name else self.embedding_model_name_or_path       
         if 'bge' in name_or_path: 
@@ -412,12 +404,12 @@ class InitEnvModels:
             # https://github.com/xorbitsai/inference/blob/7d83300a7694a0262b634007ea4164ea753e466f/xinference/model/rerank/core.py
             reranker = XinferenceReranker(top_n=6,model=xinfer_reranker)
             # reranker.compress_documents = reranker.rerank
-            query = "A man is eating pasta."
-            corpus = ["A man is eating food.","A woman is playing violin."]
-            r = reranker.rerank(corpus, query)
-            logger.debug(r)
-            c = reranker.compress_documents(corpus, query)
-            logger.debug(c)
+            # query = "A man is eating pasta."
+            # corpus = ["A man is eating food.","A woman is playing violin."]
+            # r = reranker.rerank(corpus, query)
+            # logger.debug(r)
+            # c = reranker.compress_documents(corpus, query)
+            # logger.debug(c)
 
         except Exception as e:
             reranker = None
@@ -445,62 +437,83 @@ class InitEnvModels:
                 request_timeout=600 #这个设置很重要  elastic_transport.ConnectionTimeout: Connection timed out
             )
 
-            print(f'当前使用的Elasticsearch URL为| { self.ES_URL } |,详细信息如下:')
-            print('-------Elasticsearch Connection详细信息-------')
-            print(self.es_connection.info())
-            print('-------Elasticsearch Connection详细信息-------')
+            print(f'当前使用的Elasticsearch URL为:| { self.ES_URL } |')
+            # print('-------Elasticsearch Connection详细信息-------')
+            # print(self.es_connection.info())
+            # print('-------Elasticsearch Connection详细信息-------')
             print('-------可以通过Kibana URL查看:| http://127.0.0.1:5601 | http://10.1.150.105:5601 |-------')
         return self.es_connection
 
+    def create_es_index_if_not_existes_with_default_chinese_analyzer(self, es_connection=None,index_name:str=None):
+        assert index_name, "参数index_name（ES的索引名称）不得为空！"
+        if not es_connection:
+            es_connection=self.get_es_connection()
+        if not es_connection.indices.exists(index=index_name):
+            try:
+                es_connection.indices.create(index=index_name,settings=self.default_chinese_analyzer_settings)
+            except Exception as e:
+                logger.error(f'创建ES Index={index_name}失败，错误信息为:{e}')
+        else:
+            logger.info(f'ES Index={index_name}已经存在！') 
+    
+    
     def get_all_knowledge_base(self, es_connection=None,exclude_system_indices=True):
         if not es_connection:
             es_connection=self.get_es_connection()
-        self.all_indices = es_connection.indices.get_alias(index="*")
+        self.all_indices = es_connection.indices.get_alias(index="_all")
         if exclude_system_indices:
             self.all_indices = [index_name for index_name in self.all_indices if not index_name.startswith('.')]
         return self.all_indices
         
     def get_es_searchstore(self,embedding=None,es_connection=None,index_name='',strategy=None):
-        embedding = embedding if embedding else self.get_emb_8k_rerank_model()[0]
+        assert index_name, "参数index_name（ES的索引名称）不得为空！"
         es_connection = es_connection if es_connection else self.get_es_connection()
-        strategy = strategy if strategy else self.strategy
-        index_name = index_name if index_name else 'test_doc_tree_reader'    
+        self.create_es_index_if_not_existes_with_default_chinese_analyzer(es_connection=es_connection,index_name=index_name)
+
+        embedding = embedding if embedding else self.get_emb_8k_rerank_model()[0]        
+        strategy = strategy if strategy else self.strategy           
         es_searchstore = ElasticsearchStore(es_connection=es_connection, index_name=index_name, embedding=embedding,strategy=strategy)
         return es_searchstore
-
+    
+  
 
     # 方式一，使用LangChain indexing API，防止重复插入
     # https://python.langchain.com/docs/modules/data_connection/indexing 
 
     def get_es_searchstore_index_documents(self,documents,embedding,index_name,es_connection=None,cleanup="incremental",clear_before_add_index=True,strategy=None,source_id_key="source"):
+        assert index_name, "参数index_name（ES的索引名称）不得为空！"
+        assert documents,  "参数documents（待索引的文档）不得为空！"
         if not es_connection:
             es_connection=self.get_es_connection()
-
+        self.create_es_index_if_not_existes_with_default_chinese_analyzer(es_connection=es_connection,index_name=index_name)
         strategy = strategy if strategy else self.strategy
         es_searchstore = ElasticsearchStore(es_connection=es_connection, index_name=index_name, embedding=embedding,strategy=strategy)
+        
         namespace = f"elasticsearch/{index_name}"
         record_manager = SQLRecordManager(namespace, db_url="sqlite:///record_manager_cache.sql")
         record_manager.create_schema()
         
         def _clear():
-            """Hacky helper method to clear content. See the `full` mode section to to understand why it works."""
-        clear_result_report = index([], record_manager, es_searchstore, cleanup="full", source_id_key=source_id_key)
-        print(f'Clear_Result report of "index_documents_to_es_searchstore":{clear_result_report}')
+            """Hacky helper method to clear content. See the `full` mode section to to understand why it works."""        
+            clear_result_report = index([], record_manager, es_searchstore, cleanup="full", source_id_key=source_id_key)
+            logger.info(f'Clear_Result report of "index_documents_to_es_searchstore":{clear_result_report}')
 
         if clear_before_add_index:
             _clear()
-        es_searchstore.index_name=index_name
+        
         index_result_report=index(documents, record_manager, es_searchstore, cleanup=cleanup, source_id_key=source_id_key)
-        print(f'Index_Result report of "index_documents_to_es_searchstore":{index_result_report}')
+        logger.info(f'Index_Result report of "index_documents_to_es_searchstore":{index_result_report}')
 
         es_searchstore.client.indices.refresh(index=index_name)
         return es_searchstore
 
     # 方式二：常见的在教程中见到的
     def get_es_searchstore_from_documents(self,documents,embedding,index_name,es_connection=None,strategy=None):
+        assert index_name, "参数index_name（ES的索引名称）不得为空！"
+        assert documents,  "参数documents（待索引的文档）不得为空！"
         if not es_connection:
             es_connection=self.get_es_connection()
-        
+        self.create_es_index_if_not_existes_with_default_chinese_analyzer(es_connection=es_connection,index_name=index_name)       
         strategy = strategy if strategy else self.strategy
         es_searchstore = ElasticsearchStore.from_documents(documents=documents,embedding=embedding,es_connection=es_connection,index_name=index_name,strategy=strategy)
         es_searchstore.client.indices.refresh(index=index_name)
@@ -631,11 +644,15 @@ class InitEnvModels:
 
         else:
             return unique_messages_list
-        
-env_models_instance = InitEnvModels()
 
+@lru_cache
+def get_env_models_instance():
+    _env_models_instance = InitEnvModels()
+    return _env_models_instance
 
-# 留着备用
+env_models_instance = get_env_models_instance()
+
+# region 留着备用
 # Visualized-BGE： https://github.com/FlagOpen/FlagEmbedding/tree/master/FlagEmbedding/visual 
 
 # class BgeRerank(BaseDocumentCompressor):
@@ -691,7 +708,7 @@ env_models_instance = InitEnvModels()
 #             doc.metadata["relevance_score"] = r[1]
 #             final_results.append(doc)
 #         return final_results
-
+# endregion 留着备用
 class MyCustomHandler(BaseCallbackHandler):
     def on_chat_model_start(self,serialized, messages: List[List[BaseMessage]], *args, **kwargs):
         print("<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<")

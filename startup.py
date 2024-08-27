@@ -419,18 +419,21 @@ async def start_main_server():
 
 def main():
     # 添加这行代码
+    print("```"*20)    
     project_root_path = pathlib.Path().resolve()
-    p1 = project_root_path/'jqcode'
-    p2=project_root_path/'kernel_program'
-    p3=project_root_path/'web'
-    for p in [project_root_path, p1,p2,p3]:
-        if str(p) not in sys.path: 
-            sys.path.append(str(p))
+    print(f"应用启动路径:{project_root_path}")
+    print(f"本项目中添加使用的Python路径为：{set(sys.path)}")
 
-    print(project_root_path,p1,p2)
+    # p1 = project_root_path/'jqcode'
+    # p2=project_root_path/'kernel_program'
+    # p3=project_root_path/'web'
+    # for p in [project_root_path, p1,p2,p3]:
+    #     if str(p) not in sys.path: 
+    #         sys.path.append(str(p))
+    
     print("```"*20)
     mp.freeze_support()
-    print(f"应用启动路径:{project_root_path}")
+    
     
     create_tables()
     if sys.version_info < (3, 10):

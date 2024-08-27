@@ -43,7 +43,8 @@ python_repl = PythonREPLTool().run #这是原生的
 DEBUG = False
 handlers = get_custom_handler() if DEBUG else []
 invoke_llm_config = {'callbacks' : handlers}    
-llm_model = env_models_instance.get_langchain_chat_model()
+# llm_model = env_models_instance.get_langchain_chat_model()
+llm_model = env_models_instance.chat_model
 
 class GraphAgentState(TypedDict):
     messages: Annotated[list[AnyMessage], add_messages]

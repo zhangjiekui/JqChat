@@ -16,6 +16,9 @@ from langchain_core.messages import ToolMessage
 
 from jqcode.langgraph_in_class import GraphAgent
 
+from jqcode.jq_utils.logger import jqkj_logger
+logger = jqkj_logger(__file__).get_logger()
+
 
 
 # We know this Flask app is for local use. So we can disable the verbose Werkzeug logger
@@ -28,7 +31,7 @@ chat_router = APIRouter(prefix="/chat", tags=["Chat对话"])
 @chat_router.post('/completions',summary="对话接口")
 def completions(
     user_prompt: str = Body(alias="query",description="用户输入"),
-    doc_id: str = Body(alias="doc", description="知识库ID"),
+    es_index_name: str = Body(alias="doc", description="知识库ID"),
     user_id: str = Body(alias="user", description="用户随机ID"),
     files: List[str]=Body(alias="files",description="文档ID",default=None),
     code_message:str=Body(alias="code_message",default= None, description="执行code的信息"),
@@ -36,7 +39,7 @@ def completions(
     print('============================================================')
     print('=============开始后台逻辑中....请稍后...........==============')
     print(f'====用户的问题是: {user_prompt}=============================')
-    print(f'====所选的知识库是: {doc_id}================================')
+    print(f'====所选的知识库是: {es_index_name}================================')
     print(f'====用户的ID是：{user_id}===================================')
     print(f'====执行Code的信息：{code_message}==========================')
     print(f'====文件的信息：{files}==========================')
@@ -44,15 +47,13 @@ def completions(
     print('============================================================')
     # samples是示例知识库，不在数据库中，存在本地文件中，所以查不到
     kb_base_dict={}
-    kb_base=get_kb_detail(doc_id)
-      #获得知识库的字典{"name": "test" , "discription":"测试方面的知识库",...}
-    # kb_base_dict={"name": doc_id , "vs_type":"ES","discription":"A vectorstore/knowledge base containing documents related to 晶奇公司、安徽晶奇网络科技股份有限公司、医疗卫生、医疗健康、医疗服务、医疗政策、medical treatment & health. 凡是与晶奇公司、安徽晶奇网络科技股份有限公司及医疗健康相关的问题，都必须使用vectorstore工具。MUST use the vectorstore for questions on these topics."}
+    kb_base=get_kb_detail(es_index_name)
+      #获得知识库的字典{"name": "test" , "discription":"测试方面的知识库",...}    
     if(len(kb_base)>0):
         kb_base_dict={"name": kb_base['kb_name'] , "vs_type":kb_base['vs_type'],"discription":kb_base['kb_info']}
-    # chat_on_docs_list = [fr'/data/projects/JqChatV2/JqChat/jqcode/jq_readers/.test_files/.testinputdocs/PPQA000_质量保证过程.doc',
-    #                      fr'/data/projects/JqChatV2/JqChat/jqcode/jq_readers/.test_files/.testinputdocs/A方案.docx'
-    #                      ]
-    print(kb_base)
+    else:
+        logger.warning("未能正确获取到kb_base和kb_base_dict，下面使用自己构造的kb_base_dict")
+        kb_base_dict={"name": es_index_name , "vs_type":"ES","discription":"A vectorstore/knowledge base containing documents related to 晶奇公司、安徽晶奇网络科技股份有限公司、医疗卫生、医疗健康、医疗服务、医疗政策、medical treatment & health. 凡是与晶奇公司、安徽晶奇网络科技股份有限公司及医疗健康相关的问题，都必须使用vectorstore工具。MUST use the vectorstore for questions on these topics."}
     print(kb_base_dict)
     # 是否有文件
     add_docs_list_to_kb = False

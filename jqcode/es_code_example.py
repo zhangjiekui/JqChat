@@ -32,22 +32,22 @@ reranker = env_models_instance.reranker
 
 files_index = "bulk_files_on_es"
 
-
-smartcn_index="smartcn_test_doc_tree_reader"
-if not es_connection.indices.exists(index=smartcn_index):
+index_name="smartcn_test_doc_tree_reader"
+if not es_connection.indices.exists(index=index_name):
     # settings = {
     #     "index": {"analysis.analyzer.default.type": "smartcn","analysis.search_analyzer.default.type": "smartcn"}
     #     }
-    settings = {
-        "index": {"analysis.analyzer.default.type": "ik_max_word","analysis.search_analyzer.default.type": "ik_smart"}
-        }
+    settings = {"index": {"analysis.analyzer.default.type": "ik_max_word","analysis.search_analyzer.default.type": "ik_smart"}}
 
-    es_connection.indices.create(index=smartcn_index,settings=settings)
+    es_connection.indices.create(index=index_name,settings=settings)
 # 目前还不能默认应用到index接到和search阶段
 default_result = es_connection.indices.analyze(text="中华人民共和国国歌")
-default_analyzer_result = es_connection.indices.analyze(text="中华人民共和国国歌",index=smartcn_index)
+default_analyzer_result = es_connection.indices.analyze(text="中华人民共和国国歌",index=index_name)
+default_analyzer_result_en = es_connection.indices.analyze(text="This analyzer uses probabilistic knowledge to find the optimal word segmentation for Simplified Chinese text",index=index_name)
+
 default_analyzer_result2 = es_connection.indices.analyze(text="中华人民共和国国歌",analyzer='ik_max_word')
 smartcn_analyzer_result = es_connection.indices.analyze(text="中华人民共和国国歌",analyzer='smartcn')
+smartcn_analyzer_result_en = es_connection.indices.analyze(text="This analyzer uses probabilistic knowledge to find the optimal word segmentation for Simplified Chinese text",analyzer='smartcn')
 
 # default_search_result = es_connection.search(query="中华人民共和国国歌",index=smartcn_index)
 
@@ -131,7 +131,7 @@ def splitter_split_documents(lm_documents:list):
     lc_documents = [LcDocument(page_content=node.text,metadata=node.metadata) for node in nodes]
     return lc_documents
 
-def embedding_and_indexing_to_es(lc_documents:list,index_name=smartcn_index):
+def embedding_and_indexing_to_es(lc_documents:list,index_name=index_name):
     vectorstore = env_models_instance.get_es_searchstore_index_documents(documents=lc_documents, embedding=embed_model,index_name=index_name,source_id_key='source')
     return vectorstore
 
@@ -178,17 +178,17 @@ if __name__ == "__main__":
         lm_documents_with_added_index_info_metadata,es_index_doc_id_list = upload_file_documents_to_es(lm_documents)
         lc_documents = splitter_split_documents(lm_documents_with_added_index_info_metadata)
         print(len(lc_documents))
-        vectorstore = embedding_and_indexing_to_es(lc_documents,index_name=smartcn_index)
+        vectorstore = embedding_and_indexing_to_es(lc_documents,index_name=index_name)
         # 已经入库了
 
     # （1）基于返回的vectorstore，直接检索回答    
         compression_retriever = get_retriever(vectorstore=vectorstore,index_name=None)
     else:
     # （2）基于知识库名来重新连接，检索回答    
-        compression_retriever = get_retriever(vectorstore=None,index_name=smartcn_index)
+        compression_retriever = get_retriever(vectorstore=None,index_name=index_name)
 
     # 打印映射信息
-    settings = es_connection.indices.get_settings(index=smartcn_index) 
+    settings = es_connection.indices.get_settings(index=index_name) 
     print(settings)
     
     query = "安徽省食品药品监督管理局行政审批系统项目总体计划的版本号是多少，批准人是谁？"
