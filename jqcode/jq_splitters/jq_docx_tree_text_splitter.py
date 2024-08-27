@@ -833,9 +833,7 @@ if __name__ == "__main__":
     from langchain.chains import RetrievalQA
     from jqcode.jq_splitters.backend_splitter_utils.jq_sentence_transformers_tokentextsplitter import SentenceTransformersTokenTextSplitter
     from jqcode.jq_agent.c0_init_env_models import env_models_instance
-    from jqcode.jq_readers.jqkj_readers import JqkjSimpleDirectoryReader
-    # llama_index的实现 https://docs.llamaindex.ai/en/stable/examples/retrievers/bm25_retriever.html
-    from llama_index.core import StorageContext,VectorStoreIndex,ServiceContext    
+    from jqcode.jq_readers.jqkj_readers import JqkjSimpleDirectoryReader      
     from llama_index.core.indices.vector_store.retrievers.retriever import VectorIndexRetriever
     from llama_index.core.tools import RetrieverTool
     from llama_index.core.postprocessor import SentenceTransformerRerank
@@ -875,50 +873,8 @@ if __name__ == "__main__":
    
 
 
-    # doc_tree_spiltter = env_models_instance.doc_tree_spiltter
-    llm = env_models_instance.chat_model
-    # embed_model = env_models_instance.embed_model
-    # reranker = env_models_instance.reranker
-    # simple_reader = JqkjSimpleDirectoryReader(input_files=input_files,overwrite_existing_converted_files=False,required_exts=['.doc','.docx','.pdf'])
-    # documents = simple_reader.load_data()
-    # service_context = ServiceContext.from_defaults(llm=llm, embed_model=embed_model,node_parser=doc_tree_spiltter)
-    # nodes = service_context.node_parser.get_nodes_from_documents(documents)
-
-    # # retriever_tools = [
-    # #     RetrieverTool.from_defaults(retriever=vector_retriever,description="适用于大部分情形,Useful in most cases"),
-    # #     RetrieverTool.from_defaults(retriever=bm25_retriever,description="适用于搜索特定信息、事实信息,Useful if searching about specific information")
-    # #     ] 
-
-    # lc_documents = [schema.Document(page_content=node.text,metadata=node.metadata) for node in nodes]
-
-    # vectorstore = env_models_instance.get_es_searchstore_index_documents(documents=lc_documents, embedding=embed_model,index_name="test_doc_tree_reader",source_id_key='file_path')
-    # retriever = vectorstore.as_retriever(search_type="similarity", search_kwargs={"k":top_n})
-    # bm25_retriever = LC_BM25Retriever.from_documents(lc_documents,preprocess_func=jieba_pre_process)  
-    # bm25_retriever.k = top_n
-
-    # # 初始化集成检索器  
-    # ensemble_retriever = EnsembleRetriever(retrievers=[bm25_retriever, retriever], weights=[0.3, 0.7])
-    # compressor = reranker   
-    # compression_retriever = ContextualCompressionRetriever(base_compressor=compressor, base_retriever=ensemble_retriever)
     
-    # 下面是智谱Chatglm的提示词
-    # 作为一名智能客服，请你记住【】中的知识库内容，并根据知识库内容用简洁和专业的来回答用户问题。如果无法从中得到答案，请说 “根据已知信息无法回答该问题” 或 “没有提供足够的相关信息”，不允许在答案中添加编造成分，答案请使用中文。
-            
-    # 用户问题：开启静音拍摄后，相机为什么还会有声音？
-    # 【若要启用电子快门并消除操作机械快门所导致的噪音和震动，请在照片拍摄菜单中将[静音拍摄]选为[开启]。
-    # - 进行静音拍摄时，屏幕中将显示一个图标。
-    # - 请注意，无论在自定义设定d5[快门类型]中选择了何种选项，都将使用电子快门。
-    # - 释放快门时，屏幕将暂时变暗。这表示已拍摄完一张照片。
-    # - 无论在设定菜单的[蜂鸣音选项]中选择了何种设定，照相机完成对焦时或自拍倒计时期间都不会发出蜂鸣音。
-    # - 启用静音拍摄将禁用某些功能，包括闪光灯；长时间曝光降噪；闪烁消减；高ISO感光度( Hi 0.3-Hi 1.0 )。
-    # - 将[静音拍摄]选为[开启]不会使照相机完全静音。照相机声音仍然可能听到，例如在自动对焦或光圈调整过程中，调整光圈时照相机声音在光圈小于( 即f值高于）f/5.6的情况下最明显。
-    # - 您可能会在照片和拍摄显示中看到以下现象：由荧光灯、水银灯或钠汽灯等光源照亮的场景中的闪烁或条带痕迹；与移动相关的失真(移动中的拍摄对象可能会失真，或者当照相机在拍摄期间发生移动时整个画面都可能出现失真)；屏幕中的锯齿状边缘、彩色边纹、莫尔条纹和亮点；在由闪烁标识和其他间歇光源照亮的场景中，或者当拍摄对象被频闪或其他闪光光源暂时照亮时出现的明亮区域或明亮带
-    # - 当[静音拍摄]选为[开启]时，连拍模式的每秒幅数会发生改变。
-    # - 若在照片拍摄菜单的[减震]中选择了[关闭]以外的选项，按下MENU或按钮时，您可能会听到照相机发出的声音。
-    # - 静音拍摄可消除快门的声音，但摄影者仍需尊重拍摄对象的隐私权和肖像权。】
-
-    # 下面是我想的提示词：
-    # '你是一个忠实的客服专家，回答问题应尽量简洁，不超过100字，并尽量忠实引用Context和Question中的原文，如果无法回答，就说不知道，不要捏造答案。以下是问题：
+    llm = env_models_instance.chat_model
     index_name='yqli'
     compression_retriever = get_retriever(index_name=index_name,chat_on_docs_list=input_files,add_docs_list_to_kb=True)
     # compression_retriever = get_retriever(index_name=index_name)

@@ -1,6 +1,6 @@
 from typing import List
 from pathlib import Path
-from llama_index.core import ServiceContext
+from llama_index.core import Settings
 from langchain import schema
 from elasticsearch import Elasticsearch
 from langchain_elasticsearch import ElasticsearchStore
@@ -162,12 +162,11 @@ def get_retriever(vectorstore:ElasticsearchStore=None,index_name:str=None,chat_o
         # endregion 在知识库中查询是否已经存在拟上传的文件
 
             # 3、读取和处理还不存在的文件
-            if existed_files_maybe_need_indexing:
-                doc_tree_spiltter = env_models_instance.doc_tree_spiltter
+            if existed_files_maybe_need_indexing:                
                 simple_reader = JqkjSimpleDirectoryReader(input_files=existed_files_maybe_need_indexing,overwrite_existing_converted_files=False,required_exts=required_exts)
                 documents = simple_reader.load_data()
-                service_context = ServiceContext.from_defaults(llm=llm, embed_model=embed_model,node_parser=doc_tree_spiltter)
-                nodes = service_context.node_parser.get_nodes_from_documents(documents)
+                doc_tree_spiltter = env_models_instance.doc_tree_spiltter
+                nodes = doc_tree_spiltter.get_nodes_from_documents(documents)
                 lc_documents = [schema.Document(page_content=node.text,metadata=node.metadata) for node in nodes]
                 if not lc_documents:
                     logger.warning(f"存在需要index的文件{existed_files_maybe_need_indexing=},但却意外的没有得到真正的文档（切片）")
@@ -241,8 +240,8 @@ if __name__ == "__main__":
     input_files = [fr'/data/projects/JqChatV2/JqChat/jqcode/jq_readers/.test_files/.testinputdocs/A方案.docx'] 
     input_files += [fr'/data/projects/JqChatV2/JqChat/jqcode/jq_readers/.test_files/.testinputdocs/PPQA000_质量保证过程.doc']
     # input_files = []   
-    index_name="smartcn_test_doc_tree_reader"
-    compression_retriever = get_retriever(index_name=index_name,chat_on_docs_list=input_files,add_docs_list_to_kb=False) 
+    index_name="new_test_doc_tree_reader"
+    compression_retriever = get_retriever(index_name=index_name,chat_on_docs_list=input_files,add_docs_list_to_kb=True) 
     # docs1 = compression_retriever.invoke("晶奇公司在哪一年获得ISO9001国际质量体系认证？")
     docs1 = compression_retriever.invoke("组织级质量保证计划审查")
     docs2 = compression_retriever.invoke("各类医疗卫生机构规范化处置能力。完善重大疫情医疗废物应急处置机制")

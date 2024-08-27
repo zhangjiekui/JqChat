@@ -14,7 +14,6 @@ from jqcode.jq_readers.jqkj_readers import JqkjSimpleDirectoryReader
 from jqcode.jq_agent.tools.jq_retriever import get_retriever
 
 from langchain.schema import Document as LcDocument
-from llama_index.core import ServiceContext
 from base64 import b64encode,b64decode
 
 from elasticsearch import Elasticsearch, helpers
@@ -126,8 +125,7 @@ def upload_file_documents_to_es(lm_documents:list):
     return lm_documents,es_index_doc_id_list
 
 def splitter_split_documents(lm_documents:list):
-    service_context = ServiceContext.from_defaults(llm=llm, embed_model=embed_model,node_parser=doc_tree_spiltter)
-    nodes = service_context.node_parser.get_nodes_from_documents(lm_documents)
+    nodes = doc_tree_spiltter.get_nodes_from_documents(lm_documents)
     lc_documents = [LcDocument(page_content=node.text,metadata=node.metadata) for node in nodes]
     return lc_documents
 
