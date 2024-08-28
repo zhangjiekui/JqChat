@@ -182,10 +182,10 @@ def run_webui(
     started_event.set()
     
 #run kernel for code
-def run_kernel_program(): # type: ignore
+def run_kernel_program( started_event: Event = None, run_mode: str = None ): # type: ignore
     try:
         asyncio.run(kernel_program_main())
-        #started_event.set()
+        started_event.set()
     except Exception as e:
         logging.exception("Error running the kernel_program:")
         sys.exit(1)
@@ -283,7 +283,7 @@ async def start_main_server():
     signal.signal(signal.SIGINT, handler("SIGINT"))
     signal.signal(signal.SIGTERM, handler("SIGTERM"))
 
-    #p.set_start_method("spawn")
+    mp.set_start_method("spawn")
     manager = mp.Manager()
     run_mode = None
 
@@ -297,18 +297,22 @@ async def start_main_server():
         args.api = True
         args.api_worker = True
         args.webui = True
+        args.kernel = True
     elif args.all_api:
         args.api = True
         args.api_worker = True
         args.webui = False
+        args.kernel = True
     elif args.api:
         args.api = True
         args.api_worker = False
         args.webui = False
+        args.kernel = False
     if args.lite:
         args.api = True
         args.api_worker = False
         args.webui = True
+        args.kernel = True
 
     if len(sys.argv) > 1:
         logger.info(f"正在启动服务：")
@@ -318,8 +322,19 @@ async def start_main_server():
     def process_count():
         return len(processes)
     
-    kernel_program_process = Process(target=run_kernel_program)
-    processes["kernel"] = kernel_program_process
+    kernel_started = manager.Event()
+    if args.api:
+        process = Process(
+            target=run_kernel_program,
+            name=f"Kernel Server",
+            kwargs=dict(
+                started_event=kernel_started,
+                run_mode=run_mode,
+            ),
+            daemon=True,
+        )    
+        processes["kernel"] = process
+    
     
     api_started = manager.Event()
     if args.api:
@@ -330,7 +345,7 @@ async def start_main_server():
                 started_event=api_started,
                 run_mode=run_mode,
             ),
-            daemon=False,
+            daemon=True,
         )    
         processes["api"] = process
     
@@ -353,14 +368,13 @@ async def start_main_server():
     if process_count() == 0:
         parser.print_help()
     else:
-        # dump_server_info(after_start=False,args=args)
+        dump_server_info(after_start=False,args=args)
         try:
             if p := processes.get("kernel"):
                 logger.info(f"启动KERNEL服务：{p.name}")
                 p.start()
                 p.name = f"{p.name} ({p.pid})"
-                kernel_started.wait()  # 等待kernel启动完成
-                
+                # kernel_started.wait()  # 等待kernel启动完成
 
             if p := processes.get("api"):
                 logger.info(f"启动API服务：{ p.name}")
@@ -400,45 +414,17 @@ async def start_main_server():
             for p in processes.values():
                 logger.info("Process status: %s", p)
 
-
 def main():
     # 添加这行代码
-    print("```"*20)    
+    print("###"*20)    
     project_root_path = pathlib.Path().resolve()
     print(f"应用启动路径:{project_root_path}")
     print(f"本项目中添加使用的Python路径为：{set(sys.path)}")
-
-    # p1 = project_root_path/'jqcode'
-    # p2=project_root_path/'kernel_program'
-    # p3=project_root_path/'web'
-    # for p in [project_root_path, p1,p2,p3]:
-    #     if str(p) not in sys.path: 
-    #         sys.path.append(str(p))
-    
-    print("```"*20)
+    print(f"本项目运行日志位置: {project_root_path}/jqchat_agent.log")
+    print("###"*20)    
     mp.freeze_support()
-    
     create_tables()
+    asyncio.run(start_main_server())
 
-    #kernel_program_process = Process(target=run_kernel_program)
-    #try:
-    #    kernel_program_process.start()
-    #    kernel_program_process.join()
-    #except KeyboardInterrupt:
-    #    cleanup_kernel_program()
-    #    kernel_program_process.terminate()
-    #    kernel_program_process.join()
-
-    if sys.version_info < (3, 10):
-        loop = asyncio.get_event_loop()
-    else:
-        try:
-            loop = asyncio.get_running_loop()
-        except RuntimeError:
-            loop = asyncio.new_event_loop()
-    
-        asyncio.set_event_loop(loop)
-    loop.run_until_complete(start_main_server())
-    
 if __name__ == "__main__":
     main()

@@ -141,23 +141,12 @@ def handle_restart():
 
 
 async def main():
-    sys.path.append(os.getcwd())
-    # start_kernel_manager()
-    # # Run Flask app in a separate thread
-    # run_flask_app()
-    # # flask_thread.start()
-    # # Run in background
-    # await start_snakemq()
-    #await asyncio.gather(start_kernel_manager(),run_flask_app(),start_snakemq())
     start_kernel_manager()
-    await start_snakemq()
-    # Run Flask app in a separate thread
     flask_thread = threading.Thread(target=run_flask_app)
     flask_thread.start()
-
     # Run in background
-    #await start_snakemq()
-
+    await start_snakemq()
+    
 def run_flask_app():
     app.run(host="0.0.0.0", port=APP_PORT)
 
