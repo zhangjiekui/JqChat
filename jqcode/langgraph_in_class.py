@@ -1040,11 +1040,11 @@ class GraphAgent:
                 # 提交代码到ipykernel_api执行   
                 result = submit_code_to_ipykernel_api(code) #返回True或False
                 if result:
-                    message_content = "ipykernel_api代码运行成功。"
+                    message_content = "......ipykernel_api代码提交成功，等待运行结果......"
                 # 提交代码到ipykernel_api执行，尝试本地来执行
                 if not result:
-                    logger.info(f"......ipykernel_api代码运行失败......")
-                    logger.info(f"......尝试使用python_repl来执行......")
+                    logger.info(f"......ipykernel_api代码提交失败，请检查服务接口......")
+                    logger.info(f"......尝试使用本地的python环境来来执行......")
                     # python_repl在本页代码开头处赋值的 
                     result = python_repl(code)
 

@@ -174,7 +174,8 @@ def is_default_fs(fs: fsspec.AbstractFileSystem) -> bool:
 
 logger = logging.getLogger(__name__)
 
-
+# 修改自llama-index-core/llama_index/core/readers/file/base.py
+# https://github.com/run-llama/llama_index/blob/d8bee71dac50b8cd6f324c9e42321c47154b1b54/llama-index-core/llama_index/core/readers/file/base.py#L177
 class SimpleDirectoryReader(BaseReader, ResourcesReaderMixin, FileSystemReaderMixin):
     """
     Simple directory reader.
@@ -638,7 +639,7 @@ class SimpleDirectoryReader(BaseReader, ResourcesReaderMixin, FileSystemReaderMi
 
     def load_data(
         self,
-        show_progress: bool = False,
+        show_progress: bool = True,
         num_workers: Optional[int] = None,
         fs: Optional[fsspec.AbstractFileSystem] = None,
     ) -> List[Document]:
@@ -709,8 +710,8 @@ class SimpleDirectoryReader(BaseReader, ResourcesReaderMixin, FileSystemReaderMi
 
     async def aload_data(
         self,
-        show_progress: bool = False,
-        num_workers: Optional[int] = None,
+        show_progress: bool = True,
+        num_workers: Optional[int] = 10,
         fs: Optional[fsspec.AbstractFileSystem] = None,
     ) -> List[Document]:
         """
@@ -727,8 +728,18 @@ class SimpleDirectoryReader(BaseReader, ResourcesReaderMixin, FileSystemReaderMi
         """
         files_to_process = self.input_files
         fs = fs or self.fs
-
+        
+        num_workers = num_workers if num_workers else len(self.input_files)
+        if num_workers and num_workers > 1:
+            cpu_nums = multiprocessing.cpu_count()
+            if num_workers > multiprocessing.cpu_count():
+                num_workers = cpu_nums
+                warnings.warn(
+                    f"Specified num_workers exceed number of CPUs [{cpu_nums=}] in the system. "
+                    "Setting `num_workers` down to the maximum CPU count."
+                )
         coroutines = [self.aload_file(input_file) for input_file in files_to_process]
+        
         if num_workers:
             document_lists = await run_jobs(
                 coroutines, show_progress=show_progress, workers=num_workers
