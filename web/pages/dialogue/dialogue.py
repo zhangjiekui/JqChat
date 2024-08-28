@@ -196,6 +196,6 @@ def dialogue_page(
         #清空code执行回复信息和文件
         ctx['files']=[]
         ctx['code_message']=''
-        if 'code' in msg and len(msg['code']>0):
+        if 'code' in msg and len(msg['code']) > 0:
             get_execute_result(api)
     # get_execute_result(api)
