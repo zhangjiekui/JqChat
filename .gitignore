@@ -15,6 +15,7 @@ jqchat/__pycache__/
 
 # Logs
 *.log
+*.db
 
 frontend/dist/
 build/

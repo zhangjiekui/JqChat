@@ -1,6 +1,5 @@
 from typing import List
 from pathlib import Path
-from llama_index.core import Settings
 from langchain import schema
 from elasticsearch import Elasticsearch
 from langchain_elasticsearch import ElasticsearchStore

@@ -524,7 +524,7 @@ if __name__ == "__main__":
         print('~~'*20)
         print('~~'*20)
         print(f'原始query={query}')
-        docs = asyncio.run(get_web_search_documents(query))
+        docs = asyncio.run(get_web_search_documents(query,max_doc_nums=10))
         print(f"获取到{len(docs)}个网页文档")
         for doc in docs:
             print(f"文档的类型为{type(doc).__name__}")

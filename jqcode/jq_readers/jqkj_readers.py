@@ -41,6 +41,7 @@ from llama_index.legacy.readers.file.base import SimpleDirectoryReader
 from llama_index.legacy.readers.file.base import DEFAULT_FILE_READER_CLS
 from llama_index.core.readers.file.base import default_file_metadata_func
 
+
 from jqcode.jq_readers.backend_reader_utils.jqkj_docs_converter import convert_file_to_docx
 from jqcode.jq_readers.backend_reader_utils.jqkj_doc_tree_utils import find_nearest_parent_but_not_TableOrImageNode,TreeNodeType
 from jqcode.jq_readers.backend_reader_utils.jqkj_doc_tree_utils import compare_with_zip_docx2img,get_paras_in_table
