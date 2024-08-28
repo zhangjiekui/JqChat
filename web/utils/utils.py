@@ -266,7 +266,7 @@ class ApiRequest:
                         f"{e.__class__.__name__}: {msg}",
                         exc_info=e if log_verbose else None,
                     )
-                return {"code": 500, "text": msg, "data": None}
+                return {"status": 500, "text": msg, "data": None}
 
         if value_func is None:
             value_func = lambda r: r
