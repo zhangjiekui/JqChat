@@ -1,6 +1,7 @@
 
 import asyncio
 from typing import List
+from urllib import response
 import uuid
 from fastapi import APIRouter, Body, File, Form,  UploadFile
 
@@ -122,5 +123,13 @@ kernel_api_url = f"{KERNEL_API_BASE}:{API_PORT}/api"
 def code():
     resp = requests.get(kernel_api_url)
     results=resp.json()
-    print(results)
     return JSONResponse(content=results, status_code=200)
+
+@chat_router.post('/download/{file}',summary="获取执行code生成的文件")
+def downlaod(file):
+    file_path = os.path.join(UPLOAD_FOLDER, file)
+    with open(file_path, "rb") as file:
+        contents = file.read()
+        response.headers["Content-Disposition"] = f"attachment; filename={file_path}"
+        response.body = contents
+        return response
