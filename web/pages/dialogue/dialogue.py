@@ -78,11 +78,12 @@ def get_execute_result(api:ApiRequest):
         response=code(user=user,_api=api)
         if('results' in response and len(response["results"])>0):
             for result in response["results"]:
-                if (result["type"] == "message" or result["type"]  == "message_raw") and result["value"]  != 'Kernel is ready.':
+                if (result["type"] == "message" or result["type"]  == "message_raw"):
                     # inject context
-                    code_message=result["value"]
-                    ctx['code_message']=code_message
-                    chat_box.ai_say(code_message)
+                    if result["value"]  != 'Kernel is ready.':
+                        code_message=result["value"]
+                        ctx['code_message']=code_message
+                        chat_box.ai_say(code_message)
                 else :
                     pic=  f'<img src="data:{result["type"]};base64,{result["value"]}" width="300">'
                     chat_box.ai_say(pic)
@@ -98,14 +99,14 @@ def dialogue_page(
     # 初始化文件ID和执行代码结果为None
     ctx.setdefault("files", [])
     ctx.setdefault("code_message",'')
-    # st.session_state.setdefault("cur_conv_name", chat_box.cur_chat_name)
-    # st.session_state.setdefault("last_conv_name", chat_box.cur_chat_name)
+    st.session_state.setdefault("cur_conv_name", chat_box.cur_chat_name)
+    st.session_state.setdefault("last_conv_name", chat_box.cur_chat_name)
 
     # # sac on_change callbacks not working since st>=1.34
-    # if st.session_state.cur_conv_name != st.session_state.last_conv_name:
-    #     save_session(st.session_state.last_conv_name)
-    #     restore_session(st.session_state.cur_conv_name)
-    #     st.session_state.last_conv_name = st.session_state.cur_conv_name
+    if st.session_state.cur_conv_name != st.session_state.last_conv_name:
+        save_session(st.session_state.last_conv_name)
+        restore_session(st.session_state.cur_conv_name)
+        st.session_state.last_conv_name = st.session_state.cur_conv_name
 
     # # st.write(chat_box.cur_chat_name)
     # # st.write(st.session_state)
@@ -195,6 +196,6 @@ def dialogue_page(
         #清空code执行回复信息和文件
         ctx['files']=[]
         ctx['code_message']=''
-        if 'code' in msg and msg['code'] != None:
+        if 'code' in msg and len(msg['code']>0):
             get_execute_result(api)
     # get_execute_result(api)
