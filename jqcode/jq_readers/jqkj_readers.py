@@ -9,7 +9,7 @@ import os
 from datetime import datetime
 from pathlib import Path
 from os.path import basename,dirname,join
-from typing import Dict, List, Optional,Callable
+from typing import Dict, List, Optional,Callable,Any
 
 import docx
 from docx.text.paragraph import Paragraph, Run
@@ -37,33 +37,31 @@ from docx.document import Document as DocxDocument
 
 from llama_index.core.readers.base import BaseReader
 from llama_index.core import Document as LmDocument
-from llama_index.legacy.readers.file.base import SimpleDirectoryReader
-from llama_index.legacy.readers.file.base import DEFAULT_FILE_READER_CLS
-from llama_index.core.readers.file.base import default_file_metadata_func
 
+import fsspec
+from fsspec.implementations.local import AbstractFileSystem
 
+# from llama_index.core.readers.file.base import SimpleDirectoryReader,default_file_metadata_func,_try_loading_included_file_formats
+# 修改为多线程，以便实现多Works工作（llama_index中的多进程实现因为无法序列化Document对象，会报错！）
+from jqcode.jq_readers.backend_reader_utils.jqkj_mp_simpledirectoryreader_async import SimpleDirectoryReader,default_file_metadata_func,_try_loading_included_file_formats
+from jqcode.jq_readers.backend_reader_utils.jqkj_img_to_text import treenodes_img_to_text_in_batch
 from jqcode.jq_readers.backend_reader_utils.jqkj_docs_converter import convert_file_to_docx
 from jqcode.jq_readers.backend_reader_utils.jqkj_doc_tree_utils import find_nearest_parent_but_not_TableOrImageNode,TreeNodeType
+from anytree import PreOrderIter
 from jqcode.jq_readers.backend_reader_utils.jqkj_doc_tree_utils import compare_with_zip_docx2img,get_paras_in_table
-from jqcode.jq_readers.backend_reader_utils.pyemf3project.pyemf3 import EMF
-from jqcode.jq_readers.backend_reader_utils.pyemf3project.pyemf3.emr import EXTTEXTOUTW
-from llama_index.readers.file import UnstructuredReader
-# from langchain_community.document_loaders.text import TextLoader
 
-from rapidocr_onnxruntime import RapidOCR
+
+from llama_index.readers.file import UnstructuredReader
+
 
 from jqcode.jq_utils.logger import jqkj_logger
 logger = jqkj_logger(__file__).get_logger()
 
-ocr = RapidOCR()
-emf = EMF() #处理emf图片需要的
-
-
-
+file_type_processed_by_jqreader = [".pdf",".docx",".md",".html",".htm"]
 class JqkjDocxReader(BaseReader):
     """Docx parser."""
-    def __init__(self,file_path:str=None):
-        super().__init__()
+    def __init__(self,file_path:str=None,save_img_file:bool = False):
+        # super().__init__()
         logger.warning(f'JqkjDocxReader:返回的text只是为了兼容llama_index的Reader要求，简单获取的。原始的doc/tree对象存放到了（llama_index）LmDocument document对象的metadata字典中，以便获取做进一步的精细化处理')
         try:
             from docx import Document as DocxDocumentFunc
@@ -73,63 +71,55 @@ class JqkjDocxReader(BaseReader):
                 "`pip install python-docx`"
             )
         self.DocumentFunc = DocxDocumentFunc
-        self.orginal_filepath_extra_info = None
+        self.orginal_filepath_extra_info = {}
         self.file_path = file_path # 为了兼容chatchat，必须增加的属性
-    # region
-        # 下面的代码放到load_data中统一处理
-        # if file_path:
-        #     file_path = Path(file_path)
-        #     if file_path.exists():
-        #         if file_path.suffix in ['.pdf','.doc','.md']:
-        #             input_filepaths_exist,input_filepaths_exist_and_replaced_by_docx_if_converted = convert_file_to_docx(file_path,overwrite=False)
-        #             self.file_path =  input_filepaths_exist_and_replaced_by_docx_if_converted[0]
-        #             self.orginal_filepath_extra_info = {'original_source_jq':str(file_path),'source':str(file_path),'original_source_converted_jq':str(self.file_path)} #'source'键是为了与chatchat中的reader保持一致的
-        #         else:                    
-        #             self.file_path =  file_path
-        #             self.orginal_filepath_extra_info = {'original_source_jq':str(file_path),'source':str(file_path),'original_source_converted_jq':str(self.file_path)} #'source'键是为了与chatchat中的reader保持一致的
-        #     else:
-        #         logger.error(f"文件不存在:{file_path}")
-    # endregion
+        self.save_img_file = save_img_file
         
-    def load(self, extra_info: Optional[Dict] = None) -> List[LmDocument]:
+    def load(self,file: Path=None, extra_info: Optional[Dict] = None,fs: Optional[AbstractFileSystem] = None) -> List[LmDocument]:
         """Parse docx file."""
-        return self.load_data(file_path = self.file_path,extra_info= extra_info)
+        if not file:
+            file = self.file_path
+        return self.load_data(file, extra_info)
 
-    def load_data(self, file_path: Path, extra_info: Optional[Dict] = None) -> List[LmDocument]:
+    def load_data(self, file: Path, extra_info: Optional[Dict] = None,fs: Optional[AbstractFileSystem] = None,aysnc = False) -> List[LmDocument]:
         """
-        Parse docx file.
-        return_type:str ='LC', #'LC' or 'LM',  'LC'代表返回langchain的格式，'LM'代表返回llama_index的格式
-        
+        Parse docx file.      
         """
-        self.file_path = file_path # 为了兼容chatchat，必须增加的属性
+        file_path =file if file else self.file_path # 为了兼容chatchat，必须增加的属性
         doc_original = str(file_path)         # 因self.file_path和file_path下面都可能会变，所以先保留原始的到doc_id
         file_path = Path(file_path)        
+        
         if file_path.exists():
-
         # 如果是经过JqkjSimpleDirectoryReader=>JqkjDocxReader，其实已经进行了文件类型转换，并且加入了'original_source_jq'，'source'键值，
         # 这里仅需要处理直接实例化JqkjDocxReader自身的情形，并且不能更新 JqkjSimpleDirectoryReader=>JqkjDocxReader时 已经处理好的'original_source_jq'，'source'键值
             # raise Exception("todo")
             ext = file_path.suffix
-            if ext in ['.pdf','.doc','.md']:
-                _,input_filepaths_exist_and_replaced_by_docx_if_converted = convert_file_to_docx(file_path,overwrite=False)                
-                # self.file_path此时为转换后的docx文件路径
-                self.file_path =  input_filepaths_exist_and_replaced_by_docx_if_converted[0]                
-                self.orginal_filepath_extra_info = {'original_source_jq':doc_original,'source':doc_original,'original_source_converted_jq':str(self.file_path)} #'source'键是为了与chatchat中的reader保持一致的
-            elif ext in ['.docx']:
+            if ext in ['.docx']:
                 self.file_path =  file_path
                 self.orginal_filepath_extra_info = {'original_source_jq':doc_original,'source':doc_original,'original_source_converted_jq':doc_original}
+                # 元数据中增加了文件扩展名
+                self.orginal_filepath_extra_info.update({"file_extention":ext})
+            elif ext in file_type_processed_by_jqreader:
+                input_filepaths_exist,input_filepaths_exist_and_replaced_by_docx_if_converted = convert_file_to_docx(file_path,overwrite=False)                
+                # self.file_path此时为转换后的docx文件路径
+                if input_filepaths_exist_and_replaced_by_docx_if_converted:
+                    self.file_path =  input_filepaths_exist_and_replaced_by_docx_if_converted[0]
+                    doc_original = input_filepaths_exist[0]                
+                    self.orginal_filepath_extra_info = {'original_source_jq':doc_original,'source':doc_original,'original_source_converted_jq':str(self.file_path)} #'source'键是为了与chatchat中的reader保持一致的
+                    # 元数据中增加了文件扩展名
+                    self.orginal_filepath_extra_info.update({"file_extention":ext})
+                else:
+                    logger.error(f"{file_path}转换成docx失败！")
             else:
-                logger.error(f"JqkjDocxReader暂只支持['.pdf','.doc','.md','.docx'],无法读取[{ext}]文件")
-            
-            # 元数据中增加了文件扩展名
-            self.orginal_filepath_extra_info.update({"file_extention":ext})
+                logger.error(f"JqkjDocxReader暂只支持{file_type_processed_by_jqreader},无法读取[{ext}]文件")           
 
         else:
             logger.error(f"文件不存在:{file_path}")
 
         if self.file_path.exists() and doc_original:
             doc = self.DocumentFunc(self.file_path)
-            text = "\n".join([paragraph.text for paragraph in doc.paragraphs if len(paragraph.text.strip())>0])
+            text = '请从metadata["file_doc_tree_jq"]中获取'
+            # text = "\n".join([paragraph.text for paragraph in doc.paragraphs if len(paragraph.text.strip())>0])
             doc_tree,df_table_list = self.parse_docx_into_tree(doc,self.file_path)            
             # 'original_source_jq'(转换前的文件pdf/doc/md的文件路径，如果本就是docx文件,则与original_source_converted_jq一致),
             # 'source'键是为了与chatchat中的reader保持一致的，取值与'original_source_jq'一致
@@ -164,7 +154,6 @@ class JqkjDocxReader(BaseReader):
     def parse_docx_into_tree(self, docx_document:DocxDocument,file_path: Path) -> Node:
         # metadata = docx_document.metadata
         file: Path = Path(file_path)
-        image_file_path: Path = Path('/media/temp/JqChat0717/wendang/OCR接口性能报告.docx')
 
         logger.debug('==='*30)
         node_numbering=1 
@@ -180,7 +169,6 @@ class JqkjDocxReader(BaseReader):
         imgid_list=[]
         img_filename_list_in_table=[]
 
-
         w_pict_images_list_id = []
         w_pict_images_list_fn = []
         pic_pic_images_list_id = []
@@ -189,7 +177,7 @@ class JqkjDocxReader(BaseReader):
         for block in docx_document.iter_inner_content():
             if isinstance(block, Paragraph):
                 pre_level = pre_node.level
-                text = str(block.text.strip())                
+                text = str(block.text.strip()) 
 
                 # 文本/标题节点
                 if len(text)>0:
@@ -229,43 +217,18 @@ class JqkjDocxReader(BaseReader):
                         pre_node = node # 正文节点，不能作为父节点候选
 
                 # 图片节点
-                # img_metadatas_list = self.extract_imgs(block,docx_document, file, image_list, imgid_list, w_pict_images_list_id, w_pict_images_list_fn, pic_pic_images_list_id, pic_pic_images_list_fn)   
-                img_metadatas_list = self.extract_imgs(block,docx_document, file, image_list, imgid_list, w_pict_images_list_id, w_pict_images_list_fn, pic_pic_images_list_id, pic_pic_images_list_fn)   
-
+                img_metadatas_list = self.extract_imgs(block,docx_document, file, image_list, imgid_list, w_pict_images_list_id, w_pict_images_list_fn, pic_pic_images_list_id, pic_pic_images_list_fn) 
+                
                 for img_metadata in img_metadatas_list:
                     # 创建图片节点
                     current_depth = parent_node.depth+1
                     level = current_depth
                     num_siblings = len(parent_node.children)
                     node_numbering = f"{parent_node.numbering}.{num_siblings+1}" #最后一级编码如果以0开头，就表示是文本段落
-                    img_src=img_metadata['img_save_path_jq']
-                    result = ''
-                    #分隔符最好选用jqcode/jq_splitters/backend_splitter_utils/jq_chinese_recursive_text_splitter.py的第98行定义的
-                    _separator = ' '
-                    try:
-                        if img_src.endswith('.emf'):
-                            emf.load(img_src)
-                            recs = emf.records
-                            for rec in recs:
-                                if isinstance(rec, EXTTEXTOUTW):
-                                    _text = rec.values['string'].strip()
-                                    if _text:
-                                        result += _separator + _text
-                            logger.debug(f"图片[{img_src}]中的EMF文本:\n{result}")
-                        else:
-
-                            img_data = img_metadata['img_blob_jq']                            
-                            ocr_result,_ = ocr(img_data)
-                            if ocr_result:
-                                ocr_texts = [line[1].strip() for line in ocr_result if line[1].strip()]
-                                #分隔符最好选用jqcode/jq_splitters/backend_splitter_utils/jq_chinese_recursive_text_splitter.py的第98行定义的
-                                result = _separator.join(ocr_texts) 
-                                logger.debug(f"图片[{img_src}]中的OCR文本:\n{result}")
-                    except Exception as e:
-                        logger.warning(f'获取图片[{img_src}]中的文本失败,详细信息为{e}')
-                        
-                    node = Node(f'[图片{node_numbering}]{img_src}',type=TreeNodeType.IMAGE,parent=parent_node, numbering=node_numbering,level=level,text=f'{result}',
-                                image_filepath_jq=img_src,img_blob_jq=img_metadata['img_blob_jq'],img_cx_jq=img_metadata['img_cx_jq'],img_cy_jq=img_metadata['img_cy_jq'])
+                    img_src = img_metadata['img_save_path_jq']
+                    text = f"<img src={img_src},图片内容待识别 />"                        
+                    node = Node(f'[图片{node_numbering}]',type=TreeNodeType.IMAGE,parent=parent_node, numbering=node_numbering,level=level,text=f'{text}',
+                                image_filepath_jq=img_src,img_blob_jq=img_metadata['img_blob_jq']) 
 
                     pre_node = node # 图片节点，不能作为父节点候选
         
@@ -283,8 +246,7 @@ class JqkjDocxReader(BaseReader):
                 # vf =  StringIO()
                 # vf.write(vf_string)
                 # vf.seek(0)
-                # df = pd.read_csv(vf)
-                
+                # df = pd.read_csv(vf)                
                 
                 pre_node = node # 前一个节点也固定为该表格节点，因为下面只会生成给表格的图片子节点
                 table_as_parent_node = node #表格节点本身固定为表格中所有图片的父节点，另使用一个变量名来存储，避免影响之前的父节点
@@ -303,13 +265,14 @@ class JqkjDocxReader(BaseReader):
                         level = current_depth
                         num_siblings = len(table_as_parent_node.children)
                         node_numbering = f"{table_as_parent_node.numbering}.{num_siblings+1}" #最后一级编码如果以0开头，就表示是文本段落
-                        text = f"<img src={img_metadata['img_save_path_jq']} todo图片内容待识别 />"
-                        _ = Node(f'[图片{node_numbering}]{text}',type=TreeNodeType.IMAGE,parent=table_as_parent_node, numbering=node_numbering,level=level,text=f'{text}',
-                                    image_filepath_jq=img_metadata['img_save_path_jq'],img_blob_jq=img_metadata['img_blob_jq'],img_cx_jq=img_metadata['img_cx_jq'],img_cy_jq=img_metadata['img_cy_jq'])
-
-            
+                        img_src= img_metadata['img_save_path_jq']
+                        text = f"<img src={img_src},图片内容待识别 />"
+     
+                        _ = Node(f'[图片{node_numbering}]',type=TreeNodeType.IMAGE,parent=table_as_parent_node, numbering=node_numbering,level=level,text=f'{text}',
+                                    image_filepath_jq=img_src,img_blob_jq=img_metadata['img_blob_jq'])                        
+          
         # 验证处理是否正确
-                # 验证读取到的、实际保存的图片数量是否一致
+                # 验证读取到的、实际保存的图片数量是否一致（在类初始化时默认不保存图片，如需验证，请设为self.save_img_file = True）
                 # 验证是否所有的Anytree图片节点都已成功创建
                     # 注意：读取到的图片rID会存在重复（即同一图片在文件中多处使用），所以：
                     # 实际保存的图片数量应是len(set(imgid_list))
@@ -345,18 +308,22 @@ class JqkjDocxReader(BaseReader):
                     for img_node in img_nodes:
                         assert img_node.is_leaf , f'图片节点{img_node.name}不是叶子节点，请检查,其父节点为{img_node.parent.name}！其第一个子节点为{img_node.children[0].name}'
                     logger.debug(f'创建的Image_Node数量{len(img_nodes)}, 图片总数{len(pic_pic_images_list_id)+len(w_pict_images_list_id)} ,已确认成功创建全部Image_Node')
-                    # 检查实际保存的images数量
-                    img_save_path_jq = img_metadata["img_save_path_jq"]
-                    img_save_path_dir = Path(img_save_path_jq).parent
+                    
+                    # 检查实际保存的images数量（在类初始化时默认不保存图片，如需验证，请设为self.save_img_file = True）
+                    if self.save_img_file:
+                        img_save_path_jq = img_metadata["img_save_path_jq"]
+                        img_save_path_dir = Path(img_save_path_jq).parent
 
-                    img_type_exts = set([Path(filename).suffix for filename in imgname_list])
-                    img_type_exts_patten = ['*'+ ext for ext in img_type_exts]
-                    files=[]
-                    for ext in img_type_exts_patten:
-                        files.extend(img_save_path_dir.glob(ext))
-                    saved_img_num = len(files)
-                    assert saved_img_num == len(s) == len(imgname_set),f'实际保存的图片数量({saved_img_num})与从Word Xml中读取到的图片rId集合长度({len(s)})不一致！'
-                    logger.debug(f'    |==| 经assert断言检查，已在[{str(img_save_path_dir)}]文件夹下成功保存全部{saved_img_num}个图片文件。已确认成功创建全部Image_Node，且全部为叶子节点')         
+                        img_type_exts = set([Path(filename).suffix for filename in imgname_list])
+                        img_type_exts_patten = ['*'+ ext for ext in img_type_exts]
+                        files=[]
+                        for ext in img_type_exts_patten:
+                            files.extend(img_save_path_dir.glob(ext))
+                        saved_img_num = len(files)
+                        assert saved_img_num == len(s) == len(imgname_set),f'实际保存的图片数量({saved_img_num})与从Word Xml中读取到的图片rId集合长度({len(s)})不一致！'
+                        logger.debug(f'    |==| 经assert断言检查，已在[{str(img_save_path_dir)}]文件夹下成功保存全部{saved_img_num}个图片文件。已确认成功创建全部Image_Node，且全部为叶子节点') 
+                    else:
+                        logger.debug(f'    |=您没有选择保存图片=| ')   
 
                 table_number = len(docx_document.tables)
                 if table_number == 0:
@@ -375,9 +342,19 @@ class JqkjDocxReader(BaseReader):
                 logger.debug('==='*30)
             except Exception as ex:
                 logger.error(f'===验证过程中出现了错误，请检查。错误信息如下:===\n{ex}')
-        
+                
+        # 批量识别图片问题
+        all_tree_nodes = list(PreOrderIter(file_tree))
+        img_nodes = [node for node in all_tree_nodes if node.type == TreeNodeType.IMAGE]
+        if len(img_nodes):
+            logger.debug(f"{len(img_nodes)=}")
+            results = treenodes_img_to_text_in_batch(img_nodes)
+            logger.debug(f"{len(results)=}")
+            assert len(img_nodes) == len(results)
+            for i,img_node in enumerate(img_nodes):
+                img_node.text = results[i]
         return file_tree, df_table_list
-
+   
     def extract_imgs(self, block:Paragraph, docx_document: DocxDocument, file: Path, image_list, imgid_list, w_pict_images_list_id, w_pict_images_list_fn, pic_pic_images_list_id, pic_pic_images_list_fn):
         # global image_list, imgid_list, w_pict_images_list_id, w_pict_images_list_fn, pic_pic_images_list_id, pic_pic_images_list_fn
         xmlstr = str(block._element.xml)
@@ -422,30 +399,19 @@ class JqkjDocxReader(BaseReader):
 
     def image_part_post_process(self, image_part: ImagePart,file: Path, img_metadata: Optional[Dict] = None) -> Dict:  # noqa: C901
         """Post process image part."""
-        cx =0
-        cy =0
-        try: # 已发现emf文件无法成功获取下面的值，docx.image.exceptions.UnrecognizedImageError
-            cx = image_part.default_cx
-            cy = image_part.default_cy
-        except:
-            pass
         
-        # # mage_part.blob 可以直接ocr识别，所以不要转换来转换去了
-        # ocr(image_part.blob)
-        img_dir = file.parent
-        file_stem = file.stem
-        
-        destination_dir =  join(img_dir,file_stem)
-        save_path = join(destination_dir,basename(image_part.partname))
-        if not Path(destination_dir).exists():
-            logger.warning(f"输出目录[{destination_dir}]不存在!将尝试创建该目录。")
-            Path(destination_dir).mkdir(parents=True, exist_ok=True)
-        with open(save_path,'wb') as f:#保存图片
-            f.write(image_part.blob)   
-
-        # print(save_path,image_part.partname,cx,cy)  
-
-        img_metadata.update({"img_save_path_jq":save_path,"img_blob_jq":image_part.blob,"img_cx_jq":cx,"img_cy_jq":cy})
+        save_path = basename(image_part.partname)
+        if self.save_img_file:
+            img_dir = file.parent
+            file_stem = file.stem            
+            destination_dir =  join(img_dir,file_stem)
+            save_path = join(destination_dir,basename(image_part.partname))
+            if not Path(destination_dir).exists():
+                logger.warning(f"输出目录[{destination_dir}]不存在!将尝试创建该目录。")
+                Path(destination_dir).mkdir(parents=True, exist_ok=True)
+            with open(save_path,'wb') as f:#保存图片
+                f.write(image_part.blob)   
+        img_metadata.update({"img_save_path_jq":save_path,"img_blob_jq":image_part.blob})
         return img_metadata
 
     #This function extracts the table from the document object as a dataframe
@@ -470,6 +436,17 @@ class JqkjDocxReader(BaseReader):
         vf_string = vf.getvalue()
         return pd.read_csv(vf, **kwargs),vf_string
 
+# 为JqkjSimpleDirectoryReader做的变量准备
+filetype_jqreader_dict = {}
+[filetype_jqreader_dict.update({filetype:JqkjDocxReader}) for filetype in file_type_processed_by_jqreader]
+file_type_processed_by_unstructuredreader = {".py":UnstructuredReader,".txt":UnstructuredReader}
+filetype_reader_dict = {**filetype_jqreader_dict, **file_type_processed_by_unstructuredreader}
+
+def JQKJ_DEFAULT_FILE_READER_CLS(filetype_reader_dict=filetype_reader_dict):     
+    DEFAULT_FILE_READER_CLS = _try_loading_included_file_formats()
+    DEFAULT_FILE_READER_CLS.update(filetype_reader_dict)
+    return DEFAULT_FILE_READER_CLS
+# JQKJ_DEFAULT_FILE_READER_CLS()
 
 class JqkjSimpleDirectoryReader(SimpleDirectoryReader):
     def __init__(
@@ -488,6 +465,8 @@ class JqkjSimpleDirectoryReader(SimpleDirectoryReader):
     file_extractor: Optional[Dict[str, BaseReader]] = None,
     num_files_limit: Optional[int] = None,
     file_metadata: Optional[Callable[[str], Dict]] = None,
+    raise_on_error: bool = False,
+    fs: Optional[fsspec.AbstractFileSystem] = None,    
 ) -> None:  
             # 确保输入是个列表
             if input_files:
@@ -515,26 +494,25 @@ class JqkjSimpleDirectoryReader(SimpleDirectoryReader):
                 filename_as_id=filename_as_id,
                 required_exts=required_exts,
                 file_extractor=file_extractor,
-                num_files_limit=num_files_limit,                
+                num_files_limit=num_files_limit,
+                raise_on_error=raise_on_error,
+                fs=fs,                  
             )
-            self.DEFAULT_FILE_READER_CLS = self.JQKJ_DEFAULT_FILE_READER_CLS()
-            self.supported_suffix = list(self.DEFAULT_FILE_READER_CLS.keys())
+
             input_filepaths_exist,input_filepaths_exist_and_replaced_by_docx_if_converted = convert_file_to_docx(self.input_files,overwrite=overwrite_existing_converted_files,destination_dir=output_dir_for_converted_files)
             
             converted_files_metadata = {}
             for i,file in enumerate(input_filepaths_exist_and_replaced_by_docx_if_converted):                     
                 file = str(file)
                 original_file = str(input_filepaths_exist[i])
-                converted_files_metadata[file] = {'original_source_jq':original_file,'source':original_file,'original_source_converted_jq':file} #'source'键是为了与chatchat中的reader保持一致的
-                        
+                converted_files_metadata[file] = {'original_source_jq':original_file,'source':original_file,'original_source_converted_jq':file} #'source'键是为了与chatchat中的reader保持一致的                        
                     
             self.input_files = input_filepaths_exist_and_replaced_by_docx_if_converted
             self.input_files_original_metadata=converted_files_metadata
             self.file_metadata = file_metadata or self.JQKJ_DEFAULT_FILE_META_DATA_FUNC
 
-    def JQKJ_DEFAULT_FILE_READER_CLS(self,jqkj_dict={".pdf": JqkjDocxReader,".docx": JqkjDocxReader,".doc": JqkjDocxReader,".md": JqkjDocxReader,UnstructuredReader:".txt",UnstructuredReader:".py"}):     
-        DEFAULT_FILE_READER_CLS.update(jqkj_dict)
-        return DEFAULT_FILE_READER_CLS
+    SimpleDirectoryReader.supported_suffix_fn = JQKJ_DEFAULT_FILE_READER_CLS
+    
     def JQKJ_DEFAULT_FILE_META_DATA_FUNC(self,file_path: str) -> Dict:
         meta = default_file_metadata_func(file_path)
         meta.update(self.input_files_original_metadata[file_path])
@@ -572,9 +550,8 @@ def _test_JqkjDocxReader(file_paths=[fr"/media/temp/发票识别接口文档.md"
     return documents,trees,df_tables
 
 def _test_JqkjSimpleDirectoryReader():
-    
-    convert_file_paths=[# fr'/data/projects/JqChatV2/JqChat/jqcode/jq_readers/.test_files/.testinputdocs/厦门市智慧民政一体化平台项目建设方案 V3.6.docx',
-                        fr'/data/projects/JqChatV2/JqChat/jqcode/jq_readers/.test_files/.testinputdocs/UserGuide.pdf',
+    convert_file_paths=[#fr'/data/projects/JqChatV2/JqChat/jqcode/jq_readers/.test_files/.testinputdocs/厦门市智慧民政一体化平台项目建设方案 V3.6.doc',
+                        fr'/data/projects/JqChatV2/JqChat/jqcode/jq_readers/.test_files/.testinputdocs/test_zh.pdf',
                         fr'/data/projects/JqChatV2/JqChat/jqcode/jq_readers/.test_files/.testinputdocs/AAMIS_项目总体计划_120925.doc',
                         fr"/media/temp/发票识别接口文档.md"
                         ]
@@ -583,12 +560,13 @@ def _test_JqkjSimpleDirectoryReader():
 
     simple_reader = JqkjSimpleDirectoryReader(input_files = convert_file_paths,output_dir_for_converted_files=fr"/data/projects/JqChatV2/JqChat/jqcode/jq_readers/.test_files/.outputdocs")
     documents1 = simple_reader.load_data()
-    # print(len(documents1))
+    print(len(documents1))
+
     input_file_dir = fr'/data/projects/JqChatV2/JqChat/jqcode/jq_readers/.test_files/.testinputdocs'
     simple_reader2 = JqkjSimpleDirectoryReader(input_file_dir,exclude_hidden = False)
     documents2 = simple_reader2.load_data()
     print(len(documents2))
-    return documents1,documents2
+
 
 def _test_get_retriever():
     from jqcode.jq_agent.tools.jq_retriever import get_retriever
@@ -599,8 +577,7 @@ def _test_get_retriever():
     print(type(compression_retriever))
 if __name__ == "__main__":
 
-    # _test_JqkjDocxReader()
-    # documents1,documents2 = _test_JqkjSimpleDirectoryReader()
-    # print(f"{len(documents1)=}")
+    documents,trees,df_tables = _test_JqkjDocxReader()
+    _test_JqkjSimpleDirectoryReader()
     _test_get_retriever()
 

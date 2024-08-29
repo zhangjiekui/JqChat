@@ -601,3 +601,18 @@ lmdeploy serve api_server Shanghai_AI_Laboratory/internlm2_5-20b-chat --server-p
 LMDeploy 支持 InternLM2, InternLM2.5 和 Llama3.1 模型的工具调用
 但存在一堆的问题。我提的issues：https://github.com/InternLM/lmdeploy/issues/2366
 
+
+
+## RapidOCR 
+### 源码 https://github.com/RapidAI/RapidOCR
+### 文档 https://rapidai.github.io/RapidOCRDocs/
+
+### 【CPU端】pip install rapidocr_onnxruntime 
+#### rapidocr_api https://rapidai.github.io/RapidOCRDocs/install_usage/rapidocr_api/usage/
+### 【GPU端】pip install rapidocr-paddle 
+#### 【文档】https://rapidai.github.io/RapidOCRDocs/install_usage/rapidocr_paddle/usage/
+#### 【Pypi】https://pypi.org/project/rapidocr-paddle/#history
+![alt text](image.png)
+
+
+

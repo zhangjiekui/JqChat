@@ -62,8 +62,7 @@ logger = jqkj_logger(__file__).get_logger()
 ocr = RapidOCR()
 emf = EMF() #处理emf图片需要的
 
-
-
+file_type_processed_by_jqreader = [".pdf",".docx",".md",".html",".htm"]
 class JqkjDocxReader(BaseReader):
     """Docx parser."""
     def __init__(self,file_path:str=None):
@@ -77,64 +76,53 @@ class JqkjDocxReader(BaseReader):
                 "`pip install python-docx`"
             )
         self.DocumentFunc = DocxDocumentFunc
-        self.orginal_filepath_extra_info = None
+        self.orginal_filepath_extra_info = {}
         self.file_path = file_path # 为了兼容chatchat，必须增加的属性
-    # region
-        # 下面的代码放到load_data中统一处理
-        # if file_path:
-        #     file_path = Path(file_path)
-        #     if file_path.exists():
-        #         if file_path.suffix in ['.pdf','.doc','.md']:
-        #             input_filepaths_exist,input_filepaths_exist_and_replaced_by_docx_if_converted = convert_file_to_docx(file_path,overwrite=False)
-        #             self.file_path =  input_filepaths_exist_and_replaced_by_docx_if_converted[0]
-        #             self.orginal_filepath_extra_info = {'original_source_jq':str(file_path),'source':str(file_path),'original_source_converted_jq':str(self.file_path)} #'source'键是为了与chatchat中的reader保持一致的
-        #         else:                    
-        #             self.file_path =  file_path
-        #             self.orginal_filepath_extra_info = {'original_source_jq':str(file_path),'source':str(file_path),'original_source_converted_jq':str(self.file_path)} #'source'键是为了与chatchat中的reader保持一致的
-        #     else:
-        #         logger.error(f"文件不存在:{file_path}")
-    # endregion
         
     def load(self,file: Path, extra_info: Optional[Dict] = None,fs: Optional[AbstractFileSystem] = None) -> List[LmDocument]:
         """Parse docx file."""
         return self.load_data(file, extra_info)
 
-    def load_data(self, file: Path, extra_info: Optional[Dict] = None,fs: Optional[AbstractFileSystem] = None) -> List[LmDocument]:
+    def load_data(self, file: Path, extra_info: Optional[Dict] = None,fs: Optional[AbstractFileSystem] = None,aysnc = False) -> List[LmDocument]:
         """
-        Parse docx file.
-        return_type:str ='LC', #'LC' or 'LM',  'LC'代表返回langchain的格式，'LM'代表返回llama_index的格式
-        
+        Parse docx file.      
         """
 
         file_path =file if file else self.file_path # 为了兼容chatchat，必须增加的属性
         doc_original = str(file_path)         # 因self.file_path和file_path下面都可能会变，所以先保留原始的到doc_id
         file_path = Path(file_path)        
+        
         if file_path.exists():
-
         # 如果是经过JqkjSimpleDirectoryReader=>JqkjDocxReader，其实已经进行了文件类型转换，并且加入了'original_source_jq'，'source'键值，
         # 这里仅需要处理直接实例化JqkjDocxReader自身的情形，并且不能更新 JqkjSimpleDirectoryReader=>JqkjDocxReader时 已经处理好的'original_source_jq'，'source'键值
             # raise Exception("todo")
             ext = file_path.suffix
-            if ext in ['.pdf','.doc','.md']:
-                _,input_filepaths_exist_and_replaced_by_docx_if_converted = convert_file_to_docx(file_path,overwrite=False)                
-                # self.file_path此时为转换后的docx文件路径
-                self.file_path =  input_filepaths_exist_and_replaced_by_docx_if_converted[0]                
-                self.orginal_filepath_extra_info = {'original_source_jq':doc_original,'source':doc_original,'original_source_converted_jq':str(self.file_path)} #'source'键是为了与chatchat中的reader保持一致的
-            elif ext in ['.docx']:
+            if ext in ['.docx']:
                 self.file_path =  file_path
                 self.orginal_filepath_extra_info = {'original_source_jq':doc_original,'source':doc_original,'original_source_converted_jq':doc_original}
+                # 元数据中增加了文件扩展名
+                self.orginal_filepath_extra_info.update({"file_extention":ext})
+            elif ext in file_type_processed_by_jqreader:
+                input_filepaths_exist,input_filepaths_exist_and_replaced_by_docx_if_converted = convert_file_to_docx(file_path,overwrite=False)                
+                # self.file_path此时为转换后的docx文件路径
+                if input_filepaths_exist_and_replaced_by_docx_if_converted:
+                    self.file_path =  input_filepaths_exist_and_replaced_by_docx_if_converted[0]
+                    doc_original = input_filepaths_exist[0]                
+                    self.orginal_filepath_extra_info = {'original_source_jq':doc_original,'source':doc_original,'original_source_converted_jq':str(self.file_path)} #'source'键是为了与chatchat中的reader保持一致的
+                    # 元数据中增加了文件扩展名
+                    self.orginal_filepath_extra_info.update({"file_extention":ext})
+                else:
+                    logger.error(f"{file_path}转换成docx失败！")
             else:
-                logger.error(f"JqkjDocxReader暂只支持['.pdf','.doc','.md','.docx'],无法读取[{ext}]文件")
-            
-            # 元数据中增加了文件扩展名
-            self.orginal_filepath_extra_info.update({"file_extention":ext})
+                logger.error(f"JqkjDocxReader暂只支持{file_type_processed_by_jqreader},无法读取[{ext}]文件")           
 
         else:
             logger.error(f"文件不存在:{file_path}")
 
         if self.file_path.exists() and doc_original:
             doc = self.DocumentFunc(self.file_path)
-            text = "\n".join([paragraph.text for paragraph in doc.paragraphs if len(paragraph.text.strip())>0])
+            text = '请从metadata["file_doc_tree_jq"]中获取'
+            # text = "\n".join([paragraph.text for paragraph in doc.paragraphs if len(paragraph.text.strip())>0])
             doc_tree,df_table_list = self.parse_docx_into_tree(doc,self.file_path)            
             # 'original_source_jq'(转换前的文件pdf/doc/md的文件路径，如果本就是docx文件,则与original_source_converted_jq一致),
             # 'source'键是为了与chatchat中的reader保持一致的，取值与'original_source_jq'一致
@@ -169,7 +157,6 @@ class JqkjDocxReader(BaseReader):
     def parse_docx_into_tree(self, docx_document:DocxDocument,file_path: Path) -> Node:
         # metadata = docx_document.metadata
         file: Path = Path(file_path)
-        image_file_path: Path = Path('/media/temp/JqChat0717/wendang/OCR接口性能报告.docx')
 
         logger.debug('==='*30)
         node_numbering=1 
@@ -756,11 +743,17 @@ class JqkjDocxReader(BaseReader):
         vf_string = vf.getvalue()
         return pd.read_csv(vf, **kwargs),vf_string
 
-def JQKJ_DEFAULT_FILE_READER_CLS(jqkj_dict={".pdf": JqkjDocxReader,".doc": JqkjDocxReader,".docx": JqkjDocxReader,".md": JqkjDocxReader,".html": JqkjDocxReader,".htm": JqkjDocxReader,UnstructuredReader:".txt",UnstructuredReader:".py"}):     
-    DEFAULT_FILE_READER_CLS = _try_loading_included_file_formats()
-    DEFAULT_FILE_READER_CLS.update(jqkj_dict)
-    return DEFAULT_FILE_READER_CLS
 
+filetype_jqreader_dict = {}
+[filetype_jqreader_dict.update({filetype:JqkjDocxReader}) for filetype in file_type_processed_by_jqreader]
+file_type_processed_by_unstructuredreader = {".py":UnstructuredReader,".txt":UnstructuredReader}
+filetype_reader_dict = {**filetype_jqreader_dict, **file_type_processed_by_unstructuredreader}
+
+def JQKJ_DEFAULT_FILE_READER_CLS(filetype_reader_dict=filetype_reader_dict):     
+    DEFAULT_FILE_READER_CLS = _try_loading_included_file_formats()
+    DEFAULT_FILE_READER_CLS.update(filetype_reader_dict)
+    return DEFAULT_FILE_READER_CLS
+# JQKJ_DEFAULT_FILE_READER_CLS()
 
 class JqkjSimpleDirectoryReader(SimpleDirectoryReader):
     def __init__(
@@ -776,7 +769,6 @@ class JqkjSimpleDirectoryReader(SimpleDirectoryReader):
     encoding: str = "utf-8",
     filename_as_id: bool = False,
     required_exts: Optional[List[str]] = None,
-    # {".pdf": JqkjDocxReader,".doc": JqkjDocxReader,".md": JqkjDocxReader,".html": JqkjDocxReader,".htm": JqkjDocxReader,UnstructuredReader:".txt",UnstructuredReader:".py"}
     file_extractor: Optional[Dict[str, BaseReader]] = None,
     num_files_limit: Optional[int] = None,
     file_metadata: Optional[Callable[[str], Dict]] = None,
@@ -813,10 +805,6 @@ class JqkjSimpleDirectoryReader(SimpleDirectoryReader):
                 raise_on_error=raise_on_error,
                 fs=fs,                  
             )
-            # self.DEFAULT_FILE_READER_CLS = self.JQKJ_DEFAULT_FILE_READER_CLS()
-            # self.supported_suffix = list(self.DEFAULT_FILE_READER_CLS.keys())
-
-
 
             input_filepaths_exist,input_filepaths_exist_and_replaced_by_docx_if_converted = convert_file_to_docx(self.input_files,overwrite=overwrite_existing_converted_files,destination_dir=output_dir_for_converted_files)
             
@@ -824,8 +812,7 @@ class JqkjSimpleDirectoryReader(SimpleDirectoryReader):
             for i,file in enumerate(input_filepaths_exist_and_replaced_by_docx_if_converted):                     
                 file = str(file)
                 original_file = str(input_filepaths_exist[i])
-                converted_files_metadata[file] = {'original_source_jq':original_file,'source':original_file,'original_source_converted_jq':file} #'source'键是为了与chatchat中的reader保持一致的
-                        
+                converted_files_metadata[file] = {'original_source_jq':original_file,'source':original_file,'original_source_converted_jq':file} #'source'键是为了与chatchat中的reader保持一致的                        
                     
             self.input_files = input_filepaths_exist_and_replaced_by_docx_if_converted
             self.input_files_original_metadata=converted_files_metadata
@@ -880,8 +867,8 @@ def _test_JqkjSimpleDirectoryReader():
     
 
     simple_reader = JqkjSimpleDirectoryReader(input_files = convert_file_paths,output_dir_for_converted_files=fr"/data/projects/JqChatV2/JqChat/jqcode/jq_readers/.test_files/.outputdocs")
-    # documents1 = simple_reader.load_data(num_workers=2)
-    # print(len(documents1))
+    documents1 = simple_reader.load_data()
+    print(len(documents1))
 
     # documents1_async_coro = simple_reader.aload_data(num_workers=2)
     # documents1_async = asyncio.run(documents1_async_coro)

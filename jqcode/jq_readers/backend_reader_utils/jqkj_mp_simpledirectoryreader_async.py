@@ -1,6 +1,7 @@
 """Simple reader that reads files of different formats from a directory."""
 
 from abc import ABC, abstractmethod
+import multiprocessing.dummy
 import os
 import logging
 import mimetypes
@@ -20,8 +21,12 @@ from llama_index.core.readers.base import BaseReader, ResourcesReaderMixin
 from llama_index.core.async_utils import run_jobs, get_asyncio_module
 from llama_index.core.schema import Document
 from tqdm import tqdm
+from jqcode.jq_utils.logger import jqkj_logger
+logger = jqkj_logger(__file__).get_logger()
 
-
+_cpu_nums = multiprocessing.cpu_count()
+cpu_nums_for_file_processing = int(_cpu_nums*0.8)
+# multiprocessing.set_start_method("fork")
 class FileSystemReaderMixin(ABC):
     @abstractmethod
     def read_file_content(self, input_file: Path, **kwargs) -> bytes:
@@ -167,12 +172,8 @@ class _DefaultFileMetadataFunc:
 def get_default_fs() -> fsspec.AbstractFileSystem:
     return LocalFileSystem()
 
-
 def is_default_fs(fs: fsspec.AbstractFileSystem) -> bool:
     return isinstance(fs, LocalFileSystem) and not fs.auto_mkdir
-
-
-logger = logging.getLogger(__name__)
 
 # 修改自llama-index-core/llama_index/core/readers/file/base.py
 # https://github.com/run-llama/llama_index/blob/d8bee71dac50b8cd6f324c9e42321c47154b1b54/llama-index-core/llama_index/core/readers/file/base.py#L177
@@ -660,18 +661,14 @@ class SimpleDirectoryReader(BaseReader, ResourcesReaderMixin, FileSystemReaderMi
         files_to_process = self.input_files
         fs = fs or self.fs
 
-        num_workers = num_workers if num_workers else len(self.input_files)
+        _num_workers = num_workers if num_workers else len(self.input_files)
+        num_workers = min(_num_workers,cpu_nums_for_file_processing)
+
         if num_workers and num_workers > 1:
-            cpu_nums = multiprocessing.cpu_count()
-            if num_workers > multiprocessing.cpu_count():
-                num_workers = cpu_nums
-                warnings.warn(
-                    f"Specified num_workers exceed number of CPUs [{cpu_nums=}] in the system. "
-                    "Setting `num_workers` down to the maximum CPU count."
-                )
-            # with multiprocessing.dummy.Pool(num_workers) as p:
+            # 使用多进程，但因为内含docx Document，会因为序列化/反序列化问题导致错误
             # with multiprocessing.get_context("fork").Pool(num_workers) as p:
-            with Pool(num_workers) as p:
+            # 所以须改为多线程
+            with multiprocessing.dummy.Pool(num_workers) as p:
                 results = p.starmap(
                     SimpleDirectoryReader.load_file,
                     zip(
