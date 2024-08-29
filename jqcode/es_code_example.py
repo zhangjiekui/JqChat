@@ -77,13 +77,13 @@ smartcn_analyzer_result_en = es_connection.indices.analyze(text="This analyzer u
 #   ]
 # }
 
-# input_files = [fr'/data/projects/JqChatV2/JqChat/jqcode/jq_readers/.test_files/.testinputdocs/A方案.docx'] 
-# input_files += [fr'/data/projects/JqChatV2/JqChat/jqcode/jq_readers/.test_files/.testinputdocs/PPQA000_质量保证过程.doc'] 
+input_files = [fr'/data/projects/JqChatV2/JqChat/jqcode/jq_readers/.test_files/.testinputdocs/AAMIS_项目总体计划_120925.doc'] 
+input_files += [fr'/data/projects/JqChatV2/JqChat/jqcode/jq_readers/.test_files/.testinputdocs/PPQA000_质量保证过程.doc'] 
 
 
 input_dir="/data/projects/JqChatV2/JqChat/jqcode/jq_readers/.test_files/.testinputdocs"
-def reader_load_files(dir:str=input_dir):
-    simple_reader = JqkjSimpleDirectoryReader(input_dir=input_dir, overwrite_existing_converted_files=False,required_exts=['.doc','.docx','.pdf','.txt','.py'],exclude_hidden=False)
+def reader_load_files(dir:str=input_dir,input_files:str=input_files):
+    simple_reader = JqkjSimpleDirectoryReader(input_dir=None,input_files=input_files, overwrite_existing_converted_files=False,required_exts=['.doc','.docx','.pdf','.txt','.py'],exclude_hidden=False)
     lm_documents = simple_reader.load_data()
     return lm_documents
 
@@ -188,7 +188,8 @@ if __name__ == "__main__":
     # 打印映射信息
     settings = es_connection.indices.get_settings(index=index_name) 
     print(settings)
-    
+    # 针对以下文件中的表格提问
+    # /data/projects/JqChatV2/JqChat/jqcode/jq_readers/.test_files/.testinputdocs/AAMIS_项目总体计划_120925.doc
     query = "安徽省食品药品监督管理局行政审批系统项目总体计划的版本号是多少，批准人是谁？"
     answer,hits = run_a_query_test(query,retriever=compression_retriever)
 

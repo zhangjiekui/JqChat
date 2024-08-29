@@ -3,6 +3,9 @@ import importlib.util
 import json
 import logging 
 import os
+import sys
+project_root = '/media/temp/JqChatV2/JqChat'
+sys.path.insert(0, project_root)
 from pathlib import Path
 from typing import Any, Dict
 
@@ -370,7 +373,7 @@ def _import_db_root_path() -> Any:
     return config_kb_workspace.get_config().DB_ROOT_PATH
 
 
-def _import_sqlalchemy_database_uri() -> Any:
+def _import_sqlalchemy_database_uri() -> Any: 
     kb_config_load = CONFIG_IMPORTS.get("_kb_config.py")
     load_mod = kb_config_load.get("load_mod")
     config_kb_workspace = load_mod(kb_config_load.get("module"), "config_kb_workspace")

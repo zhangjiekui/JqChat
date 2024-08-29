@@ -808,7 +808,7 @@ def chain_qa_fun(query,retriever,llm,input_files=[]):
     chain = RetrievalQA.from_chain_type(llm,retriever=retriever,return_source_documents=True, chain_type="stuff")
     print(f'   -----------询问：{query}-------------')
     # query = prompt + query
-    r = chain({"query": query})
+    r = chain.invoke({"query": query})
     
     # print(r['query'])
     hits = r['source_documents']
@@ -852,8 +852,11 @@ if __name__ == "__main__":
     input_files = [fr'/data/projects/JqChatV2/JqChat/jqcode/jq_readers/.test_files/.testinputdocs/A方案.docx'] 
     # input_files += [fr'/data/projects/JqChatV2/JqChat/jqcode/jq_readers/.test_files/.testinputdocs/InstallationGuide.docx']
     input_files += [fr'/data/projects/JqChatV2/JqChat/jqcode/jq_readers/.test_files/.testinputdocs/PPQA000_质量保证过程.doc'] 
-    # input_files += [fr'/data/projects/JqChatV2/JqChat/jqcode/jq_readers/.test_files/.testinputdocs/厦门市智慧民政一体化平台项目建设方案 V3.6.docx']  
-
+    # input_files += [fr'/data/projects/JqChatV2/JqChat/jqcode/jq_readers/.test_files/.testinputdocs/厦门市智慧民政一体化平台项目建设方案 V3.6.docx'] 
+    # input_files = [fr'/data/projects/JqChatV2/JqChat/jqcode/jq_readers/.test_files/.testinputdocs/PPQA000_质量保证过程.doc']  
+    # 针对以下文件中的表格提问
+    input_files += [fr"/data/projects/JqChatV2/JqChat/jqcode/jq_readers/.test_files/.testinputdocs/AAMIS_项目总体计划_120925.doc"]
+    q = "安徽省食品药品监督管理局行政审批系统项目总体计划的版本号是多少，批准人是谁？"
     query0 = "晶奇公司的应急技术服务电话？"
     query1 = "晶奇公司在哪一年获得ISO9001国际质量体系认证？"
     query2 = "医院信息系统中基础维护系统的功能？"
@@ -865,7 +868,7 @@ if __name__ == "__main__":
     query8 = 'How many benchmarks are choosed for testing the overall performance？具体的benchmarks是什么？'
     query9 = '厦门市智慧民政一体化的建设内容包括哪些？'
 
-    qs = [query0,query1,query2,query3,query4,query5,query6,query7,query8,query9]
+    qs = [q,query0,query1,query2,query3,query4,query5,query6,query7,query8,query9]
     # qs = [query7]
 
 
@@ -875,7 +878,7 @@ if __name__ == "__main__":
 
     
     llm = env_models_instance.chat_model
-    index_name='yqli'
+    index_name='yqli3'
     compression_retriever = get_retriever(index_name=index_name,chat_on_docs_list=input_files,add_docs_list_to_kb=True)
     # compression_retriever = get_retriever(index_name=index_name)
     # chain_type:stuff、refine、map_reduce 和 map_rerank
@@ -890,7 +893,7 @@ if __name__ == "__main__":
         chain = RetrievalQA.from_chain_type(llm,retriever=retriever,return_source_documents=True, chain_type="stuff")
         print(f'   -----------询问：{query}-------------')
         # query = prompt + query
-        r = chain({"query": query})
+        r = chain.invoke({"query": query})
         
         # print(r['query'])
         hits = r['source_documents']
