@@ -6,11 +6,11 @@ Contains parsers for docx, pdf files.
 # from jqkjlibs.configs import general_config
 # general_config.VERBOSE = True
 import os
+
 from datetime import datetime
 from pathlib import Path
 from os.path import basename,dirname,join
 from typing import Dict, List, Optional,Callable,Any
-
 import docx
 from docx.text.paragraph import Paragraph, Run
 from docx.parts.image import ImagePart
@@ -52,7 +52,7 @@ from jqcode.jq_readers.backend_reader_utils.jqkj_doc_tree_utils import compare_w
 
 
 from llama_index.readers.file import UnstructuredReader
-
+import asyncio
 
 from jqcode.jq_utils.logger import jqkj_logger
 logger = jqkj_logger(__file__).get_logger()
@@ -62,7 +62,8 @@ class JqkjDocxReader(BaseReader):
     """Docx parser."""
     def __init__(self,file_path:str=None,save_img_file:bool = False):
         # super().__init__()
-        logger.warning(f'JqkjDocxReader:返回的text只是为了兼容llama_index的Reader要求，简单获取的。原始的doc/tree对象存放到了（llama_index）LmDocument document对象的metadata字典中，以便获取做进一步的精细化处理')
+        # logger.warning(f'JqkjDocxReader:返回的text只是为了兼容llama_index的Reader要求，简单获取的。原始的doc/tree对象存放到了（llama_index）LmDocument document对象的metadata字典中，以便获取做进一步的精细化处理')
+        # 没放了
         try:
             from docx import Document as DocxDocumentFunc
         except ImportError:
@@ -343,12 +344,13 @@ class JqkjDocxReader(BaseReader):
             except Exception as ex:
                 logger.error(f'===验证过程中出现了错误，请检查。错误信息如下:===\n{ex}')
                 
-        # 批量识别图片问题
+        # 批量识别图片
         all_tree_nodes = list(PreOrderIter(file_tree))
         img_nodes = [node for node in all_tree_nodes if node.type == TreeNodeType.IMAGE]
         if len(img_nodes):
             logger.debug(f"{len(img_nodes)=}")
-            results = treenodes_img_to_text_in_batch(img_nodes)
+            img_src_and_data_tuple_list = [(treenode.image_filepath_jq,treenode.img_blob_jq) for treenode in img_nodes] #得到[(img_src,img_data)...]
+            results = treenodes_img_to_text_in_batch(img_src_and_data_tuple_list)
             logger.debug(f"{len(results)=}")
             assert len(img_nodes) == len(results)
             for i,img_node in enumerate(img_nodes):
@@ -529,7 +531,8 @@ def _test_JqkjDocxReader(file_paths=[fr"/media/temp/发票识别接口文档.md"
     df_tables = []
     file_paths = [Path(file) for file in file_paths]
     for file in file_paths:
-        document= reader.load_data(file)[0]
+        # document= reader.load_data(file)[0]
+        document = asyncio.run(reader.aload_data(file))[0]
         doc_tree = document.metadata['file_doc_tree_jq']
         df_table_list  = document.metadata['df_table_list_jq']
         documents.append(document)
@@ -557,15 +560,23 @@ def _test_JqkjSimpleDirectoryReader():
                         ]
     
     
-
+    
     simple_reader = JqkjSimpleDirectoryReader(input_files = convert_file_paths,output_dir_for_converted_files=fr"/data/projects/JqChatV2/JqChat/jqcode/jq_readers/.test_files/.outputdocs")
     documents1 = simple_reader.load_data()
     print(len(documents1))
+    # 
+    # documents1a = asyncio.run(simple_reader.aload_data())
+    # print(len(documents1a))
 
     input_file_dir = fr'/data/projects/JqChatV2/JqChat/jqcode/jq_readers/.test_files/.testinputdocs'
     simple_reader2 = JqkjSimpleDirectoryReader(input_file_dir,exclude_hidden = False)
-    documents2 = simple_reader2.load_data()
-    print(len(documents2))
+    # documents2 = simple_reader2.load_data()
+    # print(len(documents2))
+
+    documents2a = asyncio.run(simple_reader2.aload_data())
+    print(len(documents2a))
+
+
 
 
 def _test_get_retriever():

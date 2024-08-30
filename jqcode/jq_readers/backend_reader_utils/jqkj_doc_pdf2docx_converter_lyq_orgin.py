@@ -24,6 +24,13 @@ def get_os():
         return 'Unknown'
  
 os_name = get_os()
+# import mammoth
+# from mammoth
+# def convert_emf_wmf_to_png(emf_wmf_file_path:str=None,emf_wmf_file_bytes:bytes=None):
+#     result = mammoth.images.data_uri(emf_wmf_file_path)  
+#     image = libreoffice_wmf_conversion(image, post_process=imagemagick_trim)
+#     return mammoth.images.data_uri(image)
+
 
 
 def convert_md_to_docx(input_filepaths:Union[str,list],overwrite=True,destination_dir=None):

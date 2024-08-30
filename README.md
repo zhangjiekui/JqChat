@@ -2,6 +2,7 @@
 ### 本地
 ```sh
 cd /data/projects/JqChatV2/JqChat
+git pull
 git add .
 git commit -a
 ```

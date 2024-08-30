@@ -267,7 +267,7 @@ class InitEnvModels:
         API_PORT = os.getenv("API_PORT",5011)
         self.kernel_api_url = f"{KERNEL_API_BASE}:{API_PORT}/api"
         root_dir = pathlib.Path().resolve()
-        self.workspace = str(root_dir/'workspace/')
+        self.workspace = str(root_dir/'JqChat/workspace/')
 
         # loade models:
         self.openai = None

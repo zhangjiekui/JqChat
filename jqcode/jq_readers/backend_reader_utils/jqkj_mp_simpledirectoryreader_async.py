@@ -727,16 +727,8 @@ class SimpleDirectoryReader(BaseReader, ResourcesReaderMixin, FileSystemReaderMi
         fs = fs or self.fs
         
         num_workers = num_workers if num_workers else len(self.input_files)
-        if num_workers and num_workers > 1:
-            cpu_nums = multiprocessing.cpu_count()
-            if num_workers > multiprocessing.cpu_count():
-                num_workers = cpu_nums
-                warnings.warn(
-                    f"Specified num_workers exceed number of CPUs [{cpu_nums=}] in the system. "
-                    "Setting `num_workers` down to the maximum CPU count."
-                )
-        coroutines = [self.aload_file(input_file) for input_file in files_to_process]
-        
+        num_workers = min(num_workers,cpu_nums_for_file_processing)
+        coroutines = [self.aload_file(input_file) for input_file in files_to_process]        
         if num_workers:
             document_lists = await run_jobs(
                 coroutines, show_progress=show_progress, workers=num_workers
