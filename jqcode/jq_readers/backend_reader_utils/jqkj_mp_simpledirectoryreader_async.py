@@ -690,6 +690,7 @@ class SimpleDirectoryReader(BaseReader, ResourcesReaderMixin, FileSystemReaderMi
                     self.input_files, desc="Loading files", unit="file"
                 )
             for input_file in files_to_process:
+                print(f"{input_file=}")
                 documents.extend(
                     SimpleDirectoryReader.load_file(
                         input_file=input_file,

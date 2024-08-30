@@ -42,7 +42,7 @@ from langchain_core.messages import BaseMessage, HumanMessage,SystemMessage,Tool
 from langchain.callbacks.base import BaseCallbackHandler
 from langchain_core.callbacks import StdOutCallbackHandler
 from jqcode.jq_splitters.backend_splitter_utils.jq_chinese_recursive_text_splitter import JqChineseRecursiveTextSplitter
-from jqcode.jq_splitters.jq_docx_tree_text_splitter import JqkjDocTreeTokenTextSplitter
+from jqcode.jq_splitters.jq_docx_tree_text_splitter import JqkjDocTreeTokenTextSplitter,load_project_env
 from langchain_text_splitters import Language
 
 
@@ -175,9 +175,12 @@ class SingletonDecorator:
 @SingletonDecorator
 class InitEnvModels:
     def __init__(self):
-        self.env_loaded = False
-        # loade envs:
-        self.load_project_env()
+        env_loaded = os.getenv("env_loaded",'')
+        if env_loaded == "True":
+            self.env_loaded = True
+        else:
+            # loade envs:
+            self.env_loaded = load_project_env()
         assert self.env_loaded, "环境变量没有正确载入！"
         
         self.ollama_host = os.getenv("OLLAMA_HOST",'http://localhost:11434')

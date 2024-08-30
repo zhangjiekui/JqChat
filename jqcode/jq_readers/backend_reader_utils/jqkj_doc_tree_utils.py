@@ -210,10 +210,10 @@ def compare_with_zip_docx2img(word_path, image_file_name_list=None,result_path=N
 
     if given_img_num == 0: #复制所有图片
         diffs = pictures
-    elif given_img_num > 0 and pictures_num !=given_img_num: #在_diffs文件夹下存储差异图片
-        logger.error(f'图片数量不一致，使用zip方式读取的图片数量为:{pictures_num},提供的图片列表长度为{given_img_num}，差异图片数量为{len(diffs)}')
+    elif given_img_num > 0 and pictures_num !=given_img_num: #在_diffs文件夹下存储差异图片        
         result_path = result_path + '/_diffs'
-        diffs = [item for item in pictures if item not in image_file_name_list]        
+        diffs = [item for item in pictures if item not in image_file_name_list] 
+        logger.error(f'图片数量不一致，使用zip方式读取的图片数量为:{pictures_num},提供的图片列表长度为{given_img_num}，差异图片数量为{len(diffs)}')       
     else:
         assert pictures_num == given_img_num, '图片数量不一致'
         logger.debug(f'使用zip方式读取的图片数量为{pictures_num},提供的图片列表长度为{given_img_num}，两者相等')

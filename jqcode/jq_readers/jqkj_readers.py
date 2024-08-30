@@ -80,6 +80,8 @@ class JqkjDocxReader(BaseReader):
         """Parse docx file."""
         if not file:
             file = self.file_path
+        else:
+            self.file_path = file
         return self.load_data(file, extra_info)
 
     def load_data(self, file: Path, extra_info: Optional[Dict] = None,fs: Optional[AbstractFileSystem] = None,aysnc = False) -> List[LmDocument]:
@@ -91,6 +93,8 @@ class JqkjDocxReader(BaseReader):
         file_path = Path(file_path)        
         
         if file_path.exists():
+            self.file_path =  file_path
+
         # 如果是经过JqkjSimpleDirectoryReader=>JqkjDocxReader，其实已经进行了文件类型转换，并且加入了'original_source_jq'，'source'键值，
         # 这里仅需要处理直接实例化JqkjDocxReader自身的情形，并且不能更新 JqkjSimpleDirectoryReader=>JqkjDocxReader时 已经处理好的'original_source_jq'，'source'键值
             # raise Exception("todo")
@@ -121,7 +125,11 @@ class JqkjDocxReader(BaseReader):
             doc = self.DocumentFunc(self.file_path)
             text = '请从metadata["file_doc_tree_jq"]中获取'
             # text = "\n".join([paragraph.text for paragraph in doc.paragraphs if len(paragraph.text.strip())>0])
-            doc_tree,df_table_list = self.parse_docx_into_tree(doc,self.file_path)            
+            # print(f"\n\n")   
+            # print(f"#######开始将文档{self.file_path}解析为树结构")
+            doc_tree,df_table_list = self.parse_docx_into_tree(doc,self.file_path)
+            # print(f"#######已经将文档{self.file_path}解析为树结构")
+            # print(f"\n\n")               
             # 'original_source_jq'(转换前的文件pdf/doc/md的文件路径，如果本就是docx文件,则与original_source_converted_jq一致),
             # 'source'键是为了与chatchat中的reader保持一致的，取值与'original_source_jq'一致
             # 'original_source_converted_jq':转换后的docx文件路径   
@@ -154,12 +162,15 @@ class JqkjDocxReader(BaseReader):
     
     def parse_docx_into_tree(self, docx_document:DocxDocument,file_path: Path) -> Node:
         # metadata = docx_document.metadata
-        file: Path = Path(file_path)
+        file = Path(file_path)
+        filename=file.name
+        # logger.debug(f"构建文档树：{file}")
+
 
         logger.debug('==='*30)
         node_numbering=1 
             # type = TreeNodeType.DOCUMENT('DIRECTORY', 'DOCUMENT', 'TEXT', 'TABLE', 'IMAGE',"INDEX")
-        file_tree = Node(f'{str(file.name)}',type=TreeNodeType.DOCUMENT, numbering=node_numbering,level=-100,text=f'{file.name}') 
+        file_tree = Node(f'{filename}',type=TreeNodeType.DOCUMENT, numbering=node_numbering,level=-100,text=f'{filename}') 
             # page=0, style="FILE_NAME",prompt=prompt, tag=file_name,self_num_characters=self_num_characters, self_num_tokens=self_num_tokens,total_num_characters=0,total_num_tokens=0,
 
         parent_node = file_tree
@@ -282,9 +293,11 @@ class JqkjDocxReader(BaseReader):
                 # 验证是否所有的Anytree图片表格节点都已成功创建
         if True:
             try:
-                logger.debug(f"\n=========验证[{str(file)}]读取结果是否正确=========")
+                # logger.debug(f"\n=========验证[{file_path}]读取结果是否正确=========")
+                logger.debug(f"\n=========验证读取结果是否正确=========")
                 if len(image_list) == 0:
-                    logger.debug(f"[{str(file)}]没有找到任何图片，请检查文件内容是否正确。")    
+                    # logger.debug(f"[{file_path.name}]没有找到任何图片，请检查文件内容是否正确。")
+                    logger.debug(f"没有找到任何图片，请检查文件内容是否正确。")        
                 else:
                     s = set(imgid_list)
                     re_s = [(item,imgid_list.count(item)) for item in s if imgid_list.count(item)>1]
@@ -328,7 +341,8 @@ class JqkjDocxReader(BaseReader):
 
                 table_number = len(docx_document.tables)
                 if table_number == 0:
-                    logger.debug(f"[{str(file)}]没有找到任何表格，请检查文件内容是否正确。")    
+                    # logger.debug(f"[{str(filename)}]没有找到任何表格，请检查文件内容是否正确。") 
+                    logger.debug(f"没有找到任何表格，请检查文件内容是否正确。")   
                 else:
                     df_table_number = len(df_table_list)
                     table_nodes = anytree.search.findall(file_tree,filter_=lambda node:node.type==TreeNodeType.TABLE)
@@ -521,7 +535,7 @@ class JqkjSimpleDirectoryReader(SimpleDirectoryReader):
         return meta
 
 
-def _test_JqkjDocxReader(file_paths=[fr"/media/temp/发票识别接口文档.md"]):
+def _test_JqkjDocxReader(file_paths=[fr"/media/temp/发票识别接口文档.md",'/data/projects/JqChatV2/JqChat/jqcode/jq_readers/.test_files/.testinputdocs/test_zh.pdf']):
     # fr'D:\biaoshu\pdf_docx_convert\UserGuide.docx',
     reader = JqkjDocxReader(file_path=file_paths[0])
     d = reader.load()
@@ -561,20 +575,20 @@ def _test_JqkjSimpleDirectoryReader():
     
     
     
-    simple_reader = JqkjSimpleDirectoryReader(input_files = convert_file_paths,output_dir_for_converted_files=fr"/data/projects/JqChatV2/JqChat/jqcode/jq_readers/.test_files/.outputdocs")
-    documents1 = simple_reader.load_data()
-    print(len(documents1))
+    # simple_reader = JqkjSimpleDirectoryReader(input_files = convert_file_paths,output_dir_for_converted_files=fr"/data/projects/JqChatV2/JqChat/jqcode/jq_readers/.test_files/.outputdocs")
+    # documents1 = simple_reader.load_data()
+    # print(len(documents1))
     # 
     # documents1a = asyncio.run(simple_reader.aload_data())
     # print(len(documents1a))
 
     input_file_dir = fr'/data/projects/JqChatV2/JqChat/jqcode/jq_readers/.test_files/.testinputdocs'
     simple_reader2 = JqkjSimpleDirectoryReader(input_file_dir,exclude_hidden = False)
-    # documents2 = simple_reader2.load_data()
-    # print(len(documents2))
+    documents2 = simple_reader2.load_data()
+    print(len(documents2))
 
-    documents2a = asyncio.run(simple_reader2.aload_data())
-    print(len(documents2a))
+    # documents2a = asyncio.run(simple_reader2.aload_data())
+    # print(len(documents2a))
 
 
 
@@ -584,11 +598,12 @@ def _test_get_retriever():
     input_files = [fr'/data/projects/JqChatV2/JqChat/jqcode/jq_readers/.test_files/.testinputdocs/A方案.docx'] 
     input_files += [fr'/data/projects/JqChatV2/JqChat/jqcode/jq_readers/.test_files/.testinputdocs/PPQA000_质量保证过程.doc']   
     index_name='temp_index_for_upload_files'
-    compression_retriever = get_retriever(index_name=index_name,chat_on_docs_list=input_files,add_docs_list_to_kb=False)     
+    compression_retriever = get_retriever(index_name=index_name,chat_on_docs_list=[],add_docs_list_to_kb=False)
+    # compression_retriever = get_retriever(index_name=index_name,chat_on_docs_list=input_files,add_docs_list_to_kb=False)     
     print(type(compression_retriever))
 if __name__ == "__main__":
 
-    documents,trees,df_tables = _test_JqkjDocxReader()
+    # documents,trees,df_tables = _test_JqkjDocxReader()
     _test_JqkjSimpleDirectoryReader()
-    _test_get_retriever()
+    # _test_get_retriever()
 
