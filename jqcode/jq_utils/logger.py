@@ -28,7 +28,7 @@ class jqkj_logger(logging.Logger):
 
         # if not Path(logfile_path).exists():
         #     os.mk(logfile_path.parent)
-        self.mytex = threading.Lock() if using_multi_thread else None
+        self.mtex = threading.Lock() if using_multi_thread else None
         self.lf = logging.FileHandler(logfile_path,mode='a',encoding='utf-8')  # 打印到文件
         self.sm = logging.StreamHandler()  # 打印到终端
         # Formatter对象：日志格式
@@ -63,16 +63,16 @@ class jqkj_logger(logging.Logger):
     
     def debug(self,message):        
         if self.verbose:
-            if self.mytex:
-                with self.mytex:
+            if self.mtex:
+                with self.mtex:
                     self.logger.debug(message)
             else:
                 self.logger.debug(message)
     
     def info(self,message):
         if self.verbose:
-            if self.mytex:
-                with self.mytex:
+            if self.mtex:
+                with self.mtex:
                     self.logger.info(message)
             else:
                 self.logger.info(message)
@@ -80,8 +80,8 @@ class jqkj_logger(logging.Logger):
     def warning(self,message,verbose=True):
         verbose=verbose if verbose is not None else self.verbose
         if self.verbose:
-            if self.mytex:
-                with self.mytex:
+            if self.mtex:
+                with self.mtex:
                     self.warning.debug(message)
             else:
                 self.logger.warning(message)
@@ -89,8 +89,8 @@ class jqkj_logger(logging.Logger):
     def error(self,message,verbose=True):
         verbose=verbose if verbose is not None else self.verbose
         if self.verbose:
-            if self.mytex:
-                with self.mytex:
+            if self.mtex:
+                with self.mtex:
                     self.logger.error(message)
             else:
                 self.logger.error(message)
@@ -98,8 +98,8 @@ class jqkj_logger(logging.Logger):
     def critical(self,message,verbose=True):
         verbose=verbose if verbose is not None else self.verbose
         if self.verbose:
-            if self.mytex:
-                with self.mytex:
+            if self.mtex:
+                with self.mtex:
                     self.logger.error(message)
             else:
                 self.logger.error(message)

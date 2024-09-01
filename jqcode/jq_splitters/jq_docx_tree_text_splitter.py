@@ -32,26 +32,33 @@ try:
 except:
     default_id_func = None
 
-def load_project_env():     
-    print('\n\n')
-    print('=*'*20)
-    env_dir = find_dotenv()
-    if not env_dir:
-        root_dir = Path().resolve()
-        env_dir = root_dir/'JqChat/.env'
-    print(f"项目.env文件路径：{env_dir}")
-    dotenv_loaded = load_dotenv(env_dir)
-    if dotenv_loaded:
-        print(f"=*=* load_dotenv('{env_dir}')成功！")
-        os.environ["env_loaded"] = "True"
-    else:
-        print(f"=*=* load_dotenv('{env_dir}')失败，请检查！")
-        os.environ["env_loaded"] = "False"
-    print('=*'*20)
-    print('\n\n')
-    return dotenv_loaded
+def load_project_env(): 
+    env_loaded_value_in_env = os.getenv("env_loaded",'')
+    dotenv_loaded = False
+    # 只载入一次
+    if env_loaded_value_in_env != "True":    
+        print('\n\n')
+        print('=*'*20)
+        env_dir = find_dotenv()
+        if not env_dir:
+            root_dir = Path().resolve()
+            env_dir = root_dir/'JqChat/.env'
+        print(f"项目.env文件路径：{env_dir}")       
 
+        dotenv_loaded = load_dotenv(env_dir)
+        if dotenv_loaded:
+            print(f"=*=* load_dotenv('{env_dir}')成功！")
+            os.environ["env_loaded"] = "True"
+        else:
+            print(f"=*=* load_dotenv('{env_dir}')失败，请检查！")
+            os.environ["env_loaded"] = "False"
+        print('=*'*20)
+        print('\n\n')
+    else:
+        dotenv_loaded = True
+    return dotenv_loaded
 load_project_env()
+
 # os.environ["env_loaded"] = "False"
 DEFAULT_CHUNK_OVERLAP = float(os.getenv('DEFAULT_CHUNK_OVERLAP',0.2))
 EMBEDDING_MODEL_CARD = os.getenv("EMBEDDING_MODEL_CARD",'')
@@ -859,7 +866,7 @@ if __name__ == "__main__":
 
     
     llm = env_models_instance.chat_model
-    index_name='yqli21'
+    index_name='yqli22'
     compression_retriever = get_retriever(index_name=index_name,chat_on_docs_list=input_files,add_docs_list_to_kb=True)
     # compression_retriever = get_retriever(index_name=index_name)
     # chain_type:stuff、refine、map_reduce 和 map_rerank

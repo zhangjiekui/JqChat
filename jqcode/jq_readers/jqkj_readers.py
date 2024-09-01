@@ -32,6 +32,7 @@ import base64
 
 import anytree
 from anytree import Node
+import threading
 
 from docx.document import Document as DocxDocument
 
@@ -58,6 +59,7 @@ from jqcode.jq_utils.logger import jqkj_logger
 logger = jqkj_logger(__file__,using_multi_thread=True).get_logger()
 
 file_type_processed_by_jqreader = [".pdf",".docx",".md",".html",".htm"]
+mutex = threading.Lock()
 class JqkjDocxReader(BaseReader):
     """Docx parser."""
     def __init__(self,file_path:str=None,save_img_file:bool = False):
@@ -88,6 +90,7 @@ class JqkjDocxReader(BaseReader):
         """
         Parse docx file.      
         """
+        
         file_path =file if file else self.file_path # 为了兼容chatchat，必须增加的属性
         doc_original = str(file_path)         # 因self.file_path和file_path下面都可能会变，所以先保留原始的到doc_id
         file_path = Path(file_path)        
@@ -125,7 +128,8 @@ class JqkjDocxReader(BaseReader):
             doc = self.DocumentFunc(self.file_path)
             text = '请从metadata["file_doc_tree_jq"]中获取'
             # text = "\n".join([paragraph.text for paragraph in doc.paragraphs if len(paragraph.text.strip())>0])
-            logger.debug(f"\n\n")   
+            logger.debug(f"\n\n")
+              
             logger.debug(f"#######开始将文档{self.file_path}解析为树结构")
             doc_tree,df_table_list = self.parse_docx_into_tree(doc,self.file_path)
 

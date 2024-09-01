@@ -175,12 +175,7 @@ class SingletonDecorator:
 @SingletonDecorator
 class InitEnvModels:
     def __init__(self):
-        env_loaded = os.getenv("env_loaded",'')
-        if env_loaded == "True":
-            self.env_loaded = True
-        else:
-            # loade envs:
-            self.env_loaded = load_project_env()
+        self.env_loaded = load_project_env()
         assert self.env_loaded, "环境变量没有正确载入！"
         
         self.ollama_host = os.getenv("OLLAMA_HOST",'http://localhost:11434')
