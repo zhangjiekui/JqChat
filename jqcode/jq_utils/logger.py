@@ -1,18 +1,16 @@
 import logging
 import os,sys
 from pathlib import Path
-
+import threading
 # sys.path.append("..")
 # sys.path.append('/root/projectbs/langchainproject')
-
-
 from jqcode.jq_config.general_config import logfile_path,VERBOSE
 
 logfile_path = logfile_path
 stem = logfile_path.stem
 
-class jqkj_logger(object):
-    def __init__(self,current_file_path=None,logfile_path = logfile_path,verbose=VERBOSE,propagate = False):
+class jqkj_logger(logging.Logger):
+    def __init__(self,current_file_path=None,logfile_path = logfile_path,verbose=VERBOSE,propagate = True, using_multi_thread=True):
         if current_file_path is None:
             current_file_path = __file__        
         try:
@@ -20,6 +18,7 @@ class jqkj_logger(object):
             current_file_path = current_file_path[index:]
         except: 
             current_file_path = os.path.basename(current_file_path) 
+        super().__init__(name=current_file_path)
 
                     
 
@@ -29,6 +28,7 @@ class jqkj_logger(object):
 
         # if not Path(logfile_path).exists():
         #     os.mk(logfile_path.parent)
+        self.mytex = threading.Lock() if using_multi_thread else None
         self.lf = logging.FileHandler(logfile_path,mode='a',encoding='utf-8')  # 打印到文件
         self.sm = logging.StreamHandler()  # 打印到终端
         # Formatter对象：日志格式
@@ -61,30 +61,49 @@ class jqkj_logger(object):
     def get_logger(self):
         return self.logger
     
-    def debug(self,message):
+    def debug(self,message):        
         if self.verbose:
-            self.logger.debug(message)
+            if self.mytex:
+                with self.mytex:
+                    self.logger.debug(message)
+            else:
+                self.logger.debug(message)
     
     def info(self,message):
         if self.verbose:
-            self.logger.info(message)
+            if self.mytex:
+                with self.mytex:
+                    self.logger.info(message)
+            else:
+                self.logger.info(message)
 
     def warning(self,message,verbose=True):
         verbose=verbose if verbose is not None else self.verbose
-        if verbose:
-            self.logger.warning(message)
-
-
+        if self.verbose:
+            if self.mytex:
+                with self.mytex:
+                    self.warning.debug(message)
+            else:
+                self.logger.warning(message)
 
     def error(self,message,verbose=True):
         verbose=verbose if verbose is not None else self.verbose
-        if verbose:
-            self.logger.error(message)
+        if self.verbose:
+            if self.mytex:
+                with self.mytex:
+                    self.logger.error(message)
+            else:
+                self.logger.error(message)
 
     def critical(self,message,verbose=True):
         verbose=verbose if verbose is not None else self.verbose
-        if verbose:
-            self.logger.error(message)
+        if self.verbose:
+            if self.mytex:
+                with self.mytex:
+                    self.logger.error(message)
+            else:
+                self.logger.error(message)
+
 
     
 

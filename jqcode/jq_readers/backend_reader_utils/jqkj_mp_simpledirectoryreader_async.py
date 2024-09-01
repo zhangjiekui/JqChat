@@ -640,7 +640,7 @@ class SimpleDirectoryReader(BaseReader, ResourcesReaderMixin, FileSystemReaderMi
 
     def load_data(
         self,
-        show_progress: bool = True,
+        show_progress: bool = False,
         num_workers: Optional[int] = None,
         fs: Optional[fsspec.AbstractFileSystem] = None,
     ) -> List[Document]:
@@ -656,6 +656,9 @@ class SimpleDirectoryReader(BaseReader, ResourcesReaderMixin, FileSystemReaderMi
         Returns:
             List[Document]: A list of documents.
         """
+        logger.warning(f"############################## Warning ################################")
+        logger.warning(f"多线程情况下打印/日志记录会存在问题，如需调试，请设置num_workers=1,当前{num_workers=}")
+        logger.warning(f"############################## Warning ################################")
         documents = []
 
         files_to_process = self.input_files
@@ -690,7 +693,7 @@ class SimpleDirectoryReader(BaseReader, ResourcesReaderMixin, FileSystemReaderMi
                     self.input_files, desc="Loading files", unit="file"
                 )
             for input_file in files_to_process:
-                print(f"{input_file=}")
+                # print(f"{input_file=}")
                 documents.extend(
                     SimpleDirectoryReader.load_file(
                         input_file=input_file,

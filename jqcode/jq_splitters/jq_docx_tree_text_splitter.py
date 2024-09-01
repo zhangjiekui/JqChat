@@ -25,7 +25,7 @@ from jqcode.jq_splitters.backend_splitter_utils.jq_chinese_recursive_text_splitt
 from jqcode.jq_agent.tools.jq_web_search_engine import is_query_chinese
 from jqcode.jq_utils.logger import jqkj_logger
 
-logger = jqkj_logger(__file__).get_logger()
+logger = jqkj_logger(__file__,using_multi_thread=True).get_logger()
 
 try:
     from llama_index.core.node_parser.node_utils import default_id_func    
@@ -330,9 +330,9 @@ class JqkjDocTreeTokenTextSplitter(MetadataAwareTextSplitter):
                 if cur_node:
                     text_cached =  get_possible_zh_title_for_previous_sibling(cur_node)
         else:
-            logger.warning(f"{total_tokens=}，超出了上限{TOKEN_THRESHOLD=}")
-            logger.warning(f"{text_cached_tokens=}，又没有达到{TOKEN_THRESHOLD*0.8=}的切分标准")
-            logger.warning(f"{text_tobe_added_tokens=}，建议先对text_tobe_added进行切分！")
+            # logger.warning(f"{total_tokens=}，超出了上限{TOKEN_THRESHOLD=}")
+            # logger.warning(f"{text_cached_tokens=}，又没有达到{TOKEN_THRESHOLD*0.8=}的切分标准")
+            # logger.warning(f"{text_tobe_added_tokens=}，建议先对text_tobe_added进行切分！")
             merge_status = False
         return text_cached,cur_text,chunks_saved,merge_status
 
@@ -557,6 +557,7 @@ class JqkjDocTreeTokenTextSplitter(MetadataAwareTextSplitter):
             # 如果循环已经结束，需保证最后的text_cached也要读入
             if cur_node == last_nodes:
                 if len(text_cached.strip('\n'))>0:
+                    # 先看看text_cached能否合并到最后的一个chunks_saved中
                     if self.tokens_len_func(chunks_saved[-1]) + self.tokens_len_func(text_cached)<=TOKEN_THRESHOLD:
                         chunks_saved[-1] += text_cached
                     else:
@@ -829,8 +830,8 @@ if __name__ == "__main__":
     
     input_files = [fr'/data/projects/JqChatV2/JqChat/jqcode/jq_readers/.test_files/.testinputdocs/A方案.docx'] 
     # input_files += [fr'/data/projects/JqChatV2/JqChat/jqcode/jq_readers/.test_files/.testinputdocs/InstallationGuide.docx']
-    # input_files += [fr'/data/projects/JqChatV2/JqChat/jqcode/jq_readers/.test_files/.testinputdocs/PPQA000_质量保证过程.doc'] 
-    # input_files += [fr'/data/projects/JqChatV2/JqChat/jqcode/jq_readers/.test_files/.testinputdocs/厦门市智慧民政一体化平台项目建设方案 V3.6.docx'] 
+    input_files += [fr'/data/projects/JqChatV2/JqChat/jqcode/jq_readers/.test_files/.testinputdocs/PPQA000_质量保证过程.doc'] 
+    input_files += [fr'/data/projects/JqChatV2/JqChat/jqcode/jq_readers/.test_files/.testinputdocs/厦门市智慧民政一体化平台项目建设方案 V3.6.docx'] 
     # input_files = [fr'/data/projects/JqChatV2/JqChat/jqcode/jq_readers/.test_files/.testinputdocs/PPQA000_质量保证过程.doc']
     # input_files = [fr'/data/projects/JqChatV2/JqChat/jqcode/jq_readers/.test_files/.testinputdocs_debug/test_zh.docx']
 
@@ -858,7 +859,7 @@ if __name__ == "__main__":
 
     
     llm = env_models_instance.chat_model
-    index_name='yqli12'
+    index_name='yqli21'
     compression_retriever = get_retriever(index_name=index_name,chat_on_docs_list=input_files,add_docs_list_to_kb=True)
     # compression_retriever = get_retriever(index_name=index_name)
     # chain_type:stuff、refine、map_reduce 和 map_rerank

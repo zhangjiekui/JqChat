@@ -55,7 +55,7 @@ from llama_index.readers.file import UnstructuredReader
 import asyncio
 
 from jqcode.jq_utils.logger import jqkj_logger
-logger = jqkj_logger(__file__).get_logger()
+logger = jqkj_logger(__file__,using_multi_thread=True).get_logger()
 
 file_type_processed_by_jqreader = [".pdf",".docx",".md",".html",".htm"]
 class JqkjDocxReader(BaseReader):
@@ -125,11 +125,11 @@ class JqkjDocxReader(BaseReader):
             doc = self.DocumentFunc(self.file_path)
             text = '请从metadata["file_doc_tree_jq"]中获取'
             # text = "\n".join([paragraph.text for paragraph in doc.paragraphs if len(paragraph.text.strip())>0])
-            # print(f"\n\n")   
-            # print(f"#######开始将文档{self.file_path}解析为树结构")
+            logger.debug(f"\n\n")   
+            logger.debug(f"#######开始将文档{self.file_path}解析为树结构")
             doc_tree,df_table_list = self.parse_docx_into_tree(doc,self.file_path)
-            # print(f"#######已经将文档{self.file_path}解析为树结构")
-            # print(f"\n\n")               
+
+               
             # 'original_source_jq'(转换前的文件pdf/doc/md的文件路径，如果本就是docx文件,则与original_source_converted_jq一致),
             # 'source'键是为了与chatchat中的reader保持一致的，取值与'original_source_jq'一致
             # 'original_source_converted_jq':转换后的docx文件路径   
@@ -293,8 +293,8 @@ class JqkjDocxReader(BaseReader):
                 # 验证是否所有的Anytree图片表格节点都已成功创建
         if True:
             try:
-                # logger.debug(f"\n=========验证[{file_path}]读取结果是否正确=========")
-                logger.debug(f"\n=========验证读取结果是否正确=========")
+                logger.debug(f"\n=========验证[{file_path}]读取结果是否正确=========")
+                # logger.debug(f"\n=========验证读取结果是否正确=========")
                 if len(image_list) == 0:
                     # logger.debug(f"[{file_path.name}]没有找到任何图片，请检查文件内容是否正确。")
                     logger.debug(f"没有找到任何图片，请检查文件内容是否正确。")        

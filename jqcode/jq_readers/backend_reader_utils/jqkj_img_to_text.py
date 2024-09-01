@@ -29,7 +29,7 @@ def treenode_img_to_text(img_src_and_data_tuple:tuple,delete_emf_wmf_png_file=Tr
                         _text = rec.values['string'].strip()
                         if _text:
                             result += _separator + _text
-                # logger.debug(f"图片[{img_src}]中的EMF/WMF文本:\n{result}")
+                logger.debug(f"图片[{img_src}]中的EMF/WMF文本:\n{result}")
             except Exception as e:
                 logger.debug(f"无法加载EMF/WMF图片[{img_src}]:{e}")
                 logger.debug(f"尝试转换成.png文件，再OCR识别")
@@ -57,7 +57,7 @@ def treenode_img_to_text(img_src_and_data_tuple:tuple,delete_emf_wmf_png_file=Tr
                             ocr_texts = [line[1].strip() for line in ocr_result if line[1].strip()]
                             #分隔符最好选用jqcode/jq_splitters/backend_splitter_utils/jq_chinese_recursive_text_splitter.py的第98行定义的
                             result = _separator.join(ocr_texts) 
-                            # logger.debug(f"图片[{img_src}]中的OCR文本:\n{result}")
+                            logger.debug(f"图片[{img_src}]中的OCR文本:\n{result}")
                     else:
                         logger.error(f"尝试转换成.png文件失败!")
                 except:
@@ -76,17 +76,14 @@ def treenode_img_to_text(img_src_and_data_tuple:tuple,delete_emf_wmf_png_file=Tr
                         if os.path.exists(emf_wmf_file):
                             os.remove(emf_wmf_file)
                         if os.path.exists(png_file):
-                            os.remove(png_file)                            
-
-
-
+                            os.remove(png_file)
         else:                    
             ocr_result,_ = ocr(img_data)
             if ocr_result:
                 ocr_texts = [line[1].strip() for line in ocr_result if line[1].strip()]
                 #分隔符最好选用jqcode/jq_splitters/backend_splitter_utils/jq_chinese_recursive_text_splitter.py的第98行定义的
                 result = _separator.join(ocr_texts) 
-                # logger.debug(f"图片[{img_src}]中的OCR文本:\n{result}")
+                logger.debug(f"图片[{img_src}]中的OCR文本:\n{result}")
     except Exception as e:
         logger.warning(f'获取图片[{img_src}]中的文本失败,详细信息为{e}')
     result = f"【{img_src}的OCR文本】"+ result
