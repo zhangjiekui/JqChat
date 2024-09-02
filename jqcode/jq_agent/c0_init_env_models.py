@@ -265,7 +265,7 @@ class InitEnvModels:
         API_PORT = os.getenv("API_PORT",5011)
         self.kernel_api_url = f"{KERNEL_API_BASE}:{API_PORT}/api"
         root_dir = pathlib.Path().resolve()
-        self.workspace = str(root_dir/'JqChat/workspace/')
+        self.workspace = str(root_dir/'workspace/')
 
         # loade models:
         self.openai = None
@@ -297,7 +297,7 @@ class InitEnvModels:
             env_dir = find_dotenv()
             if not env_dir:
                 root_dir = pathlib.Path().resolve()
-                env_dir = root_dir/'JqChat/.env'
+                env_dir = root_dir/'.env'
             print(f"项目.env文件路径：{env_dir}")
             dotenv_loaded = load_dotenv(env_dir)
             if dotenv_loaded:
@@ -741,78 +741,78 @@ if __name__ == '__main__':
     # litellm --model ollama_chat/llama3:70b-instruct
     # litellm --model ollama_chat/yi:34b-chat-v1.5-q8_0
 
-    from langchain_core.tools import tool
-    from langchain.tools.render import render_text_description # to describe tools as a string 
-    @tool
-    def accept(reason) -> int:
-        "Accept a reason and return 1."
-        logger.info(f"Accepting reason: {reason}")
-        return 1
+    # from langchain_core.tools import tool
+    # from langchain.tools.render import render_text_description # to describe tools as a string 
+    # @tool
+    # def accept(reason) -> int:
+    #     "Accept a reason and return 1."
+    #     logger.info(f"Accepting reason: {reason}")
+    #     return 1
 
 
-    @tool
-    def reject(reason) -> int:
-        "Reject a reason and return 0."
-        logger.info(f"Rejecting reason: {reason}")
-        return 0
+    # @tool
+    # def reject(reason) -> int:
+    #     "Reject a reason and return 0."
+    #     logger.info(f"Rejecting reason: {reason}")
+    #     return 0
 
-    tools = [accept,reject]
-    toos_dict = {tool.name:tool for tool in tools}
-    rendered_tools = render_text_description(tools)
-    # llm = env_models_instance.get_ollama_chat_model(tools=tools)
-    llm = env_models_instance.get_langchain_chat_model().bind_tools(tools)
-    print("==========="*10)
-    system_prompt = f"""You are an assistant that has access to functions.
-        ONLY Use them:
+    # tools = [accept,reject]
+    # toos_dict = {tool.name:tool for tool in tools}
+    # rendered_tools = render_text_description(tools)
+    # # llm = env_models_instance.get_ollama_chat_model(tools=tools)
+    # llm = env_models_instance.get_langchain_chat_model().bind_tools(tools)
+    # print("==========="*10)
+    # system_prompt = f"""You are an assistant that has access to functions.
+    #     ONLY Use them:
 
-        {rendered_tools}
+    #     {rendered_tools}
 
 
-        Given the user input, return the name and input of the tool to use.
-        Return your response as a JSON blob with 'name' and 'arguments' keys.
-        The value associated with the 'arguments' key should be a dictionary of parameters."""
-    print("==========="*10)
+    #     Given the user input, return the name and input of the tool to use.
+    #     Return your response as a JSON blob with 'name' and 'arguments' keys.
+    #     The value associated with the 'arguments' key should be a dictionary of parameters."""
+    # print("==========="*10)
 
-    prompt = "1+1=2"
+    # prompt = "1+1=2"
 
-    import json
-    import json_repair
+    # import json
+    # import json_repair
 
-    def LLM(prompt, system_message, model=llm):
-        try:
-            messages=[{"role": "system", "content": system_message}, {"role": "user", "content": prompt}]
-            response = model.invoke(messages)
-            print('Success:\n', response)
+    # def LLM(prompt, system_message, model=llm):
+    #     try:
+    #         messages=[{"role": "system", "content": system_message}, {"role": "user", "content": prompt}]
+    #         response = model.invoke(messages)
+    #         print('Success:\n', response)
             
-            if not response.tool_calls:
-                try:
-                    parsed_tool_calls=[json_repair.loads(response.content)]
-                    for tool in parsed_tool_calls:
-                        tool_name = tool['name']
-                        tool_args = tool['arguments']['reason']
-                        res = toos_dict[tool_name](tool_args)
-                        print(f"Result:调用了工具:{tool_name}，调用参数为:{tool_args},运行结果为:{res}")
-                        return res
-                except:
-                    return "no valid tool call"
+    #         if not response.tool_calls:
+    #             try:
+    #                 parsed_tool_calls=[json_repair.loads(response.content)]
+    #                 for tool in parsed_tool_calls:
+    #                     tool_name = tool['name']
+    #                     tool_args = tool['arguments']['reason']
+    #                     res = toos_dict[tool_name](tool_args)
+    #                     print(f"Result:调用了工具:{tool_name}，调用参数为:{tool_args},运行结果为:{res}")
+    #                     return res
+    #             except:
+    #                 return "no valid tool call"
 
 
-            if response.tool_calls:
-                for tool in response.tool_calls:
-                    tool_name = tool['name']
-                    tool_args = tool['args']['reason']
-                    res = toos_dict[tool_name](tool_args)
-                    print(f"Result:调用了工具:{tool_name}，调用参数为:{tool_args},运行结果为:{res}")
-                    return res
-        except Exception as error:
-            print('Error:', error)
-            raise
-    prompt = '使用python可以计算出3*10的正确结果，请思考这句话正确吗？并请给出理由'
-    prompt = "Statement:Using Python can calculate out 3*10's correct result. Should you accept or reject the statement? and give me your reason"
-    prompt = "Using Python can calculate out 3*10's correct result."
-    prompt = "1+1=2"
-    res = LLM(prompt,system_prompt)
-    print(res)
+    #         if response.tool_calls:
+    #             for tool in response.tool_calls:
+    #                 tool_name = tool['name']
+    #                 tool_args = tool['args']['reason']
+    #                 res = toos_dict[tool_name](tool_args)
+    #                 print(f"Result:调用了工具:{tool_name}，调用参数为:{tool_args},运行结果为:{res}")
+    #                 return res
+    #     except Exception as error:
+    #         print('Error:', error)
+    #         raise
+    # prompt = '使用python可以计算出3*10的正确结果，请思考这句话正确吗？并请给出理由'
+    # prompt = "Statement:Using Python can calculate out 3*10's correct result. Should you accept or reject the statement? and give me your reason"
+    # prompt = "Using Python can calculate out 3*10's correct result."
+    # prompt = "1+1=2"
+    # res = LLM(prompt,system_prompt)
+    # print(res)
 
 
     sentense= ["张结魁是谁？","张结魁是安徽晶奇公司的",
@@ -824,7 +824,7 @@ if __name__ == '__main__':
 
     from langchain_core.messages import HumanMessage,SystemMessage
     es_connection = env_models_instance.get_es_connection()
-    es_searchstore = env_models_instance.get_es_searchstore()
+    es_searchstore = env_models_instance.get_es_searchstore(index_name = "health")
 
     knowledge_base_list = env_models_instance.get_all_knowledge_base(es_connection) 
     print(knowledge_base_list)   

@@ -150,7 +150,7 @@ def web_search(state:GraphAgentState):
 
 
     # Web search
-    docs = asyncio.run(get_web_search_documents(query_generated,max_doc_nums=6))
+    docs = asyncio.run(get_web_search_documents(query_generated,max_doc_nums=4))
     if not docs:
         return {"documents": [], "question_searched":{question:False}}
     
@@ -637,6 +637,7 @@ class GraphAgent:
                
         self.VECTORSTORE.__doc__ = self.discription
         # 将self.VECTORSTORE加入
+        # todo：这会导致重复加入很多个VECTORSTORE？
         routing_tools_wrapped_in_class+=[self.VECTORSTORE]
 
         _executable_tool_names = [tool.name for tool in executable_tools]        
@@ -887,6 +888,25 @@ class GraphAgent:
         except:
             returned_tool_calling_nums = 0
 
+        if self.model.model_name.startswith("command-r") and returned_tool_calling_nums==0:
+                try:
+                    tool_calls = []
+                    tool_calls_json_list = json_repair.loads(result.content)
+                    for tool_call in tool_calls_json_list:
+                        tool_name = tool_call['tool_name']
+                        if tool_name in ["directly-answer","directly_answer"]:
+                            result.tool_calls = []
+                            break
+                        else:
+                            if tool_name in self.all_tools_names:
+                                parameters = tool_call['parameters']
+                                tool_calls.append({"name":tool_name,"args":parameters,"id":result.id})
+                    result.tool_calls = tool_calls
+                    returned_tool_calling_nums = len(result.tool_calls)
+                except:
+                    logger.debug(f"Can't parser tool calls from command r response content")
+
+
         if returned_tool_calling_nums > 0:
             logger.debug(f'Returned {returned_tool_calling_nums} tool_calls')
             if returned_tool_calling_nums>1:
@@ -897,7 +917,6 @@ class GraphAgent:
             if tool_call_1_name in self.routing_tool_names:
                 logger.info(f"Returned first ToolName is '{tool_call_1_name}', So routing to '{tool_call_1_name}' Node......")
                 return tool_call_1_name
-
         else:
             logger.info(f'No returned tool_calling and {finish_reason=}')
             logger.info(f'{result.type.upper()}: {result.content}')            

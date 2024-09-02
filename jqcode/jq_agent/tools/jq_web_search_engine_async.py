@@ -211,8 +211,6 @@ def get_search_result_links(query):
         print('没有搜索到任何相关内容！')
         return []
 
-@func_set_timeout(timeout_value)
-
 class AsyncHtmlLoaderBypassException(AsyncHtmlLoader):
     def __init__(
         self,
@@ -322,6 +320,7 @@ class AsyncHtmlLoaderBypassException(AsyncHtmlLoader):
         metadata.update({"baidu_url":url})
         return Document(page_content=text, metadata=metadata)
 
+@func_set_timeout(timeout_value)
 async def get_webpages_texts_by_langchain_document_loader_from_urls(urls,max_doc_nums=4,header_template=None,timeout_seconds:int=10):    
     loader = AsyncHtmlLoaderBypassException(urls,requests_per_second=max_doc_nums,header_template=header_template, autoset_encoding=True,verify_ssl=False,raise_for_status=False,ignore_load_errors=True,preserve_order=False,requests_kwargs={"timeout":timeout_seconds})
     # async with async
@@ -353,11 +352,13 @@ async def get_webpages_texts_by_jina_ai_reader_from_urls(urls,docs=[]):
         docs += jina_docs
         return docs
 
+@func_set_timeout(timeout_value)
 async def get_search_result_documents(urls,query,document_loader_class=AsyncHtmlLoader,max_doc_nums=4,filter_out_host = filter_out_host):
     # https://www.comet.com/site/blog/langchain-document-loaders-for-web-data/
             # 内容应该是NewsURLLoader比较适合RAG
             # 但SeleniumURLLoader似乎可以防屏蔽
     # 警告：这里不能使用loader.aload()方法，否则后面langchain agent里会报错！
+    
     if len(urls) == 0:
         print("待获取的URLs列表为空！请检查")
         return []
@@ -418,6 +419,7 @@ async def get_search_result_documents(urls,query,document_loader_class=AsyncHtml
     #     docs = [doc for doc in docs if len(doc.page_content.strip())>50]
     return docs
 
+@func_set_timeout(timeout_value)
 def get_tavily_search_result_documents(query,max_doc_nums=4):
     
     tavily_search = TavilySearchResults(max_results=max_doc_nums)
@@ -427,46 +429,52 @@ def get_tavily_search_result_documents(query,max_doc_nums=4):
 
 # 最终的方法调用，建议用户只调用该方法
 # 根据query，返回最多max_doc_nums个结果文档，返回结果类型为:list[langchain_core.documents.base.Document]
+@func_set_timeout(timeout_value)
 async def get_web_search_documents(query,max_doc_nums=4):
-    docs = await _get_web_search_documents(query,max_doc_nums=max_doc_nums)
-    for doc in docs:        
-        page_content = doc.page_content
+    try:
+        docs = await _get_web_search_documents(query,max_doc_nums=max_doc_nums)
+        for doc in docs:        
+            page_content = doc.page_content
 
-        webpage_title = ""
-        webpage_description = ""
-        metadata = doc.metadata
-        if metadata:
-            webpage_title = metadata.get("title","")
-            if webpage_title:
-               webpage_title = "【标题】" + webpage_title + " " 
-            webpage_description = metadata.get("description","")
-            if webpage_description:
-               webpage_description = " " + "【描述】" + webpage_description  
-        if page_content:
-           if (webpage_title or webpage_description):
-                page_content = "【内容】" + page_content       
-                doc.page_content = webpage_title + page_content + webpage_description
-    return docs
+            webpage_title = ""
+            webpage_description = ""
+            metadata = doc.metadata
+            if metadata:
+                webpage_title = metadata.get("title","")
+                if webpage_title:
+                    webpage_title = "【标题】" + webpage_title + " " 
+                webpage_description = metadata.get("description","")
+                if webpage_description:
+                    webpage_description = " " + "【描述】" + webpage_description  
+            if page_content:
+                if (webpage_title or webpage_description):
+                        page_content = "【内容】" + page_content       
+                        doc.page_content = webpage_title + page_content + webpage_description
+        return docs
 
+    except Exception as e:
+        logger.error(f"获取网络搜索文档结果失败:{e}")
+        return []
+
+@func_set_timeout(timeout_value)
 async def _get_web_search_documents(query,max_doc_nums=4):
     docs = []
     if not query:
         print(f"提交到Web_Search的query为空！直接返回空列表。")
-        return docs   
-    
-    tavily_search_query = convert_search_query(query,join_character=None) 
+        return docs
+    try:
+        tavily_search_query = convert_search_query(query,join_character=None)          
+        print(f'{tavily_search_query=}')
+        docs = get_tavily_search_result_documents(tavily_search_query,max_doc_nums=max_doc_nums)
+        print(f'使用tavily_search,获取到{len(docs)}个文档。')
+        return docs
+    except FunctionTimedOut as e:
+        logger.warning(f"get_tavily_search_result_documents执行超时:{e}")
+    except Exception as e:
+        logger.warning(f'直接调用TavilySearchResults获得搜索结果失败:{e}')
 
-    # if not is_query_chinese(query):#非中文直接调用TavilySearchResults获得搜索结果，List[Document]
-    if True:#全部直接调用TavilySearchResults获得搜索结果，List[Document]
-        try:           
-           print(f'{tavily_search_query=}')
-           docs = get_tavily_search_result_documents(tavily_search_query,max_doc_nums=max_doc_nums)
-           print(f'使用tavily_search,获取到{len(docs)}个文档。')
-           return docs
-        except Exception as e:
-            print('直接调用TavilySearchResults获得搜索结果失败！')
-            # print(f"失败的原因为：{e}")  
 
+    # 如果上面的代码执行正常（没有异常抛出），就会正常return docs，不会执行下面的代码
     query = convert_search_query(query)
     
     # 获取搜索引擎结果列表URLs

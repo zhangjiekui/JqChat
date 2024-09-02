@@ -4,8 +4,8 @@ import json
 import logging 
 import os
 import sys
-project_root = '/media/temp/JqChatV2/JqChat'
-sys.path.insert(0, project_root)
+# project_root = '/media/temp/JqChatV2/JqChat'
+# sys.path.insert(0, project_root)
 from pathlib import Path
 from typing import Any, Dict
 
