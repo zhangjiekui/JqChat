@@ -161,6 +161,8 @@ def download_file_documents_to_local(es_index_doc_id_list):
 
 
 if __name__ == "__main__":
+    from jqcode.jq_docstores.es_docstores import JqElasticsearchDocumentStore
+    jq_es_store = JqElasticsearchDocumentStore()
 
     # mapping = es_connection.indices.get_mapping(index=smartcn_index)
     
@@ -173,6 +175,14 @@ if __name__ == "__main__":
     if from_beginning:
         # 从头开始的
         lm_documents = reader_load_files()
+
+
+
+        status,lm_documents_with_added_index_info_metadata,es_index_doc_id_list = jq_es_store.add(lm_documents)
+        status = jq_es_store.update(doc_ids=["fa39031f020a45efc744f73f0031a80d"],update_field_value_pair_dict=[{"status":"true","file_text":"更新第二条的status为true"}])
+        status = jq_es_store.update(doc_ids=["04281eef4b0eb67013c654937ab52a03","fa39031f020a45efc744f73f0031a80d"],update_field_value_pair_dict=[{"status":"true","file_text":"更新第一条的status为true"},{"status":"false","file_text":"更新第二条的status为false"}])
+        jq_es_store.update() #没有默认参数，会报错
+
         lm_documents_with_added_index_info_metadata,es_index_doc_id_list = upload_file_documents_to_es(lm_documents)
         lc_documents = splitter_split_documents(lm_documents_with_added_index_info_metadata)
         print(len(lc_documents))

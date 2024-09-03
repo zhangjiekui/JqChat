@@ -126,8 +126,8 @@ class JqkjDocxReader(BaseReader):
 
         if self.file_path.exists() and doc_original:
             doc = self.DocumentFunc(self.file_path)
-            text = '请从metadata["file_doc_tree_jq"]中获取'
-            # text = "\n".join([paragraph.text for paragraph in doc.paragraphs if len(paragraph.text.strip())>0])
+            # text = '请从metadata["file_doc_tree_jq"]中获取'
+            text = "\n".join([paragraph.text for paragraph in doc.paragraphs if len(paragraph.text.strip())>0])
             logger.debug(f"\n\n")
               
             logger.debug(f"#######开始将文档{self.file_path}解析为树结构")
