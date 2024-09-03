@@ -10,7 +10,7 @@ class JqBaseDocumentStore(ABC):
         ...
 
     @abstractmethod
-    def add(
+    def add_or_update_docs_if_id_exists(
         self,
         docs: Union[Document, List[Document]],
         ids: Optional[Union[List[str], str]] = None,
@@ -40,7 +40,7 @@ class JqBaseDocumentStore(ABC):
         ...
 
     @abstractmethod
-    def query(
+    def search_docs_by_bm25(
         self, query: str, top_k: int = 10, doc_ids: Optional[list] = None
     ) -> List[Document]:
         """Search document store using search query"""

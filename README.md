@@ -3,12 +3,17 @@
 ```sh
 cd /data/projects/JqChatV2/JqChat
 git pull
+```
+
+```sh
+cd /data/projects/JqChatV2/JqChat
 git add .
 git commit -a
 ```
 ### 同步
 
 ```sh
+cd /data/projects/JqChatV2/JqChat
 git push
 ```
 ### 端口占用释放

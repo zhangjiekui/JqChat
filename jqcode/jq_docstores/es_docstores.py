@@ -35,7 +35,8 @@ def md5_file_value(file_base64_data:bytes):#Binary value encoded as a Base64 str
     md5_hash.update(file_base64_data)
     return md5_hash.hexdigest()
 
-# https://github.com/Cinnamon/kotaemon/blob/4f0785773df718a6dc7a3928482bd5b8b12c0bfc/libs/kotaemon/kotaemon/storages/docstores/elasticsearch.py
+# 参考源码：https://github.com/Cinnamon/kotaemon/blob/4f0785773df718a6dc7a3928482bd5b8b12c0bfc/libs/kotaemon/kotaemon/storages/docstores/elasticsearch.py
+# 如何搜索的示例代码：https://github.com/elastic/elasticsearch-labs
 # /data/projects/JqChatV2/JqChat/jqcode/es_code_example.py
 class JqElasticsearchDocumentStore(JqBaseDocumentStore):
     """Elasticsearch document store that store file/document in a ES database"""
@@ -48,19 +49,22 @@ class JqElasticsearchDocumentStore(JqBaseDocumentStore):
         b: float = 0.75,        
         **kwargs,
     ):
-
         self.index_name = index_name
         self.k1 = k1
         self.b = b
-
         # Create an Elasticsearch client instance
         self.client = elasticsearch_connection
         self.es_bulk = bulk
+        
+        self.count = self.count()
+        self.ids = self.ids()
+
+        
         # Define the index settings and mappings
         settings = {
-            "index": {"analysis.analyzer.default.type": "ik_max_word","analysis.search_analyzer.default.type": "ik_smart"},
-            "similarity": {"custom_bm25": {"type": "BM25", "k1": k1, "b": b}},
-            }
+                        "index": {"analysis.analyzer.default.type": "ik_max_word","analysis.search_analyzer.default.type": "ik_smart"},
+                        "similarity": {"custom_bm25": {"type": "BM25", "k1": k1, "b": b}},
+                   }
    
         mappings = {"properties": {
 
@@ -107,7 +111,7 @@ class JqElasticsearchDocumentStore(JqBaseDocumentStore):
                 index=self.index_name, settings=settings, mappings=mappings
             )
 
-    def add(
+    def add_or_update_docs_if_id_exists(
         self,
         lm_documents: Union[LmDocument, List[LmDocument]],
         ids: Optional[Union[List[str], str]] = None,
@@ -116,7 +120,7 @@ class JqElasticsearchDocumentStore(JqBaseDocumentStore):
         refresh_indices: bool = True,
         **kwargs,
     ):
-        """Add lm_documents into document store
+        """Add lm_documents into document store.
 
         Args:
             lm_documents: list of lm_documents to be added
@@ -201,7 +205,7 @@ class JqElasticsearchDocumentStore(JqBaseDocumentStore):
             status = False
             return status,[],[]
 
-    def update(self, doc_ids:list=[],update_field_value_pair_dict:Union[dict,List[dict]]=None,apply_update_to_all_files:bool=True,refresh_indices:bool=True):
+    def update_doc_fields_values(self, doc_ids:list=[],update_field_value_pair_dict:Union[dict,List[dict]]=None,apply_update_to_all_files:bool=True,refresh_indices:bool=True):
         """Update documents【由list doc_ids指定】 fields with new values 【由update_field_value_pair_dict指定】
 
             Args:
@@ -282,8 +286,7 @@ class JqElasticsearchDocumentStore(JqBaseDocumentStore):
                 except:
                     pass
                 return False
-
-
+    
     def query_raw(self, query: dict) -> List[LmDocument]:
         """Query Elasticsearch store using query format of ES client
 
@@ -291,44 +294,67 @@ class JqElasticsearchDocumentStore(JqBaseDocumentStore):
             query (dict): Elasticsearch query format
 
         Returns:
-            List[Document]: List of result documents
+            List[LmDocument]: List of result documents
         """
         res = self.client.search(index=self.index_name, body=query)
-        docs = []
+        lm_docs = []
         for r in res["hits"]["hits"]:
-            docs.append(
+            lm_docs.append(
                 LmDocument(
                     id_=r["_id"],
-                    text=r["_source"]["content"],
-                    metadata=r["_source"]["metadata"],
+                    text=r["_source"]["file_text"],
+                    metadata=r["_source"]["file_metadata"],
                 )
             )
-        return docs
-
-    def query(
-        self, query: str, top_k: int = 10, doc_ids: Optional[list] = None
-    ) -> List[LmDocument]:
-        """Search Elasticsearch docstore using search query (BM25)
+        return lm_docs
+        
+    # 如何搜索的示例代码：https://github.com/elastic/elasticsearch-labs
+    def search_docs_by_text(self, user_query_text: str="AAMIS_项目总体计划", query_on_fileds:list = ["file_name","file_text"]) -> List[LmDocument]:
+        """Query Elasticsearch store using query format of ES client
 
         Args:
-            query (str): query text
-            top_k (int, optional): number of
-                top documents to return. Defaults to 10.
+            user_query_text (str): 用户要搜索的文本
+            query_on_fileds (list) : 在哪些字段上搜索，共有"file_name","file_text"两个字段是可搜索的“Text”类型
 
         Returns:
             List[Document]: List of result documents
         """
-        query_dict: dict = {"match": {"content": query}}
+        query = {
+            "query": {"multi_match": {"query": user_query_text ,"fields":query_on_fileds}},
+            "size":MAX_DOCS_TO_GET,# 注意设置size，默认返回10个。
+        }
+        lm_docs = self.query_raw(query)
+        return lm_docs
+
+    def search_docs_by_bm25(
+        self, user_query_text: str, top_k: int = 10, doc_ids: Optional[list]= None, query_on_fileds:list = ["file_name","file_text"]
+    ) -> List[LmDocument]:
+        """Search Elasticsearch docstore using search query (BM25)
+
+        Args:
+            user_query_text (str): user query text
+            top_k (int, optional): number of top documents to return. Defaults to 10.
+            doc_ids (list, optional): only search on these ids
+            query_on_fileds (list) : 在哪些字段上搜索，共有"file_name","file_text"两个字段是可搜索的“Text”类型
+
+        Returns:
+            List[Document]: List of result documents
+        """
+        # query_dict: dict = {"match": {"content": user_query_text}}
+        query_dict = {"multi_match": {"query": user_query_text ,"fields":query_on_fileds}}
         if doc_ids is not None:
             query_dict = {"bool": {"must": [query_dict, {"terms": {"_id": doc_ids}}]}}
+        
         query_dict = {"query": query_dict, "size": top_k}
-        return self.query_raw(query_dict)
+
+        lm_docs = self.query_raw(query_dict)
+        return lm_docs
 
     def get(self, ids: Union[List[str], str]) -> List[LmDocument]:
         """Get document by id"""
         if not isinstance(ids, list):
             ids = [ids]
-        query_dict = {"query": {"terms": {"_id": ids}}, "size": 10000}
+        query_dict = {"query": {"terms": {"_id": ids}}, "size": MAX_DOCS_TO_GET}
         return self.query_raw(query_dict)
 
     def count(self) -> int:
@@ -337,6 +363,11 @@ class JqElasticsearchDocumentStore(JqBaseDocumentStore):
             self.client.cat.count(index=self.index_name, format="json")[0]["count"]
         )
         return count
+    
+    def ids(self) -> set[str]:
+        docs = self.get_all()
+        ids = [doc.doc_id for doc in docs]
+        return set(ids)
 
     def get_all(self) -> List[LmDocument]:
         """Get all documents"""
@@ -357,10 +388,3 @@ class JqElasticsearchDocumentStore(JqBaseDocumentStore):
         self.client.indices.delete(index=self.index_name)
         self.client.indices.refresh(index=self.index_name)
 
-    def __persist_flow__(self):
-        return {
-            "index_name": self.index_name,
-            "elasticsearch_url": self.elasticsearch_url,
-            "k1": self.k1,
-            "b": self.b,
-        }
