@@ -38,6 +38,8 @@ def md5_file_value(file_base64_data:bytes):#Binary value encoded as a Base64 str
 # 参考源码：https://github.com/Cinnamon/kotaemon/blob/4f0785773df718a6dc7a3928482bd5b8b12c0bfc/libs/kotaemon/kotaemon/storages/docstores/elasticsearch.py
 # 如何搜索的示例代码：https://github.com/elastic/elasticsearch-labs
 # /data/projects/JqChatV2/JqChat/jqcode/es_code_example.py
+
+# todo:增加Filters
 class JqElasticsearchDocumentStore(JqBaseDocumentStore):
     """Elasticsearch document store that store file/document in a ES database"""
 
@@ -55,16 +57,15 @@ class JqElasticsearchDocumentStore(JqBaseDocumentStore):
         # Create an Elasticsearch client instance
         self.client = elasticsearch_connection
         self.es_bulk = bulk
-        
-        self.count = self.count()
-        self.ids = self.ids()
+
+        self.count = self._count()
+        self.ids = self._ids()
 
         
         # Define the index settings and mappings
-        settings = {
-                        "index": {"analysis.analyzer.default.type": "ik_max_word","analysis.search_analyzer.default.type": "ik_smart"},
-                        "similarity": {"custom_bm25": {"type": "BM25", "k1": k1, "b": b}},
-                   }
+        settings = {"similarity": {"custom_bm25": {"type": "BM25", "k1": k1, "b": b}}}
+        settings.update(env_models_instance.ES_DEFAULT_CHINESE_SETTINGS)      
+                   
    
         mappings = {"properties": {
 
@@ -298,12 +299,19 @@ class JqElasticsearchDocumentStore(JqBaseDocumentStore):
         """
         res = self.client.search(index=self.index_name, body=query)
         lm_docs = []
+
         for r in res["hits"]["hits"]:
+            _id = r["_id"]
+            text=r["_source"]["file_text"]
+            file_upload_date = r["_source"]["file_upload_date"]
+            file_upload_date_dict = {"file_upload_date":file_upload_date}
+            metadata=r["_source"]["file_metadata"]
+            metadata.update(file_upload_date_dict)
             lm_docs.append(
                 LmDocument(
-                    id_=r["_id"],
-                    text=r["_source"]["file_text"],
-                    metadata=r["_source"]["file_metadata"],
+                    id_=_id,
+                    text=text,
+                    metadata=metadata,
                 )
             )
         return lm_docs
@@ -356,23 +364,25 @@ class JqElasticsearchDocumentStore(JqBaseDocumentStore):
             ids = [ids]
         query_dict = {"query": {"terms": {"_id": ids}}, "size": MAX_DOCS_TO_GET}
         return self.query_raw(query_dict)
+    
+    def get_all(self) -> List[LmDocument]:
+        """Get all documents"""
+        query_dict = {"query": {"match_all": {}}, "size": MAX_DOCS_TO_GET}
+        return self.query_raw(query_dict)
 
-    def count(self) -> int:
+    def _count(self) -> int:
         """Count number of documents"""
         count = int(
             self.client.cat.count(index=self.index_name, format="json")[0]["count"]
         )
         return count
     
-    def ids(self) -> set[str]:
+    def _ids(self) -> set[str]:
         docs = self.get_all()
         ids = [doc.doc_id for doc in docs]
         return set(ids)
 
-    def get_all(self) -> List[LmDocument]:
-        """Get all documents"""
-        query_dict = {"query": {"match_all": {}}, "size": MAX_DOCS_TO_GET}
-        return self.query_raw(query_dict)
+
 
     def delete(self, ids: Union[List[str], str]):
         """Delete document by id"""
@@ -387,4 +397,9 @@ class JqElasticsearchDocumentStore(JqBaseDocumentStore):
         """Drop the document store"""
         self.client.indices.delete(index=self.index_name)
         self.client.indices.refresh(index=self.index_name)
+
+    def get_settings_and_mappings(self):
+        settings = self.client.indices.get_settings(index=self.index_name) 
+        mappings = self.client.indices.get_mapping(index=self.index_name)
+        return settings,mappings
 

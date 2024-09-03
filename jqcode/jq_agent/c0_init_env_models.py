@@ -261,18 +261,23 @@ class InitEnvModels:
         self.CERT_FINGERPRINT = os.getenv("CERT_FINGERPRINT")
         self.ES_URL = os.getenv("ES_URL","https://localhost:9200")
 
+        ES_DEFAULT_CHINESE_SETTINGS = os.getenv("ES_DEFAULT_CHINESE_SETTINGS",'') 
+        ES_DEFAULT_CHINESE_SETTINGS = json_repair.loads(ES_DEFAULT_CHINESE_SETTINGS)
+        self.ES_DEFAULT_CHINESE_SETTINGS = ES_DEFAULT_CHINESE_SETTINGS if len(ES_DEFAULT_CHINESE_SETTINGS)>0 else {"index": {"analysis.analyzer.default.type": "ik_max_word","analysis.search_analyzer.default.type": "ik_smart"}}
+        assert self.ES_DEFAULT_CHINESE_SETTINGS, f"ES_DEFAULT_CHINESE_SETTINGS不能为空：{self.ES_DEFAULT_CHINESE_SETTINGS=}"
+
         KERNEL_API_BASE = os.getenv("KERNEL_API_BASE",'http://localhost')
         API_PORT = os.getenv("API_PORT",5011)
         self.kernel_api_url = f"{KERNEL_API_BASE}:{API_PORT}/api"
         root_dir = pathlib.Path().resolve()
         self.workspace = str(root_dir/'workspace/')
 
-        # loade models:
-        self.openai = None
-        self.get_openai()
+        # loade openai models:暂时用不上
+        # self.openai = None
+        # self.get_openai()
 
-        self.openai_client = None
-        self.get_openai_client()
+        # self.openai_client = None
+        # self.get_openai_client()
 
         self.chat_model = None
         self.get_langchain_chat_model()
@@ -289,41 +294,24 @@ class InitEnvModels:
         self.strategy = DenseVectorStrategy(hybrid=False)
 
         self.default_chinese_analyzer_settings = {"index": {"analysis.analyzer.default.type": "ik_max_word","analysis.search_analyzer.default.type": "ik_smart"}}
+    
+    # region 直接初始化openai接口，暂时用不上
+    # def get_openai(self):
+    #     if not self.openai:
+    #         openai.api_type = self.api_type
+    #         openai.default_headers = {"x-foo": "true"}  #新增的，来自官方 https://github.com/openai/openai-python/tree/e9724398d2bdd87ba41f199c3577303f1b80f2c7
+    #         openai.api_version = os.environ.get("OPENAI_API_VERSION")
+    #         openai.log = os.getenv("OPENAI_API_LOGLEVEL")
+    #         self.openai = openai
+    #     return self.openai
 
-    def load_project_env(self):
-        if not self.env_loaded: 
-            print('\n\n')
-            print('=*'*20)
-            env_dir = find_dotenv()
-            if not env_dir:
-                root_dir = pathlib.Path().resolve()
-                env_dir = root_dir/'.env'
-            print(f"项目.env文件路径：{env_dir}")
-            dotenv_loaded = load_dotenv(env_dir)
-            if dotenv_loaded:
-                print(f"=*=* load_dotenv('{env_dir}')成功！")
-            else:
-                print(f"=*=* load_dotenv('{env_dir}')失败，请检查！")
-            print('=*'*20)
-            print('\n\n')
-        self.env_loaded = True
-
-    def get_openai(self):
-        if not self.openai:
-            openai.api_type = self.api_type
-            openai.default_headers = {"x-foo": "true"}  #新增的，来自官方 https://github.com/openai/openai-python/tree/e9724398d2bdd87ba41f199c3577303f1b80f2c7
-            openai.api_version = os.environ.get("OPENAI_API_VERSION")
-            openai.log = os.getenv("OPENAI_API_LOGLEVEL")
-            self.openai = openai
-        return self.openai
-
-    # 直接使用OpenAI
-    def get_openai_client(self):
-        if not self.openai_client:
-            self.openai_client = OpenAI(base_url=self.llm_model_base_url,api_key=self.api_key)
-            print(f'当前使用的LLM模型base_url为:OpenAI, {self.openai_client.base_url}')
-        return self.openai_client
-
+    # # 直接使用OpenAI
+    # def get_openai_client(self):
+    #     if not self.openai_client:
+    #         self.openai_client = OpenAI(base_url=self.llm_model_base_url,api_key=self.api_key)
+    #         print(f'当前使用的LLM模型base_url为:OpenAI, {self.openai_client.base_url}')
+    #     return self.openai_client
+    # endregion 直接初始化openai接口，暂时用不上
 
     def get_langchain_chat_model(self, temperature=0.01, max_tokens=None, streaming=True):
         if max_tokens:

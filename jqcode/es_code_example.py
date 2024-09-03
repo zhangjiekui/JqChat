@@ -209,7 +209,14 @@ if __name__ == "__main__":
 
         jq_es_store.delete("fa39031f020a45efc744f73f0031a80d")
 
-        count = jq_es_store.count()
+        count = jq_es_store.count
+        ids = jq_es_store.ids
+        for id in ids:
+            print(id)
+            # 打印映射信息
+        settings,mappings = jq_es_store.get_settings_and_mappings()
+        print(settings)
+        print(mappings)
 
 
 

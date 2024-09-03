@@ -35,7 +35,7 @@ class JqBaseDocumentStore(ABC):
         ...
 
     @abstractmethod
-    def count(self) -> int:
+    def _count(self) -> int:
         """Count number of documents"""
         ...
 
