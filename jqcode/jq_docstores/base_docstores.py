@@ -7,6 +7,8 @@ class JqBaseDocumentStore(ABC):
 
     @abstractmethod
     def __init__(self, *args, **kwargs):
+        self.count = self._count()
+        self.ids = self._ids()
         ...
 
     @abstractmethod
@@ -25,12 +27,12 @@ class JqBaseDocumentStore(ABC):
         ...
 
     @abstractmethod
-    def get(self, ids: Union[List[str], str]) -> List[Document]:
+    def get_docs_by_ids(self, ids: Union[List[str], str]) -> List[Document]:
         """Get document by id"""
         ...
 
     @abstractmethod
-    def get_all(self) -> List[Document]:
+    def get_all_docs(self) -> List[Document]:
         """Get all documents"""
         ...
 
@@ -38,11 +40,13 @@ class JqBaseDocumentStore(ABC):
     def _count(self) -> int:
         """Count number of documents"""
         ...
-
     @abstractmethod
-    def search_docs_by_bm25(
-        self, query: str, top_k: int = 10, doc_ids: Optional[list] = None
-    ) -> List[Document]:
+    def _ids(self) -> set[str]:
+        """get all documents (Unique) ids, return the ids set """
+        ...
+    
+    @abstractmethod
+    def search_docs_by_text(self, user_query_text: str=None,top_k: int = 10, query_on_fileds:list =["file_name","file_text"],filter_by_doc_ids:list=None,filter_by_doc_types:list=None,filter_by_status:list=["true"]) -> List[Document]:
         """Search document store using search query"""
         ...
 

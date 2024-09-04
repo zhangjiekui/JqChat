@@ -178,7 +178,7 @@ class JqElasticsearchDocumentStore(JqBaseDocumentStore):
                 "file_upload_user": file_upload_user,
                 "file_upload_date": dt_string,
                 "file_used_in_indexes": "",
-                "status":False,
+                "status":True,
                 "file_blob":file_blob_b64,
                 "file_yaml":file_yaml,
                 }
@@ -316,56 +316,62 @@ class JqElasticsearchDocumentStore(JqBaseDocumentStore):
             )
         return lm_docs
         
+    def _get_query(self,user_query_text: str="AAMIS_项目总体计划",size=MAX_DOCS_TO_GET,query_on_fileds:list = ["file_name","file_text"], filter_by_doc_ids:list=None,filter_by_doc_types:list=[".doc"],filter_by_status:list=["true","false"]):
+        # 即使用户没有提供status或status为空，因爲status状态少，好构造全集，所以放在第一个，总是存在
+        _status = filter_by_status if filter_by_status else ["true","false"]
+        filer_terms = [{"terms": {"status": _status}}]
+        if filter_by_doc_ids:
+            filer_terms.append({"terms": {"_id": filter_by_doc_ids}})
+        if filter_by_doc_types:
+            filer_terms.append({"terms": {"file_extention": filter_by_doc_types}})
+       
+        
+        query = {
+            "query": {
+                "bool": {
+                    "must": [
+                        {
+                            "multi_match": {
+                                "query": user_query_text,
+                                "fields": query_on_fileds,
+                                "type": "cross_fields"
+                            }
+                        }
+                    ],
+                    "filter": filer_terms,
+                }
+            },
+            "size": size,  # 注意设置size，默认返回10个。
+        }
+        return query
+    
     # 如何搜索的示例代码：https://github.com/elastic/elasticsearch-labs
-    def search_docs_by_text(self, user_query_text: str="AAMIS_项目总体计划", query_on_fileds:list = ["file_name","file_text"]) -> List[LmDocument]:
+    def search_docs_by_text(self, user_query_text: str="AAMIS_项目总体计划",top_k: int = 10, query_on_fileds:list =["file_name","file_text"],filter_by_doc_ids:list=None,filter_by_doc_types:list=None,filter_by_status:list=["true"]) -> List[LmDocument]:
         """Query Elasticsearch store using query format of ES client
 
         Args:
-            user_query_text (str): 用户要搜索的文本
+            user_query_text (str): 用户要搜索的文本            
             query_on_fileds (list) : 在哪些字段上搜索，共有"file_name","file_text"两个字段是可搜索的“Text”类型
+            top_k (int, optional): number of top documents to return. Defaults to 10.
+            filter_by_doc_ids: 只在给定的doc_ids中搜索
+            filter_by_doc_types: 只在给定的doc types/extentions中搜索
+            filter_by_status: 只在给定的status中搜索
 
         Returns:
             List[Document]: List of result documents
         """
-        query = {
-            "query": {"multi_match": {"query": user_query_text ,"fields":query_on_fileds}},
-            "size":MAX_DOCS_TO_GET,# 注意设置size，默认返回10个。
-        }
+        query = self._get_query(user_query_text=user_query_text,size=top_k,query_on_fileds=query_on_fileds,filter_by_doc_ids=filter_by_doc_ids,filter_by_doc_types=filter_by_doc_types,filter_by_status=filter_by_status)      
         lm_docs = self.query_raw(query)
         return lm_docs
 
-    def search_docs_by_bm25(
-        self, user_query_text: str, top_k: int = 10, doc_ids: Optional[list]= None, query_on_fileds:list = ["file_name","file_text"]
-    ) -> List[LmDocument]:
-        """Search Elasticsearch docstore using search query (BM25)
-
-        Args:
-            user_query_text (str): user query text
-            top_k (int, optional): number of top documents to return. Defaults to 10.
-            doc_ids (list, optional): only search on these ids
-            query_on_fileds (list) : 在哪些字段上搜索，共有"file_name","file_text"两个字段是可搜索的“Text”类型
-
-        Returns:
-            List[Document]: List of result documents
-        """
-        # query_dict: dict = {"match": {"content": user_query_text}}
-        query_dict = {"multi_match": {"query": user_query_text ,"fields":query_on_fileds}}
-        if doc_ids is not None:
-            query_dict = {"bool": {"must": [query_dict, {"terms": {"_id": doc_ids}}]}}
-        
-        query_dict = {"query": query_dict, "size": top_k}
-
-        lm_docs = self.query_raw(query_dict)
-        return lm_docs
-
-    def get(self, ids: Union[List[str], str]) -> List[LmDocument]:
+    def get_docs_by_ids(self, ids: Union[List[str], str]) -> List[LmDocument]:
         """Get document by id"""
         if not isinstance(ids, list):
             ids = [ids]
         query_dict = {"query": {"terms": {"_id": ids}}, "size": MAX_DOCS_TO_GET}
         return self.query_raw(query_dict)
     
-    def get_all(self) -> List[LmDocument]:
+    def get_all_docs(self) -> List[LmDocument]:
         """Get all documents"""
         query_dict = {"query": {"match_all": {}}, "size": MAX_DOCS_TO_GET}
         return self.query_raw(query_dict)
@@ -378,7 +384,7 @@ class JqElasticsearchDocumentStore(JqBaseDocumentStore):
         return count
     
     def _ids(self) -> set[str]:
-        docs = self.get_all()
+        docs = self.get_all_docs()
         ids = [doc.doc_id for doc in docs]
         return set(ids)
 

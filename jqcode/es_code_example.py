@@ -180,29 +180,32 @@ if __name__ == "__main__":
 
         status,lm_documents_with_added_index_info_metadata,es_index_doc_id_list = jq_es_store.add_or_update_docs_if_id_exists(lm_documents)
         status = jq_es_store.update_doc_fields_values(doc_ids=["fa39031f020a45efc744f73f0031a80d"],update_field_value_pair_dict=[{"status":"true","file_text":"更新第二条的status为true"}])
-        status = jq_es_store.update_doc_fields_values(doc_ids=["04281eef4b0eb67013c654937ab52a03","fa39031f020a45efc744f73f0031a80d"],update_field_value_pair_dict=[{"status":"true","file_text":"更新第一条的status为true"},{"status":"false","file_text":"更新第二条的status为false"}])
+        status = jq_es_store.update_doc_fields_values(doc_ids=["04281eef4b0eb67013c654937ab52a03","fa39031f020a45efc744f73f0031a80d"],update_field_value_pair_dict=[{"status":"true","file_text":"更新第一条的status为true"},{"status":"true","file_text":"更新第二条的status为true"}])
         jq_es_store.update_doc_fields_values() #没有默认参数，会报错
         docs1 = jq_es_store.search_docs_by_text("AAMIS_项目总体计划")
         print(docs1[0].text)
         print(docs1[0].doc_id)
-        docs2 = jq_es_store.search_docs_by_text("PPQA000")
-        print(docs2[0].text)
-        print(docs2[0].doc_id)
+        docs2 = jq_es_store.search_docs_by_text("PPQA000",filter_by_status=["true","false"])
+        print(len(docs2))
+        docs2true = jq_es_store.search_docs_by_text("PPQA000",filter_by_status=["true"])
+        print(len(docs2true))
+        docs2false = jq_es_store.search_docs_by_text("PPQA000",filter_by_status=["false"])
+        print(len(docs2false))
 
-        docs3 = jq_es_store.search_docs_by_bm25("PPQA000")
+        docs3 = jq_es_store.search_docs_by_text("PPQA000")
         print(docs3[0].text)
         print(docs3[0].doc_id)
 
-        docs4 = jq_es_store.get("fa39031f020a45efc744f73f0031a80d")
+        docs4 = jq_es_store.get_docs_by_ids("fa39031f020a45efc744f73f0031a80d")
         print(docs4[0].text)
         print(docs4[0].doc_id)
 
-        docs5 = jq_es_store.get(["fa39031f020a45efc744f73f0031a80d","04281eef4b0eb67013c654937ab52a03"])
+        docs5 = jq_es_store.get_docs_by_ids(["fa39031f020a45efc744f73f0031a80d","04281eef4b0eb67013c654937ab52a03"])
         for doc in docs5:
             print(doc.text)
             print(doc.doc_id)
 
-        docs6 = jq_es_store.get_all()
+        docs6 = jq_es_store.get_all_docs()
         for doc in docs6:
             print(doc.text)
             print(doc.doc_id)
