@@ -21,7 +21,12 @@ from itertools import groupby
 from elasticsearch import Elasticsearch
 from langchain_core.documents import Document
 from langchain_elasticsearch import ElasticsearchStore
-from elasticsearch.helpers.vectorstore import DenseVectorStrategy,BM25Strategy
+# 以下4个Strategy均继承自RetrievalStrategy
+    # """BM25Strategy： classic full-text search"""
+    # """SparseVectorStrategy：using the `text_expansion` processor."""
+    # """DenseVectorStrategy： using K-nearest-neighbors retrieval."""
+    # """DenseVectorScriptScoreStrategy：Exact nearest neighbors retrieval using the `script_score` query."""
+from elasticsearch.helpers.vectorstore import BM25Strategy,SparseVectorStrategy,DenseVectorStrategy,DenseVectorScriptScoreStrategy
 from langchain.indexes import SQLRecordManager, index
 from langchain_elasticsearch.chat_history import ElasticsearchChatMessageHistory
 
@@ -411,6 +416,23 @@ class InitEnvModels:
                 self.embed_model,self.embedding_model_8k,self.reranker = self._get_emb_8k_rerank_model_api()
             else:
                 self.embed_model,self.embedding_model_8k,self.reranker = self._get_emb_8k_rerank_model(embedding_model_name=embedding_model_name, embedding_model_name_8k=embedding_model_name_8k, rerank_model_name=rerank_model_name,device = device,final_docs_num_reranked=final_docs_num_reranked)
+        # try:
+        #     r1 = self.embed_model.embed_query("test query text")
+        # except Exception as e:
+        #     logger.error(f"{self.embed_model=}工作不正常，请检查:{e}")
+        # # try:
+        # #     r2 = self.embedding_model_8k.embed_query("test query text")
+        # # except Exception as e:
+        # #     logger.error(f"{self.embed_model=}工作不正常，请检查:{e}")
+        
+        # try:
+        #     r3 = self.reranker.rerank(documents=["张结魁是谁？","张结魁是安徽晶奇公司的","create a compression retriever, we need a base retriever first"],
+        #                              query="张结魁")
+        # except Exception as e:
+        #     logger.error(f"{self.reranker=}工作不正常，请检查:{e}")
+
+      
+
         return self.embed_model,self.embedding_model_8k,self.reranker
 
     def get_es_connection(self):
@@ -817,12 +839,12 @@ if __name__ == '__main__':
     knowledge_base_list = env_models_instance.get_all_knowledge_base(es_connection) 
     print(knowledge_base_list)   
 
-    open_ai = env_models_instance.get_openai()
-    openai_client = env_models_instance.get_openai_client()
+    # open_ai = env_models_instance.get_openai()
+    # openai_client = env_models_instance.get_openai_client()
     langchain_chat_model = env_models_instance.get_langchain_chat_model()
     embed_model,embedding_model_8k,reranker = env_models_instance.get_emb_8k_rerank_model()
     res = langchain_chat_model.invoke([SystemMessage('请使用中文回答我！'), HumanMessage('你好')])
-    # print(res)
+    print(res)
 
     ### Build An Index
     # index_name='test_doc_tree_reader'
