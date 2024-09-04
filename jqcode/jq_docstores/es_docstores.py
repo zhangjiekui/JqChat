@@ -57,15 +57,10 @@ class JqElasticsearchDocumentStore(JqBaseDocumentStore):
         # Create an Elasticsearch client instance
         self.client = elasticsearch_connection
         self.es_bulk = bulk
-
-        self.count = self._count()
-        self.ids = self._ids()
-
         
         # Define the index settings and mappings
         settings = {"similarity": {"custom_bm25": {"type": "BM25", "k1": k1, "b": b}}}
-        settings.update(env_models_instance.ES_DEFAULT_CHINESE_SETTINGS)      
-                   
+        settings.update(env_models_instance.ES_DEFAULT_CHINESE_SETTINGS) 
    
         mappings = {"properties": {
 
@@ -82,7 +77,7 @@ class JqElasticsearchDocumentStore(JqBaseDocumentStore):
 
                             "file_yaml":{"type": "binary"},                              
                             
-                            # 由chunks JOIN而成的
+                            # 从文件中读取到的文本
                             "file_text": {
                                 "type": "text",
                                 "similarity": "custom_bm25",  # Use the custom BM25 similarity
@@ -91,7 +86,6 @@ class JqElasticsearchDocumentStore(JqBaseDocumentStore):
                             "file_upload_user": {"type": "keyword"},
                             # 上传的日期
                             "file_upload_date": {"type": "date","format":"yyyy-MM-dd HH:mm:ss||strict_date_optional_time ||epoch_millis"},
-                            # "file_upload_date": {"type": "date"},
 
                             # 因为这里存储的是文档：
                                 #该文档的切片可能出现在0-N个index中，
@@ -111,8 +105,16 @@ class JqElasticsearchDocumentStore(JqBaseDocumentStore):
             self.client.indices.create(
                 index=self.index_name, settings=settings, mappings=mappings
             )
+            
+        self.count = 0
+        self.ids = []
+        try: 
+            self.count = self._count()
+            self.ids = self._ids()
+        except:
+            pass
 
-    def add_or_update_docs_if_id_exists(
+    def add_or_update_index_metadata_if_id_exists(
         self,
         lm_documents: Union[LmDocument, List[LmDocument]],
         ids: Optional[Union[List[str], str]] = None,
@@ -225,7 +227,7 @@ class JqElasticsearchDocumentStore(JqBaseDocumentStore):
 
                 refresh_indices: bool. request Elasticsearch to update its index (default to True)
 
-            Returns:status:bool. 代表更新成功或失败！
+            Returns:status,bool. 代表更新成功或失败！
         """
         if not doc_ids:
             if apply_update_to_all_files:
@@ -316,7 +318,7 @@ class JqElasticsearchDocumentStore(JqBaseDocumentStore):
             )
         return lm_docs
         
-    def _get_query(self,user_query_text: str="AAMIS_项目总体计划",size=MAX_DOCS_TO_GET,query_on_fileds:list = ["file_name","file_text"], filter_by_doc_ids:list=None,filter_by_doc_types:list=[".doc"],filter_by_status:list=["true","false"]):
+    def _get_query(self,user_query_text: str=None,size=MAX_DOCS_TO_GET,query_on_fileds:list = ["file_name","file_text"], filter_by_doc_ids:list=None,filter_by_file_upload_users:list=None,filter_by_doc_types:list=[".doc"],filter_by_status:list=["true","false"]):
         # 即使用户没有提供status或status为空，因爲status状态少，好构造全集，所以放在第一个，总是存在
         _status = filter_by_status if filter_by_status else ["true","false"]
         filer_terms = [{"terms": {"status": _status}}]
@@ -324,6 +326,8 @@ class JqElasticsearchDocumentStore(JqBaseDocumentStore):
             filer_terms.append({"terms": {"_id": filter_by_doc_ids}})
         if filter_by_doc_types:
             filer_terms.append({"terms": {"file_extention": filter_by_doc_types}})
+        if filter_by_file_upload_users:
+            filer_terms.append({"terms": {"file_upload_user": filter_by_file_upload_users}})
        
         
         query = {
@@ -346,7 +350,7 @@ class JqElasticsearchDocumentStore(JqBaseDocumentStore):
         return query
     
     # 如何搜索的示例代码：https://github.com/elastic/elasticsearch-labs
-    def search_docs_by_text(self, user_query_text: str="AAMIS_项目总体计划",top_k: int = 10, query_on_fileds:list =["file_name","file_text"],filter_by_doc_ids:list=None,filter_by_doc_types:list=None,filter_by_status:list=["true"]) -> List[LmDocument]:
+    def search_docs_by_text(self, user_query_text: str=None,top_k: int = 10, query_on_fileds:list =["file_name","file_text"],filter_by_doc_ids:list=None,filter_by_doc_types:list=None,filter_by_status:list=["true"]) -> List[LmDocument]:
         """Query Elasticsearch store using query format of ES client
 
         Args:
@@ -387,8 +391,6 @@ class JqElasticsearchDocumentStore(JqBaseDocumentStore):
         docs = self.get_all_docs()
         ids = [doc.doc_id for doc in docs]
         return set(ids)
-
-
 
     def delete(self, ids: Union[List[str], str]):
         """Delete document by id"""

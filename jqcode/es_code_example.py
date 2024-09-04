@@ -178,7 +178,7 @@ if __name__ == "__main__":
 
 
 
-        status,lm_documents_with_added_index_info_metadata,es_index_doc_id_list = jq_es_store.add_or_update_docs_if_id_exists(lm_documents)
+        status,lm_documents_with_added_index_info_metadata,es_index_doc_id_list = jq_es_store.add_or_update_index_metadata_if_id_exists(lm_documents)
         status = jq_es_store.update_doc_fields_values(doc_ids=["fa39031f020a45efc744f73f0031a80d"],update_field_value_pair_dict=[{"status":"true","file_text":"更新第二条的status为true"}])
         status = jq_es_store.update_doc_fields_values(doc_ids=["04281eef4b0eb67013c654937ab52a03","fa39031f020a45efc744f73f0031a80d"],update_field_value_pair_dict=[{"status":"true","file_text":"更新第一条的status为true"},{"status":"true","file_text":"更新第二条的status为true"}])
         jq_es_store.update_doc_fields_values() #没有默认参数，会报错

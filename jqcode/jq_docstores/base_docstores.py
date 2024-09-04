@@ -12,7 +12,7 @@ class JqBaseDocumentStore(ABC):
         ...
 
     @abstractmethod
-    def add_or_update_docs_if_id_exists(
+    def add_or_update_index_metadata_if_id_exists(
         self,
         docs: Union[Document, List[Document]],
         ids: Optional[Union[List[str], str]] = None,
@@ -58,4 +58,8 @@ class JqBaseDocumentStore(ABC):
     @abstractmethod
     def drop(self):
         """Drop the document store"""
+        ...
+    @abstractmethod    
+    def get_settings_and_mappings(self):
+        """return the index/store's settings and mappings"""
         ...
