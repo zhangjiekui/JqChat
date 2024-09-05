@@ -161,7 +161,7 @@ def download_file_documents_to_local(es_index_doc_id_list):
 
 
 if __name__ == "__main__":
-    from jqcode.jq_docstores.es_docstores import JqElasticsearchDocumentStore
+    from jqcode.jq_docstores.backend_docstore_utils.jq_es_docstores import JqElasticsearchDocumentStore
     jq_es_store = JqElasticsearchDocumentStore()
 
     # mapping = es_connection.indices.get_mapping(index=smartcn_index)

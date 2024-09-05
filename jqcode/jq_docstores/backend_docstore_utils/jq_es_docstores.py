@@ -1,34 +1,24 @@
-from abc import ABC, abstractmethod
+import yaml
+import copy
+import hashlib
+from pathlib import Path
+from base64 import b64encode
+from datetime import datetime
+from anytree.exporter import DictExporter
 from typing import List, Optional, Union, Callable
 
-from langchain.schema import Document as LcDocument
 from llama_index.core import Document as LmDocument
 from elasticsearch import Elasticsearch
 from elasticsearch.helpers import bulk
-from jqcode.jq_docstores.base_docstores import JqBaseDocumentStore
-from jqcode.jq_agent.c0_init_env_models import env_models_instance
-import hashlib
-from datetime import datetime
-import yaml
-import copy 
-from anytree.exporter import DictExporter
-from anytree.importer import DictImporter
-from anytree import RenderTree
-from pathlib import Path
 
 from jqcode.jq_agent.c0_init_env_models import env_models_instance
-from jqcode.jq_readers.jqkj_readers import JqkjSimpleDirectoryReader
-from jqcode.jq_agent.tools.jq_retriever import get_retriever
-
-from langchain.schema import Document as LcDocument
-from base64 import b64encode,b64decode
+from jqcode.jq_docstores.backend_docstore_utils.jq_base_docstores import JqBaseDocumentStore
 
 from jqcode.jq_utils.logger import jqkj_logger
 logger = jqkj_logger(__file__).get_logger()
 
 MAX_DOCS_TO_GET = 10**4
 anytree_dict_exporter = DictExporter()
-anytree_dict_importer = DictImporter()
 
 def md5_file_value(file_base64_data:bytes):#Binary value encoded as a Base64 string
     md5_hash = hashlib.md5()
@@ -57,62 +47,54 @@ class JqElasticsearchDocumentStore(JqBaseDocumentStore):
         # Create an Elasticsearch client instance
         self.client = elasticsearch_connection
         self.es_bulk = bulk
-        
-        # Define the index settings and mappings
-        settings = {"similarity": {"custom_bm25": {"type": "BM25", "k1": k1, "b": b}}}
-        settings.update(env_models_instance.ES_DEFAULT_CHINESE_SETTINGS) 
-   
-        mappings = {"properties": {
 
-                            "file_name": {
-                                "type": "text",
-                                "similarity": "custom_bm25",  # Use the custom BM25 similarity
-                            },
+        # Create the index with the specified settings and mappings if not exists
+        if not self.client.indices.exists(index=self.index_name):        
+            # Define the index settings and mappings
+            settings = {"similarity": {"custom_bm25": {"type": "BM25", "k1": k1, "b": b}}}
+            settings.update(env_models_instance.ES_DEFAULT_CHINESE_SETTINGS) 
+    
+            mappings = {"properties": {
+                "file_name": {
+                    "type": "text",
+                    "similarity": "custom_bm25",  # Use the custom BM25 similarity
+                },
+                "file_extention": {"type": "keyword"},
+                # https://www.elastic.co/guide/en/elasticsearch/reference/current/flattened.html
+                "file_metadata": {"type": "object"},
+                # Binary value encoded as a Base64 string.
+                "file_blob": {"type": "binary"},
+                "file_yaml": {"type": "binary"},
+                # 从文件中读取到的文本
+                "file_text": {
+                    "type": "text",
+                    "similarity": "custom_bm25",  # Use the custom BM25 similarity
+                },
+                # 上传的用户
+                "file_upload_user": {"type": "keyword"},
+                # 上传的日期
+                "file_upload_date": {"type": "date", "format": "yyyy-MM-dd HH:mm:ss||strict_date_optional_time ||epoch_millis"},
+                # 因为这里存储的是文档：
+                # 该文档的切片可能出现在0-N个index中，
+                # 如果监测到，可以更新该字段值，取值为逗号分隔的字符串： index_name1,index_name2,
+                "file_used_in_indexes": {"type": "keyword"},
 
-                            "file_extention": {"type": "keyword"}, 
+                # 是否启用：启用（True）、弃用(False)
+                # 因为这里存储的是文档：
+                # （1）文档管理的时候，本来就可以删除，如果删除，该状态可以标识了False，相当于逻辑删除
+                # （2）由于文档的切片是在另外的index中存储的，有可能该文档对应的切片已经全部删除了，如果监测到，可以将该状态设为False
+                "status": {"type": "boolean"},
+            }
+            }
 
-                            "file_metadata":{"type": "object"}, # https://www.elastic.co/guide/en/elasticsearch/reference/current/flattened.html
-
-                            "file_blob":{"type": "binary"},  # Binary value encoded as a Base64 string. 
-
-                            "file_yaml":{"type": "binary"},                              
-                            
-                            # 从文件中读取到的文本
-                            "file_text": {
-                                "type": "text",
-                                "similarity": "custom_bm25",  # Use the custom BM25 similarity
-                            },
-                            # 上传的用户
-                            "file_upload_user": {"type": "keyword"},
-                            # 上传的日期
-                            "file_upload_date": {"type": "date","format":"yyyy-MM-dd HH:mm:ss||strict_date_optional_time ||epoch_millis"},
-
-                            # 因为这里存储的是文档：
-                                #该文档的切片可能出现在0-N个index中，
-                                #如果监测到，可以更新该字段值，取值为逗号分隔的字符串： index_name1,index_name2,
-                            "file_used_in_indexes": {"type": "keyword"},
-
-                            # 是否：在用（True）、已弃用(False)
-                            # 因为这里存储的是文档：
-                                # （1）文档管理的时候，本来就可以删除，如果删除，该状态可以标识了False，相当于逻辑删除
-                                # （2）由于文档的切片是在另外的index中存储的，有可能该文档对应的切片已经全部删除了，如果监测到，可以将该状态设为False
-                            "status": {"type": "boolean"},
-                        }
-                    }
-
-        # Create the index with the specified settings and mappings
-        if not self.client.indices.exists(index=self.index_name):
+            # Create the index with the specified settings and mappings
             self.client.indices.create(
                 index=self.index_name, settings=settings, mappings=mappings
             )
             
-        self.count = 0
-        self.ids = []
-        try: 
-            self.count = self._count()
-            self.ids = self._ids()
-        except:
-            pass
+        self.count = self._count()
+        self.ids = self._ids()
+
 
     def add_or_update_index_metadata_if_id_exists(
         self,
@@ -327,8 +309,7 @@ class JqElasticsearchDocumentStore(JqBaseDocumentStore):
         if filter_by_doc_types:
             filer_terms.append({"terms": {"file_extention": filter_by_doc_types}})
         if filter_by_file_upload_users:
-            filer_terms.append({"terms": {"file_upload_user": filter_by_file_upload_users}})
-       
+            filer_terms.append({"terms": {"file_upload_user": filter_by_file_upload_users}})       
         
         query = {
             "query": {
@@ -382,15 +363,23 @@ class JqElasticsearchDocumentStore(JqBaseDocumentStore):
 
     def _count(self) -> int:
         """Count number of documents"""
-        count = int(
-            self.client.cat.count(index=self.index_name, format="json")[0]["count"]
-        )
+        try:
+            count = int(
+                self.client.cat.count(index=self.index_name, format="json")[0]["count"]
+            )
+        except Exception as e:
+            logger.warning(f"无法获取到记录数:{e}")
+            count = 0
         return count
     
     def _ids(self) -> set[str]:
-        docs = self.get_all_docs()
-        ids = [doc.doc_id for doc in docs]
-        return set(ids)
+        try:
+            docs = self.get_all_docs()
+            ids = [doc.doc_id for doc in docs]
+            return set(ids)
+        except Exception as e:
+            logger.warning(f"无法获取到ids:{e}")            
+            return set()        
 
     def delete(self, ids: Union[List[str], str]):
         """Delete document by id"""

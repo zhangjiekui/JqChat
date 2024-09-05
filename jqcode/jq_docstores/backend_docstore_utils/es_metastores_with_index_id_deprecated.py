@@ -64,23 +64,22 @@ class JqElasticsearchUniMetaStore(JqBaseDocumentStore):
         settings.update(env_models_instance.ES_DEFAULT_CHINESE_SETTINGS)
    
         mappings = {"properties": {
-                            
-                            "index_name": {"type": "keyword"},
-                            "description": {
-                                "type": "text",
-                                "similarity": "custom_bm25",  # Use the custom BM25 similarity
-                            },
+            "index_name": {"type": "keyword"},
+            "description": {
+                "type": "text",
+                "similarity": "custom_bm25",  # Use the custom BM25 similarity
+            },
 
-                            # 创建的用户
-                            "index_creator": {"type": "keyword"},
-                            # 创建的日期
-                            "index_create_date": {"type": "date","format":"yyyy-MM-dd HH:mm:ss||strict_date_optional_time ||epoch_millis"},
+            # 创建的用户
+            "index_creator": {"type": "keyword"},
+            # 创建的日期
+            "index_create_date": {"type": "date", "format": "yyyy-MM-dd HH:mm:ss||strict_date_optional_time ||epoch_millis"},
 
-                            # 是否：在用（True）、已弃用(False)
-                            # 由于index是独立创建的，有可能某个index已经删除了，如果监测到，可以将该状态设为False
-                            "status": {"type": "boolean"},
-                        }
-                    }
+            # 是否启用：启用（True）、弃用(False)
+            # 由于index是独立创建的，有可能某个index已经删除了，如果监测到，可以将该状态设为False
+            "status": {"type": "boolean"},
+        }
+        }
 
         # Create the index with the specified settings and mappings
         if not self.client.indices.exists(index=self.index_name):
