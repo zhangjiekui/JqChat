@@ -258,8 +258,11 @@ class JqElasticsearchDocumentStore(JqBaseDocumentStore):
                         file_used_in_indexes_new = field_value_pair_dict["file_used_in_indexes"]
                         op = file_used_in_indexes_new[0:3]
                         value_new = file_used_in_indexes_new[3:]
-                        
-                        rs = self.get_docs_by_ids(doc_id)
+                        try:
+                            rs = self.get_docs_by_ids(doc_id)
+                        except Exception as e:
+                            logger.warning(f"{self.index_name}中查询没有返回{doc_id}的记录！{e}")
+                            continue
                         file_used_in_indexes_old = rs[0]["_source"]["file_used_in_indexes"]
                         if file_used_in_indexes_old:
                             if op=="+++":
@@ -312,23 +315,6 @@ class JqElasticsearchDocumentStore(JqBaseDocumentStore):
         """
         res = self.client.search(index=self.index_name, body=query)
         return res["hits"]["hits"]
-        # lm_docs = []
-
-        # for r in res["hits"]["hits"]:
-        #     _id = r["_id"]
-        #     text=r["_source"]["file_text"]
-        #     file_upload_date = r["_source"]["file_upload_date"]
-        #     file_upload_date_dict = {"file_upload_date":file_upload_date}
-        #     metadata=r["_source"]["file_metadata"]
-        #     metadata.update(file_upload_date_dict)
-        #     lm_docs.append(
-        #         LmDocument(
-        #             id_=_id,
-        #             text=text,
-        #             metadata=metadata,
-        #         )
-        #     )
-        # return lm_docs
         
     def _get_query(self,user_query_text: str=None,size=MAX_DOCS_TO_GET,query_on_fileds:list = ["file_name","file_text"], filter_by_doc_ids:list=None,filter_by_file_upload_users:list=None,filter_by_doc_types:list=[".doc"],filter_by_status:list=["true","false"]):
         # 即使用户没有提供status或status为空，因爲status状态少，好构造全集，所以放在第一个，总是存在
@@ -405,7 +391,7 @@ class JqElasticsearchDocumentStore(JqBaseDocumentStore):
     def _ids(self) -> list:
         try:
             docs = self.get_all_docs()
-            ids = [doc.doc_id for doc in docs]
+            ids = [doc["_id"] for doc in docs]
             return list(set(ids))
         except Exception as e:
             logger.warning(f"无法获取到ids:{e}")            

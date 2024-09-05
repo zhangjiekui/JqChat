@@ -142,8 +142,19 @@ if __name__ == "__main__":
         update_field_value_pair_dict = [{"file_used_in_indexes":f"+++{doc_index_name}"}]*len(es_index_doc_ids)
         jq_es_client.docstores.update_doc_fields_values(doc_ids=es_index_doc_ids,update_field_value_pair_dict=update_field_value_pair_dict)
     
-    status = jq_es_client.drop_doc_index(index_name="health_new")
+    status = jq_es_client.drop_doc_index(index_name=doc_index_name)
+    # status = jq_es_client.drop_doc_index(index_name="smartcn_test_doc_tree_reader")
+    # rs = jq_es_client.metastores.search_docs_by_text(filter_by_index_creators=['manager'],filter_by_status=["true"])
+    pass
+    # doc_store = JqElasticsearchDocumentStore(index_name="bulk_files_on_es")
+    # jq_es_client.docstores = doc_store
+    jq_es_client.drop_doc_index("bulk_files_on_es")
+    all_index = env_models_instance.get_all_knowledge_base(es_connection)
+    for index in all_index:
+        jq_es_client.drop_doc_index(index)
+        
     
+    pass
     
     
     

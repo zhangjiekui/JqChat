@@ -120,7 +120,7 @@ class JqElasticsearchUniMetaStore(JqBaseDocumentStore):
                     index_name = index_name if index_name else r['index_name']
                     description = description if description else r['description']
                     index_creator = index_creator if index_creator else r['index_creator']
-                    status = status if status else r['status']
+                    status = status if status is not None else r['status'] #注意status可能是bool类型,所以不能直接用 if status判断，因status=False会出问题
                     index_create_date = r['index_create_date']
                     
                 if not isinstance(description,str) or len(description) < min_length_of_index_description:
@@ -242,6 +242,25 @@ class JqElasticsearchUniMetaStore(JqBaseDocumentStore):
         """Get all documents"""
         query = {"query": {"match_all": {}}, "size": MAX_DOCS_TO_GET}
         return self.query_raw(query)
+    
+    def get_all_docs_by_users_and_status(self,users_list=["manager"],status_list=[True,"true"]) -> list: #[True,"true",False,"false"])
+        """Get all documents"""
+        rs = []
+        query = {"query": {"match_all": {}}, "size": MAX_DOCS_TO_GET}
+        all_rs = self.query_raw(query)
+        for r in all_rs:
+            source = r["_source"]
+            if users_list:
+                if source["index_creator"] not in users_list:
+                    continue
+            if status_list:
+                status = source["status"]
+                if isinstance(status,str):
+                    status = status.lower()
+                if status not in status_list:
+                    continue
+            rs.append(source)
+        return rs
 
     def _count(self) -> int:
         """Count number of documents"""
@@ -284,6 +303,17 @@ class JqElasticsearchUniMetaStore(JqBaseDocumentStore):
     
 if __name__ == "__main__":
     metastore = JqElasticsearchUniMetaStore()
+    rs = metastore.get_all_docs_by_users_and_status()
+    print(rs)
+    rs = metastore.get_all_docs_by_users_and_status(status_list=[False,'false'])
+    print(rs)
+    rs = metastore.get_all_docs_by_users_and_status(users_list='manager',status_list=[])
+    print(rs)
+    rs = metastore.get_all_docs_by_users_and_status(users_list='new_name',status_list=[False,'false'])
+    print(rs)
+    rs = metastore.get_all_docs_by_users_and_status(users_list='new_name')
+    print(rs)    
+    
     status,id=metastore.add_or_update_index_metadata_if_id_exists(index_name="myindex",description="index的详细描述，不少于20个字")
     print(id)
     status,id=metastore.add_or_update_index_metadata_if_id_exists(index_name="notallow_myindex",description="index的详细描述，不少于20个字")
@@ -291,6 +321,8 @@ if __name__ == "__main__":
     status,id=metastore.add_or_update_index_metadata_if_id_exists(index_name="new_notallow_myindex",description="index的详细描述，不少于20个字",allow_create_new=False)
     print(id)
     status,id=metastore.add_or_update_index_metadata_if_id_exists(index_name="new_allowed_myindex",description="index的详细描述，不少于20个字",allow_create_new=True)
+    print(id)
+    status,id=metastore.add_or_update_index_metadata_if_id_exists(index_name="new_allowed_myindex",description="index的详细描述，不少于20个字.new description in string length>=20",allow_create_new=True)
     print(id)
     update_field_value_pair_dict = {"status":"false","description":"new description in string length>=20", "index_creator":"new_name"}
     status,id = metastore.update_doc_fields_values(index_name="notallow_myindex",update_field_value_pair_dict=update_field_value_pair_dict)

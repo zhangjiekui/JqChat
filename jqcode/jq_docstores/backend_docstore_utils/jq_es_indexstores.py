@@ -380,11 +380,11 @@ class JqElasticsearchIndexStore(JqBaseDocumentStore):
 
     def drop(self):
         """Drop the document store"""
-        self.client.indices.delete(index=self.index_name)
-        self.client.indices.refresh(index=self.index_name)
+        self.client.indices.delete(index=self.index_name)        
+        # self.client.indices.refresh(index=self.index_name)
 
     def get_settings_and_mappings(self):
-        settings = self.client.indices.get_settings(index=self.index_name) 
+        settings = self.client.indices.get_settings(index=self.index_name)        
         mappings = self.client.indices.get_mapping(index=self.index_name)
         return settings,mappings
 

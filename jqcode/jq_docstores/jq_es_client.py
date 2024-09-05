@@ -1,4 +1,5 @@
 # to be added
+import time
 from jqcode.jq_agent.c0_init_env_models import env_models_instance
 from jqcode.jq_docstores.backend_docstore_utils.jq_es_metastores import JqElasticsearchUniMetaStore
 from jqcode.jq_docstores.backend_docstore_utils.jq_es_docstores import JqElasticsearchDocumentStore
@@ -8,7 +9,7 @@ logger = jqkj_logger(__file__).get_logger()
 
 class JqEsClient():
     """
-        封装对ES的操作，以维护metastores,docstores和doc_index之间的一致性
+        JqEsClient封装对ES的操作，以维护metastores,docstores和doc_index之间的一致性
         
     """
     def __init__(self,) -> None:
@@ -40,8 +41,7 @@ class JqEsClient():
                 index_store = None
                 
         return index_store
-                
-    
+  
     def drop_doc_index(self,index_name):
         """
             删除一个doc_index(即通常意义上的删除一个知识库)
@@ -50,20 +50,39 @@ class JqEsClient():
                 （2.1）获取全部的doc_ids
                  (2.2) 删除doc_index
                  (2.3) 找到docstores中对应的doc_ids记录的file_used_in_indexes，删除该doc_index
-            (3) 睡眠1秒(ES的刷新间隔默认为1秒)，检查doc_index是否存在，不存在就在metastores中将该doc_index对应的status标识为false
-        """
-        if self.client.indices.exists(index=index_name):
-            index_store = JqElasticsearchIndexStore(index_name=index_name,create_if_not_exists=False)
-            es_index_doc_ids,es_index_doc_filepaths = index_store.get_all_unique_fileids_filepaths()
-            print(f"{len(es_index_doc_ids)}")
-            print(f"{len(es_index_doc_filepaths)}")
-            if es_index_doc_ids:
-                self.docstores.update_doc_fields_values(doc_ids=es_index_doc_ids,update_field_value_pair_dict=[{"file_used_in_indexes":f"---{index_name}"}]*len(es_index_doc_ids))
-                   
+            (3) 睡眠1秒(ES的刷新间隔默认为1秒)，检查doc_index是否存在
+            (4) 不存在:
+                (4.1) 在docstores中, 从该doc_ids对应的file_used_in_indexes中，删除该doc_indexstatus
+                (4.2) 在metastores中,将该doc_index对应的status标识为false
                 
+        #    todo:什么时候，将docstores中的记录标识设为false呢？
             
+            
+        """
+        if index_name in [self.docstores.index_name,self.metastores.index_name]:
+            logger.warning(f"{index_name}是系统必须的，无法自动删除，如确有必要，请手动删除！")
         else:
-            logger.warning(f"{index_name=}本不存在，无需删除")
+            if self.client.indices.exists(index=index_name):
+                index_store = JqElasticsearchIndexStore(index_name=index_name,create_if_not_exists=False)
+                es_index_doc_ids,es_index_doc_filepaths = index_store.get_all_unique_fileids_filepaths()
+                print(f"{len(es_index_doc_ids)}")
+                print(f"{len(es_index_doc_filepaths)}")
+                
+                index_store.drop()
+                time.sleep(1)
+                
+                if not self.client.indices.exists(index=index_name):
+                    logger.info(f"{index_name}已删除！")
+                    if es_index_doc_ids:
+                        self.docstores.update_doc_fields_values(doc_ids=es_index_doc_ids,update_field_value_pair_dict=[{"file_used_in_indexes":f"---{index_name}"}]*len(es_index_doc_ids))
+                        logger.info(f"{self.docstores.index_name}中的file_used_in_indexes也删除了{index_name},共涉及{len(es_index_doc_ids)=}个文档文件")
+                    self.metastores.update_doc_fields_values(index_name=index_name,update_field_value_pair_dict = {"status":False})
+                    
+                else:
+                    logger.warning(f"意外：{index_name=}依然存在！请在Kibana中查看核实，手动删除。") 
+                
+            else:
+                logger.warning(f"{index_name=}本不存在，无需删除")
     
     def chunks_indexing():
         """
