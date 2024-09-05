@@ -114,26 +114,29 @@ class JqElasticsearchUniMetaStore(JqBaseDocumentStore):
                 else:
                     logger.warning(f"根据提供的{index_name=}没有查询到记录！您允许创建新纪录{allow_create_new=}，将执行新增操作。")
             try:
+                index_create_date = ''
                 if len(rs)==1: #如果有记录，则需取出原来的值来填补用户没有提供的字段                    
                     r=rs[0]["_source"]
                     index_name = index_name if index_name else r['index_name']
                     description = description if description else r['description']
                     index_creator = index_creator if index_creator else r['index_creator']
                     status = status if status else r['status']
+                    index_create_date = r['index_create_date']
                     
                 if not isinstance(description,str) or len(description) < min_length_of_index_description:
                     logger.warning(f"{description=}必须是有效的字符串,且长度必须至少为{min_length_of_index_description}！忽略此次操作。")
                     return False,''                
                 
-                dt = datetime.now()
-                fmt = "%Y-%m-%d %H:%M:%S"
-                dt_string = dt.strftime(fmt)
+                if not index_create_date:
+                    dt = datetime.now()
+                    fmt = "%Y-%m-%d %H:%M:%S"
+                    index_create_date = dt.strftime(fmt)
 
                 request = {                
                     "index_name":index_name,
                     "description":description,
-                    "index_creator": index_creator,
-                    "index_create_date": dt_string,
+                    "index_creator": index_creator or "manager",
+                    "index_create_date": index_create_date,
                     "status":status,
                     }           
 
@@ -182,9 +185,10 @@ class JqElasticsearchUniMetaStore(JqBaseDocumentStore):
             list[result]: List of result documents
         """
         res = self.client.search(index=self.index_name, body=query)
-        rs = []
-        for r in res["hits"]["hits"]:
-            rs.append(r)           
+        # rs = []
+        # for r in res["hits"]["hits"]:
+        #     rs.append(r) 
+        rs = res["hits"]["hits"]          
         return rs
         
     def _get_query(self,user_query_text: str=None,size=MAX_DOCS_TO_GET,query_on_fileds:list = ["index_name","description"], filter_by_index_creators:list=None,filter_by_status:list=["true","false"]):
@@ -250,14 +254,14 @@ class JqElasticsearchUniMetaStore(JqBaseDocumentStore):
             count = 0
         return count
     
-    def _ids(self) -> set[str]:
+    def _ids(self) -> list:
         try:
             rs = self.get_all_docs()
             ids = [r["_id"] for r in rs]
-            return set(ids)
+            return list(set(ids))
         except Exception as e:
             logger.warning(f"无法获取到ids:{e}")            
-            return set()
+            return []
 
     def delete(self, ids: Union[List[str], str]):
         """Delete a record/docs by id"""

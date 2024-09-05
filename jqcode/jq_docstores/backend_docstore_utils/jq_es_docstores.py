@@ -165,6 +165,7 @@ class JqElasticsearchDocumentStore(JqBaseDocumentStore):
                 "status":True,
                 "file_blob":file_blob_b64,
                 "file_yaml":file_yaml,
+                "file_used_in_indexes":[]
                 }
             action = {"_op_type": "index","_index":self.index_name, "_id":es_index_doc_id, "_source":request}
             actions_list.append(action)
@@ -250,8 +251,36 @@ class JqElasticsearchDocumentStore(JqBaseDocumentStore):
                 
                 actions_list = []
                 for i,doc_id in enumerate(doc_ids):
+                    file_used_in_indexes_final = ""
                     field_value_pair_dict = update_field_value_pair_dict[0] if len_FV ==1 else update_field_value_pair_dict[i]
-                    _source = {"doc":field_value_pair_dict}
+                    # "file_used_in_indexes" 的值需要特别处理
+                    if "file_used_in_indexes" in field_value_pair_dict:
+                        file_used_in_indexes_new = field_value_pair_dict["file_used_in_indexes"]
+                        op = file_used_in_indexes_new[0:3]
+                        value_new = file_used_in_indexes_new[3:]
+                        
+                        rs = self.get_docs_by_ids(doc_id)
+                        file_used_in_indexes_old = rs[0]["_source"]["file_used_in_indexes"]
+                        if file_used_in_indexes_old:
+                            if op=="+++":
+                                if value_new in file_used_in_indexes_old:
+                                    file_used_in_indexes_final = file_used_in_indexes_old
+                                else:
+                                    file_used_in_indexes_old.append(value_new)
+                                    file_used_in_indexes_final = file_used_in_indexes_old
+                            elif op == "---":
+                                file_used_in_indexes_final = [x for x in file_used_in_indexes_old if x!=value_new]
+                        else:
+                            if op=="+++":
+                                file_used_in_indexes_final = [value_new]
+                            elif op == "---":
+                                logger.debug(f"{self.index_name}中{doc_id}的file_used_in_indexes为空，无需删除{value_new}") 
+                        
+                        field_value_pair_dict_final = copy.deepcopy(field_value_pair_dict)
+                        field_value_pair_dict_final["file_used_in_indexes"] = file_used_in_indexes_final
+                                
+                    
+                    _source = {"doc":field_value_pair_dict_final}
                     action = {"_op_type": "update","_index":self.index_name, "_id":doc_id, "_source":_source}
                     actions_list.append(action)
 
@@ -282,23 +311,24 @@ class JqElasticsearchDocumentStore(JqBaseDocumentStore):
             List[LmDocument]: List of result documents
         """
         res = self.client.search(index=self.index_name, body=query)
-        lm_docs = []
+        return res["hits"]["hits"]
+        # lm_docs = []
 
-        for r in res["hits"]["hits"]:
-            _id = r["_id"]
-            text=r["_source"]["file_text"]
-            file_upload_date = r["_source"]["file_upload_date"]
-            file_upload_date_dict = {"file_upload_date":file_upload_date}
-            metadata=r["_source"]["file_metadata"]
-            metadata.update(file_upload_date_dict)
-            lm_docs.append(
-                LmDocument(
-                    id_=_id,
-                    text=text,
-                    metadata=metadata,
-                )
-            )
-        return lm_docs
+        # for r in res["hits"]["hits"]:
+        #     _id = r["_id"]
+        #     text=r["_source"]["file_text"]
+        #     file_upload_date = r["_source"]["file_upload_date"]
+        #     file_upload_date_dict = {"file_upload_date":file_upload_date}
+        #     metadata=r["_source"]["file_metadata"]
+        #     metadata.update(file_upload_date_dict)
+        #     lm_docs.append(
+        #         LmDocument(
+        #             id_=_id,
+        #             text=text,
+        #             metadata=metadata,
+        #         )
+        #     )
+        # return lm_docs
         
     def _get_query(self,user_query_text: str=None,size=MAX_DOCS_TO_GET,query_on_fileds:list = ["file_name","file_text"], filter_by_doc_ids:list=None,filter_by_file_upload_users:list=None,filter_by_doc_types:list=[".doc"],filter_by_status:list=["true","false"]):
         # 即使用户没有提供status或status为空，因爲status状态少，好构造全集，所以放在第一个，总是存在
@@ -372,14 +402,14 @@ class JqElasticsearchDocumentStore(JqBaseDocumentStore):
             count = 0
         return count
     
-    def _ids(self) -> set[str]:
+    def _ids(self) -> list:
         try:
             docs = self.get_all_docs()
             ids = [doc.doc_id for doc in docs]
-            return set(ids)
+            return list(set(ids))
         except Exception as e:
             logger.warning(f"无法获取到ids:{e}")            
-            return set()        
+            return []        
 
     def delete(self, ids: Union[List[str], str]):
         """Delete document by id"""
