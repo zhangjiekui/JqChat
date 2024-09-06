@@ -4,3 +4,7 @@ serverAddress = "localhost"
 
 [server]
 headless = true
+
+[client]
+showSidebarNavigation = false
+toolbarMode = "viewer"

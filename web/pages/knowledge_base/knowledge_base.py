@@ -27,6 +27,7 @@ from jqcode.jq_knowledge_manegement.chatchat.server.utils import get_config_mode
 from web.utils.utils import *
 
 # SENTENCE_SIZE = 100
+api = ApiRequest(base_url=api_address())
 
 cell_renderer = JsCode(
     """function(params) {if(params.value==true){return '✓'}else{return '×'}}"""
@@ -67,7 +68,7 @@ def file_exists(kb: str, selected_rows: List) -> Tuple[str, str]:
     return "", ""
 
 
-def knowledge_base_page(api: ApiRequest, is_lite: bool = None):
+def knowledge_base_page():
     try:
         kb_list = {x["kb_name"]: x for x in get_kb_details()}
     except Exception as e:

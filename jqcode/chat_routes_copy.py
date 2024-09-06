@@ -66,10 +66,6 @@ async def chat_completions(
     ```
     """
     text=f"""Markdown 标题：# 这是 H1  """
-    kb_base=get_kb_detail(doc_id)
-    load_kb_from_db(doc_id)
-    kbs=get_kb_details()
-    print(kb_base)
     resp=JSONResponse(content={"code":code,"text":user_prompt+text})
     return resp
 
