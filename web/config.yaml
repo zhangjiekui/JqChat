@@ -1,0 +1,33 @@
+cookie:
+  expiry_days: 30
+  key: some_signature_key
+  name: jingqi-chat
+credentials:
+  usernames:
+    admin:
+      email: admin@gmail.com
+      failed_login_attempts: 0
+      logged_in: true
+      name: David Baldwin
+      password: $2b$12$E9/bCaN/r8sN/FV2l8NpgOgspUBAp7UAVU6BgsXJzp/pW8gQWCprC
+    jet:
+      email: jet@jet.com
+      failed_login_attempts: 0
+      logged_in: false
+      name: jet
+      password: $2b$12$6UFxbXrTC4wtJvp6Cro3LOim4f//NuGAogi4J6xoM.XKyUN0UQbpC
+    jetyou:
+      email: jetyou@foxmail.com
+      failed_login_attempts: 3
+      logged_in: true
+      name: jetyou
+      password: $2b$12$E9/bCaN/r8sN/FV2l8NpgOgspUBAp7UAVU6BgsXJzp/pW8gQWCprC
+    sun:
+      email: sun@sun.com
+      failed_login_attempts: 0
+      logged_in: false
+      name: sun
+      password: $2b$12$4hzJDwjpc1XlPz3YLqUsrud9YFpauSY2YnYYvvo69RoKt1.erD9ze
+pre-authorized:
+  emails:
+  - jetyou@foxmail.com
