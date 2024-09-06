@@ -239,7 +239,8 @@ if __name__ == "__main__":
     input_files = [fr'/data/projects/JqChatV2/JqChat/jqcode/jq_readers/.test_files/.testinputdocs/A方案.docx'] 
     input_files += [fr'/data/projects/JqChatV2/JqChat/jqcode/jq_readers/.test_files/.testinputdocs/PPQA000_质量保证过程.doc']
     # input_files = []   
-    index_name="new_test_doc_tree_reader"
+    # index_name="new_test_doc_tree_reader"
+    index_name='zjk_jqesclient_test'
     compression_retriever = get_retriever(index_name=index_name,chat_on_docs_list=input_files,add_docs_list_to_kb=True) 
     # docs1 = compression_retriever.invoke("晶奇公司在哪一年获得ISO9001国际质量体系认证？")
     docs1 = compression_retriever.invoke("组织级质量保证计划审查")

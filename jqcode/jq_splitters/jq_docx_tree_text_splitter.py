@@ -867,8 +867,8 @@ if __name__ == "__main__":
 
     
     llm = env_models_instance.chat_model
-    index_name='yqli22'
-    compression_retriever = get_retriever(index_name=index_name,chat_on_docs_list=input_files,add_docs_list_to_kb=True)
+    index_name='zjk_jqesclient_test'
+    compression_retriever = get_retriever(index_name=index_name,chat_on_docs_list=None,add_docs_list_to_kb=True)
     # compression_retriever = get_retriever(index_name=index_name)
     # chain_type:stuff、refine、map_reduce 和 map_rerank
     qa_chain_RetrievalQA = RetrievalQA.from_chain_type(llm,retriever=compression_retriever,return_source_documents=True, chain_type="stuff")
@@ -891,9 +891,9 @@ if __name__ == "__main__":
         for i,h in enumerate(hits):
             # print(f'文档片段[{i+1}](relevance_score:{h.metadata["relevance_score"]:.3f}):\n{h.page_content}')
             print(f'【{h.metadata.get("file_name",None) or h.metadata.get("source",None)}】文档片段[{i+1}](relevance_score:{h.metadata["relevance_score"]:.3f})')
-            if input_files:
-                if h.metadata["source"] not in input_files:
-                    logger.warning(f"检索出的文档片段不在指定文件范围内!限定的文件范围:\n{input_files}")
+            if limited_to_files:
+                if h.metadata["source"] not in limited_to_files:
+                    logger.warning(f"检索出的文档片段不在指定文件范围内!限定的文件范围:\n{limited_to_files}")
         print('   -----------最终回答-------------')
         print(r['result'])
         print('\n\n')
@@ -902,4 +902,4 @@ if __name__ == "__main__":
 
     # qs = [query9]
     for q in qs:
-        chain_qa_fun(q,limited_to_files=input_files)
+        chain_qa_fun(q,limited_to_files=None)

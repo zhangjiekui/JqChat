@@ -89,7 +89,6 @@ class JqEsClient():
             else:
                 logger.warning(f"{index_name=}本不存在，无需删除")
     
-
     def chunks_indexing_from_input_dir_or_files(self,
             # 当前用户，将在create_doc_index和add_or_update_index_metadata_if_id_exists方法中使用
             current_user:str,
@@ -144,12 +143,20 @@ if __name__ == "__main__":
     # status = jq_es_client.create_doc_index(index_name="health_new",description="Test:创建一个doc_index（存储doc chunks的文本内容及向量，就是通常意义上的知识库）")
     # status = jq_es_client.drop_doc_index(index_name="health_new")
     # print(status)
-    input_dir = "/data/projects/JqChatV2/JqChat/jqcode/jq_readers/.test_files/.testinputdocs"
+    
+    index_name='zjk_jqesclient_test'
+    index_store = JqElasticsearchIndexStore(index_name=index_name)
+    print(f"知识库{index_store.index_name}中的记录数为:{index_store.count}")
     
     
-    input_files = [fr'/data/projects/JqChatV2/JqChat/jqcode/jq_readers/.test_files/.testinputdocs/AAMIS_项目总体计划_120925.doc'] 
-    input_files += [fr'/data/projects/JqChatV2/JqChat/jqcode/jq_readers/.test_files/.testinputdocs/PPQA000_质量保证过程.doc'] 
-    vectorstore = jq_es_client.chunks_indexing_from_input_dir_or_files(current_user='zjk',index_name='zjk_jqesclient_test',
-                                                                       description="为了测试chunks_indexing_from_input_dir_or_files方法，从提供一个文件目录，自动建立metastore,原始文件上传到docstore，并完成知识库向量索引",
-                                                                       input_files = input_files)
+    # input_dir = "/data/projects/JqChatV2/JqChat/jqcode/jq_readers/.test_files/.testinputdocs"
+    # vectorstore = jq_es_client.chunks_indexing_from_input_dir_or_files(current_user='zjk',index_name='zjk_jqesclient_test',
+    #                                                                 description="为了测试chunks_indexing_from_input_dir_or_files方法，从提供一个文件目录，自动建立metastore,原始文件上传到docstore，并完成知识库向量索引",
+    #                                                                 input_dir = input_dir)
+    
+    # input_files = [fr'/data/projects/JqChatV2/JqChat/jqcode/jq_readers/.test_files/.testinputdocs/AAMIS_项目总体计划_120925.doc'] 
+    # input_files += [fr'/data/projects/JqChatV2/JqChat/jqcode/jq_readers/.test_files/.testinputdocs/PPQA000_质量保证过程.doc'] 
+    # vectorstore = jq_es_client.chunks_indexing_from_input_dir_or_files(current_user='zjk',index_name='zjk_jqesclient_test',
+    #                                                                    description="为了测试chunks_indexing_from_input_dir_or_files方法，从提供一个文件目录，自动建立metastore,原始文件上传到docstore，并完成知识库向量索引",
+    #                                                                    input_files = input_files)
     
