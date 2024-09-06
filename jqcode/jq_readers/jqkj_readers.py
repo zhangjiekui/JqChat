@@ -58,7 +58,7 @@ import asyncio
 from jqcode.jq_utils.logger import jqkj_logger
 logger = jqkj_logger(__file__,using_multi_thread=True).get_logger()
 
-file_type_processed_by_jqreader = [".pdf",".docx",".md",".html",".htm"]
+file_type_processed_by_jqreader = [".pdf",".doc",".docx",".md",".html",".htm"]
 mutex = threading.Lock()
 class JqkjDocxReader(BaseReader):
     """Docx parser."""
@@ -125,14 +125,14 @@ class JqkjDocxReader(BaseReader):
             logger.error(f"文件不存在:{file_path}")
 
         if self.file_path.exists() and doc_original:
-            doc = self.DocumentFunc(self.file_path)
-            # text = '请从metadata["file_doc_tree_jq"]中获取'
-            text = "\n".join([paragraph.text for paragraph in doc.paragraphs if len(paragraph.text.strip())>0])
-            logger.debug(f"\n\n")
-              
+            doc = self.DocumentFunc(self.file_path)           
+            # text = "\n".join([paragraph.text for paragraph in doc.paragraphs if len(paragraph.text.strip())>0])
+            text = '将从metadata["file_doc_tree_jq"]中获取，并替代这里的文字'
+            logger.debug(f"\n\n")              
             logger.debug(f"#######开始将文档{self.file_path}解析为树结构")
             doc_tree,df_table_list = self.parse_docx_into_tree(doc,self.file_path)
-
+            texts = [node.text for node in doc_tree.descendants]
+            text = "\n".join(texts) #包含了图片识别出和表格转换出来的文本
                
             # 'original_source_jq'(转换前的文件pdf/doc/md的文件路径，如果本就是docx文件,则与original_source_converted_jq一致),
             # 'source'键是为了与chatchat中的reader保持一致的，取值与'original_source_jq'一致
@@ -295,7 +295,7 @@ class JqkjDocxReader(BaseReader):
                     # 但创建的Anytree节点数量应是len(imgid_list)
                 # 验证文档中实际具有的，已读取到的和保存的表格数量是否一致
                 # 验证是否所有的Anytree图片表格节点都已成功创建
-        if True:
+        if False:
             try:
                 logger.debug(f"\n=========验证[{file_path}]读取结果是否正确=========")
                 # logger.debug(f"\n=========验证读取结果是否正确=========")
@@ -368,7 +368,7 @@ class JqkjDocxReader(BaseReader):
         if len(img_nodes):
             logger.debug(f"{len(img_nodes)=}")
             img_src_and_data_tuple_list = [(treenode.image_filepath_jq,treenode.img_blob_jq) for treenode in img_nodes] #得到[(img_src,img_data)...]
-            results = treenodes_img_to_text_in_batch(img_src_and_data_tuple_list)
+            results = treenodes_img_to_text_in_batch([file_path,img_src_and_data_tuple_list])
             logger.debug(f"{len(results)=}")
             assert len(img_nodes) == len(results)
             for i,img_node in enumerate(img_nodes):

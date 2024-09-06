@@ -493,6 +493,7 @@ class InitEnvModels:
         assert documents,  "参数documents（待索引的文档）不得为空！"
         if not es_connection:
             es_connection=self.get_es_connection()
+        embedding = embedding if embedding else self.get_emb_8k_rerank_model()[0]
         self.create_es_index_if_not_existes_with_default_chinese_analyzer(es_connection=es_connection,index_name=index_name)
         strategy = strategy if strategy else self.strategy
         es_searchstore = ElasticsearchStore(es_connection=es_connection, index_name=index_name, embedding=embedding,strategy=strategy)

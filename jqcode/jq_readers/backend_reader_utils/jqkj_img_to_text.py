@@ -89,12 +89,18 @@ def treenode_img_to_text(img_src_and_data_tuple:tuple,delete_emf_wmf_png_file=Tr
     result = f"【{img_src}的OCR文本】"+ result
     return result
 
-def treenodes_img_to_text_in_batch(img_src_and_data_tuple_list, processes=None):
+def treenodes_img_to_text_in_batch(filepath_and_img_src_and_data_tuple_list, processes=None):
+    file_path=filepath_and_img_src_and_data_tuple_list[0]
+    img_src_and_data_tuple_list = filepath_and_img_src_and_data_tuple_list[1]
+    
     if processes:
         processes = min(processes,cpu_nums_for_img_ocr)
     else:
         processes = cpu_nums_for_img_ocr
     processes = min(len(img_src_and_data_tuple_list),processes)
+    logger.warning(f"=====正在执行文件中的图片文字识别，共有{len(img_src_and_data_tuple_list)}张图片=====")
+    logger.warning(f"=====文件为:{file_path}=====")
+    
     logger.debug(f"~~~~~~~~~~~~~~~treenodes_img_to_text_in_batch进程池数量为{processes}~~~~~~~~~~~~~~~")
     with multiprocessing.Pool(processes) as p:
         results = p.map(treenode_img_to_text,img_src_and_data_tuple_list)

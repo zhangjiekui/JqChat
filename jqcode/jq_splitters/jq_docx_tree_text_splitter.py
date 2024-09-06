@@ -565,8 +565,9 @@ class JqkjDocTreeTokenTextSplitter(MetadataAwareTextSplitter):
             if cur_node == last_nodes:
                 if len(text_cached.strip('\n'))>0:
                     # 先看看text_cached能否合并到最后的一个chunks_saved中
-                    if self.tokens_len_func(chunks_saved[-1]) + self.tokens_len_func(text_cached)<=TOKEN_THRESHOLD:
-                        chunks_saved[-1] += text_cached
+                    if chunks_saved:#可能有些短文件，一个只有一个块
+                        if self.tokens_len_func(chunks_saved[-1]) + self.tokens_len_func(text_cached)<=TOKEN_THRESHOLD:
+                            chunks_saved[-1] += text_cached
                     else:
                         chunks_saved.append(text_cached.strip('\n'))
         

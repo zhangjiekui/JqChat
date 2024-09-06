@@ -328,6 +328,7 @@ class JqElasticsearchIndexStore(JqBaseDocumentStore):
         """Get all documents"""
         query_dict = {"query": {"match_all": {}}, "size": MAX_DOCS_TO_GET}
         return self.query_raw(query_dict)
+    
     def get_all_unique_fileids_filepaths(self,filepath_key="file_path") -> tuple:
             es_index_doc_ids = []
             es_index_doc_filepaths = []

@@ -1,11 +1,16 @@
-# to be added
 import time
+from langchain.schema import Document as LcDocument
 from jqcode.jq_agent.c0_init_env_models import env_models_instance
 from jqcode.jq_docstores.backend_docstore_utils.jq_es_metastores import JqElasticsearchUniMetaStore
 from jqcode.jq_docstores.backend_docstore_utils.jq_es_docstores import JqElasticsearchDocumentStore
 from jqcode.jq_docstores.backend_docstore_utils.jq_es_indexstores import JqElasticsearchIndexStore
+from jqcode.jq_readers.jqkj_readers import JqkjSimpleDirectoryReader, filetype_reader_dict    
 from jqcode.jq_utils.logger import jqkj_logger
+
 logger = jqkj_logger(__file__).get_logger()
+required_exts_in_reader = list(filetype_reader_dict.keys())
+doc_tree_spiltter = env_models_instance.doc_tree_spiltter
+embed_model = env_models_instance.get_emb_8k_rerank_model()[0]
 
 class JqEsClient():
     """
@@ -18,7 +23,7 @@ class JqEsClient():
         self.client = env_models_instance.get_es_connection()
         self.default_index_settings = env_models_instance.ES_DEFAULT_CHINESE_SETTINGS
         
-    def create_doc_index(self,index_name:str="",description:str="",index_creator:str = "",):
+    def create_doc_index(self,index_name:str="",description:str="",index_creator:str = ""):
         """
             创建一个doc_index（存储doc chunks的文本内容及向量，就是通常意义上的知识库）
             (1) 验证创建的或已存在的doc_index，在metastores是否存在
@@ -84,7 +89,15 @@ class JqEsClient():
             else:
                 logger.warning(f"{index_name=}本不存在，无需删除")
     
-    def chunks_indexing():
+
+    def chunks_indexing_from_input_dir_or_files(self,
+            # 当前用户，将在create_doc_index和add_or_update_index_metadata_if_id_exists方法中使用
+            current_user:str,
+            #create_doc_index方法相关参数：创建知识库，并在metastores中增加所建知识库的相关元数据描述信息
+            index_name:str="",description:str=None,
+            #JqkjSimpleDirectoryReader实例化相关参数，读取文件 
+            input_dir:str=None,input_files:list=None, overwrite_existing_converted_files=False,required_exts=required_exts_in_reader,exclude_hidden=False
+        ):
         """
             将文档chunks文本和向量存储到doc_index
             (1) 调用执行create_doc_index方法
@@ -92,14 +105,51 @@ class JqEsClient():
             (3) 将文件记录ID更新到chunks元数据中
             (4) 将文档chunks文本和向量存储到doc_index
         """
-        pass
+    # 1、可选。创建知识库，并在metastore中写入该知识库的元数据（如名称、描述、创建者)
+        if index_name not in self.metastores.index_names or not self.client.indices.exists(index=index_name):
+            print(f"创建知识库{index_name},并在metastore中写入该知识库的元数据（如名称、描述、创建者)")       
+            index_store = self.create_doc_index(index_name=index_name,description=description,index_creator=current_user)
+            print(f"应已创建知识库{index_name}，并在{self.metastores.index_name}中有该知识库({index_name})的描述等元信息")
+        else:
+            print(f"知识库{index_name}已存在,并在metastore中存在{self.metastores.index_names}") 
+            index_store = JqElasticsearchIndexStore(index_name=index_name)
+    # 2、读取文件
+        simple_reader = JqkjSimpleDirectoryReader(input_dir=input_dir,input_files=input_files, 
+                                                  overwrite_existing_converted_files=overwrite_existing_converted_files,required_exts=required_exts,exclude_hidden=exclude_hidden)
+        lm_documents = simple_reader.load_data()
+        print(f"读取到的文件数量:{len(lm_documents)=}")
+    # 3、上传到文件库(docstore)，并在lm_documents元数据中加入存储库(docstore)及文件对应ID等信息
+        status,lm_documents_with_added_index_info_metadata,es_index_doc_id_list = self.docstores.add_or_update_index_metadata_if_id_exists(lm_documents=lm_documents,file_upload_user=current_user)
+        print(f"上传的文件数量：{len(lm_documents_with_added_index_info_metadata)=}")
+        print(f"上传的文件查看：应可在{self.docstores.index_name}中存在{es_index_doc_id_list}等{len(es_index_doc_id_list)}文件记录！")
+        print(f"lm_documents_with_added_index_info_metadata中应以包含：存储库(docstore)及文件存储ID({es_index_doc_id_list})的信息,请核实！")
+    # 4、切分文件
+        lm_splitted_documents = doc_tree_spiltter.get_nodes_from_documents(lm_documents) #llamaindex格式
+        lc_splitted_documents = [LcDocument(page_content=doc.text,metadata=doc.metadata) for doc in lm_splitted_documents] #转换为langchain格式
+        print(f"从{len(lm_documents)}个文件中，生成的切片数为:{len(lc_splitted_documents)}")
+    # 5、将文件切片写入知识库    
+        vectorstore = env_models_instance.get_es_searchstore_index_documents(documents=lc_splitted_documents, embedding=embed_model,index_name=index_name,source_id_key='source')        
+        es_index_doc_ids,es_index_doc_filepaths = index_store.get_all_unique_fileids_filepaths()
+        for i in range(len(es_index_doc_ids)):
+            print(f"序号：{i+1},Id:{es_index_doc_ids[i]},Path:{es_index_doc_filepaths[i]}")
+        print(f"知识库{index_store.index_name}中的记录数为:{index_store.count}")
+        return vectorstore
+    
     
 if __name__ == "__main__":
     jq_es_client = JqEsClient()
-    # "health" "2024-09-05 04:27:12"
-    status = jq_es_client.create_doc_index(index_name="health",description="Test:创建一个doc_index（存储doc chunks的文本内容及向量，就是通常意义上的知识库）")
-    # "health_new" "2024-09-05 04:28:02"
-    status = jq_es_client.create_doc_index(index_name="health_new",description="Test:创建一个doc_index（存储doc chunks的文本内容及向量，就是通常意义上的知识库）")
-    status = jq_es_client.drop_doc_index(index_name="health_new")
-    print(status)
+    # # "health" "2024-09-05 04:27:12"
+    # status = jq_es_client.create_doc_index(index_name="health",description="Test:创建一个doc_index（存储doc chunks的文本内容及向量，就是通常意义上的知识库）")
+    # # "health_new" "2024-09-05 04:28:02"
+    # status = jq_es_client.create_doc_index(index_name="health_new",description="Test:创建一个doc_index（存储doc chunks的文本内容及向量，就是通常意义上的知识库）")
+    # status = jq_es_client.drop_doc_index(index_name="health_new")
+    # print(status)
+    input_dir = "/data/projects/JqChatV2/JqChat/jqcode/jq_readers/.test_files/.testinputdocs"
+    
+    
+    input_files = [fr'/data/projects/JqChatV2/JqChat/jqcode/jq_readers/.test_files/.testinputdocs/AAMIS_项目总体计划_120925.doc'] 
+    input_files += [fr'/data/projects/JqChatV2/JqChat/jqcode/jq_readers/.test_files/.testinputdocs/PPQA000_质量保证过程.doc'] 
+    vectorstore = jq_es_client.chunks_indexing_from_input_dir_or_files(current_user='zjk',index_name='zjk_jqesclient_test',
+                                                                       description="为了测试chunks_indexing_from_input_dir_or_files方法，从提供一个文件目录，自动建立metastore,原始文件上传到docstore，并完成知识库向量索引",
+                                                                       input_files = input_files)
     

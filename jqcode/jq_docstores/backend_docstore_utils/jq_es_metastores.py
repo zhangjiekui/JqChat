@@ -31,7 +31,8 @@ def md5_id_from_text(text:str):
 # /data/projects/JqChatV2/JqChat/jqcode/es_code_example.py
 
 # todo:增加Filters
-class JqElasticsearchUniMetaStore(JqBaseDocumentStore):
+# class JqElasticsearchUniMetaStore(JqBaseDocumentStore):
+class JqElasticsearchUniMetaStore():
     """Elasticsearch document store that store file/document in a ES database"""
 
     def __init__(
@@ -76,7 +77,7 @@ class JqElasticsearchUniMetaStore(JqBaseDocumentStore):
             )
             
         self.count = self._count()
-        self.ids = self._ids()
+        self.ids,self.index_names = self._ids_and_names()
         
     def add_or_update_index_metadata_if_id_exists(
         self,
@@ -273,11 +274,12 @@ class JqElasticsearchUniMetaStore(JqBaseDocumentStore):
             count = 0
         return count
     
-    def _ids(self) -> list:
+    def _ids_and_names(self) -> list:
         try:
             rs = self.get_all_docs()
             ids = [r["_id"] for r in rs]
-            return list(set(ids))
+            index_names = [r["_source"]["index_name"] for r in rs]
+            return ids,index_names
         except Exception as e:
             logger.warning(f"无法获取到ids:{e}")            
             return []
@@ -303,6 +305,8 @@ class JqElasticsearchUniMetaStore(JqBaseDocumentStore):
     
 if __name__ == "__main__":
     metastore = JqElasticsearchUniMetaStore()
+    print(metastore.ids)
+    print(metastore.index_names)
     rs = metastore.get_all_docs_by_users_and_status()
     print(rs)
     rs = metastore.get_all_docs_by_users_and_status(status_list=[False,'false'])
