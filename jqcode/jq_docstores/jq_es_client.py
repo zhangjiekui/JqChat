@@ -15,6 +15,7 @@ embed_model = env_models_instance.get_emb_8k_rerank_model()[0]
 class JqEsClient():
     """
         JqEsClient封装对ES的操作，以维护metastores,docstores和doc_index之间的一致性
+        注意:ES本身并不支持事务机制，所以暂时没办法保证真正意义上的事务一致性
         
     """
     def __init__(self,) -> None:
