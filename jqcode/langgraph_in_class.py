@@ -28,6 +28,7 @@ import asyncio
 from jqcode.jq_agent.tools.jq_web_search_engine_async import get_web_search_documents,is_query_chinese,get_tavily_search_result_documents
 import os
 import re
+from jqcode.jq_code_executor.code_executor import CodeExecutorTool
 import json_repair
 import shortuuid
 from collections import deque
@@ -1033,7 +1034,7 @@ class GraphAgent:
         # todo
         tool_call_id = "xxx"
         tool_name = "CODE_EXECUTION"
-        
+        tool_code=CodeExecutorTool()
         # 获取代码code和文本code_text
         code = ''
         code_text =''
@@ -1078,10 +1079,15 @@ class GraphAgent:
             if code:
                 logger.debug("......开始提交和执行代码......") 
                 # 提交代码到ipykernel_api执行   
-                result = submit_code_to_ipykernel_api(code) #返回True或False
+                # result = submit_code_to_ipykernel_api(code) #返回True或False
+                # 返回值为{"text"="",image=""}
+                result=tool_code.call(code=code)
                 if result:
-                    message_content = "......ipykernel_api代码提交成功，等待运行结果......"
+                    # message_content = "......ipykernel_api代码提交成功，等待运行结果......"
+                    message_content+=result['text']
+                    message_content+=results['image']
                 # 提交代码到ipykernel_api执行，尝试本地来执行
+                # 不应该需要本地执行
                 if not result:
                     logger.info(f"......ipykernel_api代码提交失败，请检查服务接口......")
                     logger.info(f"......尝试使用本地的python环境来来执行......")
