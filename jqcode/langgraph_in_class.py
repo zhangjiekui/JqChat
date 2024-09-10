@@ -3,6 +3,7 @@
 from langgraph.graph import StateGraph, END
 from typing import TypedDict, Annotated, Literal, Optional, Union, List
 from langchain_core.pydantic_v1 import BaseModel, Field
+# from pydantic import BaseModel, Field
 from langchain_core.prompts import ChatPromptTemplate
 from langgraph.graph.message import add_messages
 from langchain_core.messages import AnyMessage, SystemMessage, HumanMessage, ToolMessage,AIMessage
@@ -189,13 +190,13 @@ def web_search(state:GraphAgentState):
 
 
 
-class CODE_GENERATION(BaseModel):
+class CODE_GENERATION(BaseModel,extra='allow'):
     """
     Code Assistant/Code generation . Use programming code (preferred Python language) to slove a user question, if the question related to [code generating, file processing/analyzing, data exploring/analyzing/visualizing].
     """
     query: str = Field(description="The query to use when need to generate python code.")
 
-class CODE_EXECUTION(BaseModel):
+class CODE_EXECUTION(BaseModel,extra='allow'):
     """
     Code execution/Code intepreter. When user providing a code snippet and asking for running/executing, w or w/o returning the result.
     """
@@ -314,7 +315,7 @@ def display_code(code:str):
 # region: Rags Related
     
 # 1. Coding Relavance Grader
-class GradeCodingRelavance(BaseModel):
+class GradeCodingRelavance(BaseModel,extra='allow'):
     """Binary classification for a user question is relevant to [code generating/executing,file processing/analyzing, data exploring/analyzing]."""
     k: str = Field(description="Whether a user question is relevant to [code generating/executing,file processing/analyzing, data exploring/analyzing], k must be 'yes' or 'no'")
 
@@ -332,7 +333,7 @@ coding_relevance_grader = coding_relevance_prompt | structured_llm_coding_releva
 
 
 # 2. Retrieved Documents Relevance Grading
-class GradeDocumentsRelavance(BaseModel):
+class GradeDocumentsRelavance(BaseModel,extra='allow'):
     """Binary classification for relevance check on retrieved documents."""
     k: str = Field(description="Whether Documents are relevant to the question, k must be 'yes' or 'no'")
 
@@ -510,7 +511,7 @@ def generate(state:GraphAgentState):
 
 
 # 5.Supported (Not Hallucination) Grader
-class GradeSupported(BaseModel):
+class GradeSupported(BaseModel,extra='allow'):  
     """Binary classification for whether an answer is supported by a set of facts."""
     k: str = Field(description="Whether answer is supported by the facts, k must be 'yes' or 'no'")
 
@@ -524,7 +525,7 @@ answer_is_supported_by_documents_prompt = ChatPromptTemplate.from_messages(
 )
 answer_is_supported_by_documents_grader = answer_is_supported_by_documents_prompt | structured_llm_answer_is_supported_by_documents_grader
 
-class GradeAnswer(BaseModel):
+class GradeAnswer(BaseModel,extra='allow'):
     """Binary classification to assess answer addresses question."""
     k: str = Field(description="Whether answer addresses the question, k must be 'yes' or 'no'")
 
@@ -839,19 +840,22 @@ class GraphAgent:
         tool_calls = state['messages'][-1].tool_calls
         results = []
         for t in tool_calls:
-            logger.info(f"LLM Returned tool_calling: ")
+            logger.info(f"Execute LLM Returned tool_calling: ")
             tool_name = t['name']
             tool_args = t['args']
-            logger.debug(f"    Tool_name:{tool_name}")
-            logger.debug(f"    Tool_args: {tool_args}")
             tool_call_id = t["id"]
-            print(f"{tool_call_id=}")            
+            logger.debug(f"    Tool_name:{tool_name}")
+            logger.debug(f"    Tool_args: {tool_args}")            
+            logger.debug(f"    Tool_id: {tool_call_id}")            
             try:
                 if not tool_name in self.executable_tool_dict:      # check for bad tool name from LLM                
                     result = f"返回了错误的工具名称'{tool_name}'，工具名必须是{self.executable_tool_names}中的一个"  # instruct LLM to retry if bad
                     raise Exception(result)
-                else:                    
-                    result = self.executable_tool_dict[t['name']].invoke(t['args'])
+                else:
+                    _args = t['args']
+                    if not isinstance(_args,dict):
+                        _args = json_repair.loads(_args)                     
+                    result = self.executable_tool_dict[t['name']].invoke(_args)
                     result = str(result)
                     if "error" in result.lower():
                         raise Exception(result)
@@ -888,23 +892,27 @@ class GraphAgent:
         except:
             returned_tool_calling_nums = 0
 
-        if self.model.model_name.startswith("command-r") and returned_tool_calling_nums==0:
+        if self.model.model_name.startswith("qwen") and returned_tool_calling_nums==0:
                 try:
                     tool_calls = []
                     tool_calls_json_list = json_repair.loads(result.content)
+                    if isinstance(tool_calls_json_list,dict):
+                        tool_calls_json_list = [tool_calls_json_list]
                     for tool_call in tool_calls_json_list:
-                        tool_name = tool_call['tool_name']
+                        tool_name = tool_call['name']
                         if tool_name in ["directly-answer","directly_answer"]:
                             result.tool_calls = []
                             break
                         else:
                             if tool_name in self.all_tools_names:
-                                parameters = tool_call['parameters']
+                                parameters = tool_call['arguments']
+                                if not isinstance(parameters,dict):
+                                    parameters = json_repair.loads(parameters)
                                 tool_calls.append({"name":tool_name,"args":parameters,"id":result.id})
                     result.tool_calls = tool_calls
                     returned_tool_calling_nums = len(result.tool_calls)
                 except:
-                    logger.debug(f"Can't parser tool calls from command r response content")
+                    logger.debug(f"Can't parser tool calls from models response content")
 
 
         if returned_tool_calling_nums > 0:
@@ -944,8 +952,21 @@ class GraphAgent:
             messages = self.system_message + question_related_messages
             
         logger.info(f"call_llm:调用LLM时的消息数为:{len(messages)}")
-        try:    
-            message = self.model.invoke(messages,config=self.config)
+        try:
+            try:
+                for message in messages:
+                    if not hasattr(message,'__fields_set__'):
+                        pass
+                    
+                    if isinstance(message,AIMessage):
+                        if not (hasattr(message,'content') and hasattr(message,'tool_calls')):
+                            messages.remove(message)
+                    
+                # messages = [message for message in messages if hasattr(message,'content') and hasattr(message,'tool_calls')]
+                message = self.model.invoke(messages,config=self.config)
+            except Exception as e:
+                print(f"{messages},{e}")
+                message = self.model.invoke(messages,config=self.config)
             try: 
                 finish_reason = message.response_metadata["finish_reason"]
                 if finish_reason ==  "length":
@@ -1078,7 +1099,7 @@ class GraphAgent:
                         _result = result if result else "None"
                         message_content = f"python_repl代码运行成功,运行结果为Observation:{_result} （但如有图像，由于环境限制无法直接展示,可在本地环境中运行上述代码）"
                 
-                code_message = ToolMessage(content=message_content,name =tool_name,tool_call_id =tool_call_id,additional_kwargs ={"status":True,"code":code,"code_text":code_text})
+                code_message = ToolMessage(content=message_content,name=tool_name,tool_call_id =tool_call_id,additional_kwargs ={"status":True,"code":code,"code_text":code_text})
                 code_message = self.makeup_message_with_question_id_idx(code_message)            
                 return {'messages':code_message,'question_related_messages':code_message}
 
@@ -1182,7 +1203,9 @@ if __name__ == "__main__":
     my_main_bot = GraphAgent(executable_tools=executable_tools,routing_tools_wrapped_in_class=route_tools)
 
     for user_question in user_questions:
-        answer = my_main_bot.run_conversation(user_question=user_question )
+        answer = my_main_bot.run_conversation(user_question=user_question)
+        print(answer)
+        json_repair.loads('{"name": "get_flight_number, "arguments": "{\"date\": \"2024-09-11\", \"destination\": \"\\u4e0a\\u6d77\", \"origin\": \"\\u5408\\u80a5\"}""} ')
 
 
 # source: https://learn.deeplearning.ai/courses/ai-agents-in-langgraph/lesson/3/langgraph-components    

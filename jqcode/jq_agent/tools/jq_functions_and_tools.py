@@ -1,6 +1,6 @@
 from datetime import date, datetime
 from langchain.agents import Tool,tool
-
+from typing import Optional
 from langchain_community.agent_toolkits.load_tools import load_tools,get_all_tool_names
 from langchain_experimental.tools import PythonREPLTool
 from langchain_core.prompts import ChatPromptTemplate
@@ -16,16 +16,17 @@ logger = jqkj_logger(__file__).get_logger()
 
 
 # 自定义工具函数
-@tool
-def get_flight_number(origin:str,destination:str,date:date) -> str:
+@tool(parse_docstring=True)
+def get_flight_number(origin:Optional[str],destination:Optional[str],date:Optional[str]) -> str:
     """
     根据输入的出发地(origin),目的地(destination),日期(date),返回航班号。重要:当前日期是{current_date}，日期(date)只接受python datetime.date类型输入。如果日期是不确定的描述，如明天、后天等，请先使用工具'python_repl_tool'进行计算，并且返回python datetime.date类型结果，具体格式示例如下：2024-04-03。
+    
     Args:
-        origin:(str) 出发地/城市，例如合肥
-        destination:(str) 目的地/城市，例如北京
+        origin:(str), 出发地/城市，例如合肥
+        destination:(str), 目的地/城市，例如北京
         date:(date) 飞行日期， 例如2024-08-03.如果日期是不确定的描述，如明天、后天等，请先调用工具'python_repl_tool'或者'CODE_GENERATION'进行计算，并且返回python datetime.date类型结果
     """
-    result = f"东方航空MU5646 【{date}】"
+    result = f"晶奇航空测试航班号{origin}=>{destination} JQ6666-{date}"
     logger.info(f"'get_flight_number'执行结果: {result}")
     return result
 
@@ -43,31 +44,34 @@ def get_flight_number(origin:str,destination:str,date:date) -> str:
 #     return result
 
 current_date = str(datetime.now().date())
-get_flight_number.description= get_flight_number.description.replace("{current_date}",current_date)
+try:
+    get_flight_number.description= get_flight_number.description.replace("{current_date}",current_date)
+except:
+    get_flight_number.__doc__= get_flight_number.__doc__.replace("{current_date}",current_date)
+args_schema = get_flight_number.args_schema.schema()
+print(f"get_flight_number:{args_schema=}")
 
 # 使用python_repl并包装成Agent工具 【代码执行层面】
 # print('---------------------------------------------------------')
 # python_repl = PythonREPLTool()
 # print(python_repl.run("print('---------------------------------------------------------')")) #先运行一遍，后面似乎就不再会输出警告信息: Python REPL can execute arbitrary code. Use with caution.
 
-@tool
-def python_repl_tool(query:str) -> str: 
+@tool(parse_docstring=True)
+def python_repl_tool(query:Optional[str]) -> str: 
     """
     A Python shell. Use this to execute Input(query:str) python commands, but only suitable for simple question. 
-    Waring: 'CODE_GENERATION' tool is much powerful, please use 'CODE_GENERATION' tool for drawing images, plotting graphs/charts, data file processing/analyzing/saving. 
-
-        Input: query:str.Python code. You must use '\n' to seperate each code line
-    
+    Waring: 'CODE_GENERATION' tool is much powerful, please use 'CODE_GENERATION' tool for drawing images, plotting graphs/charts, data file processing/analyzing/saving.
+        Input: query:str. Python code. You must use '\n' to seperate each code line    
         Output: you MUST using `print($code or value$)` to print out at least one value (mostly in the last line), or multiple values as needed to better answer/solve the user's problem.For examples:
-        `# print out at least one value: MUST.
+        # print out at least one value: MUST.
             import datetime
             print(datetime.datetime.today() + datetime.timedelta(days=2))
-
-        `# print out multiple values: AS NEEDED. 
+        # print out multiple values: AS NEEDED. 
             print(1+1)
             print(298*3)
-            print(8-1) 
-        `    
+            print(8-1)
+    \n\nArgs:
+        query:Optional[str],  Python code 
     """
 
     python_repl = PythonREPLTool()
@@ -125,7 +129,8 @@ def python_repl_tool(query:str) -> str:
             return result
         else:
             raise ToolException(f"No observation was found. Maybe you should add `print($value)` in you python code?")
-
+args_schema = python_repl_tool.args_schema.schema()
+print(f"python_repl_tool:{args_schema=}")
 
 # print("\n###增加了ToolException处理函数_handle_error function")
 def _handle_error(error: ToolException) -> str:
@@ -182,6 +187,7 @@ def handle_tool_error(state) -> dict:
             ToolMessage(
                 content=f"Error: {repr(error)}\n please fix your mistakes.",
                 tool_call_id=tc["id"],
+                name = tc["name"],
             )
             for tc in tool_calls
         ]
