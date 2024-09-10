@@ -4,6 +4,8 @@ import logging.config
 import multiprocessing as mp
 from multiprocessing import Process,Event
 import os, sys
+
+from fastapi.staticfiles import StaticFiles
 from jqcode.jq_knowledge_manegement.chatchat.server.knowledge_base.migrate import create_tables
 from contextlib import asynccontextmanager
 import pathlib
@@ -82,8 +84,9 @@ def run_api_server(
         1024 * 1024 * 1024 * 3,
     )
     logging.config.dictConfig(logging_conf)  # type: ignore
+    app.mount("/workspace", StaticFiles(directory="workspace"), name="workspace")
     uvicorn.run(app, host=host, port=port)
-
+    
 
 def run_webui(
     started_event: Event = None, run_mode: str = None # type: ignore
@@ -322,18 +325,18 @@ async def start_main_server():
     def process_count():
         return len(processes)
     
-    kernel_started = manager.Event()
-    if args.api:
-        process = Process(
-            target=run_kernel_program,
-            name=f"Kernel Server",
-            kwargs=dict(
-                started_event=kernel_started,
-                run_mode=run_mode,
-            ),
-            daemon=True,
-        )    
-        processes["kernel"] = process
+    # kernel_started = manager.Event()
+    # if args.api:
+    #     process = Process(
+    #         target=run_kernel_program,
+    #         name=f"Kernel Server",
+    #         kwargs=dict(
+    #             started_event=kernel_started,
+    #             run_mode=run_mode,
+    #         ),
+    #         daemon=True,
+    #     )    
+    #     processes["kernel"] = process
     
     
     api_started = manager.Event()
