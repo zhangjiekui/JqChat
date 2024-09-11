@@ -508,7 +508,7 @@ def generate(state:GraphAgentState):
 
     generation = rag_node.invoke({"documents": documents, "question": question, "messages":messages},config=invoke_llm_config)
     # print(generation)
-    generation_message = ToolMessage(content=generation,name='generation',tool_call_id='0')
+    generation_message = ToolMessage(content=generation,name='generation',tool_call_id=f'call_{str(uuid.uuid4())}')
     return {"documents": documents, "question": question, "generation": generation, "messages":generation_message,"question_related_messages":generation_message}
 
 
@@ -629,7 +629,7 @@ executable_tools = [get_flight_number,python_repl_tool]
 route_tools = [WEB_SEARCH,CODE_GENERATION,CODE_EXECUTION]
 
 class GraphAgent:
-    def __init__(self,executable_tools:list=executable_tools, routing_tools_wrapped_in_class:list=route_tools, llm_model:ChatOpenAI=None,chat_on_docs_list:List[str]=None,add_docs_list_to_kb:bool=True, kb_base_dict:dict={"name": 'index_for_upload_files' , "vs_type":"ES","discription":"A vectorstore/knowledge base containing documents related to 晶奇公司、安徽晶奇网络科技股份有限公司、医疗卫生、医疗健康、医疗服务、医疗政策、medical treatment & health. 凡是与晶奇公司、安徽晶奇网络科技股份有限公司及医疗健康相关的问题，都必须使用vectorstore工具。MUST use the vectorstore for questions on these topics."}, recursion_limit:int=25, memory_thread_id:str=shortuuid.uuid()) -> None:
+    def __init__(self,executable_tools:list=executable_tools, routing_tools_wrapped_in_class:list=route_tools, llm_model:ChatOpenAI=None,chat_on_docs_list:List[str]=None,add_docs_list_to_kb:bool=True, kb_base_dict:dict={"name": 'zjk_jqesclient_test' , "discription":"A vectorstore/knowledge base containing documents related to 晶奇公司、安徽晶奇网络科技股份有限公司、医疗卫生、医疗健康、医疗服务、医疗政策、medical treatment & health. 凡是与晶奇公司、安徽晶奇网络科技股份有限公司及医疗健康相关的问题，都必须使用vectorstore工具。MUST use the vectorstore for questions on these topics."}, recursion_limit:int=25, memory_thread_id:str=shortuuid.uuid()) -> None:
         
     # region: 初始化
         # 获取知识库相关的信息
@@ -898,27 +898,33 @@ class GraphAgent:
         except:
             returned_tool_calling_nums = 0
 
-        if self.model.model_name.startswith("qwen") and returned_tool_calling_nums==0:
-                try:
-                    tool_calls = []
-                    tool_calls_json_list = json_repair.loads(result.content)
-                    if isinstance(tool_calls_json_list,dict):
-                        tool_calls_json_list = [tool_calls_json_list]
-                    for tool_call in tool_calls_json_list:
-                        tool_name = tool_call['name']
-                        if tool_name in ["directly-answer","directly_answer"]:
-                            result.tool_calls = []
-                            break
-                        else:
-                            if tool_name in self.all_tools_names:
-                                parameters = tool_call['arguments']
-                                if not isinstance(parameters,dict):
-                                    parameters = json_repair.loads(parameters)
-                                tool_calls.append({"name":tool_name,"args":parameters,"id":result.id})
-                    result.tool_calls = tool_calls
-                    returned_tool_calling_nums = len(result.tool_calls)
-                except:
-                    logger.debug(f"Can't parser tool calls from models response content")
+        if returned_tool_calling_nums==0 and self.model.model_name.startswith(("qwen","deepseek")):
+            if self.model.model_name.startswith("qwen"):
+                arg_name = "arguments" 
+            elif self.model.model_name.startswith("deepseek"):
+                arg_name = "parameters"
+            else:
+                arg_name = "parameters" 
+            try:
+                tool_calls = []
+                tool_calls_json_list = json_repair.loads(result.content)
+                if isinstance(tool_calls_json_list,dict):
+                    tool_calls_json_list = [tool_calls_json_list]
+                for tool_call in tool_calls_json_list:
+                    tool_name = tool_call['name']
+                    if tool_name in ["directly-answer","directly_answer"]:
+                        result.tool_calls = []
+                        break
+                    else:
+                        if tool_name in self.all_tools_names:
+                            parameters = tool_call[arg_name]
+                            if not isinstance(parameters,dict):
+                                parameters = json_repair.loads(parameters)
+                            tool_calls.append({"name":tool_name,"args":parameters,"id":f'call_{str(uuid.uuid4())}'})
+                result.tool_calls = tool_calls
+                returned_tool_calling_nums = len(result.tool_calls)
+            except:
+                logger.debug(f"Can't parser tool calls from models response content")
 
 
         if returned_tool_calling_nums > 0:
@@ -1051,6 +1057,7 @@ class GraphAgent:
             tool_call_id = last_message.tool_call_id
         except:
             tool_call_id = f'call_{str(uuid.uuid4())}'
+        # tool_call_id = f'call_{str(uuid.uuid4())}'
         tool_name = 'code_execution'
         code_executor=CodeExecutorTool()
         # 获取代码code和文本code_text
@@ -1102,8 +1109,7 @@ class GraphAgent:
                 # result = submit_code_to_ipykernel_api(code) #返回True或False
                 # 返回值为{"text"="",image=""}
                 result=code_executor.call(code=code)
-                if result:
-                    # message_content = "......ipykernel_api代码提交成功，等待运行结果......"                    
+                if result:               
                     message_content+=result['image']
                     message_content+=result['text']
                     logger.debug("......代码执行完毕......")
@@ -1141,7 +1147,7 @@ class GraphAgent:
             makeup_human_message = HumanMessage(content=f"对于用户问题:{question},上次的工具调用出现了错误，请仔细规划和思考，重新生成正确的工具名称和调用参数，避免出现同样的错误！")
             makeup_human_message = self.makeup_message_with_question_id_idx(makeup_human_message)
             # 下面的error_message仅仅是为了方便做code_execution的下一个节点导航使用
-            error_message = ToolMessage(content="",name =tool_name,tool_call_id =tool_call_id,additional_kwargs ={"status":False})
+            error_message = ToolMessage(content="",name =tool_name,tool_call_id =f'call_{str(uuid.uuid4())}',additional_kwargs ={"status":False})
             results = [makeup_tool_message,makeup_human_message,error_message]       
             return {'messages': results,'question_related_messages':results}       
         
@@ -1214,7 +1220,8 @@ tavily_search_tool = TavilySearchResults(max_results=4) #increased number of res
 
 if __name__ == "__main__":
     user_questions = [
-        '请绘制sin(x)曲线'
+        '请绘制sin(x)曲线',
+        # "安徽省食品药品监督管理局行政审批系统项目总体计划的版本号是多少，批准人是谁？",
         # '请搜索合肥大蜀山，然后提供详细介绍', 
         # '请查询明天从合肥到上海的航班,以及南昌到北京的航班',
         # '请直接执行代码：print("直接执行打印程序代码")',
@@ -1224,9 +1231,9 @@ if __name__ == "__main__":
         # '请查询明天从合肥到上海的航班',
         # '请使用python_repl_tool来计算1到100的和',
         # '请调用python_repl_tool工具，一个计算1到100的和,另一个计算10的阶乘，并实际执行工具获取计算结果',
-        # "请使用tavily_search_tool工具搜索信息，回答问题：What is the weather in SF and LA? ",
+        "请搜索网络然后回答问题：What is the weather in SF and LA? ",
         # "Who won the super bowl in 2024? In what state is the winning team headquarters located?What is the GDP of that state? ",
-        # "还记得我叫什么吗？"
+        "还记得我叫什么吗？"
     ]
     my_main_bot = GraphAgent(executable_tools=executable_tools,routing_tools_wrapped_in_class=route_tools)
 

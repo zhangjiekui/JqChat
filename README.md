@@ -29,10 +29,22 @@ or
 ```
 export PYTHONPATH=/data/projects/JqChatV2/JqChat:/data/projects/JqChatV2/JqChat/jqcode:/data/projects/JqChatV2/JqChat/kernel_program:/data/projects/JqChatV2/JqChat/web
 ```
+## Ollama： qwen2和llama3.1_70b_chinese_chat
+都支持Tools
+```
+docker pull ollama/ollama:latest
+docker run --gpus all -d -v /data/ollama_v_docker/:/root/.ollama -p 11436:11434 --name ollama ollama/ollama
+```
+### In vscode: Attach Shell in ollama docker:
+```
+ollama run qwen2:72b
+ollama run wangshenzhi/llama3.1_70b_chinese_chat
+```
+经测试，完全可用，就是生成速度要慢一半（17 tokens/s），而xinfer的生成速度接近40 tokens/s
 
 ## Xinference LLM
 #### 当前使用版本
-**注意【qwen2 72B Int4 gptq/awq对应的max_seq_len=32000 & gpu_memory_utilization=0.90时,gptq准确率和推理效率都更优】**
+**注意:gptq准确率和推理效率都更优【qwen2 72B Int4 gptq/awq设置对应的max_seq_len=32000 & gpu_memory_utilization=0.95】**
 ### 本地Pip安装运行
 
 运行 xinference 框架服务
