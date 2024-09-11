@@ -39,6 +39,7 @@ export PYTHONPATH=/data/projects/JqChatV2/JqChat:/data/projects/JqChatV2/JqChat/
 ```
 workon xinfer
 nohup xinference-local -H 0.0.0.0 --log-level debug  >> /data/xinference/xinfer.log 2>&1 & 
+tail -f /data/xinference/xinfer.log
 ```
 ```
 tail -f /data/xinference/xinfer.log

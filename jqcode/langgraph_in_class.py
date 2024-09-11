@@ -322,6 +322,7 @@ class GradeCodingRelavance(BaseModel,extra='allow'):
 
 prompt_coding_relevant_grader = """You are a grader assessing relevance of a user question to [code generating/executing,file processing/analyzing, data exploring/analyzing]. Response me with a simple JSON string can be directly consumed by  ‘json.loads’ method, must be ‘{{"k":"yes"}}’ or  ‘{{"k":"no"}}’,'yes' means a user question is related to Python code generating/code executing.No preamble or explaination."""
 structured_llm_coding_relevant_grader = llm_model.with_structured_output(GradeCodingRelavance,method='json_mode')
+# structured_llm_coding_relevant_grader = llm_model.with_structured_output(GradeCodingRelavance)
 
 coding_relevance_prompt = ChatPromptTemplate.from_messages(
     [
@@ -340,6 +341,7 @@ class GradeDocumentsRelavance(BaseModel,extra='allow'):
 
 prompt_documents_relevant_grader = """You are a grader assessing relevance of a retrieved document to a user question. If the document contains keyword(s) or semantic meaning related to the user question, grade it as relevant. It does not need to be a stringent test.The goal is to filter out erroneous retrievals. Response me with a simple JSON string can be directly consumed by  ‘json.loads’ method, must be ‘{{"k":"yes"}}’ or  ‘{{"k":"no"}}’,'yes' means a retrieved document is related to a user question.No preamble or explaination."""
 structured_llm_documents_relevant_grader = llm_model.with_structured_output(GradeDocumentsRelavance,method='json_mode')
+# structured_llm_documents_relevant_grader = llm_model.with_structured_output(GradeDocumentsRelavance)
 retrieval_document_relevance_prompt = ChatPromptTemplate.from_messages(
     [
         ("system",prompt_documents_relevant_grader),
@@ -518,6 +520,7 @@ class GradeSupported(BaseModel,extra='allow'):
 
 prompt_answer_is_supported_by_documents_grader = """You are a grader assessing whether an answer is supported by a set of facts. Response me with a simple JSON string can be directly consumed by  ‘json.loads’ method, must be ‘{{"k":"yes"}}’ or  ‘{{"k":"no"}}’,'yes' means the answer is supported by the provided set of facts.No preamble or explaination. """
 structured_llm_answer_is_supported_by_documents_grader = llm_model.with_structured_output(GradeSupported,method='json_mode')
+# structured_llm_answer_is_supported_by_documents_grader = llm_model.with_structured_output(GradeSupported)
 answer_is_supported_by_documents_prompt = ChatPromptTemplate.from_messages(
     [
         ("system", prompt_answer_is_supported_by_documents_grader),
@@ -532,6 +535,7 @@ class GradeAnswer(BaseModel,extra='allow'):
 
 prompt_answer_grader = """You are a grader assessing whether an answer addresses / resolves a question. Response me with a simple JSON string can be directly consumed by  ‘json.loads’ method, must be ‘{{"k":"yes"}}’ or  ‘{{"k":"no"}}’,'yes' means the answer addresses / resolves the question.No preamble or explaination."""
 structured_llm_answer_grader = llm_model.with_structured_output(GradeAnswer,method='json_mode')
+# structured_llm_answer_grader = llm_model.with_structured_output(GradeAnswer)
 answer_prompt = ChatPromptTemplate.from_messages(
     [
         ("system",prompt_answer_grader),
@@ -1038,6 +1042,7 @@ class GraphAgent:
         # 获取代码code和文本code_text
         code = ''
         code_text =''
+        results = ''
         message_content = '' #返回给大模型的消息内容
         if question_id == self.question_id:
             if last_message.name == "code_generation" and len(last_message.content)>0:
@@ -1193,17 +1198,17 @@ tavily_search_tool = TavilySearchResults(max_results=4) #increased number of res
 
 if __name__ == "__main__":
     user_questions = [
-        '请搜索合肥大蜀山，然后提供详细介绍', 
-        '请查询明天从合肥到上海的航班,以及南昌到北京的航班',
-        '请直接执行代码：print("直接执行打印程序代码")',
-        '请使用Python来绘制sin(x)的曲线图',
+        # '请搜索合肥大蜀山，然后提供详细介绍', 
+        # '请查询明天从合肥到上海的航班,以及南昌到北京的航班',
+        # '请直接执行代码：print("直接执行打印程序代码")',
+        # '请使用Python来绘制sin(x)的曲线图',
         '你好，我叫张结魁',
-        '合肥大蜀山',          
-        '请查询明天从合肥到上海的航班',
-        '请使用python_repl_tool来计算1到100的和',
-        '请调用python_repl_tool工具，一个计算1到100的和,另一个计算10的阶乘，并实际执行工具获取计算结果',
-        "请使用tavily_search_tool工具搜索信息，回答问题：What is the weather in SF and LA? ",
-        "Who won the super bowl in 2024? In what state is the winning team headquarters located?What is the GDP of that state? ",
+        # '合肥大蜀山',          
+        # '请查询明天从合肥到上海的航班',
+        # '请使用python_repl_tool来计算1到100的和',
+        # '请调用python_repl_tool工具，一个计算1到100的和,另一个计算10的阶乘，并实际执行工具获取计算结果',
+        # "请使用tavily_search_tool工具搜索信息，回答问题：What is the weather in SF and LA? ",
+        # "Who won the super bowl in 2024? In what state is the winning team headquarters located?What is the GDP of that state? ",
         "还记得我叫什么吗？"
     ]
     my_main_bot = GraphAgent(executable_tools=executable_tools,routing_tools_wrapped_in_class=route_tools)
@@ -1211,7 +1216,7 @@ if __name__ == "__main__":
     for user_question in user_questions:
         answer = my_main_bot.run_conversation(user_question=user_question)
         print(answer)
-        json_repair.loads('{"name": "get_flight_number, "arguments": "{\"date\": \"2024-09-11\", \"destination\": \"\\u4e0a\\u6d77\", \"origin\": \"\\u5408\\u80a5\"}""} ')
+        # json_repair.loads('{"name": "get_flight_number, "arguments": "{\"date\": \"2024-09-11\", \"destination\": \"\\u4e0a\\u6d77\", \"origin\": \"\\u5408\\u80a5\"}""} ')
 
 
 # source: https://learn.deeplearning.ai/courses/ai-agents-in-langgraph/lesson/3/langgraph-components    

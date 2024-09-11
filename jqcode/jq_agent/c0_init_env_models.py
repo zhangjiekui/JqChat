@@ -257,10 +257,7 @@ class InitEnvModels:
         self._tokenizer = AutoTokenizer.from_pretrained(self.embedding_model_name_or_path)
         self.text_splitter = JqChineseRecursiveTextSplitter(self._tokenizer,chunk_size=self.embedding_model_max_tokens,chunk_overlap=0.2)
         self.doc_tree_spiltter = JqkjDocTreeTokenTextSplitter.from_defaults(cr_text_splitter=self.text_splitter)
-
         # code_splitter = self.text_splitter.from_language(language=Language.PYTHON,tokenizer=self._tokenizer)
-
-  
         
         self.ELASTIC_PASSWORD = os.getenv("ELASTIC_PASSWORD")
         self.CERT_FINGERPRINT = os.getenv("CERT_FINGERPRINT")
@@ -280,7 +277,6 @@ class InitEnvModels:
         # loade openai models:暂时用不上
         # self.openai = None
         # self.get_openai()
-
         # self.openai_client = None
         # self.get_openai_client()
 
@@ -416,22 +412,19 @@ class InitEnvModels:
                 self.embed_model,self.embedding_model_8k,self.reranker = self._get_emb_8k_rerank_model_api()
             else:
                 self.embed_model,self.embedding_model_8k,self.reranker = self._get_emb_8k_rerank_model(embedding_model_name=embedding_model_name, embedding_model_name_8k=embedding_model_name_8k, rerank_model_name=rerank_model_name,device = device,final_docs_num_reranked=final_docs_num_reranked)
-        # try:
-        #     r1 = self.embed_model.embed_query("test query text")
-        # except Exception as e:
-        #     logger.error(f"{self.embed_model=}工作不正常，请检查:{e}")
+        try:
+            r1 = self.embed_model.embed_query("test query text")
+        except Exception as e:
+            logger.error(f"{self.embed_model=}工作不正常，请检查:{e}")
         # # try:
         # #     r2 = self.embedding_model_8k.embed_query("test query text")
         # # except Exception as e:
-        # #     logger.error(f"{self.embed_model=}工作不正常，请检查:{e}")
-        
-        # try:
-        #     r3 = self.reranker.rerank(documents=["张结魁是谁？","张结魁是安徽晶奇公司的","create a compression retriever, we need a base retriever first"],
-        #                              query="张结魁")
-        # except Exception as e:
-        #     logger.error(f"{self.reranker=}工作不正常，请检查:{e}")
-
-      
+        # #     logger.error(f"{self.embed_model=}工作不正常，请检查:{e}")        
+        try:
+            r3 = self.reranker.rerank(documents=["张结魁是谁？","张结魁是安徽晶奇公司的","create a compression retriever, we need a base retriever first"],
+                                     query="张结魁")
+        except Exception as e:
+            logger.error(f"{self.reranker=}工作不正常，请检查:{e}")
 
         return self.embed_model,self.embedding_model_8k,self.reranker
 
@@ -462,8 +455,7 @@ class InitEnvModels:
             except Exception as e:
                 logger.error(f'创建ES Index={index_name}失败，错误信息为:{e}')
         else:
-            logger.info(f'ES Index={index_name}已经存在！') 
-    
+            logger.info(f'ES Index={index_name}已经存在！')     
     
     def get_all_knowledge_base(self, es_connection=None,exclude_system_indices=True):
         if not es_connection:
@@ -786,7 +778,6 @@ if __name__ == '__main__':
 
     prompt = "1+1=2"
 
-    import json
     import json_repair
 
     def LLM(prompt, system_message, model=llm):
@@ -806,7 +797,6 @@ if __name__ == '__main__':
                         return res
                 except:
                     return "no valid tool call"
-
 
             if response.tool_calls:
                 for tool in response.tool_calls:
