@@ -1198,17 +1198,17 @@ tavily_search_tool = TavilySearchResults(max_results=4) #increased number of res
 
 if __name__ == "__main__":
     user_questions = [
-        # '请搜索合肥大蜀山，然后提供详细介绍', 
-        # '请查询明天从合肥到上海的航班,以及南昌到北京的航班',
-        # '请直接执行代码：print("直接执行打印程序代码")',
-        # '请使用Python来绘制sin(x)的曲线图',
+        '请搜索合肥大蜀山，然后提供详细介绍', 
+        '请查询明天从合肥到上海的航班,以及南昌到北京的航班',
+        '请直接执行代码：print("直接执行打印程序代码")',
+        '请使用Python来绘制sin(x)的曲线图',
         '你好，我叫张结魁',
-        # '合肥大蜀山',          
-        # '请查询明天从合肥到上海的航班',
-        # '请使用python_repl_tool来计算1到100的和',
-        # '请调用python_repl_tool工具，一个计算1到100的和,另一个计算10的阶乘，并实际执行工具获取计算结果',
-        # "请使用tavily_search_tool工具搜索信息，回答问题：What is the weather in SF and LA? ",
-        # "Who won the super bowl in 2024? In what state is the winning team headquarters located?What is the GDP of that state? ",
+        '合肥大蜀山',          
+        '请查询明天从合肥到上海的航班',
+        '请使用python_repl_tool来计算1到100的和',
+        '请调用python_repl_tool工具，一个计算1到100的和,另一个计算10的阶乘，并实际执行工具获取计算结果',
+        "请使用tavily_search_tool工具搜索信息，回答问题：What is the weather in SF and LA? ",
+        "Who won the super bowl in 2024? In what state is the winning team headquarters located?What is the GDP of that state? ",
         "还记得我叫什么吗？"
     ]
     my_main_bot = GraphAgent(executable_tools=executable_tools,routing_tools_wrapped_in_class=route_tools)

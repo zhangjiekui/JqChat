@@ -47,18 +47,18 @@ tail -f /data/xinference/xinfer.log
 ```
 ps -ef | grep 'xinference-local'     找到包含了【xinfer/bin/xinference-local -H 0.0.0.0】对应行的pid 然后 sudo kill -9 
 ```
+
+运行加载 qwen2-instruct gptq Int4模型ok
+```
+CUDA_VISIBLE_DEVICES=0,1,2,3 xinference launch --model-engine vllm --model-name qwen2-instruct --size-in-billions 72  --model-format gptq --quantization Int4 --gpu_memory_utilization 0.95 --tensor_parallel_size 4 --max_model_len 32000 --n-gpu 4
+```
+
 必要时可以在Web模型加载页面的下方指定模型本地路径，如：
 /data/xinference/huggingface/models--jinaai--jina-reranker-v2-base-multilingual/snapshots/298e48cada4a9318650d7fbd795f63827f884087
 
 ![alt text](image.png)
 
-运行加载 qwen2-instruct 模型ok
-```
-CUDA_VISIBLE_DEVICES=0,1,2,3 xinference launch --model-engine vllm --model-name qwen2-instruct --size-in-billions 72  --model-format awq --quantization Int4 --gpu_memory_utilization 0.95 --tensor_parallel_size 4 --max_model_len 32000 --n-gpu 4
-```
-```
-CUDA_VISIBLE_DEVICES=0,1,2,3 xinference launch --model-engine Transformers --model-name qwen2-moe-instruct --size-in-billions 14  --model-format pytorch --quantization 4-bit --gpu_memory_utilization 0.95 --tensor_parallel_size 4 --max_model_len 32000 --n-gpu 4
-```
+
 ### Docker运行
 
 #### Docker参数配置
