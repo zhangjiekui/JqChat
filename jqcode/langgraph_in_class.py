@@ -31,6 +31,7 @@ import re
 from jqcode.jq_code_executor.code_executor import CodeExecutorTool
 import json_repair
 import shortuuid
+import uuid
 from collections import deque
 from flask import request, jsonify,Response
 import requests
@@ -82,7 +83,7 @@ class LimitedLengthString:
                     logger.info(f"LimitedLengthString中已经存在'{content}'，忽略此次操作")        
 
     def get_string(self):
-        result = ''.join(self.data)
+        result = '\n'.join(self.data)
         return result[-self.maxlen:]
     
 message_buffer = LimitedLengthString()
@@ -233,7 +234,7 @@ system_code_prompt=f"""请尽量使用简体中文来解答用户问题。
                 'matplotlib',
                 'seaborn',
                 'plotly',
-        Be sure to generate charts with plotly/matplotlib/seaborn, plotly is preferred. But if you need geographical charts, use geopandas with the geopandas.datasets module.
+        Be sure to generate charts with plotly/matplotlib/seaborn, matplotlib.pyplot is preferred. But if you need geographical charts, use geopandas with the geopandas.datasets module.
         If the user has just uploaded a file, focus on the file that was most recently uploaded (and optionally all previously uploaded files)
 
         If the code modifies or produces a file/image, you must save the file/image to location '{env_models_instance.workspace}', and add a print statement at the end of the code block that prints a link to it as HTML string: <a href='/download?file=INSERT_FILENAME_HERE'>下载文件</a>. Replace INSERT_FILENAME_HERE with the actual filename.
@@ -995,6 +996,7 @@ class GraphAgent:
     
     def code_generation(self,state:GraphAgentState):
         user_question = state["question"]
+        last_message = state["messages"][-1]
         question_related_messages = state["question_related_messages"]
         message_buffer.append(question_related_messages)
 
@@ -1025,7 +1027,16 @@ class GraphAgent:
         if code:
             logger.info('生成、抽取到的代码为：\n' + code)
             code = merge_code_with_usual_imports(code) # 加入常用的imports，防止代码生成中出现的遗漏错误
-        code_message = ToolMessage(content=code,name='code_generation',tool_call_id ='0',additional_kwargs ={"code_text":code_text})
+        tool_call_id = ''
+        try:
+            for tool_call in last_message.tool_calls:
+                if tool_call["name"] == 'CODE_GENERATION':
+                    tool_call_id = tool_call["id"]
+                    break
+        except:
+            tool_call_id = f'call_{str(uuid.uuid4())}'
+        
+        code_message = ToolMessage(content=code,name='code_generation',tool_call_id = tool_call_id,additional_kwargs ={"code_text":code_text})
         code_message = self.makeup_message_with_question_id_idx(code_message)
 
         return {'messages':code_message,'question_related_messages':code_message}
@@ -1035,10 +1046,13 @@ class GraphAgent:
         question_related_messages = state["question_related_messages"]
         last_message = question_related_messages[-1]
         question_id = last_message.additional_kwargs.get('question_id','')
-        # todo
-        tool_call_id = "xxx"
-        tool_name = "CODE_EXECUTION"
-        tool_code=CodeExecutorTool()
+
+        try:
+            tool_call_id = last_message.tool_call_id
+        except:
+            tool_call_id = f'call_{str(uuid.uuid4())}'
+        tool_name = 'code_execution'
+        code_executor=CodeExecutorTool()
         # 获取代码code和文本code_text
         code = ''
         code_text =''
@@ -1082,20 +1096,22 @@ class GraphAgent:
                                 logger.warning(f"code_execution尝试从用户消息内容中直接提取代码时出现错误:{e}")
         try:
             if code:
+                message_content += code_text
                 logger.debug("......开始提交和执行代码......") 
                 # 提交代码到ipykernel_api执行   
                 # result = submit_code_to_ipykernel_api(code) #返回True或False
                 # 返回值为{"text"="",image=""}
-                result=tool_code.call(code=code)
+                result=code_executor.call(code=code)
                 if result:
-                    # message_content = "......ipykernel_api代码提交成功，等待运行结果......"
+                    # message_content = "......ipykernel_api代码提交成功，等待运行结果......"                    
+                    message_content+=result['image']
                     message_content+=result['text']
-                    message_content+=results['image']
+                    logger.debug("......代码执行完毕......")
                 # 提交代码到ipykernel_api执行，尝试本地来执行
                 # 不应该需要本地执行
                 if not result:
-                    logger.info(f"......ipykernel_api代码提交失败，请检查服务接口......")
-                    logger.info(f"......尝试使用本地的python环境来来执行......")
+                    logger.info(f"......提交和执行代码失败，请检查服务接口......")
+                    logger.info(f".......尝试使用本地的python环境来来执行.......")
                     # python_repl在本页代码开头处赋值的 
                     result = python_repl(code)
 
@@ -1110,7 +1126,7 @@ class GraphAgent:
                         _result = result if result else "None"
                         message_content = f"python_repl代码运行成功,运行结果为Observation:{_result} （但如有图像，由于环境限制无法直接展示,可在本地环境中运行上述代码）"
                 
-                code_message = ToolMessage(content=message_content,name=tool_name,tool_call_id =tool_call_id,additional_kwargs ={"status":True,"code":code,"code_text":code_text})
+                code_message = ToolMessage(content=message_content,name=tool_name,tool_call_id =tool_call_id,additional_kwargs ={"status":False,"code":code,"code_text":code_text})
                 code_message = self.makeup_message_with_question_id_idx(code_message)            
                 return {'messages':code_message,'question_related_messages':code_message}
 
@@ -1140,7 +1156,7 @@ class GraphAgent:
         self.question = user_question #因为涉及获取question相关的历史消息，以及根据question相关的历史消息改写question（rewrite），放到self.question供调用
         self.question_related_messages = self.get_question_related_messages_from_state(user_question,reserve_last_n_unique_messages=6)
         
-        logger.warning("此处要默认可以改写问题，但实际需要获取用户是否运行改写的设置")
+        logger.warning("此处要默认不改写问题，但实际需要获取用户是否运行改写的设置")
                 
         self.question_rewrited = user_question #后面会使用self.question_rewrited提交给大模型，就要确保self.question_rewrited有值
         if allow_question_rewrite:
@@ -1198,18 +1214,19 @@ tavily_search_tool = TavilySearchResults(max_results=4) #increased number of res
 
 if __name__ == "__main__":
     user_questions = [
-        '请搜索合肥大蜀山，然后提供详细介绍', 
-        '请查询明天从合肥到上海的航班,以及南昌到北京的航班',
-        '请直接执行代码：print("直接执行打印程序代码")',
-        '请使用Python来绘制sin(x)的曲线图',
-        '你好，我叫张结魁',
-        '合肥大蜀山',          
-        '请查询明天从合肥到上海的航班',
-        '请使用python_repl_tool来计算1到100的和',
-        '请调用python_repl_tool工具，一个计算1到100的和,另一个计算10的阶乘，并实际执行工具获取计算结果',
-        "请使用tavily_search_tool工具搜索信息，回答问题：What is the weather in SF and LA? ",
-        "Who won the super bowl in 2024? In what state is the winning team headquarters located?What is the GDP of that state? ",
-        "还记得我叫什么吗？"
+        '请绘制sin(x)曲线'
+        # '请搜索合肥大蜀山，然后提供详细介绍', 
+        # '请查询明天从合肥到上海的航班,以及南昌到北京的航班',
+        # '请直接执行代码：print("直接执行打印程序代码")',
+        # '请使用Python来绘制sin(x)的曲线图',
+        # '你好，我叫张结魁',
+        # '合肥大蜀山',          
+        # '请查询明天从合肥到上海的航班',
+        # '请使用python_repl_tool来计算1到100的和',
+        # '请调用python_repl_tool工具，一个计算1到100的和,另一个计算10的阶乘，并实际执行工具获取计算结果',
+        # "请使用tavily_search_tool工具搜索信息，回答问题：What is the weather in SF and LA? ",
+        # "Who won the super bowl in 2024? In what state is the winning team headquarters located?What is the GDP of that state? ",
+        # "还记得我叫什么吗？"
     ]
     my_main_bot = GraphAgent(executable_tools=executable_tools,routing_tools_wrapped_in_class=route_tools)
 
