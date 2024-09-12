@@ -507,8 +507,17 @@ def generate(state:GraphAgentState):
 
 
     generation = rag_node.invoke({"documents": documents, "question": question, "messages":messages},config=invoke_llm_config)
+    last_message = state["messages"][-1]
+    tool_call_id = ''
+    try:
+        for tool_call in last_message.tool_calls:
+            if tool_call["name"] == 'VECTORSTORE':
+                tool_call_id = tool_call["id"]
+                break
+    except:
+        tool_call_id = f'call_{str(uuid.uuid4())}'
     # print(generation)
-    generation_message = ToolMessage(content=generation,name='generation',tool_call_id=f'call_{str(uuid.uuid4())}')
+    generation_message = ToolMessage(content=generation,name='generation',tool_call_id=tool_call_id)
     return {"documents": documents, "question": question, "generation": generation, "messages":generation_message,"question_related_messages":generation_message}
 
 
@@ -651,7 +660,7 @@ class GraphAgent:
         _routing_tool_names = [tool.__name__ for tool in routing_tools_wrapped_in_class]
         _tool_names = _executable_tool_names + _routing_tool_names
         _tool_names_str = ','.join(_tool_names)
-        _system_message_content = f"Solve/Answer user's questions as best as you can in the language the user asked, preferred/default to Simplified Chinese. You have access to the following tools:{_tool_names_str}.You are allowed to make multiple calls (either together or in sequence).Choice Guidelines: 'CODE_GENERATION' is preferred rather than 'python_repl_tool' for drawing images, plotting graphs/charts, data file processing/analyzing/saving, Otherwise, please use 'python_repl_tool'."
+        _system_message_content = f"Solve/Answer user's questions as best as you can in the language the user asked, preferred/default to Simplified Chinese. You have access to the following tools:{_tool_names_str}.You are allowed to make multiple calls (either together or in sequence).Choice Guidelines:First,'CODE_GENERATION' and 'CODE_EXECUTION' MUST NOT be called at the same time.Second, 'CODE_GENERATION' is preferred rather than 'python_repl_tool' for drawing images, plotting graphs/charts, data file processing/analyzing/saving, Otherwise, please use 'python_repl_tool'."
 
         if llm_model is None:
             llm_model = env_models_instance.get_langchain_chat_model()
@@ -751,8 +760,6 @@ class GraphAgent:
                     else:
                         question_related_messages = env_models_instance.filter_and_get_messages_relevant_to_query(query=question,messages_list=messages,reserve_last_n_unique_messages = reserve_last_n_unique_messages)
                         self.question_related_messages = question_related_messages
-
-            
 
         return self.question_related_messages
 
@@ -890,7 +897,11 @@ class GraphAgent:
         return {'messages': results,'question_related_messages':results}
     
     def exists_action(self,state:GraphAgentState):
+        
         result = state['messages'][-1]
+        print("xxxxxxxxxxxxxxxxxxxxxxxxxxxx")
+        print(f'{result.content=}')
+        print("xxxxxxxxxxxxxxxxxxxxxxxxxxxx")
         finish_reason = "No Finish Reason"
         try:
             returned_tool_calling_nums = len(result.tool_calls)
@@ -936,7 +947,15 @@ class GraphAgent:
             tool_call_1_name = tool_call_1['name']
             if tool_call_1_name in self.routing_tool_names:
                 logger.info(f"Returned first ToolName is '{tool_call_1_name}', So routing to '{tool_call_1_name}' Node......")
+                # 有些模型会同时生成多个调用（如deep seek），但又要求tool_call与tool_response必须对应起来，所以此处只好生成一一对应的tool_response message
+                for tool in result.tool_calls[1:]:
+                    makeup_tool_message = ToolMessage(content='',name=tool["name"],tool_call_id=tool["id"])
+                    messages = state["messages"]
+                    messages.append(makeup_tool_message)  
+                    state.update({"messages":messages})
+                    # state["messages"]=state["messages"].append(makeup_tool_message)                  
                 return tool_call_1_name
+            
         else:
             logger.info(f'No returned tool_calling and {finish_reason=}')
             logger.info(f'{result.type.upper()}: {result.content}')            
@@ -964,41 +983,69 @@ class GraphAgent:
             messages = self.system_message + question_related_messages
             
         logger.info(f"call_llm:调用LLM时的消息数为:{len(messages)}")
+        
+        # 为了保证在线模型要求的tool_call AIMessage 和 tool_response ToolMessage要求的一一对应，且tool_call_id要匹配的上，所以此处把含有tool_call的AIMessage过滤掉
+        # filtered_messages = []
+        # for _m in self.question_related_messages:
+        #     if isinstance(_m,HumanMessage):
+        #         filtered_messages.append(_m)
+        #     if isinstance(_m,AIMessage):
+        #         tool_calls = _m.tool_calls
+        #         if len(tool_calls) == 0:
+        #             filtered_messages.append(_m)
+                    
+        # self.question_related_messages = filtered_messages
+        message = None
         try:
             try:
-                for message in messages:
-                    if not hasattr(message,'__fields_set__'):
-                        pass
-                    
-                    if isinstance(message,AIMessage):
-                        if not (hasattr(message,'content') and hasattr(message,'tool_calls')):
-                            messages.remove(message)
-                    
-                # messages = [message for message in messages if hasattr(message,'content') and hasattr(message,'tool_calls')]
-                message = self.model.invoke(messages,config=self.config)
-            except Exception as e:
-                print(f"{messages},{e}")
-                message = self.model.invoke(messages,config=self.config)
-            try: 
-                finish_reason = message.response_metadata["finish_reason"]
-                if finish_reason ==  "length":
-                    reason = 'a finish_reason of “length” means that the AI had more data to output but the limitations of that call prevented it from finishing'
-                    model_name = self.model.bound.model_name
-                    max_tokens = self.model.bound.max_tokens
-                    logger.warning(f'LLM({model_name})返回: finish_reason ==  "length" [{reason}]，当前设置的max_tokens={max_tokens}，请检查调整该设置')
-                    print(f'LLM({model_name})返回: finish_reason ==  "length" [{reason}]，当前设置的max_tokens={max_tokens}，请检查调整该设置值!')
-            except Exception as e:
-                logger.error("无法获取到finish_reason，错误消息为：{e}")
-                message.pretty_print()
+                # 为了保证在线模型要求的tool_call AIMessage 和 tool_response ToolMessage要求的一一对应，且tool_call_id要匹配的上
+                tool_messages = [t for t in messages if isinstance(t,ToolMessage)]
+                tool_response_ids = [t.tool_call_id for t in tool_messages]
+                ai_messages_with_tool_calls = [t for t in messages if isinstance(t,AIMessage) and len(t.tool_calls)>0]
+                tool_call_ids = []
+                ai_messages_with_tool_calls_but_has_no_crospongding_tool_message = []
+                tool_messages_but_has_no_crospongding_ai_message = []
+                for t in ai_messages_with_tool_calls:
+                    ts = t.tool_calls
+                    for _t in ts:
+                        if _t["id"] not in tool_response_ids:
+                            ai_messages_with_tool_calls_but_has_no_crospongding_tool_message.append(_t)
+                        else:
+                            tool_call_ids.append(_t["id"])
+                for t in tool_messages:
+                    if t.tool_call_id not in tool_call_ids:
+                        tool_messages_but_has_no_crospongding_ai_message.append(t)
+                
+                invalid_messages = tool_messages_but_has_no_crospongding_ai_message + tool_messages_but_has_no_crospongding_ai_message
+                filtered_messages = [m for m in messages if m not in invalid_messages] 
+                if len(filtered_messages)!=len(messages):
+                    logger.debug('有不匹配的ai_messages_with_tool_calls_but_has_no_crospongding_tool_message或tool_messages_but_has_no_crospongding_ai_message过滤掉了')          
 
-            message = self.makeup_message_with_question_id_idx(message)
-            question_related_messages.append(message)
-            return {'messages': message,'question_related_messages':question_related_messages}
+                message = self.model.invoke(filtered_messages,config=self.config)
+            except Exception as e:
+                print(f"{filtered_messages},{e}")
+                # message = self.model.invoke(filtered_messages,config=self.config)
+            if message:
+                try: 
+                    finish_reason = message.response_metadata["finish_reason"]
+                    if finish_reason ==  "length":
+                        reason = 'a finish_reason of “length” means that the AI had more data to output but the limitations of that call prevented it from finishing'
+                        model_name = self.model.bound.model_name
+                        max_tokens = self.model.bound.max_tokens
+                        logger.warning(f'LLM({model_name})返回: finish_reason ==  "length" [{reason}]，当前设置的max_tokens={max_tokens}，请检查调整该设置')
+                        print(f'LLM({model_name})返回: finish_reason ==  "length" [{reason}]，当前设置的max_tokens={max_tokens}，请检查调整该设置值!')
+                except Exception as e:
+                    logger.error("无法获取到finish_reason，错误消息为：{e}")
+                    message.pretty_print()
+
+                message = self.makeup_message_with_question_id_idx(message)
+                question_related_messages.append(message)
+                return {'messages': message,'question_related_messages':question_related_messages}
         except Exception as e:
             logger.error(f'！！！大语言模型执行失败，！！！错误消息为:{e}')
-            logger.error('请检查大语言模型接口服务状态,并查看传入的消息列表，如下：')            
-            for m in messages:
-                m.pretty_print()
+            # logger.error('请检查大语言模型接口服务状态,并查看传入的消息列表，如下：')            
+            # for m in messages:
+            #     m.pretty_print()
     
     def code_generation(self,state:GraphAgentState):
         user_question = state["question"]
@@ -1044,8 +1091,11 @@ class GraphAgent:
         
         code_message = ToolMessage(content=code,name='code_generation',tool_call_id = tool_call_id,additional_kwargs ={"code_text":code_text})
         code_message = self.makeup_message_with_question_id_idx(code_message)
-
-        return {'messages':code_message,'question_related_messages':code_message}
+        # 在线大模型服务要求tool_call aimessage 与 tool_response toolmessage要一一对应，所以这里要先生成一个tool_call aimessage
+        code_execution_tool_call_message = AIMessage(name="code_generation",content='',tool_calls=[{"name":"CODE_EXECUTION","args":{"query":code},"id":f'call_{(shortuuid.uuid())}'}])
+        code_execution_tool_call_message = self.makeup_message_with_question_id_idx(code_execution_tool_call_message)
+        messages = [code_message,code_execution_tool_call_message]
+        return {'messages':messages,'question_related_messages':messages}
 
     def code_execution(self,state:GraphAgentState):
         question =  state["question"]
@@ -1054,10 +1104,12 @@ class GraphAgent:
         question_id = last_message.additional_kwargs.get('question_id','')
 
         try:
-            tool_call_id = last_message.tool_call_id
+            for tool_call in last_message.tool_calls:
+                if tool_call["name"] == 'CODE_EXECUTION':
+                    tool_call_id = tool_call["id"]
+                    break
         except:
             tool_call_id = f'call_{str(uuid.uuid4())}'
-        # tool_call_id = f'call_{str(uuid.uuid4())}'
         tool_name = 'code_execution'
         code_executor=CodeExecutorTool()
         # 获取代码code和文本code_text
@@ -1142,13 +1194,16 @@ class GraphAgent:
         except Exception as e:
             logger.info(f"code_execution执行异常，加入执行错误信息，返回到大模型,错误消息为:{e}")
             error_prompt = f'执行工具调用出现错误:\n  工具名称：tool_name\n  调用参数：{code}\n  错误信息：{str(e)}\n'
-            makeup_tool_message = ToolMessage(tool_call_id=tool_call_id, name=tool_name, content=error_prompt)
+            makeup_tool_message = ToolMessage(tool_call_id=tool_call_id, name=tool_name, content=error_prompt,additional_kwargs ={"status":False})
             makeup_tool_message = self.makeup_message_with_question_id_idx(makeup_tool_message)
             makeup_human_message = HumanMessage(content=f"对于用户问题:{question},上次的工具调用出现了错误，请仔细规划和思考，重新生成正确的工具名称和调用参数，避免出现同样的错误！")
             makeup_human_message = self.makeup_message_with_question_id_idx(makeup_human_message)
             # 下面的error_message仅仅是为了方便做code_execution的下一个节点导航使用
-            error_message = ToolMessage(content="",name =tool_name,tool_call_id =f'call_{str(uuid.uuid4())}',additional_kwargs ={"status":False})
-            results = [makeup_tool_message,makeup_human_message,error_message]       
+            # error_message = ToolMessage(content="",name =tool_name,tool_call_id =f'call_{str(uuid.uuid4())}',additional_kwargs ={"status":False})
+            # results = [makeup_tool_message,makeup_human_message,error_message]
+            
+            # 修改：为方便支持在线模型要求tool_call与tool_response的对应关系，直接将error_message中的additional_kwargs ={"status":False}放到了makeup_tool_message中
+            results = [makeup_tool_message,makeup_human_message]   
             return {'messages': results,'question_related_messages':results}       
         
     def run_conversation(self,user_question:str,allow_question_rewrite=False):
@@ -1221,26 +1276,24 @@ tavily_search_tool = TavilySearchResults(max_results=4) #increased number of res
 if __name__ == "__main__":
     user_questions = [
         '请绘制sin(x)曲线',
-        # "安徽省食品药品监督管理局行政审批系统项目总体计划的版本号是多少，批准人是谁？",
-        # '请搜索合肥大蜀山，然后提供详细介绍', 
-        # '请查询明天从合肥到上海的航班,以及南昌到北京的航班',
-        # '请直接执行代码：print("直接执行打印程序代码")',
-        # '请使用Python来绘制sin(x)的曲线图',
-        # '你好，我叫张结魁',
-        # '合肥大蜀山',          
-        # '请查询明天从合肥到上海的航班',
-        # '请使用python_repl_tool来计算1到100的和',
-        # '请调用python_repl_tool工具，一个计算1到100的和,另一个计算10的阶乘，并实际执行工具获取计算结果',
+        "安徽省食品药品监督管理局行政审批系统项目总体计划的版本号是多少，批准人是谁？",
+        '请搜索合肥大蜀山，然后提供详细介绍', 
+        '请查询明天从合肥到上海的航班,以及南昌到北京的航班',
+        '请直接执行代码：print("直接执行打印程序代码")',
+        '请使用Python来绘制sin(x)的曲线图',
+        '你好，我叫张结魁',
+        '合肥大蜀山',          
+        '请查询明天从合肥到上海的航班',
+        '请使用python_repl_tool来计算1到100的和',
+        '请调用python_repl_tool工具，一个计算1到100的和,另一个计算10的阶乘，并实际执行工具获取计算结果',
         "请搜索网络然后回答问题：What is the weather in SF and LA? ",
-        # "Who won the super bowl in 2024? In what state is the winning team headquarters located?What is the GDP of that state? ",
+        "Who won the super bowl in 2024? In what state is the winning team headquarters located?What is the GDP of that state? ",
         "还记得我叫什么吗？"
     ]
     my_main_bot = GraphAgent(executable_tools=executable_tools,routing_tools_wrapped_in_class=route_tools)
 
     for user_question in user_questions:
         answer = my_main_bot.run_conversation(user_question=user_question)
-        print(answer)
-        # json_repair.loads('{"name": "get_flight_number, "arguments": "{\"date\": \"2024-09-11\", \"destination\": \"\\u4e0a\\u6d77\", \"origin\": \"\\u5408\\u80a5\"}""} ')
 
 
 # source: https://learn.deeplearning.ai/courses/ai-agents-in-langgraph/lesson/3/langgraph-components    
