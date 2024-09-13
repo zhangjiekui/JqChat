@@ -16,11 +16,14 @@ from jqcode.jq_knowledge_manegement.chatchat.server.db.repository.knowledge_base
 from langchain_core.messages import ToolMessage
 
 from jqcode.langgraph_in_class import GraphAgent
+from jqcode.jq_docstores.backend_docstore_utils.jq_es_metastores import JqElasticsearchUniMetaStore
 
 from jqcode.jq_utils.logger import jqkj_logger
 logger = jqkj_logger(__file__).get_logger()
-
-
+metastore = JqElasticsearchUniMetaStore()
+es_index_name = "yqli"
+index_meta = metastore.search_docs_by_text(top_k=1,user_query_text=es_index_name,query_on_fileds=['index_name'],filter_by_status=['true'])
+index_meta_dict_default = index_meta[0]["_source"]
 
 # We know this Flask app is for local use. So we can disable the verbose Werkzeug logger
 log = logging.getLogger('werkzeug')
@@ -47,15 +50,13 @@ def completions(
     
     print('============================================================')
     # samples是示例知识库，不在数据库中，存在本地文件中，所以查不到
-    kb_base_dict={}
-    kb_base=get_kb_detail(es_index_name)
-      #获得知识库的字典{"name": "test" , "discription":"测试方面的知识库",...}    
-    if(len(kb_base)>0):
-        kb_base_dict={"name": kb_base['kb_name'] , "vs_type":kb_base['vs_type'],"discription":kb_base['kb_info']}
-    else:
-        logger.warning("未能正确获取到kb_base和kb_base_dict，下面使用自己构造的kb_base_dict")
-        kb_base_dict={"name": "zjk_jqesclient_test" , "vs_type":"ES","discription":"A vectorstore/knowledge base containing documents related to 晶奇公司、安徽晶奇网络科技股份有限公司、医疗卫生、医疗健康、医疗服务、医疗政策、medical treatment & health. 凡是与晶奇公司、安徽晶奇网络科技股份有限公司及医疗健康相关的问题，都必须使用vectorstore工具。MUST use the vectorstore for questions on these topics."}
-    print(kb_base_dict)
+    try:
+        index_meta = metastore.search_docs_by_text(user_query_text=es_index_name,query_on_fileds=['index_name'],filter_by_status=['true'])
+        es_index_name = "yqli"
+        index_meta = metastore.search_docs_by_text(top_k=1,user_query_text=es_index_name,query_on_fileds=['index_name'],filter_by_status=['true'])
+        index_meta_dict = index_meta[0]["_source"]
+    except:
+        index_meta_dict = index_meta_dict_default
     # 是否有文件
     add_docs_list_to_kb = False
     chat_on_docs_list=[]
@@ -65,15 +66,12 @@ def completions(
             file=os.path.join(UPLOAD_FOLDER, file)
             chat_on_docs_list.append(file)
     print(chat_on_docs_list)
-    chat_bot = GraphAgent(memory_thread_id=user_id, kb_base_dict=kb_base_dict,chat_on_docs_list=chat_on_docs_list,add_docs_list_to_kb=add_docs_list_to_kb)
+    chat_bot = GraphAgent(memory_thread_id=user_id, kb_base_dict=index_meta_dict,chat_on_docs_list=chat_on_docs_list,add_docs_list_to_kb=add_docs_list_to_kb)
     print(f"{chat_bot.user_id=}")
     text = chat_bot.run_conversation(user_question=user_prompt)
     code = ''
-    # chat_bot.graph.update_state()
-
     # returned_str
     messages = chat_bot.get_all_history_messages()
-
     last_message = messages[-1]
     if isinstance(last_message,ToolMessage):
         if last_message.name == 'CODE_EXECUTION':

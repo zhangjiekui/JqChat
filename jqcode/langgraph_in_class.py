@@ -585,8 +585,8 @@ class GraphAgent:
     # region: 初始化
         # 获取知识库相关的信息
         self.kb_base_dict = kb_base_dict
-        self.index_name = self.kb_base_dict.get("name",None)
-        self.discription = self.kb_base_dict.get("discription",None)
+        self.index_name = self.kb_base_dict.get("index_name",None)
+        self.discription = self.kb_base_dict.get("description",None)
         self.chat_on_docs_list = chat_on_docs_list
         self.add_docs_list_to_kb = add_docs_list_to_kb
 
@@ -595,7 +595,7 @@ class GraphAgent:
                
         self.VECTORSTORE.__doc__ = self.discription
         # 将self.VECTORSTORE加入
-        # todo：这会导致重复加入很多个VECTORSTORE？
+        # todo：可能需要考虑加入很多个VECTORSTORE？
         routing_tools_wrapped_in_class+=[self.VECTORSTORE]
 
         _executable_tool_names = [tool.name for tool in executable_tools]        
@@ -603,17 +603,15 @@ class GraphAgent:
         _tool_names = _executable_tool_names + _routing_tool_names
         _tool_names_str = ','.join(_tool_names)
         _system_message_content = f"Solve/Answer user's questions as best as you can in the language the user asked, preferred/default to Simplified Chinese. You have access to the following tools:{_tool_names_str}.You are allowed to make multiple calls (either together or in sequence).Choice Guidelines:First,'CODE_GENERATION' and 'CODE_EXECUTION' MUST NOT be called at the same time.Second, 'CODE_GENERATION' is preferred rather than 'python_repl_tool' for drawing images, plotting graphs/charts, data file processing/analyzing/saving, Otherwise, please use 'python_repl_tool'."
-
-        if llm_model is None:
-            llm_model = env_models_instance.get_langchain_chat_model()
-
         
         self.all_tools = executable_tools + routing_tools_wrapped_in_class
         self.all_tools_names = _tool_names
         self.routing_tool_names = _routing_tool_names
         self.executable_tool_names = _executable_tool_names
         self.executable_tool_dict = {t.name: t for t in executable_tools} 
-
+        
+        if llm_model is None:
+            llm_model = env_models_instance.get_langchain_chat_model()
         self.model = llm_model.bind_tools(self.all_tools)
 
         self.system_message = [SystemMessage(content=_system_message_content)]
