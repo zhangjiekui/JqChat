@@ -1,5 +1,6 @@
 import sys
-
+# project_root = '/media/temp/JqChat'
+# sys.path.insert(0, project_root)
 import streamlit as st
 import streamlit_antd_components as sac
 
