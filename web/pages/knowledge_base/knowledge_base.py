@@ -240,7 +240,7 @@ def knowledge_base_page(api: ApiRequest, is_lite: bool = None):
             )
             doc_details["in_db"] = (
                 doc_details["in_db"].replace(True, "✓").replace(False, "×")
-            )
+            ) 
             gb = config_aggrid(
                 doc_details,
                 {

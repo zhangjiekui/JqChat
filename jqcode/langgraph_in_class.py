@@ -303,13 +303,33 @@ def submit_code_to_ipykernel_api(code:str):
         pass
 
 def display_code(code:str):
-    _code = f"""python    
-    ```
+    _code = f"""\n   
+    ```python 
     {code}
-    ```
+    ```\n
     """
     return _code
 
+def display_text(text:str):
+    _text = text.lower()
+    if '\nfinal answer:' in _text and '\naction:' in _text:
+        _index0 = _text.rindex('\nfinal answer:')
+        _l = len('\nfinal answer:')
+        idx = _index0 + _l
+        _index1 = _text.rindex('\naction:')
+        text = text[idx:_index1].replace('\nFinal Answer:','')
+    elif '\nfinal answer:' in _text:
+        _index0 = _text.rindex('\nfinal answer:')
+        _l = len('\nfinal answer:')
+        idx = _index0 + _l
+        text = text[idx:].replace('\nFinal Answer:','')
+    return text
+
+# text="""I now know the final answer.
+# Final answer: 已经成功绘制了cos(x)曲线图。从图中可以看出，cos(x)曲线在x=0时开始"""
+
+# print(display_text(text))
+# pass
 # endregion: Some utils mothods or varaiables
 
     

@@ -15,7 +15,7 @@ from jqcode.chat_prompt import *
 from jqcode.jq_knowledge_manegement.chatchat.server.db.repository.knowledge_base_repository import get_kb_detail
 from langchain_core.messages import ToolMessage
 
-from jqcode.langgraph_in_class import GraphAgent
+from jqcode.langgraph_in_class import GraphAgent,display_code, display_text
 from jqcode.jq_docstores.backend_docstore_utils.jq_es_metastores import JqElasticsearchUniMetaStore
 
 from jqcode.jq_utils.logger import jqkj_logger
@@ -68,21 +68,27 @@ def completions(
     chat_bot = GraphAgent(memory_thread_id=user_id, kb_base_dict=index_meta_dict,chat_on_docs_list=chat_on_docs_list,add_docs_list_to_kb=add_docs_list_to_kb)
     print(f"{chat_bot.user_id=}")
     text = chat_bot.run_conversation(user_question=user_prompt)
-    code = ''
+    
+
+    
     # returned_str
     messages = chat_bot.get_all_history_messages()
-    last_message = messages[-1]
-    if isinstance(last_message,ToolMessage):
-        if last_message.name == 'CODE_EXECUTION':
-            kwargs = last_message.additional_kwargs
-            question_id = kwargs.get("question_id")
-            if question_id == chat_bot.question_id:
-                code_text = kwargs.get("code_text","")
-                code = kwargs.get("code","")
-                if code_text:
-                    text = code_text + '\n' + text
-    # return JSONResponse(content={"text":text},status_code=200)
-    return JSONResponse(content={"text":text,"code":code},status_code=200)
+    code = ''
+    try:
+        for m in messages[::-1]:
+            if isinstance(m,ToolMessage):
+                if m.name.lower()=='code_execution':
+                    if m.additional_kwargs['question_id'] == chat_bot.question_id:
+                        code = m.additional_kwargs['code']
+                        break
+    except Exception as e:
+        logger.warning("获取'code_execution'的code失败:{e}")
+        code = ''
+    if code:
+        text = display_code(code)+display_text(text)
+            
+
+    return JSONResponse(content={"text":text},status_code=200)
 
 @chat_router.post('/upload',summary="上传接口")
 async def upload_file(
