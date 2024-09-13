@@ -580,7 +580,7 @@ executable_tools = [get_flight_number,python_repl_tool]
 route_tools = [WEB_SEARCH,CODE_GENERATION,CODE_EXECUTION]
 
 class GraphAgent:
-    def __init__(self,executable_tools:list=executable_tools, routing_tools_wrapped_in_class:list=route_tools, llm_model:ChatOpenAI=None,chat_on_docs_list:List[str]=None,add_docs_list_to_kb:bool=True, kb_base_dict:dict={"name": 'zjk_jqesclient_test' , "discription":"A vectorstore/knowledge base containing documents related to 晶奇公司、安徽晶奇网络科技股份有限公司、医疗卫生、医疗健康、医疗服务、医疗政策、medical treatment & health. 凡是与晶奇公司、安徽晶奇网络科技股份有限公司及医疗健康相关的问题，都必须使用vectorstore工具。MUST use the vectorstore for questions on these topics."}, recursion_limit:int=25, memory_thread_id:str=shortuuid.uuid()) -> None:
+    def __init__(self,executable_tools:list=executable_tools, routing_tools_wrapped_in_class:list=route_tools, llm_model:ChatOpenAI=None,chat_on_docs_list:List[str]=None,add_docs_list_to_kb:bool=True, kb_base_dict:dict={"index_name": 'zjk_jqesclient_test' , "description":"A vectorstore/knowledge base containing documents related to 晶奇公司、安徽晶奇网络科技股份有限公司、医疗卫生、医疗健康、医疗服务、医疗政策、medical treatment & health. 凡是与晶奇公司、安徽晶奇网络科技股份有限公司及医疗健康相关的问题，都必须使用vectorstore工具。MUST use the vectorstore for questions on these topics."}, recursion_limit:int=25, memory_thread_id:str=shortuuid.uuid()) -> None:
         
     # region: 初始化
         # 获取知识库相关的信息
@@ -1301,11 +1301,11 @@ tavily_search_tool = TavilySearchResults(max_results=4) #increased number of res
 
 if __name__ == "__main__":
     user_questions = [
-        '请绘制sin(x)曲线',
-        "安徽省食品药品监督管理局行政审批系统项目总体计划的版本号是多少，批准人是谁？",
-        '请搜索合肥大蜀山，然后提供详细介绍', 
-        '请查询明天从合肥到上海的航班,以及南昌到北京的航班',
-        '请直接执行代码：print("直接执行打印程序代码")',
+        # '请绘制sin(x)曲线',
+        # "安徽省食品药品监督管理局行政审批系统项目总体计划的版本号是多少，批准人是谁？",
+        # '请搜索合肥大蜀山，然后提供详细介绍', 
+        # '请查询明天从合肥到上海的航班,以及南昌到北京的航班',
+        '请直接执行代码：print("Hello World")',
         '请使用Python来绘制sin(x)的曲线图',
         '你好，我叫张结魁',
         '合肥大蜀山',          
@@ -1320,6 +1320,7 @@ if __name__ == "__main__":
 
     for user_question in user_questions:
         answer = my_main_bot.run_conversation(user_question=user_question)
+        pass
 
 
 # source: https://learn.deeplearning.ai/courses/ai-agents-in-langgraph/lesson/3/langgraph-components    
