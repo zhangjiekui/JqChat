@@ -464,65 +464,6 @@ prompt = lambda x: ChatPromptTemplate.from_messages(
 
 rag_node = prompt | llm_model | StrOutputParser()
 
-def generate(state:GraphAgentState):
-    """
-    Generate answer using the vectorstore
-
-    Args:
-        state (dict): The current graph state
-
-    Returns:
-        state (dict): New key added to state, generation, that contains LLM generation
-    """
-    print("---GENERATE---")
-    question = state["question"]
-    documents = state["documents"]
-    messages = state["question_related_messages"]
-    if not isinstance(documents, list):
-      documents = [documents]
-    # print("documents的内容：")
-    # for d in documents:
-    #     print(d.page_content)
-
-    # RAG generation
-    referens = []
-    sources =[d.metadata.get("source",d.metadata.get("source",None)) for d in documents]
-    # sources = set([s for s in _sources if s])
-    referens = list(sources)
-
-    referens_str = "参考'type_placeholder':  \n"
-    if referens:        
-        for i,r in enumerate(referens):
-            referens_str += f"    {i+1}. [{r}]({r})  \n"
-            if r.startswith("http"):
-                referens_str = referens_str.replace("'type_placeholder'","网页")                
-            else:
-                referens_str = referens_str.replace("'type_placeholder'","文档")
-
-        os.environ["REFERENCE"] = referens_str
-        print(f'{referens_str=}')
-    # else:
-    #    os.environ["REFERENCE"] = '' 
-
-
-
-    generation = rag_node.invoke({"documents": documents, "question": question, "messages":messages},config=invoke_llm_config)
-    last_message = state["messages"][-1]
-    tool_call_id = ''
-    try:
-        for tool_call in last_message.tool_calls:
-            if tool_call["name"] == 'VECTORSTORE':
-                tool_call_id = tool_call["id"]
-                break
-    except:
-        tool_call_id = f'call_{str(uuid.uuid4())}'
-    # print(generation)
-    generation_message = ToolMessage(content=generation,name='generation',tool_call_id=tool_call_id)
-    return {"documents": documents, "question": question, "generation": generation, "messages":generation_message,"question_related_messages":generation_message}
-
-
-
-
 # 5.Supported (Not Hallucination) Grader
 class GradeSupported(BaseModel,extra='allow'):  
     """Binary classification for whether an answer is supported by a set of facts."""
@@ -628,6 +569,7 @@ def grade_generation_v_documents_and_question(state:GraphAgentState):
         print("---DECISION: GENERATION IS NOT GROUNDED IN DOCUMENTS, BUT WE DO NOT RE-TRY (RE-GENERATION), JUST DIRECTLY TO 'END' NODE---")
         return "not supported" # todo
 
+
 # endregion Rags Related
 
 
@@ -686,11 +628,25 @@ class GraphAgent:
         
         self.message_idx_in_a_question_epoch = self.set_message_idx_in_a_question_epoch()
         self.graph = self.graph_definition()
+        # self.visualize_graph()
         self.all_history_messages = self.get_all_history_messages()
         self.question_related_messages = self.get_question_related_messages_from_state()
+    
     # endregion
     
     # region: 类内方法定义
+    
+    def visualize_graph(self,saved_img_name = 'visualize_graph_definition.png'):
+        import matplotlib.pyplot as plt
+        import matplotlib.image as mpimg  # 导入matplotlib.image用于读取图像
+        from langchain_core.runnables.graph import  MermaidDrawMethod,CurveStyle
+        try:
+            # 使用 Mermaid 生成图表并保存为文件
+            mermaid_img = self.graph.get_graph().draw_mermaid_png(padding=0,output_file_path=saved_img_name)
+        except Exception as e:
+            print(f"An error occurred: {e}")
+
+
     def makeup_message_with_question_id_idx(self,Message_ClassOrInstance:AnyMessage,content:Union[str,None]=None,question_id:Union[str,None]=None,idx_in_a_question_epoch:Union[int,None]=None):
         if not question_id:
             question_id = self.question_id
@@ -805,7 +761,7 @@ class GraphAgent:
         graph.add_node("web_search", web_search)
         graph.add_node("vectorstore", self.vectorstore )
         graph.add_node("grade_documents", grade_documents )
-        graph.add_node("generate", generate)
+        graph.add_node("generate", self.generate)
         graph.add_node("code_generation", self.code_generation )
         graph.add_node("code_execution", self.code_execution )
         # graph.add_node("", )
@@ -949,11 +905,10 @@ class GraphAgent:
                 logger.info(f"Returned first ToolName is '{tool_call_1_name}', So routing to '{tool_call_1_name}' Node......")
                 # 有些模型会同时生成多个调用（如deep seek），但又要求tool_call与tool_response必须对应起来，所以此处只好生成一一对应的tool_response message
                 for tool in result.tool_calls[1:]:
-                    makeup_tool_message = ToolMessage(content='',name=tool["name"],tool_call_id=tool["id"])
+                    makeup_aimessage_with_tool_call = ToolMessage(content='',name=tool["name"],tool_call_id=tool["id"])
                     messages = state["messages"]
-                    messages.append(makeup_tool_message)  
-                    state.update({"messages":messages})
-                    # state["messages"]=state["messages"].append(makeup_tool_message)                  
+                    messages.append(makeup_aimessage_with_tool_call)  
+                    state.update({"messages":messages})               
                 return tool_call_1_name
             
         else:
@@ -980,51 +935,46 @@ class GraphAgent:
         if input_message not in question_related_messages:
             question_related_messages.append(input_message)
         if self.system_message:
-            messages = self.system_message + question_related_messages
-            
+            messages = self.system_message + question_related_messages            
         logger.info(f"call_llm:调用LLM时的消息数为:{len(messages)}")
         
-        # 为了保证在线模型要求的tool_call AIMessage 和 tool_response ToolMessage要求的一一对应，且tool_call_id要匹配的上，所以此处把含有tool_call的AIMessage过滤掉
-        # filtered_messages = []
-        # for _m in self.question_related_messages:
-        #     if isinstance(_m,HumanMessage):
-        #         filtered_messages.append(_m)
-        #     if isinstance(_m,AIMessage):
-        #         tool_calls = _m.tool_calls
-        #         if len(tool_calls) == 0:
-        #             filtered_messages.append(_m)
-                    
-        # self.question_related_messages = filtered_messages
-        message = None
         try:
-            try:
-                # 为了保证在线模型要求的tool_call AIMessage 和 tool_response ToolMessage要求的一一对应，且tool_call_id要匹配的上
-                tool_messages = [t for t in messages if isinstance(t,ToolMessage)]
-                tool_response_ids = [t.tool_call_id for t in tool_messages]
-                ai_messages_with_tool_calls = [t for t in messages if isinstance(t,AIMessage) and len(t.tool_calls)>0]
-                tool_call_ids = []
-                ai_messages_with_tool_calls_but_has_no_crospongding_tool_message = []
-                tool_messages_but_has_no_crospongding_ai_message = []
-                for t in ai_messages_with_tool_calls:
-                    ts = t.tool_calls
-                    for _t in ts:
-                        if _t["id"] not in tool_response_ids:
-                            ai_messages_with_tool_calls_but_has_no_crospongding_tool_message.append(_t)
-                        else:
-                            tool_call_ids.append(_t["id"])
-                for t in tool_messages:
-                    if t.tool_call_id not in tool_call_ids:
-                        tool_messages_but_has_no_crospongding_ai_message.append(t)
-                
-                invalid_messages = tool_messages_but_has_no_crospongding_ai_message + tool_messages_but_has_no_crospongding_ai_message
-                filtered_messages = [m for m in messages if m not in invalid_messages] 
-                if len(filtered_messages)!=len(messages):
-                    logger.debug('有不匹配的ai_messages_with_tool_calls_but_has_no_crospongding_tool_message或tool_messages_but_has_no_crospongding_ai_message过滤掉了')          
-
+            message = None            
+            # 为了保证在线模型要求的tool_call AIMessage 和 tool_response ToolMessage要求的一一对应，且tool_call_id要匹配的上
+            tool_messages = [t for t in messages if isinstance(t,ToolMessage)]
+            tool_response_ids = [t.tool_call_id for t in tool_messages]
+            ai_messages_with_tool_calls = [t for t in messages if isinstance(t,AIMessage) and len(t.tool_calls)>0]
+            tool_call_ids = []
+            ai_messages_with_tool_calls_but_has_no_crospongding_tool_message = []
+            tool_messages_but_has_no_crospongding_ai_message = []
+            for t in ai_messages_with_tool_calls:
+                ts = t.tool_calls
+                for _t in ts:
+                    if _t["id"] not in tool_response_ids:
+                        ai_messages_with_tool_calls_but_has_no_crospongding_tool_message.append(_t)
+                    else:
+                        tool_call_ids.append(_t["id"])
+            for t in tool_messages:
+                if t.tool_call_id not in tool_call_ids:
+                    tool_messages_but_has_no_crospongding_ai_message.append(t)
+            
+            invalid_messages = tool_messages_but_has_no_crospongding_ai_message + ai_messages_with_tool_calls_but_has_no_crospongding_tool_message
+            filtered_messages = [m for m in messages if m not in invalid_messages] 
+            if len(filtered_messages)!=len(messages):
+                logger.debug('有不匹配的ai_messages_with_tool_calls_but_has_no_crospongding_tool_message或tool_messages_but_has_no_crospongding_ai_message过滤掉了') 
+            
+            # 实际上这里应该把tool_call AIMessage 和 tool_response ToolMessage都过滤掉，因为它们只是中间过程
+            # tool_messages = [t for t in messages if isinstance(t,ToolMessage)]
+            # ai_messages_with_tool_calls = [t for t in messages if isinstance(t,AIMessage) and len(t.tool_calls)>0]
+            # invalid_messages = ai_messages_with_tool_calls + tool_messages
+            # filtered_messages = [m for m in messages if m not in invalid_messages]
+            try: 
                 message = self.model.invoke(filtered_messages,config=self.config)
             except Exception as e:
-                print(f"{filtered_messages},{e}")
-                # message = self.model.invoke(filtered_messages,config=self.config)
+                logger.error(f'！！！大语言模型执行失败，！！！错误消息为:{e}')
+                # logger.error('请检查大语言模型接口服务状态,并查看传入的消息列表，如下：')            
+                # for m in messages:
+                #     m.pretty_print()
             if message:
                 try: 
                     finish_reason = message.response_metadata["finish_reason"]
@@ -1042,10 +992,84 @@ class GraphAgent:
                 question_related_messages.append(message)
                 return {'messages': message,'question_related_messages':question_related_messages}
         except Exception as e:
-            logger.error(f'！！！大语言模型执行失败，！！！错误消息为:{e}')
-            # logger.error('请检查大语言模型接口服务状态,并查看传入的消息列表，如下：')            
-            # for m in messages:
-            #     m.pretty_print()
+            logger.error(f'大语言模型执行时的前处理或后处理出现了错误:{e}')
+
+    def generate(self,state:GraphAgentState):
+        """
+        Generate answer using the vectorstore
+
+        Args:
+            state (dict): The current graph state
+
+        Returns:
+            state (dict): New key added to state, generation, that contains LLM generation
+        """
+        print("---GENERATE---")
+        question = state["question"]
+        documents = state["documents"]
+        messages = state["question_related_messages"]
+        if not isinstance(documents, list):
+            documents = [documents]
+            # print("documents的内容：")
+            # for d in documents:
+            #     print(d.page_content)
+
+        # RAG generation
+        referens = []
+        sources =[d.metadata.get("source",d.metadata.get("source",None)) for d in documents]
+        # sources = set([s for s in _sources if s])
+        referens = list(sources)
+
+        referens_str = "参考'type_placeholder':  \n"
+        if referens:        
+            for i,r in enumerate(referens):
+                referens_str += f"    {i+1}. [{r}]({r})  \n"
+                if r.startswith("http"):
+                    referens_str = referens_str.replace("'type_placeholder'","网页")                
+                else:
+                    referens_str = referens_str.replace("'type_placeholder'","文档")
+
+            os.environ["REFERENCE"] = referens_str
+            print(f'{referens_str=}')
+        # else:
+        #    os.environ["REFERENCE"] = '' 
+        generation = rag_node.invoke({"documents": documents, "question": question, "messages":messages},config=invoke_llm_config)
+        last_message = state["messages"][-1]
+        tool_call_id = ''
+        # todo 如果tool_call_id==""
+        # 就需要先建立一个AIMessage with tc
+        tool_call_id==""
+        try:
+            if isinstance(last_message,AIMessage):
+                for tool_call in last_message.tool_calls:
+                    logger.debug(f"AIMessage's {tool_call['name']} call for 'generate' node......")
+                    if tool_call["name"] in ['VECTORSTORE','WEB_SEARCH']:
+                        tool_call_id = tool_call["id"]
+                        break
+            elif isinstance(last_message,ToolMessage):
+                logger.debug(f"ToolMessage {last_message.name} call for 'generate' node......")
+                tool_call_id =f'call_{(shortuuid.uuid())}'
+                makeup_aimessage_with_tool_call = AIMessage(name="tool_calls",content="tool_call generating by 'intenal'",tool_calls=[{"name":"gerneration","args":{"query":'makeuped query'},"id":tool_call_id}])
+                makeup_aimessage_with_tool_call = self.makeup_message_with_question_id_idx(makeup_aimessage_with_tool_call)
+                messages = state["messages"]
+                messages.append(makeup_aimessage_with_tool_call) 
+                state.update({"messages":messages})  
+                
+            else:
+                logger.warning(f"不应该出现的情况:{last_message.type}")
+                
+        except:
+            state["messages"]
+            logger.warning(f"{tool_call['name']} cannot find a tool_call_id to makeup ToolMessage!")        
+            tool_call_id = f'call_{str(uuid.uuid4())}'
+        # print(generation)
+        generation_tool_message = ToolMessage(content="tool_call finished by 'generate'",name='generate',tool_call_id=tool_call_id)
+        generation_tool_message = self.makeup_message_with_question_id_idx(generation_tool_message)
+        # 最后生成AIMessage可能最合适，因为generate节点直接到Graph的"end"节点
+        generation_ai_message = AIMessage(content=generation,name='generate')
+        generation_ai_message = self.makeup_message_with_question_id_idx(generation_ai_message)
+        generation_messages = [generation_tool_message,generation_ai_message]
+        return {"documents": documents, "question": question, "generation": generation, "messages":generation_messages,"question_related_messages":generation_ai_message}
     
     def code_generation(self,state:GraphAgentState):
         user_question = state["question"]
@@ -1086,13 +1110,17 @@ class GraphAgent:
                 if tool_call["name"] == 'CODE_GENERATION':
                     tool_call_id = tool_call["id"]
                     break
+                else:
+                    logger.warning(f"{tool_call['name']} cannot find a tool_call_id to makeup ToolMessage!")
+                    tool_call_id = f'call_{str(uuid.uuid4())}'
         except:
+            logger.warning(f"{tool_call['name']} cannot find a tool_call_id to makeup ToolMessage!")        
             tool_call_id = f'call_{str(uuid.uuid4())}'
         
         code_message = ToolMessage(content=code,name='code_generation',tool_call_id = tool_call_id,additional_kwargs ={"code_text":code_text})
         code_message = self.makeup_message_with_question_id_idx(code_message)
         # 在线大模型服务要求tool_call aimessage 与 tool_response toolmessage要一一对应，所以这里要先生成一个tool_call aimessage
-        code_execution_tool_call_message = AIMessage(name="code_generation",content='',tool_calls=[{"name":"CODE_EXECUTION","args":{"query":code},"id":f'call_{(shortuuid.uuid())}'}])
+        code_execution_tool_call_message = AIMessage(name="tool_calls",content="tool_call generating by 'code_generation'",tool_calls=[{"name":"CODE_EXECUTION","args":{"query":code},"id":f'call_{(shortuuid.uuid())}'}])
         code_execution_tool_call_message = self.makeup_message_with_question_id_idx(code_execution_tool_call_message)
         messages = [code_message,code_execution_tool_call_message]
         return {'messages':messages,'question_related_messages':messages}
