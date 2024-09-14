@@ -184,7 +184,7 @@ class InitEnvModels:
         assert self.env_loaded, "环境变量没有正确载入！"
         
         self.ollama_host = os.getenv("OLLAMA_HOST",'http://localhost:11434')
-        self.api_key =os.getenv("OPENAI_API_KEY",'abc123')
+        
         self.api_type =os.getenv("OPENAI_API_TYPE",'open_ai')
         
 
@@ -217,12 +217,16 @@ class InitEnvModels:
         self.embedding_model_8k_card = EMBEDDING_MODEL_8k_CARD
         self.rerank_model_card = RERANK_MODEL_CARD
 
+        _default_api_key =os.getenv("OPENAI_API_KEY",'abc123')
+        self.llm_model_api_key = self.llm_model_card.get('api_key',_default_api_key)
         self.llm_model_base_url= self.llm_model_card['base_url']
         self.llm_model_name = self.llm_model_card['name']
         self.llm_model_max_tokens = self.llm_model_card['max_tokens']
-
+        self.llm_model_max_tokens = self.llm_model_card['max_tokens']
+        self.need_custom_tool_call_parse = self.llm_model_card.get('need_custom_tool_call_parse',False)
 
         self.base_url = self.llm_model_base_url # 如果是同一服务器上部署的大语言和Emb模型，可能会省略配置其他模型，直接用这个
+        self.api_key = self.llm_model_api_key
 
         self.embedding_model_name = self.embedding_model_card['name']
         self.embedding_model_dimentions = self.embedding_model_card['dimensions']
@@ -552,99 +556,93 @@ class InitEnvModels:
                 chunks_relevant = retriever.invoke(query)
         return chunks_relevant
 
-    # https://github.com/langchain-ai/langgraph/blob/main/examples/managing-conversation-history.ipynb
-    def filter_and_get_messages_relevant_to_query(self,query:str,messages_list:List[BaseMessage],reserve_last_n_unique_messages = 6,reserve_message_types:tuple=(HumanMessage,AIMessage),text_splitter=None,embed_model=None,reranker=None,
-                                                    if_reranking:bool=True,retriever_docs_num=10,final_docs_num=6 ,score_threshold=0.5, only_use_reranker=True):
-        if not messages_list:
-            return []
-        
-        unique_messages_list = []
-        messages_content_set = set()
-        messages_list.reverse()
-        for message in messages_list:
-            if isinstance(message,reserve_message_types):                     # 只保留HumanMessage,AIMessage
-                if message.content:                                              # 确保message.content不为空
-                    if message.content not in  messages_content_set:
-                        unique_messages_list.append(message)
-                        messages_content_set.add(message.content)        
-        unique_messages_list.reverse() 
-        messages_list.reverse() # 前面messages_list顺序翻转了，所以这里还要翻转回来
-        
-        if len(unique_messages_list) > reserve_last_n_unique_messages:
-
-            embed_model  = embed_model if embed_model else self.embed_model
-            reranker  = reranker if reranker else self.reranker
-            text_splitter  = text_splitter if text_splitter else self.text_splitter 
-
-            docs_from_messages = [Document(page_content=message.content,metadata={"message_index":message_index}) for message_index, message in enumerate(unique_messages_list)]
-            chunks_relevant = self.split_and_get_chunks_relevant_from_documents(query, docs_from_messages,text_splitter=text_splitter,reranker=reranker,
-                                                                        if_reranking=if_reranking,retriever_docs_num=retriever_docs_num, final_docs_num=final_docs_num,score_threshold=score_threshold,only_use_reranker=only_use_reranker)
-
-            if not chunks_relevant:
-                if reserve_last_n_unique_messages>0:
-                    last_n_unique_messages = unique_messages_list[-reserve_last_n_unique_messages:]
-                    return last_n_unique_messages
-
-            sorted_chunks_relevant = sorted(chunks_relevant, key=lambda x: (x.metadata['message_index'], x.metadata['start_index']))
-            
-            messages_relevant = []            
-            for chunk_relevant in sorted_chunks_relevant:
-                index = chunk_relevant.metadata['message_index']
-                # unique_messages_list[index].content = chunk_relevant.page_content #不能改变内容（即不能使用分块后的内容，否则可能无法获取完整的答案）
-                message_relevant = unique_messages_list[index]
-                if message_relevant not in messages_relevant:                               
-                    messages_relevant.append(message_relevant)
-                    # logger.info("--------------------------------") 
-                    # relevance_score = chunk_relevant.metadata.get('relevance_score',None)
-                    # message_relevant.pretty_print()
-                    # logger.info(f"^^^^^^^^^上条Message的{relevance_score=}^^^^^^^^^")                
-                
-                logger.info(f"++++++++++++++++【根据相关性过滤后保留的[{len(messages_relevant)}]条 + 最近的last_n_unique_messages[{reserve_last_n_unique_messages}]条】消息++++++++++++++++")
-                if reserve_last_n_unique_messages>0:
-                    last_n_unique_messages = unique_messages_list[-reserve_last_n_unique_messages:]
-                    for last_message in last_n_unique_messages:
-                        last_message_content = last_message.content
-                        # 防止之前的消息内容与当前消息内容一致,且要保证先后顺序，留下的确实是最近的
-                        messages_relevant = [m for m in messages_relevant if m.content!=last_message_content]
-                        messages_relevant.append(last_message)                        
-                logger.info(f"++++++++++++++++【根据相关性过滤后保留的[{len(messages_relevant)}]条 + 最近的last_n_unique_messages[{reserve_last_n_unique_messages}]条合并后，保留了[{len(messages_relevant)}]条】消息++++++++++++++++")
-                
-                logger.info(f"================【为保留后的HumanMassage查询增加对应的AIMessage消息】：当前消息数[{len(messages_relevant)}]条================")
-                final_messages_relevant = []                                
-                for message in messages_relevant:
-                    if message not in final_messages_relevant:
-                        final_messages_relevant.append(message)
-                    if isinstance(message,HumanMessage):
-                        try:
-                            question_id = message.additional_kwargs.get("question_id","")
-                        except:            
-                            question_id = ""
-                        
-                        if question_id:
-                            m0_index = messages_list.index(message)
-                            _messages_list  = messages_list[m0_index:]
-                            for m in _messages_list:
-                                if isinstance(m,AIMessage):
-                                    try:
-                                        ai_message_id = m.additional_kwargs.get("question_id","")
-                                        if ai_message_id == question_id:
-                                            final_messages_relevant.append(m)
-                                            break
-                                    except:
-                                        continue
-                logger.info(f"================【为保留后的HumanMassage查询增加对应的AIMessage消息】，增加后消息数[{len(final_messages_relevant)}]条================")
-                
-                logger.info(f"****************【无论如何，增加保留最后1条消息】，当前消息数[{len(final_messages_relevant)}]条****************")
-                last_message_of_messages_list = messages_list[-1]
-                if last_message_of_messages_list not in final_messages_relevant:
-                    final_messages_relevant.append(last_message_of_messages_list)
-                else:
-                    logger.info(f"****************【最后1条消息已经存在】****************")
-                logger.info(f"****************【无论如何，增加保留最后1条消息】，增加后消息数[{len(final_messages_relevant)}]条****************")
-                return final_messages_relevant
-
+    def is_toolcall_aimessage(self, message):
+        if isinstance(message,AIMessage) and len(message.tool_calls):
+            return True
         else:
-            return unique_messages_list
+            return False
+            
+    # https://github.com/langchain-ai/langgraph/blob/main/examples/managing-conversation-history.ipynb
+    # 历史相关信息首先获得相关的字符串内容，然后组装成一条HumanMessage，再生成一条AIMessage
+    # makeup_aimesaage = AIMessage(content="I know, I have get the converstion history.")    
+    # 避免历史消息类型的拼装（符合HumanMessage、AIMessage、[ToolMessage if AIMessage is a ToolCall AIMessage]），引入不相关、不必要的消息
+    # 返回最近的n条消息列表，并且保证是以HumanMessage开头的，符合HumanMessage、AIMessage、[ToolMessage if AIMessage is a ToolCall AIMessage]
+    def filter_and_get_messages_relevant_to_query(self,query:str,messages_list:List[BaseMessage],reserve_last_n_messages_num=0,reserve_message_types:tuple=(HumanMessage,AIMessage),text_splitter=None,embed_model=None,reranker=None,
+                                                    if_reranking:bool=True,retriever_docs_num=10,final_docs_num=6 ,score_threshold=0.5, only_use_reranker=True):
+    
+        if not messages_list:
+           return []        
+        if reserve_last_n_messages_num>0 and reserve_last_n_messages_num>=len(messages_list):
+            return messages_list
+                        
+        else:            
+            history_context = ''
+            last_n_messages = []
+            history_messages = []
+            if reserve_last_n_messages_num == 0:
+                last_n_messages = []
+                history_messages = messages_list
+            # 首先得到最近的n条消息列表，并且保证是以HumanMessage开头的
+            else:
+                last_n_messages = messages_list[-reserve_last_n_messages_num:]
+                history_messages = messages_list[:-reserve_last_n_messages_num]
+                if last_n_messages:
+                    last_n_messages0 = last_n_messages[0]
+                    # 补齐，直到消息列表是以HumanMessage开头的
+                    if not isinstance(last_n_messages0,HumanMessage):
+                        for m in history_messages[::-1]:
+                            last_n_messages.insert(0,m)
+                            if isinstance(m,HumanMessage):
+                                break
+                    last_n_messages0 = last_n_messages[0]
+                    assert isinstance(last_n_messages0,HumanMessage), f"保留的消息列表必须是以HumanMessage开始的,但当前的第一条消息是:{last_n_messages0}"
+                
+                    # 根据补齐后的消息列表，重新得到历史消息列表
+                    reserve_last_n_messages_num = len(last_n_messages)
+                    history_messages = messages_list[:-reserve_last_n_messages_num] 
+            # 上面已经得到了最终的last_n_messages结果
+            
+            # 上面也已经得到了history_messages（不包括last_n_messages）的内容
+            #  现在只需要筛选出独立、相关的，并组装成history_context字符串
+            existed_messages_content_set = set([m.content for m in last_n_messages])
+            unique_history_messages_list = []
+            # 得到非空的，unique的HumanMessage,AIMessage列表
+            # 且是最近的
+            for message in history_messages[::-1]: #倒序添加
+                if isinstance(message,reserve_message_types):                     # 只保留HumanMessage,AIMessage
+                    # if self.is_toolcall_aimessage(message):
+                    #     continue
+                    if message.content:                                              # 确保message.content不为空
+                        if not self.is_toolcall_aimessage(message):
+                            if message.content not in  existed_messages_content_set:
+                                unique_history_messages_list.append(message.content)
+                                existed_messages_content_set.add(message.content)
+            # 因为是倒序添加的，所以要翻转回来，
+            # 注意：这里只是 消息内容列表
+            unique_history_messages_list.reverse()
+        
+            if len(unique_history_messages_list) > 0:
+                embed_model  = embed_model if embed_model else self.embed_model
+                reranker  = reranker if reranker else self.reranker
+                text_splitter  = text_splitter if text_splitter else self.text_splitter 
+
+                docs_from_messages = [Document(page_content=message_content,metadata={"message_index":message_index}) for message_index, message_content in enumerate(unique_history_messages_list)]
+                chunks_relevant = self.split_and_get_chunks_relevant_from_documents(query, docs_from_messages,text_splitter=text_splitter,reranker=reranker,
+                                                                            if_reranking=if_reranking,retriever_docs_num=retriever_docs_num, final_docs_num=final_docs_num,score_threshold=score_threshold,only_use_reranker=only_use_reranker)
+                if chunks_relevant:
+                    content_list = [document.page_content for document in chunks_relevant]
+                    history_context = "\n".join(content_list)
+                    history_context = "\nHere is the conversation history.\n[BEGINOFHISTORY]:\n" + history_context + "\n[ENDOFHISTORY].\n"
+        
+                    makeup_human_message = HumanMessage(content=history_context,name="history")
+                    makeup_ai_mesaage = AIMessage(content="I know, I have get the converstion history.",name='history')
+                    all_messages = [makeup_human_message,makeup_ai_mesaage] + last_n_messages
+                    return all_messages
+                else:
+                    return last_n_messages
+            
+            else:
+                return []
 
 @lru_cache
 def get_env_models_instance():

@@ -730,7 +730,8 @@ class GraphAgent:
         self.all_history_messages = self._get_messages_from_state_by_key("messages") 
         return self.all_history_messages
     
-    def get_question_related_messages_from_state(self,question="",reserve_last_n_unique_messages=6):
+    # reserve_last_n_messages_num = 0
+    def get_question_related_messages_from_state(self,question="",reserve_last_n_messages_num=6):
         self.question_related_messages = self._get_messages_from_state_by_key("question_related_messages")
 
         if not self.question_related_messages:
@@ -743,7 +744,7 @@ class GraphAgent:
                     if not question:
                         logger.warning('请传入非空的user question，或者先给self.question_rewrited赋值')
                     else:
-                        question_related_messages = env_models_instance.filter_and_get_messages_relevant_to_query(query=question,messages_list=messages,reserve_last_n_unique_messages = reserve_last_n_unique_messages)
+                        question_related_messages = env_models_instance.filter_and_get_messages_relevant_to_query(query=question,messages_list=messages,reserve_last_n_messages_num = reserve_last_n_messages_num)
                         self.question_related_messages = question_related_messages
 
             
@@ -1127,7 +1128,7 @@ class GraphAgent:
         logger.debug(f"切记新的问题对话前，要先更新user_question 和 question_id！老的[{self.question_id=}]")
         self.question_id = self.get_random_id()
         self.question = user_question #因为涉及获取question相关的历史消息，以及根据question相关的历史消息改写question（rewrite），放到self.question供调用
-        self.question_related_messages = self.get_question_related_messages_from_state(user_question,reserve_last_n_unique_messages=6)
+        self.question_related_messages = self.get_question_related_messages_from_state(user_question,reserve_last_n_messages_num=6)
         
         logger.warning("此处要默认可以改写问题，但实际需要获取用户是否运行改写的设置")
                 
