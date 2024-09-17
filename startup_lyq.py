@@ -5,10 +5,10 @@ import multiprocessing
 import multiprocessing as mp
 import os
 import sys 
-# project_root = '/media/temp/JqChat906'
+
 project_root = '/media/temp/JqChat'
 sys.path.insert(0, project_root)
-# print(sys.path) 
+print(sys.path) 
 
 from contextlib import asynccontextmanager
 from multiprocessing import Process
