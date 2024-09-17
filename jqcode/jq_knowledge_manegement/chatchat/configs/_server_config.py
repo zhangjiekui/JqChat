@@ -59,13 +59,13 @@ class ConfigServerFactory(core_config.ConfigFactory[ConfigServer]):
         # self.WEBU
         self.WEBUI_SERVER = {
             "host": '0.0.0.0',
-            "port": 8502,
+            "port": 8501,
         }
 
         # api.py server
         self.API_SERVER = {
             "host": '0.0.0.0',
-            "port": 7862,
+            "port": 7861,
         }
 
     def httpx_default_timeout(self, timeout: float):
