@@ -19,6 +19,7 @@ from jqcode.jq_knowledge_manegement.chatchat.configs import (
 from jqcode.jq_knowledge_manegement.chatchat.server.knowledge_base.kb_service.base import (
     get_kb_details,
     get_kb_file_details,
+    KBService
 )
 from jqcode.jq_knowledge_manegement.chatchat.server.knowledge_base.utils import LOADER_DICT, get_file_path
 from jqcode.jq_knowledge_manegement.chatchat.server.utils import get_config_models
@@ -110,7 +111,7 @@ def knowledge_base_page(api: ApiRequest, is_lite: bool = None):
             )
             kb_info = st.text_input(
                 "知识库简介",
-                placeholder="知识库简介，方便Agent查找",
+                placeholder="知识库简介,方便Agent查找",
                 key="kb_info",
             )
 
@@ -144,13 +145,15 @@ def knowledge_base_page(api: ApiRequest, is_lite: bool = None):
             elif kb_name in kb_list:
                 st.error(f"名为 {kb_name} 的知识库已经存在！")
             elif embed_model is None:
-                st.error(f"请选择Embedding模型！")
+                st.error(f"请选择Embedding模型!")
             else:
                 ret = api.create_knowledge_base(
                     knowledge_base_name=kb_name,
                     vector_store_type=vs_type,
                     embed_model=embed_model,
+                    kb_info=kb_info,
                 )
+
                 st.toast(ret.get("msg", " "))
                 st.session_state["selected_kb_name"] = kb_name
                 st.session_state["selected_kb_info"] = kb_info
@@ -180,19 +183,20 @@ def knowledge_base_page(api: ApiRequest, is_lite: bool = None):
             st.session_state["selected_kb_info"] = kb_info
             api.update_kb_info(kb, kb_info)
 
-        # with st.sidebar:
-        with st.expander(
-            "文件处理配置",
-            expanded=True,
-        ):
+        chunk_size = 500  # 定义单段文本最大长度为500
+        chunk_overlap = 100  # 定义相邻文本重合长度为100
+
+        # 使用expander，但默认展开
+        with st.expander("文件处理配置", expanded=True):
             cols = st.columns(3)
-            chunk_size = cols[0].number_input("单段文本最大长度：", 1, 1000, CHUNK_SIZE)
-            chunk_overlap = cols[1].number_input(
-                "相邻文本重合长度：", 0, chunk_size, OVERLAP_SIZE
-            )
-            cols[2].write("")
-            cols[2].write("")
-            zh_title_enhance = cols[2].checkbox("开启中文标题加强", ZH_TITLE_ENHANCE)
+            # 单段文本最大长度显示为固定值500
+            with cols[0]:
+                st.write(f"单段文本最大长度：{chunk_size}")
+            # 相邻文本重合长度显示为固定值100
+            with cols[1]:
+                st.write(f"相邻文本重合长度：{chunk_overlap}")
+            # 第三列留空
+            cols[2].empty()
 
         if st.button(
             "添加文件到知识库",
@@ -205,7 +209,7 @@ def knowledge_base_page(api: ApiRequest, is_lite: bool = None):
                 override=True,
                 chunk_size=chunk_size,
                 chunk_overlap=chunk_overlap,
-                zh_title_enhance=zh_title_enhance,
+                zh_title_enhance=True,
             )
             if msg := check_success_msg(ret):
                 st.toast(msg, icon="✔")
@@ -234,13 +238,13 @@ def knowledge_base_page(api: ApiRequest, is_lite: bool = None):
                     "in_folder",
                     "in_db",
                 ]
-            ]
+            ] 
             doc_details["in_folder"] = (
                 doc_details["in_folder"].replace(True, "✓").replace(False, "×")
             )
             doc_details["in_db"] = (
                 doc_details["in_db"].replace(True, "✓").replace(False, "×")
-            ) 
+            )
             gb = config_aggrid(
                 doc_details,
                 {
@@ -308,7 +312,7 @@ def knowledge_base_page(api: ApiRequest, is_lite: bool = None):
                     file_names=file_names,
                     chunk_size=chunk_size,
                     chunk_overlap=chunk_overlap,
-                    zh_title_enhance=zh_title_enhance,
+                    zh_title_enhance=True,
                 )
                 st.rerun()
 
@@ -337,7 +341,7 @@ def knowledge_base_page(api: ApiRequest, is_lite: bool = None):
 
         if cols[0].button(
             "依据源文件重建向量库",
-            help="无需上传文件，通过其它方式将文档拷贝到对应知识库content目录下，点击本按钮即可重建知识库。",
+            help="无需上传文件,通过其它方式将文档拷贝到对应知识库content目录下,点击本按钮即可重建知识库。",
             use_container_width=True,
             type="primary",
         ):
@@ -348,7 +352,7 @@ def knowledge_base_page(api: ApiRequest, is_lite: bool = None):
                     kb,
                     chunk_size=chunk_size,
                     chunk_overlap=chunk_overlap,
-                    zh_title_enhance=zh_title_enhance,
+                    zh_title_enhance=True,
                 ):
                     if msg := check_error_msg(d):
                         st.toast(msg)

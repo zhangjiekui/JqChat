@@ -507,7 +507,7 @@ class ApiRequest:
             "score_threshold": score_threshold,
             "file_name": file_name,
             "metadata": metadata,
-        }
+        } 
 
         response = self.post(
             "/knowledge_base/search_docs",
