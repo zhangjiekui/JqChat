@@ -303,12 +303,32 @@ def submit_code_to_ipykernel_api(code:str):
         pass
 
 def display_code(code:str):
-    _code = f"""python    
-    ```
+    _code = f"""\n   
+    ```python 
     {code}
-    ```
+    ```\n
     """
     return _code
+
+def display_text(text:str):
+    _text = text.lower()
+    if '\nfinal answer:' in _text and '\naction:' in _text:
+        _index0 = _text.rindex('\nfinal answer:')
+        _l = len('\nfinal answer:')
+        idx = _index0 + _l
+        _index1 = _text.rindex('\naction:')
+        text = text[idx:_index1].replace('\nFinal Answer:','')
+    elif '\nfinal answer:' in _text:
+        _index0 = _text.rindex('\nfinal answer:')
+        _l = len('\nfinal answer:')
+        idx = _index0 + _l
+        text = text[idx:].replace('\nFinal Answer:','')
+    return text
+
+# text="""I now know the final answer.
+# Final answer: 已经成功绘制了cos(x)曲线图。从图中可以看出，cos(x)曲线在x=0时开始"""
+# print(display_text(text))
+# pass
 
 # endregion: Some utils mothods or varaiables
 
@@ -699,21 +719,20 @@ class GraphAgent:
         self.all_history_messages = self._get_messages_from_state_by_key("messages") 
         return self.all_history_messages
     
-    def get_question_related_messages_from_state(self,question="",reserve_last_n_unique_messages=6):
+    def get_question_related_messages_from_state(self,question="",reserve_last_n_messages_num=6,score_threshold=0.5):
         self.question_related_messages = self._get_messages_from_state_by_key("question_related_messages")
-
         if not self.question_related_messages:
             messages = self.get_all_history_messages() ## 或者  messages = state['messages']
-            if messages:
-                if len(messages) == 1:
-                    self.question_related_messages = messages
-                else:
-                    question = question or self.question_rewrited
-                    if not question:
-                        logger.warning('请传入非空的user question，或者先给self.question_rewrited赋值')
-                    else:
-                        question_related_messages = env_models_instance.filter_and_get_messages_relevant_to_query(query=question,messages_list=messages,reserve_last_n_unique_messages = reserve_last_n_unique_messages)
-                        self.question_related_messages = question_related_messages
+            question = question or self.question_rewrited
+
+            if not question:
+                logger.warning('请传入非空的user question，或者先给self.question_rewrited赋值')
+            else:
+                # if question=="还记得我叫什么吗？":
+                #     pass
+                question_related_messages = env_models_instance.filter_and_get_messages_relevant_to_query(query=question,messages_list=messages,reserve_last_n_messages_num = reserve_last_n_messages_num,score_threshold=score_threshold)
+                # env_models_instance.filter_and_get_messages_relevant_to_query(query=question,messages_list=messages,reserve_last_n_messages_num = reserve_last_n_messages_num,score_threshold=0.2)
+                self.question_related_messages = question_related_messages
 
         return self.question_related_messages
 
@@ -850,8 +869,8 @@ class GraphAgent:
         logger.info("工具调用执行正常，返回到大模型")
         return {'messages': results,'question_related_messages':results}
     
-    def exists_action(self,state:GraphAgentState):
-        
+    # 直接获取或者尝试进一步解析出tool_calls
+    def exists_action(self,state:GraphAgentState):        
         result = state['messages'][-1]
         print("xxxxxxxxxxxxxxxxxxxxxxxxxxxx")
         print(f'{result.content=}')
@@ -863,7 +882,7 @@ class GraphAgent:
         except:
             returned_tool_calling_nums = 0
 
-        if returned_tool_calling_nums==0 and self.model.model_name.startswith(("qwen","deepseek")):
+        if returned_tool_calling_nums==0 and env_models_instance.need_custom_tool_call_parse:
             if self.model.model_name.startswith("qwen"):
                 arg_name = "arguments" 
             elif self.model.model_name.startswith("deepseek"):
@@ -926,8 +945,9 @@ class GraphAgent:
     def call_llm(self,state: GraphAgentState):
         # 当前message
         input_message = state.get('messages')[-1]
-        # 获取历史相关message
-        question_related_messages = self.get_question_related_messages_from_state()
+        # 获取历史相关message        
+        reserve_last_n_messages_num=min(len(self.question_related_messages)+1,7) # 当前问题已存在时，只保留当前问题轮次数。超出6时，会过滤            
+        question_related_messages = self.get_question_related_messages_from_state(reserve_last_n_messages_num=reserve_last_n_messages_num,score_threshold=0.2)
         assert self.question_related_messages == question_related_messages,"self.get_question_related_messages_from_state方法里应同步更新了self.question_related_messages"        
         # 历史 + 当前
         if input_message not in question_related_messages:
@@ -937,29 +957,29 @@ class GraphAgent:
         logger.info(f"call_llm:调用LLM时的消息数为:{len(messages)}")
         
         try:
-            message = None            
-            # 为了保证在线模型要求的tool_call AIMessage 和 tool_response ToolMessage要求的一一对应，且tool_call_id要匹配的上
-            tool_messages = [t for t in messages if isinstance(t,ToolMessage)]
-            tool_response_ids = [t.tool_call_id for t in tool_messages]
-            ai_messages_with_tool_calls = [t for t in messages if isinstance(t,AIMessage) and len(t.tool_calls)>0]
-            tool_call_ids = []
-            ai_messages_with_tool_calls_but_has_no_crospongding_tool_message = []
-            tool_messages_but_has_no_crospongding_ai_message = []
-            for t in ai_messages_with_tool_calls:
-                ts = t.tool_calls
-                for _t in ts:
-                    if _t["id"] not in tool_response_ids:
-                        ai_messages_with_tool_calls_but_has_no_crospongding_tool_message.append(_t)
-                    else:
-                        tool_call_ids.append(_t["id"])
-            for t in tool_messages:
-                if t.tool_call_id not in tool_call_ids:
-                    tool_messages_but_has_no_crospongding_ai_message.append(t)
+        #     message = None            
+        #     # 为了保证在线模型要求的tool_call AIMessage 和 tool_response ToolMessage要求的一一对应，且tool_call_id要匹配的上
+        #     tool_messages = [t for t in messages if isinstance(t,ToolMessage)]
+        #     tool_response_ids = [t.tool_call_id for t in tool_messages]
+        #     ai_messages_with_tool_calls = [t for t in messages if isinstance(t,AIMessage) and len(t.tool_calls)>0]
+        #     tool_call_ids = []
+        #     ai_messages_with_tool_calls_but_has_no_crospongding_tool_message = []
+        #     tool_messages_but_has_no_crospongding_ai_message = []
+        #     for t in ai_messages_with_tool_calls:
+        #         ts = t.tool_calls
+        #         for _t in ts:
+        #             if _t["id"] not in tool_response_ids:
+        #                 ai_messages_with_tool_calls_but_has_no_crospongding_tool_message.append(_t)
+        #             else:
+        #                 tool_call_ids.append(_t["id"])
+        #     for t in tool_messages:
+        #         if t.tool_call_id not in tool_call_ids:
+        #             tool_messages_but_has_no_crospongding_ai_message.append(t)
             
-            invalid_messages = tool_messages_but_has_no_crospongding_ai_message + ai_messages_with_tool_calls_but_has_no_crospongding_tool_message
-            filtered_messages = [m for m in messages if m not in invalid_messages] 
-            if len(filtered_messages)!=len(messages):
-                logger.debug('有不匹配的ai_messages_with_tool_calls_but_has_no_crospongding_tool_message或tool_messages_but_has_no_crospongding_ai_message过滤掉了') 
+        #     invalid_messages = tool_messages_but_has_no_crospongding_ai_message + ai_messages_with_tool_calls_but_has_no_crospongding_tool_message
+        #     filtered_messages = [m for m in messages if m not in invalid_messages] 
+        #     if len(filtered_messages)!=len(messages):
+        #         logger.debug('有不匹配的ai_messages_with_tool_calls_but_has_no_crospongding_tool_message或tool_messages_but_has_no_crospongding_ai_message过滤掉了') 
             
             # 实际上这里应该把tool_call AIMessage 和 tool_response ToolMessage都过滤掉，因为它们只是中间过程
             # tool_messages = [t for t in messages if isinstance(t,ToolMessage)]
@@ -967,7 +987,8 @@ class GraphAgent:
             # invalid_messages = ai_messages_with_tool_calls + tool_messages
             # filtered_messages = [m for m in messages if m not in invalid_messages]
             try: 
-                message = self.model.invoke(filtered_messages,config=self.config)
+                # message = self.model.invoke(filtered_messages,config=self.config)
+                message = self.model.invoke(messages,config=self.config)
             except Exception as e:
                 logger.error(f'！！！大语言模型执行失败，！！！错误消息为:{e}')
                 # logger.error('请检查大语言模型接口服务状态,并查看传入的消息列表，如下：')            
@@ -1067,7 +1088,7 @@ class GraphAgent:
         generation_ai_message = AIMessage(content=generation,name='generate')
         generation_ai_message = self.makeup_message_with_question_id_idx(generation_ai_message)
         generation_messages = [generation_tool_message,generation_ai_message]
-        return {"documents": documents, "question": question, "generation": generation, "messages":generation_messages,"question_related_messages":generation_ai_message}
+        return {"documents": documents, "question": question, "generation": generation, "messages":generation_messages,"question_related_messages":generation_messages}
     
     def code_generation(self,state:GraphAgentState):
         user_question = state["question"]
@@ -1076,10 +1097,9 @@ class GraphAgent:
         message_buffer.append(question_related_messages)
 
         user_code_prompt = f"""First, here is a history of what I asked you to do earlier. 
-        The actual user prompt follows after ENDOFHISTORY. 
-        History:
+        [BEGINOFHISTORY]:
         {message_buffer.get_string()}
-        ENDOFHISTORY.
+        [ENDOFHISTORY].
         Aiming to help the user in the best possible way with the below [USER_QUESTION] do one of the following:
         1. Write Python code, in a triple backtick Markdown code block, that supports what the user is trying to achieve. Follows the system instructions between [GENERATE_PYTHON_INSTRUCTIONS] and [EndOf_GENERATE_PYTHON_INSTRUCTIONS]
         2. Answer the question the user asks.
@@ -1241,7 +1261,8 @@ class GraphAgent:
         logger.debug(f"切记新的问题对话前，要先更新user_question 和 question_id！老的[{self.question_id=}]")
         self.question_id = self.get_random_id()
         self.question = user_question #因为涉及获取question相关的历史消息，以及根据question相关的历史消息改写question（rewrite），放到self.question供调用
-        self.question_related_messages = self.get_question_related_messages_from_state(user_question,reserve_last_n_unique_messages=6)
+        # self.question_related_messages = self.get_question_related_messages_from_state(user_question,reserve_last_n_messages_num=0)
+        self.question_related_messages = []
         
         logger.warning("此处要默认不改写问题，但实际需要获取用户是否运行改写的设置")
                 
@@ -1301,24 +1322,26 @@ tavily_search_tool = TavilySearchResults(max_results=4) #increased number of res
 
 if __name__ == "__main__":
     user_questions = [
-        # '请绘制sin(x)曲线',
-        # "安徽省食品药品监督管理局行政审批系统项目总体计划的版本号是多少，批准人是谁？",
-        # '请搜索合肥大蜀山，然后提供详细介绍', 
-        # '请查询明天从合肥到上海的航班,以及南昌到北京的航班',
+        '请绘制sin(x)曲线',
+        "安徽省食品药品监督管理局行政审批系统项目总体计划的版本号是多少，批准人是谁？",
+        '请搜索合肥大蜀山，然后提供详细介绍', 
+        '请查询明天从合肥到上海的航班,以及南昌到北京的航班',
         '请直接执行代码：print("Hello World")',
         '请使用Python来绘制sin(x)的曲线图',
-        '你好，我叫张结魁',
+        '你好，我的名字是张结魁，你呢',
         '合肥大蜀山',          
         '请查询明天从合肥到上海的航班',
         '请使用python_repl_tool来计算1到100的和',
         '请调用python_repl_tool工具，一个计算1到100的和,另一个计算10的阶乘，并实际执行工具获取计算结果',
         "请搜索网络然后回答问题：What is the weather in SF and LA? ",
         "Who won the super bowl in 2024? In what state is the winning team headquarters located?What is the GDP of that state? ",
-        "还记得我叫什么吗？"
+        "前面我已告诉你我的名字，还记得我叫什么吗？"
     ]
     my_main_bot = GraphAgent(executable_tools=executable_tools,routing_tools_wrapped_in_class=route_tools)
 
     for user_question in user_questions:
+        if user_question=="还记得我叫什么吗？":
+            pass
         answer = my_main_bot.run_conversation(user_question=user_question)
         pass
 

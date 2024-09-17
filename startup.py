@@ -51,9 +51,6 @@ except:
     pass
 
 
-
-
-
 def _set_app_event(app: FastAPI, started_event:Event = None): # type: ignore
     @asynccontextmanager
     async def lifespan(app: FastAPI):
