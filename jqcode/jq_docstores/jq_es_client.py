@@ -1,6 +1,6 @@
 import sys
-project_root = '/media/temp/JqChat'
-sys.path.insert(0, project_root)
+# project_root = '/media/temp/JqChat'
+# sys.path.insert(0, project_root)
 
 import time 
 from langchain.schema import Document as LcDocument

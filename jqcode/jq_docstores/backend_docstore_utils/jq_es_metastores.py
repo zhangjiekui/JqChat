@@ -1,7 +1,7 @@
 
-import sys
-project_root = '/media/temp/JqChat'
-sys.path.insert(0, project_root)
+# import sys
+# project_root = '/media/temp/JqChat'
+# sys.path.insert(0, project_root)
 
 import hashlib
 from datetime import datetime
