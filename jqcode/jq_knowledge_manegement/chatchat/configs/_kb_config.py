@@ -130,26 +130,7 @@ class ConfigKbFactory(core_config.ConfigFactory[ConfigKb]):
         # 可选向量库类型及对应配置
         self.kbs_config = {
             "faiss": {},
-            "milvus": {
-                "host": "127.0.0.1",
-                "port": "19530",
-                "user": "",
-                "password": "",
-                "secure": False,
-            },
-            "zilliz": {
-                "host": "in01-a7ce524e41e3935.ali-cn-hangzhou.vectordb.zilliz.com.cn",
-                "port": "19530",
-                "user": "",
-                "password": "",
-                "secure": True,
-            },
-            "pg": {
-                "connection_uri": "postgresql://postgres:postgres@127.0.0.1:5432/langchain_chatchat",
-            },
-            "relyt": {
-                "connection_uri": "postgresql+psycopg2://postgres:postgres@127.0.0.1:7000/langchain_chatchat",
-            },
+
             "es": {
                 "host": "10.1.150.105",
                 "port": "9200",
@@ -158,42 +139,20 @@ class ConfigKbFactory(core_config.ConfigFactory[ConfigKb]):
                 "password": "",
                 "dims_length": 768,
             },
-            "milvus_kwargs": {
-                "search_params": {"metric_type": "L2"},  # 在此处增加search_params
-                "index_params": {
-                    "metric_type": "L2",
-                    "index_type": "HNSW",
-                },  # 在此处增加index_params
-            },
-            "chromadb": {},
+
         }
 
         # TextSplitter配置项，如果你不明白其中的含义，就不要修改。
         self.text_splitter_dict = {
-            "ChineseRecursiveTextSplitter": {
+            "JqkjDocTreeTokenTextSplitter": {
                 "source": "",  # 选择tiktoken则使用openai的方法 "huggingface"
                 "tokenizer_name_or_path": "",
             },
-            "SpacyTextSplitter": {
-                "source": "huggingface",
-                "tokenizer_name_or_path": "gpt2",
-            },
-            "RecursiveCharacterTextSplitter": {
-                "source": "tiktoken",
-                "tokenizer_name_or_path": "cl100k_base",
-            },
-            "MarkdownHeaderTextSplitter": {
-                "headers_to_split_on": [
-                    ("#", "head1"),
-                    ("##", "head2"),
-                    ("###", "head3"),
-                    ("####", "head4"),
-                ]
-            },
+
         }
 
         # TEXT_SPLITTER 名称
-        self.TEXT_SPLITTER_NAME = "ChineseRecursiveTextSplitter"
+        self.TEXT_SPLITTER_NAME = "JqkjDocTreeTokenTextSplitter"
 
         # Embedding模型定制词语的词表文件
         self.EMBEDDING_KEYWORD_FILE = "embedding_keywords.txt"

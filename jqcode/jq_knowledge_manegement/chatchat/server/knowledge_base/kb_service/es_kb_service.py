@@ -121,7 +121,7 @@ class ESKBService(KBService):
                 response = self.es_client_python.get(index=self.index_name, id=doc_id)
                 source = response["_source"]
                 # Assuming your document has "text" and "metadata" fields
-                text = source.get("context", "")
+                text = source.get("text", "")
                 metadata = source.get("metadata", {})
                 results.append(Document(page_content=text, metadata=metadata))
             except Exception as e:

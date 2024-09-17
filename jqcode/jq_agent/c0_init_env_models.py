@@ -1,6 +1,7 @@
-import warnings
+import warnings,sys
 warnings.filterwarnings("ignore")
-
+project_root = '/media/temp/JqChat'
+sys.path.insert(0, project_root)
 import os,sys,pathlib
 os.environ['USER_AGENT'] = 'myagent'
 import re

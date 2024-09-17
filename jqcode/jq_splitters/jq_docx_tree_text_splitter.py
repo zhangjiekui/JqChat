@@ -574,16 +574,26 @@ class JqkjDocTreeTokenTextSplitter(MetadataAwareTextSplitter):
         file_path_docx = lm_base_node.metadata.get("source",None) or lm_base_node.metadata.get("original_source_jq",None)
         if not file_path_docx:
             logger.error(f'lm_base_node的metadata(dict)中不存在key:"source"或"original_source_jq",lm_base_node的内容如下:\n{lm_base_node}')
+        
+        # 分离路径和文件名（包括扩展名）
+        path, full_filename = os.path.split(file_path_docx)
+        # 分离文件名和扩展名
+        filename, extension = os.path.splitext(full_filename)
+        # 重新组合路径和文件名（不包括扩展名）
+        result_path = os.path.join(path, filename)
+        file_path_docx = result_path
+        
+        
+        
         file_path_txt = file_path_docx+'.txt'
         file_path_txt_preview = file_path_docx+'_preview.txt'
-        # file_path_txt = file_path_docx.replace('.docx', '.txt')
-        # file_path_txt_preview = file_path_docx.replace('.docx', '_preview.txt')
+
         updated_text = '\n\n'.join(chunks_saved)
         # 切分后的结果保存到文本文件
-        with open(file_path_txt,'w',encoding='utf-8') as f:
-            f.write(updated_text)
+        # with open(file_path_txt,'w',encoding='utf-8') as f:
+        #     f.write(updated_text)
         # 保存供检查、预览的文本文件
-        self.write_chunkes_to_preview_file(chunks_saved, file_path_txt_preview)
+        # self.write_chunkes_to_preview_file(chunks_saved, file_path_txt_preview)
         
         # 更新原document node的信息        
         lm_base_node.text = updated_text

@@ -168,6 +168,7 @@ class JqkjDocxReader(BaseReader):
         # metadata = docx_document.metadata
         file = Path(file_path)
         filename=file.name
+        image_file_path: Path = Path('/media/temp/wendang/OCR接口性能报告.docx')
         # logger.debug(f"构建文档树：{file}")
 
 
@@ -233,8 +234,9 @@ class JqkjDocxReader(BaseReader):
                         pre_node = node # 正文节点，不能作为父节点候选
 
                 # 图片节点
-                img_metadatas_list = self.extract_imgs(block,docx_document, file, image_list, imgid_list, w_pict_images_list_id, w_pict_images_list_fn, pic_pic_images_list_id, pic_pic_images_list_fn) 
-                
+                # img_metadatas_list = self.extract_imgs(block,docx_document, file, image_list, imgid_list, w_pict_images_list_id, w_pict_images_list_fn, pic_pic_images_list_id, pic_pic_images_list_fn) 
+                img_metadatas_list = self.extract_imgs(block,docx_document, image_file_path, image_list, imgid_list, w_pict_images_list_id, w_pict_images_list_fn, pic_pic_images_list_id, pic_pic_images_list_fn) 
+                 
                 for img_metadata in img_metadatas_list:
                     # 创建图片节点
                     current_depth = parent_node.depth+1

@@ -178,7 +178,7 @@ def upload_docs(
     not_refresh_vs_cache: bool = Form(False, description="暂不保存向量库（用于FAISS）"),
 ) -> BaseResponse:
     """
-    API接口：上传文件，并/或向量化
+    API接口:上传文件并/或向量化
     """
     if not validate_kb_name(knowledge_base_name):
         return BaseResponse(code=403, msg="Don't attack me")

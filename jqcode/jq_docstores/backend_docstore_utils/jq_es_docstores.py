@@ -1,3 +1,7 @@
+import sys
+project_root = '/media/temp/JqChat'
+sys.path.insert(0, project_root)
+
 import yaml
 import copy
 import hashlib
