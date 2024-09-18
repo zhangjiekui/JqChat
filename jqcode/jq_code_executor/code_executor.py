@@ -189,9 +189,11 @@ class CodeExecutorTool():
         kc.execute(code)
         result = {'text':'','image':''}
         image_idx = 0
+        success=True
         while True:
             text = ''
             image = ''
+            
             finished = False
             msg_type = 'error'
             try:
@@ -221,13 +223,16 @@ class CodeExecutorTool():
                     msg_type = msg['content']['name']  # stdout, stderr
                     text = msg['content']['text']
                 elif msg_type == 'error':
+                    success=False
                     text = _escape_ansi('\n'.join(msg['content']['traceback']))
                     if 'M6_CODE_INTERPRETER_TIMEOUT' in text:
                         text = 'Timeout: Code execution exceeded the time limit.'
             except queue.Empty:
+                success=False
                 text = 'Timeout: Code execution exceeded the time limit.'
                 finished = True
             except Exception:
+                success=False
                 text = 'The code interpreter encountered an unexpected error.'
                 print_traceback()
                 finished = True
@@ -239,7 +244,7 @@ class CodeExecutorTool():
                 break
         # result = result.lstrip('\n')
         logger.info(result)
-        return result
+        return result,success
 
     def _serve_image(self, image_base64: str) -> str:
         import PIL.Image

@@ -1,23 +1,19 @@
 # source: https://learn.deeplearning.ai/courses/ai-agents-in-langgraph/lesson/3/langgraph-components
 # print('参考：https://learn.deeplearning.ai/courses/ai-agents-in-langgraph/lesson/3/langgraph-components')
 from langgraph.graph import StateGraph, END
-from typing import TypedDict, Annotated, Literal, Optional, Union, List
+from typing import TypedDict, Annotated, Union, List
 from langchain_core.pydantic_v1 import BaseModel, Field
 # from pydantic import BaseModel, Field
 from langchain_core.prompts import ChatPromptTemplate
 from langgraph.graph.message import add_messages
 from langchain_core.messages import AnyMessage, SystemMessage, HumanMessage, ToolMessage,AIMessage
-from langchain_core.tools import ToolException
 from langchain_openai import ChatOpenAI
 from langchain_community.tools.tavily_search import TavilySearchResults
 from langchain_openai import ChatOpenAI
-from langchain import hub
 from langchain.schema import Document
 from langchain_core.output_parsers import StrOutputParser
 from langchain_core.tools import tool
 from langgraph.checkpoint.sqlite import SqliteSaver
-from langgraph.checkpoint.aiosqlite import AsyncSqliteSaver
-from langchain_core.runnables import Runnable, RunnableConfig
 from jqcode.jq_agent.c0_init_env_models import env_models_instance,get_custom_handler,clean_up_list_when_encounter_null_element
 from jqcode.jq_agent.tools.jq_functions_and_tools import get_flight_number,python_repl_tool
 from langchain_experimental.tools import PythonREPLTool
@@ -33,8 +29,6 @@ import json_repair
 import shortuuid
 import uuid
 from collections import deque
-from flask import request, jsonify,Response
-import requests
 from jqcode.jq_utils.logger import jqkj_logger
 from dotenv import load_dotenv
 import time
@@ -303,7 +297,7 @@ def submit_code_to_ipykernel_api(code:str):
         pass
 
 def display_code(code:str):
-    _code = f"""\n   
+    _code = f"""   
     ```python 
     {code}
     ```\n
@@ -1201,36 +1195,15 @@ class GraphAgent:
                                 logger.warning(f"code_execution尝试从用户消息内容中直接提取代码时出现错误:{e}")
         try:
             if code:
-                message_content += code_text
                 logger.debug("......开始提交和执行代码......") 
-                # 提交代码到ipykernel_api执行   
-                # result = submit_code_to_ipykernel_api(code) #返回True或False
                 # 返回值为{"text"="",image=""}
-                result=code_executor.call(code=code)
-                if result:               
-                    message_content+=result['image']
-                    message_content+=result['text']
-                    logger.debug("......代码执行完毕......")
-                # 提交代码到ipykernel_api执行，尝试本地来执行
-                # 不应该需要本地执行
-                if not result:
-                    logger.info(f"......提交和执行代码失败，请检查服务接口......")
-                    logger.info(f".......尝试使用本地的python环境来来执行.......")
-                    # python_repl在本页代码开头处赋值的 
-                    result = python_repl(code)
-
-                                    
-                    if "error" in result.lower():
-                        code = merge_code_with_usual_imports(code)
-                        # python_repl在本页代码开头处赋值的  
-                        result = python_repl(code)                                      
-                        if "error" in result.lower():
-                            raise Exception(result)
-                    else:
-                        _result = result if result else "None"
-                        message_content = f"python_repl代码运行成功,运行结果为Observation:{_result} （但如有图像，由于环境限制无法直接展示,可在本地环境中运行上述代码）"
-                
-                code_message = ToolMessage(content=message_content,name=tool_name,tool_call_id =tool_call_id,additional_kwargs ={"status":False,"code":code,"code_text":code_text})
+                result,success=code_executor.call(code=code)
+                if  result :     
+                    if result['text']:
+                        message_content+=result['text']   
+                    if result['image']:       
+                        message_content+=result['image']
+                code_message = ToolMessage(content=message_content,name=tool_name,tool_call_id =tool_call_id,additional_kwargs ={"status":success,"code":code,"code_text":code_text})
                 code_message = self.makeup_message_with_question_id_idx(code_message)            
                 return {'messages':code_message,'question_related_messages':code_message}
 
