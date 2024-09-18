@@ -158,7 +158,7 @@ def clean_up_list_when_encounter_null_element(messages_a: list, messages_b: list
         if not messages_a or messages_a == messages_b:
             return messages_b
         else:
-            messages_a = [el for el in messages_a if el not in messages_b]
+            # messages_a = [el for el in messages_a if el not in messages_b]
             return messages_a + messages_b
     else:
         return []
@@ -540,9 +540,7 @@ class InitEnvModels:
         reranker.top_n = final_docs_num
 
         if only_use_reranker:            
-            _chunks_relevant = reranker.compress_documents(text_chunks,query)
-            # 只返回relevance_score>=score_threshold的
-            chunks_relevant = [d for d in _chunks_relevant if d.metadata.get("relevance_score",0)>=score_threshold]
+            chunks_relevant = reranker.compress_documents(text_chunks,query)
         
         else:
             embed_model  = embed_model if embed_model else self.embed_model        
@@ -554,6 +552,8 @@ class InitEnvModels:
                 retriever_docs_num = final_docs_num
                 retriever = FAISS.from_documents(text_chunks, embed_model, distance_strategy=DistanceStrategy.MAX_INNER_PRODUCT).as_retriever(search_type="mmr", search_kwargs={"score_threshold": score_threshold, "k": retriever_docs_num})
                 chunks_relevant = retriever.invoke(query)
+        # 只返回relevance_score>=score_threshold的
+        chunks_relevant = [d for d in chunks_relevant if d.metadata.get("relevance_score",0)>=score_threshold]
         return chunks_relevant
 
     def is_toolcall_aimessage(self, message):

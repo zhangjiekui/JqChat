@@ -571,7 +571,7 @@ def grade_generation_v_documents_and_question(state:GraphAgentState):
             return "useful"
         else:
             print("---DECISION: GENERATION DOES NOT ADDRESS QUESTION---")
-            return "not useful"
+            # return "not useful"
             
             try:
                 question_has_searched = state["question_searched"][question]
@@ -728,9 +728,14 @@ class GraphAgent:
             if not question:
                 logger.warning('请传入非空的user question，或者先给self.question_rewrited赋值')
             else:
-                # if question=="还记得我叫什么吗？":
-                #     pass
+                if question=="还记得我的名字吗？":
+                    pass
                 question_related_messages = env_models_instance.filter_and_get_messages_relevant_to_query(query=question,messages_list=messages,reserve_last_n_messages_num = reserve_last_n_messages_num,score_threshold=score_threshold)
+                if question=="还记得我的名字吗？":
+                    pass
+                logger.warning(f"##question_related_messages##"*3)
+                # logger.warning(f"{question_related_messages}")
+                # logger.warning(f"##question_related_messages##"*3)
                 # env_models_instance.filter_and_get_messages_relevant_to_query(query=question,messages_list=messages,reserve_last_n_messages_num = reserve_last_n_messages_num,score_threshold=0.2)
                 self.question_related_messages = question_related_messages
 
@@ -945,16 +950,27 @@ class GraphAgent:
     def call_llm(self,state: GraphAgentState):
         # 当前message
         input_message = state.get('messages')[-1]
-        # 获取历史相关message        
-        reserve_last_n_messages_num=min(len(self.question_related_messages)+1,7) # 当前问题已存在时，只保留当前问题轮次数。超出6时，会过滤            
-        question_related_messages = self.get_question_related_messages_from_state(reserve_last_n_messages_num=reserve_last_n_messages_num,score_threshold=0.2)
-        assert self.question_related_messages == question_related_messages,"self.get_question_related_messages_from_state方法里应同步更新了self.question_related_messages"        
+        question = state["question"]
+        # 获取历史相关message
+        # if user_question=="还记得我的名字吗？":
+        #     pass
+        # if self.message_idx_in_a_question_epoch==1:        
+            # reserve_last_n_messages_num=min(len(self.question_related_messages)+1,7) # 当前问题已存在时，只保留当前问题轮次数。超出6时，会过滤            
+            # question_related_messages = self.get_question_related_messages_from_state(question=question,reserve_last_n_messages_num=reserve_last_n_messages_num,score_threshold=0.3)
+        if len(self.question_related_messages)==0:
+            question_related_messages = self.get_question_related_messages_from_state(reserve_last_n_messages_num=1,score_threshold=0.3)
+            assert self.question_related_messages == question_related_messages,"self.get_question_related_messages_from_state方法里应同步更新了self.question_related_messages"
+        else:
+            question_related_messages = self.question_related_messages        
+
         # 历史 + 当前
         if input_message not in question_related_messages:
             question_related_messages.append(input_message)
         if self.system_message:
             messages = self.system_message + question_related_messages            
         logger.info(f"call_llm:调用LLM时的消息数为:{len(messages)}")
+        if len(messages)>30:
+            pass
         
         try:
         #     message = None            
@@ -988,6 +1004,9 @@ class GraphAgent:
             # filtered_messages = [m for m in messages if m not in invalid_messages]
             try: 
                 # message = self.model.invoke(filtered_messages,config=self.config)
+                # if user_question=="还记得我的名字吗？":
+                #     logger.warning(messages)
+                # logger.warning(messages)
                 message = self.model.invoke(messages,config=self.config)
             except Exception as e:
                 logger.error(f'！！！大语言模型执行失败，！！！错误消息为:{e}')
@@ -1054,10 +1073,9 @@ class GraphAgent:
         #    os.environ["REFERENCE"] = '' 
         generation = rag_node.invoke({"documents": documents, "question": question, "messages":messages},config=invoke_llm_config)
         last_message = state["messages"][-1]
-        tool_call_id = ''
-        # todo 如果tool_call_id==""
+        # todo 如果tool_call_id!=""
         # 就需要先建立一个AIMessage with tc
-        tool_call_id==""
+        tool_call_id=""
         try:
             if isinstance(last_message,AIMessage):
                 for tool_call in last_message.tool_calls:
@@ -1067,7 +1085,7 @@ class GraphAgent:
                         break
             elif isinstance(last_message,ToolMessage):
                 logger.debug(f"ToolMessage {last_message.name} call for 'generate' node......")
-                tool_call_id =f'call_{(shortuuid.uuid())}'
+                tool_call_id =f'call_{str(uuid.uuid4())}'
                 makeup_aimessage_with_tool_call = AIMessage(name="tool_calls",content="tool_call generating by 'intenal'",tool_calls=[{"name":"gerneration","args":{"query":'makeuped query'},"id":tool_call_id}])
                 makeup_aimessage_with_tool_call = self.makeup_message_with_question_id_idx(makeup_aimessage_with_tool_call)
                 messages = state["messages"]
@@ -1078,16 +1096,18 @@ class GraphAgent:
                 logger.warning(f"不应该出现的情况:{last_message.type}")
                 
         except:
-            state["messages"]
             logger.warning(f"{tool_call['name']} cannot find a tool_call_id to makeup ToolMessage!")        
-            tool_call_id = f'call_{str(uuid.uuid4())}'
+            tool_call_id = ''
         # print(generation)
-        generation_tool_message = ToolMessage(content="tool_call finished by 'generate'",name='generate',tool_call_id=tool_call_id)
-        generation_tool_message = self.makeup_message_with_question_id_idx(generation_tool_message)
         # 最后生成AIMessage可能最合适，因为generate节点直接到Graph的"end"节点
         generation_ai_message = AIMessage(content=generation,name='generate')
         generation_ai_message = self.makeup_message_with_question_id_idx(generation_ai_message)
-        generation_messages = [generation_tool_message,generation_ai_message]
+        if tool_call_id:
+            generation_tool_message = ToolMessage(content="tool_call finished by 'generate'",name='generate',tool_call_id=tool_call_id)
+            generation_tool_message = self.makeup_message_with_question_id_idx(generation_tool_message)
+            generation_messages = [generation_tool_message,generation_ai_message]
+        else:
+            generation_messages = [generation_ai_message]
         return {"documents": documents, "question": question, "generation": generation, "messages":generation_messages,"question_related_messages":generation_messages}
     
     def code_generation(self,state:GraphAgentState):
@@ -1122,6 +1142,11 @@ class GraphAgent:
         if code:
             logger.info('生成、抽取到的代码为：\n' + code)
             code = merge_code_with_usual_imports(code) # 加入常用的imports，防止代码生成中出现的遗漏错误
+        else:
+            try:
+                code=last_message.tool_calls[0]["args"]["query"]
+            except:
+                code = "print('No Code Generated!')"
         tool_call_id = ''
         try:
             for tool_call in last_message.tool_calls:
@@ -1138,7 +1163,7 @@ class GraphAgent:
         code_message = ToolMessage(content=code,name='code_generation',tool_call_id = tool_call_id,additional_kwargs ={"code_text":code_text})
         code_message = self.makeup_message_with_question_id_idx(code_message)
         # 在线大模型服务要求tool_call aimessage 与 tool_response toolmessage要一一对应，所以这里要先生成一个tool_call aimessage
-        code_execution_tool_call_message = AIMessage(name="tool_calls",content="tool_call generating by 'code_generation'",tool_calls=[{"name":"CODE_EXECUTION","args":{"query":code},"id":f'call_{(shortuuid.uuid())}'}])
+        code_execution_tool_call_message = AIMessage(name="tool_calls",content="tool_call generating by 'code_generation'",tool_calls=[{"name":"CODE_EXECUTION","args":{"query":code},"id":f'call_{str(uuid.uuid4())}'}])
         code_execution_tool_call_message = self.makeup_message_with_question_id_idx(code_execution_tool_call_message)
         messages = [code_message,code_execution_tool_call_message]
         return {'messages':messages,'question_related_messages':messages}
@@ -1149,13 +1174,13 @@ class GraphAgent:
         last_message = question_related_messages[-1]
         question_id = last_message.additional_kwargs.get('question_id','')
 
-        try:
-            for tool_call in last_message.tool_calls:
-                if tool_call["name"] == 'CODE_EXECUTION':
-                    tool_call_id = tool_call["id"]
-                    break
-        except:
-            tool_call_id = f'call_{str(uuid.uuid4())}'
+        tool_call_id = ''
+        
+        for tool_call in last_message.tool_calls:
+            if tool_call["name"] == 'CODE_EXECUTION':
+                tool_call_id = tool_call["id"]
+                break
+            
         tool_name = 'code_execution'
         code_executor=CodeExecutorTool()
         # 获取代码code和文本code_text
@@ -1229,7 +1254,14 @@ class GraphAgent:
                     else:
                         _result = result if result else "None"
                         message_content = f"python_repl代码运行成功,运行结果为Observation:{_result} （但如有图像，由于环境限制无法直接展示,可在本地环境中运行上述代码）"
-                
+                if not tool_call_id:
+                    tool_call_id =f'call_{str(uuid.uuid4())}'
+                    makeup_aimessage_with_tool_call = AIMessage(name="tool_calls",content="tool_call generating by 'intenal'",tool_calls=[{"name":"gerneration","args":{"query":'makeuped query'},"id":tool_call_id}])
+                    makeup_aimessage_with_tool_call = self.makeup_message_with_question_id_idx(makeup_aimessage_with_tool_call)
+                    messages = state["messages"]
+                    messages.append(makeup_aimessage_with_tool_call) 
+                    state.update({"messages":messages}) 
+                                     
                 code_message = ToolMessage(content=message_content,name=tool_name,tool_call_id =tool_call_id,additional_kwargs ={"status":False,"code":code,"code_text":code_text})
                 code_message = self.makeup_message_with_question_id_idx(code_message)            
                 return {'messages':code_message,'question_related_messages':code_message}
@@ -1292,7 +1324,8 @@ class GraphAgent:
                         self.question_rewrited = question_rewrited ##仅在问题内容变化后，才赋值给self.question_rewrited，改写前已设置self.question_rewrited = user_question
 
         logger.debug(f"USER[id:{self.user_id}]的问题['{self.question_rewrited}'] (新的question_id: [{self.question_id})]")
-        input_message = self.makeup_message_with_question_id_idx(HumanMessage,content=self.question_rewrited)       
+        input_message = self.makeup_message_with_question_id_idx(HumanMessage,content=self.question_rewrited)
+               
         result = self.graph.invoke({"messages": [input_message],"question":self.question_rewrited,"question_related_messages":[]},config=self.config)
         
         logger.debug(f"==USER[id:{self.user_id}]的问题[id:{self.question_id}]，允许问题改写:{allow_question_rewrite}")
@@ -1322,25 +1355,26 @@ tavily_search_tool = TavilySearchResults(max_results=4) #increased number of res
 
 if __name__ == "__main__":
     user_questions = [
+        '你好，我的名字是张结魁，请记住我的名字',
         '请绘制sin(x)曲线',
         "安徽省食品药品监督管理局行政审批系统项目总体计划的版本号是多少，批准人是谁？",
         '请搜索合肥大蜀山，然后提供详细介绍', 
         '请查询明天从合肥到上海的航班,以及南昌到北京的航班',
         '请直接执行代码：print("Hello World")',
-        '请使用Python来绘制sin(x)的曲线图',
-        '你好，我的名字是张结魁，你呢',
+        '请使用Python来绘制sin(x)的曲线图',        
         '合肥大蜀山',          
         '请查询明天从合肥到上海的航班',
         '请使用python_repl_tool来计算1到100的和',
         '请调用python_repl_tool工具，一个计算1到100的和,另一个计算10的阶乘，并实际执行工具获取计算结果',
         "请搜索网络然后回答问题：What is the weather in SF and LA? ",
         "Who won the super bowl in 2024? In what state is the winning team headquarters located?What is the GDP of that state? ",
-        "前面我已告诉你我的名字，还记得我叫什么吗？"
+        "还记得我的名字吗？"
     ]
     my_main_bot = GraphAgent(executable_tools=executable_tools,routing_tools_wrapped_in_class=route_tools)
 
     for user_question in user_questions:
-        if user_question=="还记得我叫什么吗？":
+        time.sleep(1)
+        if user_question=="还记得我的名字吗？" or user_question==user_questions[-2]:
             pass
         answer = my_main_bot.run_conversation(user_question=user_question)
         pass
