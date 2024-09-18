@@ -569,7 +569,7 @@ class InitEnvModels:
     # 避免历史消息类型的拼装（符合HumanMessage、AIMessage、[ToolMessage if AIMessage is a ToolCall AIMessage]），引入不相关、不必要的消息
     # 返回最近的n条消息列表，并且保证是以HumanMessage开头的，符合HumanMessage、AIMessage、[ToolMessage if AIMessage is a ToolCall AIMessage]
     def filter_and_get_messages_relevant_to_query(self,query:str,messages_list:List[BaseMessage],reserve_last_n_messages_num=0,reserve_message_types:tuple=(HumanMessage,AIMessage),text_splitter=None,embed_model=None,reranker=None,
-                                                    if_reranking:bool=True,retriever_docs_num=10,final_docs_num=6 ,score_threshold=0.5, only_use_reranker=True):
+                                                    if_reranking:bool=True,retriever_docs_num=10,final_docs_num=6 ,score_threshold=0.5, only_use_reranker=False):
     
         if not messages_list:
            return []        

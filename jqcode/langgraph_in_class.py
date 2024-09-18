@@ -263,44 +263,44 @@ def extract_code(text):
         if single_match:
             return single_match.group(1).strip()
 
-def submit_code_to_ipykernel_api(code:str):
-    # KERNEL_API_BASE = os.getenv("KERNEL_API_BASE",'http://localhost')
-    # API_PORT = os.getenv("API_PORT",5011)
-    # kernel_api_url = f"{KERNEL_API_BASE}:{API_PORT}/api"
-    kernel_api_url = env_models_instance.kernel_api_url
-    # 故意制造错误，好测试本地执行的情况
-    # kernel_api_url = env_models_instance.kernel_api_url + "error"
-    requestjson = {'command':code}
-    # /data/projects/JqChat/jqchat/kernel_program/main.py中的handle_request方法
-    try:
-        resp = requests.post(kernel_api_url, json=requestjson)
-        result_dict = json_repair.loads(resp.content) #注意resp.content的类型为byte
-        result = result_dict.get("result",None)
-        if result=="success":
-            logger.info("代码提交执行成功！")
-            time.sleep(1)
-            resp = requests.get(kernel_api_url)
-            print(resp)
-            return True
-        else:
-            logger.error("代码提交执行失败！")
-            return False
-    except Exception as e:
-        logger.error(f"代码提交执行失败！错误信息为:{e}")
-        return False
+# def submit_code_to_ipykernel_api(code:str):
+#     # KERNEL_API_BASE = os.getenv("KERNEL_API_BASE",'http://localhost')
+#     # API_PORT = os.getenv("API_PORT",5011)
+#     # kernel_api_url = f"{KERNEL_API_BASE}:{API_PORT}/api"
+#     kernel_api_url = env_models_instance.kernel_api_url
+#     # 故意制造错误，好测试本地执行的情况
+#     # kernel_api_url = env_models_instance.kernel_api_url + "error"
+#     requestjson = {'command':code}
+#     # /data/projects/JqChat/jqchat/kernel_program/main.py中的handle_request方法
+#     try:
+#         resp = requests.post(kernel_api_url, json=requestjson)
+#         result_dict = json_repair.loads(resp.content) #注意resp.content的类型为byte
+#         result = result_dict.get("result",None)
+#         if result=="success":
+#             logger.info("代码提交执行成功！")
+#             time.sleep(1)
+#             resp = requests.get(kernel_api_url)
+#             print(resp)
+#             return True
+#         else:
+#             logger.error("代码提交执行失败！")
+#             return False
+#     except Exception as e:
+#         logger.error(f"代码提交执行失败！错误信息为:{e}")
+#         return False
     
-    try:
-        resp = requests.get(kernel_api_url)
-        print(resp)
-        # results = [result_queue.get() for _ in range(result_queue.qsize())]
-    except:
-        pass
+#     try:
+#         resp = requests.get(kernel_api_url)
+#         print(resp)
+#         # results = [result_queue.get() for _ in range(result_queue.qsize())]
+#     except:
+#         pass
 
 def display_code(code:str):
-    _code = f"""   
-    ```python 
+    _code = f"""
+    ```python
     {code}
-    ```\n
+    ```
     """
     return _code
 
@@ -642,7 +642,8 @@ class GraphAgent:
         self.graph = self.graph_definition()
         # self.visualize_graph()
         self.all_history_messages = self.get_all_history_messages()
-        self.question_related_messages = self.get_question_related_messages_from_state()
+        # self.question_related_messages = self.get_question_related_messages_from_state()
+        self.question_related_messages = self._get_messages_from_state_by_key("question_related_messages")
     
     # endregion
     
@@ -714,7 +715,8 @@ class GraphAgent:
         return self.all_history_messages
     
     def get_question_related_messages_from_state(self,question="",reserve_last_n_messages_num=6,score_threshold=0.5):
-        self.question_related_messages = self._get_messages_from_state_by_key("question_related_messages")
+        logger.warning(f"{question}:1111111111111111111111")
+        # self.question_related_messages = self._get_messages_from_state_by_key("question_related_messages")
         if not self.question_related_messages:
             messages = self.get_all_history_messages() ## 或者  messages = state['messages']
             question = question or self.question_rewrited
@@ -727,12 +729,15 @@ class GraphAgent:
                 question_related_messages = env_models_instance.filter_and_get_messages_relevant_to_query(query=question,messages_list=messages,reserve_last_n_messages_num = reserve_last_n_messages_num,score_threshold=score_threshold)
                 if question=="还记得我的名字吗？":
                     pass
+                logger.warning(f"{question}:222222222222222222222222")
                 logger.warning(f"##question_related_messages##"*3)
                 # logger.warning(f"{question_related_messages}")
                 # logger.warning(f"##question_related_messages##"*3)
                 # env_models_instance.filter_and_get_messages_relevant_to_query(query=question,messages_list=messages,reserve_last_n_messages_num = reserve_last_n_messages_num,score_threshold=0.2)
                 self.question_related_messages = question_related_messages
-
+        else:
+            logger.warning(f"{question}:444444444444444444444444444444444")
+        logger.warning(f"{question}:33333333333333333333333333333")
         return self.question_related_messages
 
     def _get_messages_from_state_by_key(self,key:str):
@@ -952,6 +957,8 @@ class GraphAgent:
             # reserve_last_n_messages_num=min(len(self.question_related_messages)+1,7) # 当前问题已存在时，只保留当前问题轮次数。超出6时，会过滤            
             # question_related_messages = self.get_question_related_messages_from_state(question=question,reserve_last_n_messages_num=reserve_last_n_messages_num,score_threshold=0.3)
         if len(self.question_related_messages)==0:
+            print(f"{question}:00000000000000000")
+            logger.warning(f"{question}:00000000000000000")
             question_related_messages = self.get_question_related_messages_from_state(reserve_last_n_messages_num=1,score_threshold=0.3)
             assert self.question_related_messages == question_related_messages,"self.get_question_related_messages_from_state方法里应同步更新了self.question_related_messages"
         else:
@@ -998,9 +1005,11 @@ class GraphAgent:
             # filtered_messages = [m for m in messages if m not in invalid_messages]
             try: 
                 # message = self.model.invoke(filtered_messages,config=self.config)
-                # if user_question=="还记得我的名字吗？":
-                #     logger.warning(messages)
-                # logger.warning(messages)
+                if user_question=="还记得我的名字吗？":
+                    print("################"*5)
+                    logger.warning(messages)
+                    print("################"*5)
+                
                 message = self.model.invoke(messages,config=self.config)
             except Exception as e:
                 logger.error(f'！！！大语言模型执行失败，！！！错误消息为:{e}')
@@ -1222,51 +1231,40 @@ class GraphAgent:
             if code:
                 logger.debug("......开始提交和执行代码......") 
                 # 返回值为{"text"="",image=""}
-<<<<<<< HEAD
-                result=code_executor.call(code=code)
-                if result:               
-                    message_content+=result['image']
-                    message_content+=result['text']
-                    logger.debug("......代码执行完毕......")
-                # 提交代码到ipykernel_api执行，尝试本地来执行
-                # 不应该需要本地执行
-                if not result:
-                    logger.info(f"......提交和执行代码失败，请检查服务接口......")
-                    logger.info(f".......尝试使用本地的python环境来来执行.......")
-                    # python_repl在本页代码开头处赋值的 
-                    result = python_repl(code)
-
-                                    
-                    if "error" in result.lower():
-                        code = merge_code_with_usual_imports(code)
-                        # python_repl在本页代码开头处赋值的  
-                        result = python_repl(code)                                      
-                        if "error" in result.lower():
-                            raise Exception(result)
-                    else:
-                        _result = result if result else "None"
-                        message_content = f"python_repl代码运行成功,运行结果为Observation:{_result} （但如有图像，由于环境限制无法直接展示,可在本地环境中运行上述代码）"
-                if not tool_call_id:
-                    tool_call_id =f'call_{str(uuid.uuid4())}'
-                    makeup_aimessage_with_tool_call = AIMessage(name="tool_calls",content="tool_call generating by 'intenal'",tool_calls=[{"name":"gerneration","args":{"query":'makeuped query'},"id":tool_call_id}])
-                    makeup_aimessage_with_tool_call = self.makeup_message_with_question_id_idx(makeup_aimessage_with_tool_call)
-                    messages = state["messages"]
-                    messages.append(makeup_aimessage_with_tool_call) 
-                    state.update({"messages":messages}) 
-                                     
-                code_message = ToolMessage(content=message_content,name=tool_name,tool_call_id =tool_call_id,additional_kwargs ={"status":False,"code":code,"code_text":code_text})
-=======
                 result,success=code_executor.call(code=code)
                 if  result :     
                     if result['text']:
                         message_content+=result['text']   
                     if result['image']:       
                         message_content+=result['image']
+                # 提交代码到ipykernel_api执行，尝试本地来执行
+                # 不应该需要本地执行
+                # if not result:
+                #     logger.info(f"......提交和执行代码失败，请检查服务接口......")
+                #     logger.info(f".......尝试使用本地的python环境来来执行.......")
+                #     # python_repl在本页代码开头处赋值的 
+                #     result = python_repl(code)
+
+                                    
+                #     if "error" in result.lower():
+                #         code = merge_code_with_usual_imports(code)
+                #         # python_repl在本页代码开头处赋值的  
+                #         result = python_repl(code)                                      
+                #         if "error" in result.lower():
+                #             raise Exception(result)
+                #     else:
+                #         _result = result if result else "None"
+                #         message_content = f"python_repl代码运行成功,运行结果为Observation:{_result} （但如有图像，由于环境限制无法直接展示,可在本地环境中运行上述代码）"
+                if not tool_call_id:
+                    tool_call_id =f'call_{str(uuid.uuid4())}'
+                    makeup_aimessage_with_tool_call = AIMessage(name="tool_calls",content="tool_call generating by 'intenal'",tool_calls=[{"name":"code_gerneration","args":{"query":'makeuped query'},"id":tool_call_id}])
+                    makeup_aimessage_with_tool_call = self.makeup_message_with_question_id_idx(makeup_aimessage_with_tool_call)
+                    messages = state["messages"]
+                    messages.append(makeup_aimessage_with_tool_call) 
+                    state.update({"messages":messages}) 
                 code_message = ToolMessage(content=message_content,name=tool_name,tool_call_id =tool_call_id,additional_kwargs ={"status":success,"code":code,"code_text":code_text})
->>>>>>> 5b56a37f99071fc9e0d7d5715e650c8a06780b32
                 code_message = self.makeup_message_with_question_id_idx(code_message)            
                 return {'messages':code_message,'question_related_messages':code_message}
-
             else:
                 raise Exception("code_execution无法获取可执行的代码！")        
 
@@ -1375,7 +1373,8 @@ if __name__ == "__main__":
 
     for user_question in user_questions:
         time.sleep(1)
-        if user_question=="还记得我的名字吗？" or user_question==user_questions[-2]:
+        # if user_question=="还记得我的名字吗？" or user_question==user_questions[-2]:
+        if user_question=="还记得我的名字吗？":
             pass
         answer = my_main_bot.run_conversation(user_question=user_question)
         pass
