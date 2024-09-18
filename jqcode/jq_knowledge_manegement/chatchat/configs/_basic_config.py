@@ -55,6 +55,8 @@ class ConfigBasicFactory(core_config.ConfigFactory[ConfigBasic]):
         # 用户数据根目录
         self.DATA_PATH = os.path.join(self.CHATCHAT_ROOT, "data")
         self._DATA_PATH = os.path.join(self.CHATCHAT_ROOT, "data")
+        # 在项目的平行目录下存储上传的文件
+        # self._DATA_PATH = os.path.join(os.path.dirname(os.getcwd()), "UPLOAD_DOCS")
         if not os.path.exists(self._DATA_PATH):
             os.makedirs(self._DATA_PATH, exist_ok=True)
 
@@ -74,7 +76,12 @@ class ConfigBasicFactory(core_config.ConfigFactory[ConfigBasic]):
             os.makedirs(self.DATA_PATH, exist_ok=True)
         # 复制_DATA_PATH数据到DATA_PATH
         if self._DATA_PATH != self.DATA_PATH:
-            os.system(f"cp -r {self._DATA_PATH}/* {self.DATA_PATH}")
+            # self.DATA_PATH = self._DATA_PATH
+
+            # 知识库路径修改(lyq)
+            self.DATA_PATH = os.path.join(os.path.dirname(os.getcwd()), "UPLOAD_DOCS")
+
+            # os.system(f"cp -r {self._DATA_PATH}/* {self.DATA_PATH}")
 
         self._init_data_dir()
 
@@ -127,7 +134,7 @@ class ConfigBasicWorkSpace(
     core_config.ConfigWorkSpace[ConfigBasicFactory, ConfigBasic]
 ):
     """
-    工作空间的配置预设，提供ConfigBasic建造方法产生实例。
+    工作空间的配置预设,提供ConfigBasic建造方法产生实例。
     """
 
     config_factory_cls = ConfigBasicFactory

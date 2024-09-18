@@ -22,6 +22,7 @@ from jqcode.jq_knowledge_manegement.chatchat.server.db.repository.knowledge_base
     kb_exists,
     list_kbs_from_db,
     load_kb_from_db,
+    load_kb_from_es
 )
 from jqcode.jq_knowledge_manegement.chatchat.server.db.repository.knowledge_file_repository import (
     add_file_to_db,
@@ -31,6 +32,8 @@ from jqcode.jq_knowledge_manegement.chatchat.server.db.repository.knowledge_file
     file_exists_in_db,
     get_file_detail,
     list_docs_from_db,
+    list_docs_from_es,
+    
     list_files_from_db,
 )
 from jqcode.jq_knowledge_manegement.chatchat.server.knowledge_base.model.kb_document_model import DocumentWithVSId
@@ -40,19 +43,23 @@ from jqcode.jq_knowledge_manegement.chatchat.server.knowledge_base.utils import 
     get_kb_path,
     list_files_from_folder,
     list_kbs_from_folder,
+    list_kbs_from_es
 )
 from jqcode.jq_knowledge_manegement.chatchat.server.utils import check_embed_model as _check_embed_model
+
+from jqcode.jq_docstores.jq_es_client import JqEsClient
+jq_es_client = JqEsClient()
 
 
 class SupportedVSType:
     FAISS = "faiss"
-    MILVUS = "milvus"
-    DEFAULT = "default"
-    ZILLIZ = "zilliz"
-    PG = "pg"
-    RELYT = "relyt"
+    # MILVUS = "milvus"
+    # DEFAULT = "default"
+    # ZILLIZ = "zilliz"
+    # PG = "pg"
+    # RELYT = "relyt"
     ES = "es"
-    CHROMADB = "chromadb"
+    # CHROMADB = "chromadb"
 
 
 class KBService(ABC):
@@ -76,7 +83,7 @@ class KBService(ABC):
 
     def save_vector_store(self):
         """
-        保存向量库:FAISS保存到磁盘，milvus保存到数据库。PGVector暂未支持
+        保存向量库:FAISS保存到磁盘,milvus保存到数据库。PGVector暂未支持
         """
         pass
 
@@ -94,34 +101,51 @@ class KBService(ABC):
         if not os.path.exists(self.doc_path):
             os.makedirs(self.doc_path)
 
-        status = add_kb_to_db(
-            self.kb_name, self.kb_info, self.vs_type(), self.embed_model
-        )
+        # status = add_kb_to_db(
+        #     self.kb_name, self.kb_info, self.vs_type(), self.embed_model
+        # )
 
-        if status:
-            self.do_create_kb()
+        # if status:
+        #     self.do_create_kb()
+
+
+
+        status = jq_es_client.create_doc_index(self.kb_name, self.kb_info)
+
+
         return status
 
     def clear_vs(self):
         """
         删除向量库中所有内容
         """
-        self.do_clear_vs()
-        status = delete_files_from_db(self.kb_name)
+        # self.do_clear_vs()
+        # status = delete_files_from_db(self.kb_name)
+
+        status = jq_es_client.drop_doc_index(self.kb_name)
         return status
+
+    # def drop_kb(self):
+    #     """
+    #     删除知识库
+    #     """
+    #     self.do_drop_kb()
+    #     status = delete_kb_from_db(self.kb_name)
+    #     return status
+
 
     def drop_kb(self):
         """
         删除知识库
         """
-        self.do_drop_kb()
-        status = delete_kb_from_db(self.kb_name)
+        status = jq_es_client.drop_doc_index(self.kb_name)
         return status
+
 
     def add_doc(self, kb_file: KnowledgeFile, docs: List[Document] = [], **kwargs):
         """
         向知识库添加文件
-        如果指定了docs，则不再将文本向量化，并将数据库对应条目标为custom_docs=True
+        如果指定了docs,则不再将文本向量化,并将数据库对应条目标为custom_docs=True
         """
         if not self.check_embed_model(
             f"could not add docs because failed to access embed model."
@@ -149,12 +173,13 @@ class KBService(ABC):
                     )
             self.delete_doc(kb_file)
             doc_infos = self.do_add_doc(docs, **kwargs)
-            status = add_file_to_db(
-                kb_file,
-                custom_docs=custom_docs,
-                docs_count=len(docs),
-                doc_infos=doc_infos,
-            )
+            status = True
+            # status = add_file_to_db(
+            #     kb_file,
+            #     custom_docs=custom_docs,
+            #     docs_count=len(docs),
+            #     doc_infos=doc_infos,
+            # )
         else:
             status = False
         return status
@@ -166,7 +191,8 @@ class KBService(ABC):
         从知识库删除文件
         """
         self.do_delete_doc(kb_file, **kwargs)
-        status = delete_file_from_db(kb_file)
+        # status = delete_file_from_db(kb_file)
+        status = True
         if delete_content and os.path.exists(kb_file.filepath):
             os.remove(kb_file.filepath)
         return status
@@ -184,7 +210,7 @@ class KBService(ABC):
     def update_doc(self, kb_file: KnowledgeFile, docs: List[Document] = [], **kwargs):
         """
         使用content中的文件更新向量库
-        如果指定了docs，则使用自定义docs，并将数据库对应条目标为custom_docs=True
+        如果指定了docs,则使用自定义docs,并将数据库对应条目标为custom_docs=True
         """
         if not self.check_embed_model(
             f"could not update docs because failed to access embed model."
@@ -228,7 +254,7 @@ class KBService(ABC):
     def update_doc_by_ids(self, docs: Dict[str, Document]) -> bool:
         """
         传入参数为： {doc_id: Document, ...}
-        如果对应 doc_id 的值为 None，或其 page_content 为空，则删除该文档
+        如果对应 doc_id 的值为 None,或其 page_content 为空，则删除该文档
         """
         if not self.check_embed_model(
             f"could not update docs because failed to access embed model."
@@ -252,7 +278,11 @@ class KBService(ABC):
         """
         通过file_name或metadata检索Document
         """
-        doc_infos = list_docs_from_db(
+        # doc_infos = list_docs_from_db(
+        #     kb_name=self.kb_name, file_name=file_name, metadata=metadata
+        # )
+
+        doc_infos = list_docs_from_es(
             kb_name=self.kb_name, file_name=file_name, metadata=metadata
         )
         docs = []
@@ -302,6 +332,7 @@ class KBService(ABC):
     @classmethod
     def list_kbs(cls):
         return list_kbs_from_db()
+        # return list_kbs_from_es()
 
     def exists(self, kb_name: str = None):
         kb_name = kb_name or self.kb_name
@@ -344,7 +375,7 @@ class KBService(ABC):
         向知识库添加文档子类实自己逻辑
         """
         pass
-
+ 
     @abstractmethod
     def do_delete_doc(self, kb_file: KnowledgeFile):
         """
@@ -381,62 +412,24 @@ class KBServiceFactory:
             )
 
             return FaissKBService(**params)
-        elif SupportedVSType.PG == vector_store_type:
-            from jqcode.jq_knowledge_manegement.chatchat.server.knowledge_base.kb_service.pg_kb_service import (
-                PGKBService,
-            )
 
-            return PGKBService(**params)
-        elif SupportedVSType.RELYT == vector_store_type:
-            from jqcode.jq_knowledge_manegement.chatchat.server.knowledge_base.kb_service.relyt_kb_service import (
-                RelytKBService,
-            )
 
-            return RelytKBService(**params)
-        elif SupportedVSType.MILVUS == vector_store_type:
-            from jqcode.jq_knowledge_manegement.chatchat.server.knowledge_base.kb_service.milvus_kb_service import (
-                MilvusKBService,
-            )
 
-            return MilvusKBService(**params)
-        elif SupportedVSType.ZILLIZ == vector_store_type:
-            from jqcode.jq_knowledge_manegement.chatchat.server.knowledge_base.kb_service.zilliz_kb_service import (
-                ZillizKBService,
-            )
-
-            return ZillizKBService(**params)
-        elif SupportedVSType.DEFAULT == vector_store_type:
-            from jqcode.jq_knowledge_manegement.chatchat.server.knowledge_base.kb_service.milvus_kb_service import (
-                MilvusKBService,
-            )
-
-            return MilvusKBService(
-                **params
-            )  # other milvus parameters are set in model_config.kbs_config
         elif SupportedVSType.ES == vector_store_type:
             from jqcode.jq_knowledge_manegement.chatchat.server.knowledge_base.kb_service.es_kb_service import (
                 ESKBService,
             )
 
             return ESKBService(**params)
-        elif SupportedVSType.CHROMADB == vector_store_type:
-            from jqcode.jq_knowledge_manegement.chatchat.server.knowledge_base.kb_service.chromadb_kb_service import (
-                ChromaKBService,
-            )
-
-            return ChromaKBService(**params)
-        elif (
-            SupportedVSType.DEFAULT == vector_store_type
-        ):  # kb_exists of default kbservice is False, to make validation easier.
-            from jqcode.jq_knowledge_manegement.chatchat.server.knowledge_base.kb_service.default_kb_service import (
-                DefaultKBService,
-            )
-
-            return DefaultKBService(kb_name)
+        
+        else:
+            pass
+        
 
     @staticmethod
     def get_service_by_name(kb_name: str) -> KBService:
-        _, vs_type, embed_model = load_kb_from_db(kb_name)
+        # _, vs_type, embed_model = load_kb_from_db(kb_name)
+        _, vs_type, embed_model = load_kb_from_es(kb_name)
         if _ is None:  # kb not in db, just return None
             return None
         return KBServiceFactory.get_service(kb_name, vs_type, embed_model)
@@ -446,9 +439,58 @@ class KBServiceFactory:
         return KBServiceFactory.get_service("default", SupportedVSType.DEFAULT)
 
 
+# def get_kb_details() -> List[Dict]:
+#     kbs_in_folder = list_kbs_from_folder()
+    
+#     kbs_in_db: List[KnowledgeBaseSchema] = KBService.list_kbs()
+#     result = {}
+
+#     for kb in kbs_in_folder:
+#         result[kb] = {
+#             "kb_name": kb,
+#             "vs_type": "",
+#             "kb_info": "",
+#             "embed_model": "",
+#             "file_count": 0,
+#             "create_time": None,
+#             "in_folder": True,
+#             "in_db": False,
+#         }
+
+#     for kb_detail in kbs_in_db:
+#         kb_detail = kb_detail.model_dump()
+#         kb_name = kb_detail["kb_name"]
+#         kb_detail["in_db"] = True
+#         if kb_name in result:
+#             result[kb_name].update(kb_detail)
+#         else:
+#             kb_detail["in_folder"] = False
+#             result[kb_name] = kb_detail
+
+#     data = []
+#     for i, v in enumerate(result.values()):
+#         v["No"] = i + 1
+#         data.append(v)
+
+#     return data
+    
 def get_kb_details() -> List[Dict]:
-    kbs_in_folder = list_kbs_from_folder()
-    kbs_in_db: List[KnowledgeBaseSchema] = KBService.list_kbs()
+    kbs_in_folder = list_kbs_from_es()
+
+    from jqcode.jq_docstores.jq_es_client import JqEsClient
+    jq_es_client = JqEsClient()
+
+    kbs_in_es = []
+    for kb in kbs_in_folder:
+        kb_info = jq_es_client.get_index_info(index_name=kb)
+        kb_dict = {
+            "kb_name": kb,
+            "kb_info": kb_info
+        }
+
+        kbs_in_es.append(kb_dict)
+
+
     result = {}
 
     for kb in kbs_in_folder:
@@ -463,8 +505,7 @@ def get_kb_details() -> List[Dict]:
             "in_db": False,
         }
 
-    for kb_detail in kbs_in_db:
-        kb_detail = kb_detail.model_dump()
+    for kb_detail in kbs_in_es:
         kb_name = kb_detail["kb_name"]
         kb_detail["in_db"] = True
         if kb_name in result:
@@ -479,6 +520,7 @@ def get_kb_details() -> List[Dict]:
         data.append(v)
 
     return data
+
 
 
 def get_kb_file_details(kb_name: str) -> List[Dict]:
@@ -496,9 +538,9 @@ def get_kb_file_details(kb_name: str) -> List[Dict]:
             "file_name": doc,
             "file_ext": os.path.splitext(doc)[-1],
             "file_version": 0,
-            "document_loader": "",
+            "document_loader": "JqkjSimpleDirectoryReader",
             "docs_count": 0,
-            "text_splitter": "",
+            "text_splitter": "JqkjDocTreeTokenTextSplitter",
             "create_time": None,
             "in_folder": True,
             "in_db": False,

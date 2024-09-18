@@ -59,12 +59,18 @@ def get_file_path(knowledge_base_name: str, doc_name: str):
         return str(file_path)
 
 
-def list_kbs_from_folder():
+def list_kbs_from_folder(): 
     return [
         f
         for f in os.listdir(KB_ROOT_PATH)
         if os.path.isdir(os.path.join(KB_ROOT_PATH, f))
     ]
+
+
+def list_kbs_from_es():
+    from jqcode.jq_docstores.jq_es_client import JqEsClient
+    jq_es_client = JqEsClient()
+    return jq_es_client.get_all_kb()
 
 
 def list_files_from_folder(kb_name: str):
@@ -105,47 +111,9 @@ def list_files_from_folder(kb_name: str):
 
 
 LOADER_DICT = {
-    "UnstructuredHTMLLoader": [".html", ".htm"],
-    "MHTMLLoader": [".mhtml"],
-    "TextLoader": [".md"],
-    "UnstructuredMarkdownLoader": [".md"],
-    "JSONLoader": [".json"],
-    "JSONLinesLoader": [".jsonl"],
-    "CSVLoader": [".csv"],
-    # "FilteredCSVLoader": [".csv"], 如果使用自定义分割csv
-    "JqkjDocxReader": jq_reader_list,
-    "RapidOCRPPTLoader": [
-        ".ppt",
-        ".pptx",
-    ],
-    "RapidOCRLoader": [".png", ".jpg", ".jpeg", ".bmp"],
-    "UnstructuredFileLoader": [
-        ".eml",
-        ".msg",
-        ".rst",
-        ".rtf",
-        ".txt",
-        ".xml",
-        ".epub",
-        ".odt",
-        ".tsv",
-    ],
-    "UnstructuredEmailLoader": [".eml", ".msg"],
-    "UnstructuredEPubLoader": [".epub"],
-    "UnstructuredExcelLoader": [".xlsx", ".xls", ".xlsd"],
-    "NotebookLoader": [".ipynb"],
-    "UnstructuredODTLoader": [".odt"],
-    "PythonLoader": [".py"],
-    "UnstructuredRSTLoader": [".rst"],
-    "UnstructuredRTFLoader": [".rtf"],
-    "SRTLoader": [".srt"],
-    "TomlLoader": [".toml"],
-    "UnstructuredTSVLoader": [".tsv"],
-    "UnstructuredWordDocumentLoader": [".docx", ".doc"],
-    "UnstructuredXMLLoader": [".xml"],
-    "UnstructuredPowerPointLoader": [".ppt", ".pptx"],
-    "EverNoteLoader": [".enex"],
+     "JqkjSimpleDirectoryReader": jq_reader_list + ['.docx', '.txt'],
 }
+
 SUPPORTED_EXTS = [ext for sublist in LOADER_DICT.values() for ext in sublist]
 
 
@@ -179,9 +147,13 @@ def get_loader(loader_name: str, file_path: str, loader_kwargs: Dict = None):
     """
     根据loader_name和文件路径或内容返回文档加载器。
     """
-    if loader_name == 'JqkjDocxReader':
-        from jqcode.jq_readers.jqkj_readers import JqkjDocxReader
-        loader = JqkjDocxReader(file_path)
+    # if loader_name == 'JqkjDocxReader':
+    #     from jqcode.jq_readers.jqkj_readers import JqkjDocxReader
+    #     loader = JqkjDocxReader(file_path)
+
+    if loader_name == 'JqkjSimpleDirectoryReader':
+        from jqcode.jq_readers.jqkj_readers import JqkjSimpleDirectoryReader
+        loader = JqkjSimpleDirectoryReader(input_files = [file_path])
 
     else:
         loader_kwargs = loader_kwargs or {}
@@ -370,7 +342,7 @@ class KnowledgeFile:
                 loader.encoding = "utf8"
                 self.docs = loader.load()
             else:
-                self.docs = loader.load()
+                self.docs = loader.load_data()
         return self.docs
 
     def docs2texts(
@@ -386,11 +358,20 @@ class KnowledgeFile:
         if not docs:
             return []
         if self.ext not in [".csv"]:
-            if self.text_splitter_name == "JqkjDocTreeTokenTextSplitter" or self.document_loader_name=='JqkjDocxReader':
-                from jqcode.jq_splitters.jq_docx_tree_text_splitter import JqkjDocTreeTokenTextSplitter                
-                jq_doc_tree_splitter = JqkjDocTreeTokenTextSplitter(chunk_size=chunk_size, chunk_overlap=chunk_overlap)
+            if self.text_splitter_name == "JqkjDocTreeTokenTextSplitter" or self.document_loader_name=='JqkjSimpleDirectoryReader':
+                from jqcode.jq_splitters.jq_docx_tree_text_splitter import JqkjDocTreeTokenTextSplitter
+                from jqcode.jq_agent.c0_init_env_models import env_models_instance
+
+                cr_splitter = env_models_instance.text_splitter
+                jq_doc_tree_splitter = JqkjDocTreeTokenTextSplitter(
+                                                    cr_text_splitter=cr_splitter,
+                                                    model_reserved_tokens_size=50,
+                                                    include_metadata=True,
+                                                    include_prev_next_rel=True
+                                                ) 
                 docs = jq_doc_tree_splitter.get_nodes_from_documents(docs)
                 docs = [Document(page_content=node.text,metadata=node.metadata) for node in docs]
+            
             
             else:
                 if text_splitter is None:

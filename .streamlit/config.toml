@@ -4,3 +4,4 @@ serverAddress = "localhost"
 
 [server]
 headless = true
+enableStaticServing = true

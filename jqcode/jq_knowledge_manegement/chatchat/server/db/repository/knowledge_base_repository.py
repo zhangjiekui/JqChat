@@ -37,6 +37,13 @@ def list_kbs_from_db(session, min_file_count: int = -1):
 
 
 @with_session
+def list_kbs_from_es():
+
+    kbs = [KnowledgeBaseSchema.model_validate(kb) for kb in kbs]
+    return kbs
+
+
+@with_session
 def kb_exists(session, kb_name):
     kb = (
         session.query(KnowledgeBaseModel)
@@ -61,6 +68,17 @@ def load_kb_from_db(session, kb_name):
     return kb_name, vs_type, embed_model
 
 
+def load_kb_from_es(kb_name):
+    vs_type = 'es'
+    embed_model = 'bce-embedding-base_v1'
+    from jqcode.jq_knowledge_manegement.chatchat.server.knowledge_base.utils import list_kbs_from_es
+    all_kbs_from_es = list_kbs_from_es()
+    if kb_name in all_kbs_from_es:
+        return kb_name, vs_type, embed_model
+    else:
+        return None, vs_type, embed_model
+    
+ 
 @with_session
 def delete_kb_from_db(session, kb_name):
     kb = (

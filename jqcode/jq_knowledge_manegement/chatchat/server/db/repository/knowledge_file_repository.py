@@ -47,6 +47,78 @@ def list_docs_from_db(
     return [{"id": x.doc_id, "metadata": x.metadata} for x in docs.all()]
 
 
+
+
+from jqcode.jq_agent.c0_init_env_models import env_models_instance
+
+from elasticsearch import Elasticsearch
+from typing import List, Dict
+import logging
+
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
+
+def list_docs_from_es(
+    kb_name: str,
+    file_name: str,
+    metadata: Dict = {},
+    top_k: int = 10000
+) -> List[Dict]:
+    """
+    从ES中,列出某知识库某文件对应的所有Document。
+    返回形式：[{"id": str, "metadata": dict}, ...]
+    """
+    es = env_models_instance.get_es_connection()
+    
+    # 构建一个多字段查询
+    query = {
+        "bool": {
+            "should": [
+                {"match": {"file_path": file_name}},
+                {"match": {"file_name": file_name}},
+                {"match": {"source": file_name}},
+                {"match": {"metadata.file_name": file_name}},
+                {"match": {"metadata.source": file_name}}
+            ],
+            "minimum_should_match": 1
+        }
+    }
+    
+    logger.info(f"Query: {query}")
+    
+    try:
+        response = es.search(
+            index=kb_name,
+            body={
+                "query": query,
+                "_source": True
+            },
+            size=top_k
+        )
+        
+        logger.info(f"Elasticsearch response: {response}")
+        
+        results = []
+        for hit in response['hits']['hits']:
+            result = {
+                "id": hit['_id'],
+                "metadata": hit['_source']
+            }
+            # 如果存在 content 字段，添加到结果中
+            if 'content' in hit['_source']:
+                result['content'] = hit['_source']['content']
+            results.append(result)
+        
+        logger.info(f"Number of results: {len(results)}")
+        return results
+    except Exception as e:
+        logger.error(f"Error during Elasticsearch query: {e}")
+        return []
+    
+
+# results = list_docs_from_es("create1", "OCR接口性能报告.docx")
+
+
 @with_session
 def delete_docs_from_db(
     session,
@@ -70,7 +142,7 @@ def delete_docs_from_db(
 def add_docs_to_db(session, kb_name: str, file_name: str, doc_infos: List[Dict]):
     """
     将某知识库某文件对应的所有Document信息添加到数据库。
-    doc_infos形式：[{"id": str, "metadata": dict}, ...]
+    doc_infos形式:[{"id": str, "metadata": dict}, ...]
     """
     # ! 这里会出现doc_infos为None的情况，需要进一步排查
     if doc_infos is None:
