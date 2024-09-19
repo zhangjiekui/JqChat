@@ -421,11 +421,17 @@ async def get_search_result_documents(urls,query,document_loader_class=AsyncHtml
 
 @func_set_timeout(timeout_value)
 def get_tavily_search_result_documents(query,max_doc_nums=4):
-    
+    documents = []
     tavily_search = TavilySearchResults(max_results=max_doc_nums)
     docs = tavily_search.invoke({"query": query})
-    documents = [Document(page_content=doc['content'], metadata={"source": doc['url'],"search_engine":"tavily_search"}) for doc in docs]
-    return documents
+    if isinstance(docs,list):
+        documents = [Document(page_content=doc['content'], metadata={"source": doc['url'],"search_engine":"tavily_search"}) for doc in docs]
+        return documents
+    else:
+        logger.warning(docs)
+        raise Exception(docs)
+    
+    
 
 # 最终的方法调用，建议用户只调用该方法
 # 根据query，返回最多max_doc_nums个结果文档，返回结果类型为:list[langchain_core.documents.base.Document]
