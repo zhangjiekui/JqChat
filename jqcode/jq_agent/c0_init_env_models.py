@@ -1,7 +1,5 @@
 import warnings,sys
 warnings.filterwarnings("ignore")
-# project_root = '/media/temp/JqChat'
-# sys.path.insert(0, project_root)
 import os,sys,pathlib
 os.environ['USER_AGENT'] = 'myagent'
 import re
@@ -10,15 +8,12 @@ from pathlib import Path
 from functools import lru_cache
 from typing import Annotated, List, TypedDict, Optional, Sequence,Literal, Any,Union
 from langchain.callbacks.manager import Callbacks
-import openai
 import langchain
 langchain.verbose = False
-from langchain.pydantic_v1 import Extra
-from openai import OpenAI
+
 from langchain_openai import ChatOpenAI
 from BCEmbedding.tools.langchain import BCERerank
 from sentence_transformers import SentenceTransformer
-from itertools import groupby
 from elasticsearch import Elasticsearch
 from langchain_core.documents import Document
 from langchain_elasticsearch import ElasticsearchStore
@@ -29,16 +24,7 @@ from langchain_elasticsearch import ElasticsearchStore
     # """DenseVectorScriptScoreStrategy：Exact nearest neighbors retrieval using the `script_score` query."""
 from elasticsearch.helpers.vectorstore import BM25Strategy,SparseVectorStrategy,DenseVectorStrategy,DenseVectorScriptScoreStrategy
 from langchain.indexes import SQLRecordManager, index
-from langchain_elasticsearch.chat_history import ElasticsearchChatMessageHistory
-
-# from langchain_community.chat_models import ChatOllama
-from langchain_ollama import ChatOllama
-
 from langchain.retrievers.document_compressors.base import BaseDocumentCompressor
-from sentence_transformers import SentenceTransformer,CrossEncoder
-
-from langchain_community.document_loaders import WebBaseLoader
-from langchain.text_splitter import RecursiveCharacterTextSplitter
 from langchain_core.messages import BaseMessage
 from langchain_community.vectorstores import FAISS
 from langchain_community.vectorstores.utils import DistanceStrategy
@@ -49,12 +35,9 @@ from langchain.callbacks.base import BaseCallbackHandler
 from langchain_core.callbacks import StdOutCallbackHandler
 from jqcode.jq_splitters.backend_splitter_utils.jq_chinese_recursive_text_splitter import JqChineseRecursiveTextSplitter
 from jqcode.jq_splitters.jq_docx_tree_text_splitter import JqkjDocTreeTokenTextSplitter,load_project_env
-from langchain_text_splitters import Language
-
 
 from transformers import AutoTokenizer
-from pydantic.v1 import PrivateAttr
-from dotenv import load_dotenv, find_dotenv
+from pydantic import PrivateAttr
 import json_repair
 from jqcode.jq_utils.logger import jqkj_logger
 logger = jqkj_logger(__file__).get_logger()
@@ -74,8 +57,7 @@ class XinferenceReranker(BaseDocumentCompressor):
     _model: Any = PrivateAttr()
     class Config:
         """Configuration for this pydantic object."""
-        # extra = Extra.forbid 
-        extra = Extra.allow
+        extra = 'allow'
         arbitrary_types_allowed = True
 
     def __init__(
@@ -84,8 +66,9 @@ class XinferenceReranker(BaseDocumentCompressor):
         model:Any =None,
         **kwargs
     ):
+        
+        super().__init__(top_n=top_n, model=model,**kwargs)
         self._model = model
-        super().__init__(top_n=top_n, model=model)
     
     # https://github.com/xorbitsai/inference/blob/7d83300a7694a0262b634007ea4164ea753e466f/xinference/model/rerank/core.py
     def rerank(
@@ -279,12 +262,6 @@ class InitEnvModels:
         root_dir = pathlib.Path().resolve()
         self.workspace = str(root_dir/'workspace/')
 
-        # loade openai models:暂时用不上
-        # self.openai = None
-        # self.get_openai()
-        # self.openai_client = None
-        # self.get_openai_client()
-
         self.chat_model = None
         self.get_langchain_chat_model()
 
@@ -302,6 +279,11 @@ class InitEnvModels:
         self.default_chinese_analyzer_settings = {"index": {"analysis.analyzer.default.type": "ik_max_word","analysis.search_analyzer.default.type": "ik_smart"}}
     
     # region 直接初始化openai接口，暂时用不上
+        # loade openai models:暂时用不上
+        # self.openai = None
+        # self.get_openai()
+        # self.openai_client = None
+        # self.get_openai_client()
     # def get_openai(self):
     #     if not self.openai:
     #         openai.api_type = self.api_type
@@ -319,7 +301,7 @@ class InitEnvModels:
     #     return self.openai_client
     # endregion 直接初始化openai接口，暂时用不上
 
-    def get_langchain_chat_model(self, temperature=0.01, max_tokens=None, streaming=False):
+    def get_langchain_chat_model(self, temperature=0.7,top_p =0.8, frequency_penalty=0.2,max_tokens=None, streaming=False):
         if max_tokens:
             if max_tokens!=self.llm_model_max_tokens:
                 logger.warning(f"您现在请求的llm {max_tokens=}，与环境配置中的{self.llm_model_max_tokens=}不同，请确认！")
@@ -333,8 +315,9 @@ class InitEnvModels:
                 streaming=streaming,
                 verbose=True,
                 temperature=temperature,
-                max_tokens=max_tokens,
-                
+                top_p=top_p,
+                frequency_penalty=frequency_penalty,
+                max_tokens=max_tokens,                
             )
         logger.info(f'当前使用的LLM模型为:Langchain ChatOpenAI, {self.chat_model.model_name}, API_URL为{self.chat_model.openai_api_base}')
         return self.chat_model
@@ -385,8 +368,8 @@ class InitEnvModels:
     def _get_emb_8k_rerank_model_api(self):
         from xinference.client import Client
         from jqcode.jq_knowledge_manegement.chatchat.server.localai_embeddings import LocalAIEmbeddings
-        embed_model = LocalAIEmbeddings(model=self.embedding_model_name,api_key="NotNeed",base_url=self.embedding_model_base_url,embedding_ctx_length=self.embedding_model_max_tokens*8,chunk_size=self.embedding_model_max_tokens)
-        embedding_model_8k = LocalAIEmbeddings(model=self.embedding_model_8k_name,api_key="NotNeed",base_url=self.embedding_model_8k_base_url,embedding_ctx_length=self.embedding_model_8k_max_tokens*4,chunk_size=self.embedding_model_8k_max_tokens)
+        embed_model = LocalAIEmbeddings(model=self.embedding_model_name,deployment=self.embedding_model_name,api_key="NotNeed",openai_api_base=self.embedding_model_base_url,base_url=self.embedding_model_base_url,embedding_ctx_length=self.embedding_model_max_tokens*8,chunk_size=self.embedding_model_max_tokens)
+        embedding_model_8k = LocalAIEmbeddings(model=self.embedding_model_8k_name,deployment=self.embedding_model_name,api_key="NotNeed",openai_api_base=self.embedding_model_base_url,base_url=self.embedding_model_8k_base_url,embedding_ctx_length=self.embedding_model_8k_max_tokens*4,chunk_size=self.embedding_model_8k_max_tokens)
         try:
             client = Client(self.rerank_model_base_url) #url要去掉"/v1"
             xinfer_reranker = client.get_model(self.rerank_model_name)
@@ -395,14 +378,12 @@ class InitEnvModels:
             # xinference.client: model.rerank(corpus, query) https://inference.readthedocs.io/zh-cn/latest/index.html
             # https://github.com/xorbitsai/inference/blob/7d83300a7694a0262b634007ea4164ea753e466f/xinference/model/rerank/core.py
             reranker = XinferenceReranker(top_n=6,model=xinfer_reranker)
-            # reranker.compress_documents = reranker.rerank
-            # query = "A man is eating pasta."
-            # corpus = ["A man is eating food.","A woman is playing violin."]
+            query = "A man is eating pasta."
+            corpus = ["A man is eating food.","A woman is playing violin."]
             # r = reranker.rerank(corpus, query)
             # logger.debug(r)
             # c = reranker.compress_documents(corpus, query)
             # logger.debug(c)
-
         except Exception as e:
             reranker = None
             logger.warning(f"{self.rerank_model_name}在线模型无法获取: {e}")

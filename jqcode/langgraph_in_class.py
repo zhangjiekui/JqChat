@@ -2,8 +2,8 @@
 # print('参考：https://learn.deeplearning.ai/courses/ai-agents-in-langgraph/lesson/3/langgraph-components')
 from langgraph.graph import StateGraph, END
 from typing import TypedDict, Annotated, Union, List
-from langchain_core.pydantic_v1 import BaseModel, Field
-# from pydantic import BaseModel, Field
+# from langchain_core.pydantic_v1 import BaseModel, Field
+from pydantic import BaseModel, Field
 from langchain_core.prompts import ChatPromptTemplate
 from langgraph.graph.message import add_messages
 from langchain_core.messages import AnyMessage, SystemMessage, HumanMessage, ToolMessage,AIMessage
@@ -600,7 +600,7 @@ class GraphAgent:
         self.question_id:str= self.get_random_id()
         self.question = ""
         self.question_rewrited = ""
-        self.config =  {"recursion_limit":recursion_limit,"configurable": {"thread_id":memory_thread_id }}
+        self.config =  {"recursion_limit":recursion_limit,"configurable": {"thread_id":memory_thread_id },"repetition_penalty":1.05}
         self.memory = SqliteSaver.from_conn_string("memory_checkpoints.sqlite")
         # self.memory = AsyncSqliteSaver.from_conn_string("memory_checkpoints.async_sqlite")
         
