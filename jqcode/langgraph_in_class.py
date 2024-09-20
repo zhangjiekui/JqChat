@@ -14,7 +14,7 @@ from langchain_core.output_parsers import StrOutputParser
 from langchain_core.tools import tool
 import sqlite3
 from langgraph.checkpoint.sqlite import SqliteSaver
-from jqcode.jq_agent.c0_init_env_models import env_models_instance,get_custom_handler,clean_up_list_when_encounter_null_element
+from jqcode.jq_agent.c0_init_env_models import env_models_instance,get_custom_handlers,clean_up_list_when_encounter_null_element
 from jqcode.jq_agent.tools.jq_functions_and_tools import get_flight_number,python_repl_tool
 from langchain_experimental.tools import PythonREPLTool
 from jqcode.jq_agent.tools.jq_retriever import get_retriever
@@ -33,14 +33,13 @@ import time
 _ = load_dotenv()
 logger = jqkj_logger(__file__).get_logger()
 
-python_repl = PythonREPLTool().run #这是原生的
+# python_repl = PythonREPLTool().run #这是原生的
 # python_repl = python_repl_tool #这是我自己定义的，强制加入了print,已获取输出值
 # python_repl = eval
-
-DEBUG = False
-handlers = get_custom_handler() if DEBUG else []
-invoke_llm_config = {'callbacks' : handlers,"repetition_penalty":1.05}    
+  
 llm_model = env_models_instance.chat_model
+# DEBUG_LLM_USING_CUSTOM_HANDLER
+invoke_llm_config = env_models_instance.invoke_llm_config 
 
 class GraphAgentState(TypedDict):
     messages: Annotated[list[BaseMessage], add_messages]
@@ -537,7 +536,7 @@ class GraphAgent:
         self.question_id:str= self.get_random_id()
         self.question = ""
         self.question_rewrited = ""
-        self.config =  {"recursion_limit":recursion_limit,"configurable": {"thread_id":memory_thread_id }}
+        self.invoke_graph_config =  {"recursion_limit":recursion_limit,"configurable": {"thread_id":memory_thread_id }}
         conn = sqlite3.connect("memory_checkpoints.sqlite", check_same_thread=False)
         self.memory = SqliteSaver(conn)
         
@@ -629,7 +628,7 @@ class GraphAgent:
 
     def _get_messages_from_state_by_key(self,key:str):
         # messages = self.graph.get_state(config=self.config).values[key] 
-        messages = self.graph.get_state(config=self.config).values.get(key,[])
+        messages = self.graph.get_state(config=self.invoke_graph_config).values.get(key,[])
         return messages
     
     class VECTORSTORE(BaseModel):
@@ -1066,7 +1065,7 @@ class GraphAgent:
         human_message = HumanMessage(content=user_code_prompt)
         code,code_text = "",""
         try:
-            code_generated = llm_model.invoke([sys_message,human_message])
+            code_generated = llm_model.invoke([sys_message,human_message],config=invoke_llm_config)
             code_text = code_generated.content.strip()        
             code = extract_code(code_text)
         except Exception as e:
@@ -1237,7 +1236,7 @@ class GraphAgent:
                 # 尝试获取question_rewrited 
                 try:
                     context = "\n".join([m.content for m in related_history_messages if m.content and m.name!='history_ai'])
-                    rewrite_message_returned = question_rewrite_chain.invoke({'context':context,'question':user_question})
+                    rewrite_message_returned = question_rewrite_chain.invoke({'context':context,'question':user_question},config=invoke_llm_config)
                     json_content = json_repair.loads(rewrite_message_returned.content)
                     if json_content:
                         question_rewrited = json_content.get("q","")                
@@ -1261,7 +1260,7 @@ class GraphAgent:
         #   {"$user_id":{"rag_args":"$rag_args","reference":"$reference"}} 
         
         user_variables_statedict = {self.user_id:{"rag_args":"","reference":""}}
-        result = self.graph.invoke({"messages": [input_message],"question":self.question_rewrited,"question_related_messages":[],"user_variables":user_variables_statedict},config=self.config)
+        result = self.graph.invoke({"messages": [input_message],"question":self.question_rewrited,"question_related_messages":[],"user_variables":user_variables_statedict},config=self.invoke_graph_config)
         
         logger.debug(f"==USER[id:{self.user_id}]的问题[id:{self.question_id}]，允许问题改写:{allow_question_rewrite}")
         print(f'====问题和答案====')        

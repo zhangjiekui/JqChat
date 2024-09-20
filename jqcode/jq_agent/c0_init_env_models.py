@@ -32,13 +32,15 @@ from langchain_community.vectorstores.utils import DistanceStrategy
 from langchain.retrievers import ContextualCompressionRetriever
 from langchain_core.messages import BaseMessage, HumanMessage,SystemMessage,ToolMessage,AIMessage
 from langchain.callbacks.base import BaseCallbackHandler
-from langchain_core.callbacks import StdOutCallbackHandler
+from langchain_core.callbacks import StdOutCallbackHandler,FileCallbackHandler
 from jqcode.jq_splitters.backend_splitter_utils.jq_chinese_recursive_text_splitter import JqChineseRecursiveTextSplitter
 from jqcode.jq_splitters.jq_docx_tree_text_splitter import JqkjDocTreeTokenTextSplitter,load_project_env
 
 from transformers import AutoTokenizer
 from pydantic import PrivateAttr
 import json_repair
+from langchain_core.utils.input import print_text
+from jqcode.jq_config.general_config import llm_handler_file_path
 from jqcode.jq_utils.logger import jqkj_logger
 logger = jqkj_logger(__file__).get_logger()
 
@@ -48,7 +50,7 @@ logger = jqkj_logger(__file__).get_logger()
 # os.environ['LANGCHAIN_API_KEY'] = "ls__fe150087fa0643f28b3eae3a07d57529"
 # os.environ['TAVILY_API_KEY'] = "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"
 
-class XinferenceReranker(BaseDocumentCompressor):
+class JqXinferenceReranker(BaseDocumentCompressor):
     client: str = 'Xinference'
     top_n: int = 6
     """Number of documents to return."""
@@ -129,6 +131,54 @@ class XinferenceReranker(BaseDocumentCompressor):
         final_results = final_results[:self.top_n]
         return final_results
 
+class JqCustomLlmHandler(BaseCallbackHandler):
+    # print = logger.debug
+    def on_chat_model_start(self,serialized, messages: List[List[BaseMessage]], *args, **kwargs):
+        print(f"<<<<<<<<<<<<<<<<<<<<<<<<<模型输入：开始<<<<<<<<<<<<<<<<<<<<<<<<<")
+        # print(f"Input Messages:")
+        for ms in messages:
+            for m in ms:
+                m.pretty_print()
+        print("<<<<<<<<<<<<<<<<<<<<<<<<<模型输入：结束<<<<<<<<<<<<<<<<<<<<<<<<<")
+        print("\n    '↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓等待模型的输出↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓'    \n")
+
+    def on_llm_end(self, response,*args, **kwargs):
+        print(">>>>>>>>>>>>>>>>>>>>>>>>>模型输出：开始>>>>>>>>>>>>>>>>>>>>>>>>>")
+        # print(f"Output Generations:")
+        for g in response.generations:
+            print(g[0].text)
+        print(">>>>>>>>>>>>>>>>>>>>>>>>>模型输出：结束>>>>>>>>>>>>>>>>>>>>>>>>>")
+        
+class JqCustomLlmFileHandler(FileCallbackHandler):
+    
+    
+    def __init__(
+        self, filename: str=llm_handler_file_path, mode: str = "a", color: Optional[str] = None
+    ):
+        super().__init__(filename=filename,mode=mode,color=color)
+        
+    def on_chat_model_start(self,serialized, messages: List[List[BaseMessage]], *args, **kwargs):
+        print_text(f"<<<<<<<<<<<<<<<<<<<<<<<<<模型输入：开始<<<<<<<<<<<<<<<<<<<<<<<<<",end="\n",file=self.file,)
+        # print_text(f"Input Messages:",end="\n",file=self.file,)
+        for ms in messages:
+            for m in ms:
+                print_text(m.pretty_repr(),end="\n",file=self.file,)                
+        print_text(f"<<<<<<<<<<<<<<<<<<<<<<<<<模型输入：结束<<<<<<<<<<<<<<<<<<<<<<<<<",end="\n",file=self.file,)
+        print_text("\n    '↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓等待模型的输出↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓'    \n",end="\n",file=self.file)
+
+    def on_llm_end(self, response,*args, **kwargs):
+        print_text(">>>>>>>>>>>>>>>>>>>>>>>>>模型输出：开始>>>>>>>>>>>>>>>>>>>>>>>>>",end="\n",file=self.file,)
+        # print_text(f"Output Generations:",end="\n",file=self.file,)
+        for g in response.generations:
+            print_text(g[0].text,end="\n",file=self.file,)
+        print_text(">>>>>>>>>>>>>>>>>>>>>>>>>模型输出：结束>>>>>>>>>>>>>>>>>>>>>>>>>",end="\n",file=self.file,)
+        
+
+def get_custom_handlers():
+    custom_handler = JqCustomLlmHandler()
+    std_out_handler = StdOutCallbackHandler()
+    file_handler = JqCustomLlmFileHandler(llm_handler_file_path)
+    return [custom_handler,std_out_handler,file_handler]
 
 def replace_multiple_newlines(text):
     return re.sub(r'\n+', '\n', text)
@@ -209,6 +259,12 @@ class InitEnvModels:
         self.llm_model_max_tokens = self.llm_model_card['max_tokens']
         self.need_custom_tool_call_parse = self.llm_model_card.get('need_custom_tool_call_parse',False)
         self.need_json_mode = self.llm_model_card.get('need_json_mode',False)
+        
+        _DEBUG_STR = os.environ.get('DEBUG_LLM_USING_CUSTOM_HANDLER',"False")
+        _DEBUG = True if _DEBUG_STR=="True" else False
+        handlers = get_custom_handlers() if _DEBUG else []
+        invoke_llm_config = {'callbacks' : handlers}
+        self.invoke_llm_config = invoke_llm_config
 
         self.base_url = self.llm_model_base_url # 如果是同一服务器上部署的大语言和Emb模型，可能会省略配置其他模型，直接用这个
         self.api_key = self.llm_model_api_key
@@ -302,7 +358,7 @@ class InitEnvModels:
     #     return self.openai_client
     # endregion 直接初始化openai接口，暂时用不上
 
-    def get_langchain_chat_model(self, temperature=0.7,top_p =0.8, frequency_penalty=0.2,max_tokens=None, streaming=False):
+    def get_langchain_chat_model(self, temperature=0.7,top_p =0.8, frequency_penalty=0.2,repetition_penalty=1.05,max_tokens=None, streaming=False):
         if max_tokens:
             if max_tokens!=self.llm_model_max_tokens:
                 logger.warning(f"您现在请求的llm {max_tokens=}，与环境配置中的{self.llm_model_max_tokens=}不同，请确认！")
@@ -318,7 +374,9 @@ class InitEnvModels:
                 temperature=temperature,
                 top_p=top_p,
                 frequency_penalty=frequency_penalty,
-                max_tokens=max_tokens,                
+                max_tokens=max_tokens, 
+                # 设置vllm+qwen2.5的repetition_penalty: https://qwen.readthedocs.io/zh-cn/latest/framework/function_call.html#vllm               
+                extra_body={"repetition_penalty": repetition_penalty},        
             )
         logger.info(f'当前使用的LLM模型为:Langchain ChatOpenAI, {self.chat_model.model_name}, API_URL为{self.chat_model.openai_api_base}')
         return self.chat_model
@@ -378,7 +436,7 @@ class InitEnvModels:
             # BCERerank: compress_documents(documents: Sequence[Document],query: str)
             # xinference.client: model.rerank(corpus, query) https://inference.readthedocs.io/zh-cn/latest/index.html
             # https://github.com/xorbitsai/inference/blob/7d83300a7694a0262b634007ea4164ea753e466f/xinference/model/rerank/core.py
-            reranker = XinferenceReranker(top_n=6,model=xinfer_reranker)
+            reranker = JqXinferenceReranker(top_n=6,model=xinfer_reranker)
             # query = "A man is eating pasta."
             # corpus = ["A man is eating food.","A woman is playing violin."]
             # r = reranker.rerank(corpus, query)
@@ -530,11 +588,11 @@ class InitEnvModels:
             if if_reranking:
                 retriever = FAISS.from_documents(text_chunks, embed_model, distance_strategy=DistanceStrategy.MAX_INNER_PRODUCT).as_retriever(search_type="mmr", search_kwargs={"score_threshold": score_threshold, "k": retriever_docs_num})
                 compression_retriever = ContextualCompressionRetriever(base_compressor=reranker, base_retriever=retriever)
-                chunks_relevant = compression_retriever.invoke(query)
+                chunks_relevant = compression_retriever.invoke(query,config=self.invoke_llm_config)
             else:
                 retriever_docs_num = final_docs_num
                 retriever = FAISS.from_documents(text_chunks, embed_model, distance_strategy=DistanceStrategy.MAX_INNER_PRODUCT).as_retriever(search_type="mmr", search_kwargs={"score_threshold": score_threshold, "k": retriever_docs_num})
-                chunks_relevant = retriever.invoke(query)
+                chunks_relevant = retriever.invoke(query,config=self.invoke_llm_config)
         # 只返回relevance_score>=score_threshold的
         chunks_relevant = [d for d in chunks_relevant if d.metadata.get("relevance_score",0)>=score_threshold]
         return chunks_relevant
@@ -691,32 +749,7 @@ env_models_instance = get_env_models_instance()
 #             final_results.append(doc)
 #         return final_results
 # endregion 留着备用
-class MyCustomHandler(BaseCallbackHandler):
-    def on_chat_model_start(self,serialized, messages: List[List[BaseMessage]], *args, **kwargs):
-        print("<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<")
-        print(f"Input Messages:")
-        for ms in messages:
-            for m in ms:
-                m.pretty_print()
-        print("<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<\n")
 
-    def on_llm_end(self, response,*args, **kwargs):
-        print("\n>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>")
-        print(f"Output Generations:")
-        for g in response.generations:
-            print(g[0].text)
-        print(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>")
-
-custom_handler = MyCustomHandler()
-std_out_handler = StdOutCallbackHandler()
-def get_custom_handler():
-    global custom_handler
-    global std_out_handler
-    if not custom_handler:
-        custom_handler = MyCustomHandler()
-    if not std_out_handler:
-        std_out_handler = StdOutCallbackHandler()
-    return [custom_handler,std_out_handler]
 
 
 
