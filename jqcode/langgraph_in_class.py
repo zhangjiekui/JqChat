@@ -83,8 +83,8 @@ class GraphAgentState(TypedDict):
 # region
 ### Data model and Chains Definitions
 
-question_rewrite_system_prompt = """根据上下文'Context'，对原始问题('Question'后面的内容)进行实体消歧(Disambiguation)、指代消解(Co-reference Resolution)，使得原始问题更加明确具体，但必须保留原始问题的本来意思或意图。
-    如果不需要改写，请直接返回原始问题本身。
+question_rewrite_system_prompt = """根据上下文'Context'，对原始问题('Question'后面的内容)进行改写【但仅限于实体消歧(Disambiguation)、指代消解(Co-reference Resolution)，绝不能改变原始问题的本来意思或意图】，使得原始问题更加明确具体。
+    如果不需要改写或者不确信需要改写，请直接返回原始问题本身。
     仅仅需要返回问题内容本身，绝不能有任何额外的解释或内容。
     返回格式必须为Json:{"q":$question}，请使用改写后的问题内容替换$question
     """
