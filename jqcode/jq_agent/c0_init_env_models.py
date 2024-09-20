@@ -146,7 +146,9 @@ class JqCustomLlmHandler(BaseCallbackHandler):
         print(">>>>>>>>>>>>>>>>>>>>>>>>>模型输出：开始>>>>>>>>>>>>>>>>>>>>>>>>>")
         # print(f"Output Generations:")
         for g in response.generations:
-            print(g[0].text)
+            _g = g[0]
+            content = f"content={_g.text}\ntool_calls={_g.message.tool_calls}"
+            print(content)
         print(">>>>>>>>>>>>>>>>>>>>>>>>>模型输出：结束>>>>>>>>>>>>>>>>>>>>>>>>>")
         
 class JqCustomLlmFileHandler(FileCallbackHandler):
@@ -170,7 +172,9 @@ class JqCustomLlmFileHandler(FileCallbackHandler):
         print_text(">>>>>>>>>>>>>>>>>>>>>>>>>模型输出：开始>>>>>>>>>>>>>>>>>>>>>>>>>",end="\n",file=self.file,)
         # print_text(f"Output Generations:",end="\n",file=self.file,)
         for g in response.generations:
-            print_text(g[0].text,end="\n",file=self.file,)
+            _g = g[0]
+            content = f"content={_g.text}\ntool_calls={_g.message.tool_calls}" 
+            print_text(content,end="\n",file=self.file,)
         print_text(">>>>>>>>>>>>>>>>>>>>>>>>>模型输出：结束>>>>>>>>>>>>>>>>>>>>>>>>>",end="\n",file=self.file,)
         
 
