@@ -208,6 +208,7 @@ class InitEnvModels:
         self.llm_model_max_tokens = self.llm_model_card['max_tokens']
         self.llm_model_max_tokens = self.llm_model_card['max_tokens']
         self.need_custom_tool_call_parse = self.llm_model_card.get('need_custom_tool_call_parse',False)
+        self.need_json_mode = self.llm_model_card.get('need_json_mode',False)
 
         self.base_url = self.llm_model_base_url # 如果是同一服务器上部署的大语言和Emb模型，可能会省略配置其他模型，直接用这个
         self.api_key = self.llm_model_api_key
@@ -378,8 +379,8 @@ class InitEnvModels:
             # xinference.client: model.rerank(corpus, query) https://inference.readthedocs.io/zh-cn/latest/index.html
             # https://github.com/xorbitsai/inference/blob/7d83300a7694a0262b634007ea4164ea753e466f/xinference/model/rerank/core.py
             reranker = XinferenceReranker(top_n=6,model=xinfer_reranker)
-            query = "A man is eating pasta."
-            corpus = ["A man is eating food.","A woman is playing violin."]
+            # query = "A man is eating pasta."
+            # corpus = ["A man is eating food.","A woman is playing violin."]
             # r = reranker.rerank(corpus, query)
             # logger.debug(r)
             # c = reranker.compress_documents(corpus, query)
@@ -616,8 +617,8 @@ class InitEnvModels:
                     history_context = "\n".join(content_list)
                     history_context = "\nHere is the conversation history.\n[BEGINOFHISTORY]:\n" + history_context + "\n[ENDOFHISTORY].\n"
         
-                    makeup_human_message = HumanMessage(content=history_context,name="history")
-                    makeup_ai_mesaage = AIMessage(content="I know, I have get the converstion history.",name='history')
+                    makeup_human_message = HumanMessage(content=history_context,name="history_context")
+                    makeup_ai_mesaage = AIMessage(content="I know, I have get the converstion history.",name='history_ai')
                     all_messages = [makeup_human_message,makeup_ai_mesaage] + last_n_messages
                     return all_messages
                 else:

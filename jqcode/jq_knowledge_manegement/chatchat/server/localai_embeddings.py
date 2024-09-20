@@ -168,11 +168,10 @@ class LocalAIEmbeddings(BaseModel, Embeddings):
     """Whether to show a progress bar when embedding."""
     model_kwargs: Dict[str, Any] = Field(default_factory=dict)
     """Holds any model parameters valid for `create` call not explicitly specified."""
-    # model_config  = ConfigDict(protected_namespaces=())
+    
     class Config:
         """Configuration for this pydantic object."""
 
-        # allow_population_by_field_name = True
         populate_by_name = True
         protected_namespaces=()
 
