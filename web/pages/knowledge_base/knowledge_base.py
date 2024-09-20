@@ -236,14 +236,14 @@ def knowledge_base_page(api: ApiRequest, is_lite: bool = None):
                     "text_splitter",
                     "docs_count",
                     "in_folder",
-                    "in_db",
+                    "in_es",
                 ]
             ] 
             doc_details["in_folder"] = (
                 doc_details["in_folder"].replace(True, "✓").replace(False, "×")
             )
-            doc_details["in_db"] = (
-                doc_details["in_db"].replace(True, "✓").replace(False, "×")
+            doc_details["in_es"] = (
+                doc_details["in_es"].replace(True, "✓").replace(False, "×")
             )
             gb = config_aggrid(
                 doc_details,
@@ -257,7 +257,7 @@ def knowledge_base_page(api: ApiRequest, is_lite: bool = None):
                     ("text_splitter", "分词器"): {},
                     # ("create_time", "创建时间"): {},
                     ("in_folder", "源文件"): {},
-                    ("in_db", "向量库"): {},
+                    ("in_es", "向量库"): {},
                 },
                 "multiple",
             )
@@ -301,7 +301,7 @@ def knowledge_base_page(api: ApiRequest, is_lite: bool = None):
             # 将文件分词并加载到向量库中
             if cols[1].button(
                 "重新添加至向量库"
-                if selected_rows and (pd.DataFrame(selected_rows)["in_db"]).any()
+                if selected_rows and (pd.DataFrame(selected_rows)["in_es"]).any()
                 else "添加至向量库",
                 disabled=not file_exists(kb, selected_rows)[0],
                 use_container_width=True,
@@ -319,7 +319,7 @@ def knowledge_base_page(api: ApiRequest, is_lite: bool = None):
             # 将文件从向量库中删除，但不删除文件本身。
             if cols[2].button(
                 "从向量库删除",
-                disabled=not (selected_rows and selected_rows[0]["in_db"]),
+                disabled=not (selected_rows and selected_rows[0]["in_es"]),
                 use_container_width=True,
             ):
                 file_names = [row["file_name"] for row in selected_rows]
