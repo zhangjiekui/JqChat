@@ -34,7 +34,8 @@ from jqcode.jq_knowledge_manegement.chatchat.server.db.repository.knowledge_file
     list_docs_from_db,
     list_docs_from_es,
     
-    list_files_from_db,
+    # list_files_from_db,
+    list_files_from_es,
 )
 from jqcode.jq_knowledge_manegement.chatchat.server.knowledge_base.model.kb_document_model import DocumentWithVSId
 from jqcode.jq_knowledge_manegement.chatchat.server.knowledge_base.utils import (
@@ -227,7 +228,8 @@ class KBService(ABC):
         )
 
     def list_files(self):
-        return list_files_from_db(self.kb_name)
+        # return list_files_from_db(self.kb_name)
+        return list_files_from_es(self.kb_name)
 
     def count_files(self):
         return count_files_from_db(self.kb_name)
@@ -502,12 +504,12 @@ def get_kb_details() -> List[Dict]:
             "file_count": 0,
             "create_time": None,
             "in_folder": True,
-            "in_db": False,
+            "in_es": False,
         }
 
     for kb_detail in kbs_in_es:
         kb_name = kb_detail["kb_name"]
-        kb_detail["in_db"] = True
+        kb_detail["in_es"] = True
         if kb_name in result:
             result[kb_name].update(kb_detail)
         else:
@@ -529,7 +531,9 @@ def get_kb_file_details(kb_name: str) -> List[Dict]:
         return []
 
     files_in_folder = list_files_from_folder(kb_name)
-    files_in_db = kb.list_files()
+    # files_in_db = kb.list_files()
+    files_in_es = kb.list_files()
+    files_in_es = {}.fromkeys(files_in_es).keys()
     result = {}
 
     for doc in files_in_folder:
@@ -543,13 +547,13 @@ def get_kb_file_details(kb_name: str) -> List[Dict]:
             "text_splitter": "JqkjDocTreeTokenTextSplitter",
             "create_time": None,
             "in_folder": True,
-            "in_db": False,
+            "in_es": False,
         }
     lower_names = {x.lower(): x for x in result}
-    for doc in files_in_db:
+    for doc in files_in_es:
         doc_detail = get_file_detail(kb_name, doc)
         if doc_detail:
-            doc_detail["in_db"] = True
+            doc_detail["in_es"] = True
             if doc.lower() in lower_names:
                 result[lower_names[doc.lower()]].update(doc_detail)
             else:
