@@ -119,7 +119,7 @@ class FaissKBService(KBService):
 
     def exist_doc(self, file_name: str):
         if super().exist_doc(file_name):
-            return "in_db"
+            return "in_es"
 
         content_path = os.path.join(self.kb_path, "content")
         if os.path.isfile(os.path.join(content_path, file_name)):

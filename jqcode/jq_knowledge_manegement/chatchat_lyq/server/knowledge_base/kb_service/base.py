@@ -497,12 +497,12 @@ def get_kb_details() -> List[Dict]:
             "file_count": 0,
             "create_time": None,
             "in_folder": True,
-            "in_db": False,
+            "in_es": False,
         }
 
     for kb_detail in kbs_in_es:
         kb_name = kb_detail["kb_name"]
-        kb_detail["in_db"] = True
+        kb_detail["in_es"] = True
         if kb_name in result:
             result[kb_name].update(kb_detail)
         else:
@@ -538,7 +538,7 @@ def get_kb_file_details(kb_name: str) -> List[Dict]:
             "text_splitter": "JqkjDocTreeTokenTextSplitter",
             "create_time": None,
             "in_folder": True,
-            "in_db": False,
+            "in_es": False,
         }
     lower_names = {x.lower(): x for x in result}
     for doc in files_in_db:

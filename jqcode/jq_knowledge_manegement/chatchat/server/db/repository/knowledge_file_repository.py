@@ -9,6 +9,10 @@ from jqcode.jq_knowledge_manegement.chatchat.server.db.session import with_sessi
 from jqcode.jq_knowledge_manegement.chatchat.server.knowledge_base.utils import KnowledgeFile
 
 
+from jqcode.jq_agent.c0_init_env_models import env_models_instance
+
+from elasticsearch import Elasticsearch
+
 @with_session
 def list_file_num_docs_id_by_kb_name_and_file_name(
     session,
@@ -49,9 +53,7 @@ def list_docs_from_db(
 
 
 
-from jqcode.jq_agent.c0_init_env_models import env_models_instance
 
-from elasticsearch import Elasticsearch
 from typing import List, Dict
 import logging
 
@@ -70,19 +72,29 @@ def list_docs_from_es(
     """
     es = env_models_instance.get_es_connection()
     
-    # 构建一个多字段查询
+    # 构建一个更精确的查询
     query = {
         "bool": {
-            "should": [
-                {"match": {"file_path": file_name}},
-                {"match": {"file_name": file_name}},
-                {"match": {"source": file_name}},
-                {"match": {"metadata.file_name": file_name}},
-                {"match": {"metadata.source": file_name}}
-            ],
-            "minimum_should_match": 1
+            "must": [
+                {
+                    "bool": {
+                        "should": [
+                            {"term": {"file_path.keyword": file_name}},
+                            {"term": {"file_name.keyword": file_name}},
+                            {"term": {"source.keyword": file_name}},
+                            {"term": {"metadata.file_name.keyword": file_name}},
+                            {"term": {"metadata.source.keyword": file_name}}
+                        ],
+                        "minimum_should_match": 1
+                    }
+                }
+            ]
         }
     }
+    
+    # 如果提供了额外的元数据，将其添加到查询中
+    for key, value in metadata.items():
+        query["bool"]["must"].append({"term": {f"metadata.{key}.keyword": value}})
     
     logger.info(f"Query: {query}")
     
@@ -104,7 +116,6 @@ def list_docs_from_es(
                 "id": hit['_id'],
                 "metadata": hit['_source']
             }
-            # 如果存在 content 字段，添加到结果中
             if 'content' in hit['_source']:
                 result['content'] = hit['_source']['content']
             results.append(result)
@@ -114,10 +125,11 @@ def list_docs_from_es(
     except Exception as e:
         logger.error(f"Error during Elasticsearch query: {e}")
         return []
-    
 
+# # 使用示例
+# results = list_docs_from_es("create1", "附件2+芜湖市信息化项目方案建议书编制提纲.docx")
 # results = list_docs_from_es("create1", "OCR接口性能报告.docx")
-
+# results = list_docs_from_es("create1", "测试文本.txt")
 
 @with_session
 def delete_docs_from_db(
@@ -170,16 +182,60 @@ def count_files_from_db(session, kb_name: str) -> int:
     )
 
 
-@with_session
-def list_files_from_db(session, kb_name):
-    files = (
-        session.query(KnowledgeFileModel)
-        .filter(KnowledgeFileModel.kb_name.ilike(kb_name))
-        .all()
-    )
-    docs = [f.file_name for f in files]
+# @with_session
+# def list_files_from_db(session, kb_name):
+#     files = (
+#         session.query(KnowledgeFileModel)
+#         .filter(KnowledgeFileModel.kb_name.ilike(kb_name))
+#         .all()
+#     )
+#     docs = [f.file_name for f in files]
+#     return docs
+
+
+def list_files_from_es(kb_name: str, search_text: str = None) -> list:
+    es = env_models_instance.get_es_connection()
+    
+    if search_text:
+        query = {
+            "query": {
+                "match": {
+                    "text": {
+                        "query": search_text,
+                        "fuzziness": "AUTO"
+                    }
+                }
+            },
+            "_source": ["metadata.file_name"],
+            "size": 10000
+        }
+    else:
+        query = {
+            "query": {
+                "match_all": {}
+            },
+            "_source": ["metadata.file_name"],
+            "size": 10000
+        }
+
+    try:
+        result = es.search(index=kb_name, body=query)
+        print(f"Total hits: {result['hits']['total']['value']}")
+        docs = [hit["_source"]["metadata"]["file_name"] for hit in result["hits"]["hits"]]
+        print(f"Extracted file names: {docs}")
+    except Exception as e:
+        print(f"An error occurred: {e}")
+        docs = []
+    
     return docs
 
+# 使用示例：
+# 列出所有文件
+# all_files = list_files_from_es("create1")
+
+# # 搜索包含特定文本的文件
+# specific_files = list_files_from_es("create1", "OCR")
+# pass
 
 @with_session
 def add_file_to_db(
@@ -289,29 +345,79 @@ def file_exists_in_db(session, kb_file: KnowledgeFile):
     return True if existing_file else False
 
 
-@with_session
-def get_file_detail(session, kb_name: str, filename: str) -> dict:
-    file: KnowledgeFileModel = (
-        session.query(KnowledgeFileModel)
-        .filter(
-            KnowledgeFileModel.file_name.ilike(filename),
-            KnowledgeFileModel.kb_name.ilike(kb_name),
-        )
-        .first()
-    )
-    if file:
-        return {
-            "kb_name": file.kb_name,
-            "file_name": file.file_name,
-            "file_ext": file.file_ext,
-            "file_version": file.file_version,
-            "document_loader": file.document_loader_name,
-            "text_splitter": file.text_splitter_name,
-            "create_time": file.create_time,
-            "file_mtime": file.file_mtime,
-            "file_size": file.file_size,
-            "custom_docs": file.custom_docs,
-            "docs_count": file.docs_count,
+# @with_session
+# def get_file_detail(session, kb_name: str, filename: str) -> dict:
+#     file: KnowledgeFileModel = (
+#         session.query(KnowledgeFileModel)
+#         .filter(
+#             KnowledgeFileModel.file_name.ilike(filename),
+#             KnowledgeFileModel.kb_name.ilike(kb_name),
+#         )
+#         .first()
+#     )
+#     if file:
+#         return {
+#             "kb_name": file.kb_name,
+#             "file_name": file.file_name,
+#             "file_ext": file.file_ext,
+#             "file_version": file.file_version,
+#             "document_loader": file.document_loader_name,
+#             "text_splitter": file.text_splitter_name,
+#             "create_time": file.create_time,
+#             "file_mtime": file.file_mtime,
+#             "file_size": file.file_size,
+#             "custom_docs": file.custom_docs,
+#             "docs_count": file.docs_count,
+#         }
+#     else:
+#         return {}
+    
+
+
+
+def get_file_detail(kb_name: str, filename: str) -> dict:
+    es = env_models_instance.get_es_connection()
+
+    query = {
+        "query": {
+            "match": {
+                "metadata.file_name.keyword": filename
+            }
         }
-    else:
+    }
+
+    try:
+        result = es.search(index=kb_name, body=query)
+        # print(f"Query result: {result}")
+
+        if result['hits']['total']['value'] > 0:
+            source = result['hits']['hits'][0]['_source']
+            docs_count = len(result['hits']['hits'])
+            metadata = source.get('metadata', {})
+            return {
+                "kb_name": kb_name,
+                "file_name": metadata.get('file_name'),
+                "file_ext": metadata.get('file_type'),
+                "file_version": metadata.get('file_version'),
+                "document_loader": 'JqkjSimpleDirectoryReader',
+                "text_splitter": 'JqkjDocTreeTokenTextSplitter',
+                "create_time": metadata.get('creation_date'),
+                "file_mtime": metadata.get('last_modified_date'),
+                "file_size": metadata.get('file_size'),
+                "custom_docs": metadata.get('custom_docs'),
+                "docs_count": docs_count,
+                "source": metadata.get('source'),
+                "original_source": metadata.get('original_source_jq'),
+                "file_path": metadata.get('file_path')
+            }
+        else:
+            print(f"No document found with filename '{filename}' in index '{kb_name}'")
+            return {}
+    except Exception as e:
+        print(f"An error occurred: {str(e)}")
         return {}
+
+# kb_name = 'create1'
+# filename = '测试文本.txt'
+# result = get_file_detail(kb_name, filename)
+# print(f"Final result: {result}")
