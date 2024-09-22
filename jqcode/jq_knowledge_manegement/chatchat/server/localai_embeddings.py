@@ -17,7 +17,8 @@ from typing import (
 
 from langchain_community.utils.openai import is_openai_v1
 from langchain_core.embeddings import Embeddings
-from langchain_core.pydantic_v1 import BaseModel, Field, root_validator
+# from langchain_core.pydantic_v1 import BaseModel, Field, root_validator
+from pydantic import BaseModel, Field, root_validator,model_validator, ConfigDict
 from langchain_core.utils import get_from_dict_or_env, get_pydantic_field_names
 from tenacity import (
     AsyncRetrying,
@@ -167,13 +168,16 @@ class LocalAIEmbeddings(BaseModel, Embeddings):
     """Whether to show a progress bar when embedding."""
     model_kwargs: Dict[str, Any] = Field(default_factory=dict)
     """Holds any model parameters valid for `create` call not explicitly specified."""
-
+    
     class Config:
         """Configuration for this pydantic object."""
 
-        allow_population_by_field_name = True
+        populate_by_name = True
+        protected_namespaces=()
 
-    @root_validator(pre=True)
+
+    # @root_validator(pre=True)
+    @model_validator(mode='before')
     def build_extra(cls, values: Dict[str, Any]) -> Dict[str, Any]:
         """Build extra kwargs from additional params that were passed in."""
         all_required_field_names = get_pydantic_field_names(cls)
@@ -199,7 +203,8 @@ class LocalAIEmbeddings(BaseModel, Embeddings):
         values["model_kwargs"] = extra
         return values
 
-    @root_validator()
+    # @root_validator()
+    @model_validator(mode='before')
     def validate_environment(cls, values: Dict) -> Dict:
         """Validate that api key and python package exists in environment."""
         values["openai_api_key"] = get_from_dict_or_env(
@@ -230,6 +235,18 @@ class LocalAIEmbeddings(BaseModel, Embeddings):
             "openai_organization",
             "OPENAI_ORGANIZATION",
             default="",
+        )
+        values["request_timeout"] = get_from_dict_or_env(
+            values,
+            "request_timeout",
+            "REQUEST_TIMEOUT",
+            default=3,
+        )
+        values["max_retries"] = get_from_dict_or_env(
+            values,
+            "max_retries",
+            "MAX_RETRIES",
+            default=3,
         )
         try:
             import openai
@@ -383,7 +400,7 @@ if __name__ == '__main__':
     embeddings_api = LocalAIEmbeddings(
         model= 'bce-embedding-base_v1',
         openai_api_key="random-string",
-        openai_api_base="http://10.1.150.105:9997/v1"
+        openai_api_base="http://10.1.150.106:9997/v1"
     )
 
 

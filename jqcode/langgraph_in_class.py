@@ -1,30 +1,24 @@
 # source: https://learn.deeplearning.ai/courses/ai-agents-in-langgraph/lesson/3/langgraph-components
 # print('参考：https://learn.deeplearning.ai/courses/ai-agents-in-langgraph/lesson/3/langgraph-components')
 from langgraph.graph import StateGraph, END
-from typing import TypedDict, Annotated, Literal, Optional, Union, List
-from langchain_core.pydantic_v1 import BaseModel, Field
-# from pydantic import BaseModel, Field
+from typing import TypedDict, Annotated, Union, List
+from pydantic import BaseModel, Field
 from langchain_core.prompts import ChatPromptTemplate
 from langgraph.graph.message import add_messages
-from langchain_core.messages import AnyMessage, SystemMessage, HumanMessage, ToolMessage,AIMessage
-from langchain_core.tools import ToolException
+from langchain_core.messages import BaseMessage,SystemMessage, HumanMessage,ToolMessage,AIMessage
 from langchain_openai import ChatOpenAI
 from langchain_community.tools.tavily_search import TavilySearchResults
 from langchain_openai import ChatOpenAI
-from langchain import hub
 from langchain.schema import Document
 from langchain_core.output_parsers import StrOutputParser
 from langchain_core.tools import tool
+import sqlite3
 from langgraph.checkpoint.sqlite import SqliteSaver
-from langgraph.checkpoint.aiosqlite import AsyncSqliteSaver
-from langchain_core.runnables import Runnable, RunnableConfig
-from jqcode.jq_agent.c0_init_env_models import env_models_instance,get_custom_handler,clean_up_list_when_encounter_null_element
+from jqcode.jq_agent.c0_init_env_models import env_models_instance,get_custom_handlers,clean_up_list_when_encounter_null_element
 from jqcode.jq_agent.tools.jq_functions_and_tools import get_flight_number,python_repl_tool
 from langchain_experimental.tools import PythonREPLTool
 from jqcode.jq_agent.tools.jq_retriever import get_retriever
 import asyncio
-
-# from jqcode.jq_agent.tools.jq_web_search_engine import get_web_search_documents,is_query_chinese,get_tavily_search_result_documents
 from jqcode.jq_agent.tools.jq_web_search_engine_async import get_web_search_documents,is_query_chinese,get_tavily_search_result_documents
 import os
 import re
@@ -33,67 +27,64 @@ import json_repair
 import shortuuid
 import uuid
 from collections import deque
-from flask import request, jsonify,Response
-import requests
 from jqcode.jq_utils.logger import jqkj_logger
 from dotenv import load_dotenv
 import time
 _ = load_dotenv()
 logger = jqkj_logger(__file__).get_logger()
 
-python_repl = PythonREPLTool().run #这是原生的
+# python_repl = PythonREPLTool().run #这是原生的
 # python_repl = python_repl_tool #这是我自己定义的，强制加入了print,已获取输出值
 # python_repl = eval
-
-DEBUG = False
-handlers = get_custom_handler() if DEBUG else []
-invoke_llm_config = {'callbacks' : handlers}    
-# llm_model = env_models_instance.get_langchain_chat_model()
+  
 llm_model = env_models_instance.chat_model
+# DEBUG_LLM_USING_CUSTOM_HANDLER
+invoke_llm_config = env_models_instance.invoke_llm_config 
 
 class GraphAgentState(TypedDict):
-    messages: Annotated[list[AnyMessage], add_messages]
+    messages: Annotated[list[BaseMessage], add_messages]
     question : str
-    question_related_messages: Annotated[list[AnyMessage], clean_up_list_when_encounter_null_element]
+    question_related_messages: Annotated[list[BaseMessage], clean_up_list_when_encounter_null_element]
     question_searched : dict
     generation : str
     documents : List[str]
+    # 存放用户相关的临时/中间变量，取代之前使用的系统环境变量方式，如：os.environ['rag_args']、os.environ["REFERENCE"]
+    # {"$user_id":{"rag_args":"$rag_args","reference":"$reference"}}
+    user_variables:dict 
 
+# region: LimitedLengthString
+# class LimitedLengthString:
+#     def __init__(self, maxlen=8000):
+#         self.data = deque()
+#         self.len = 0
+#         self.maxlen = maxlen
+#     def append(self, contents:Union[str,List[str],List[BaseMessage]]):
+#         if not isinstance(contents,list):
+#             contents = [contents]
+#         for content in contents:
+#             content = content.content if isinstance(content,BaseMessage) else content
+#             content = content.strip()
+#             if content:
+#                 if content not in self.data:
+#                     self.data.append(content)
+#                     self.len += len(content)
+#                     while self.len > self.maxlen:
+#                         popped = self.data.popleft()
+#                         self.len -= len(popped)
+#                 else:
+#                     logger.info(f"LimitedLengthString中已经存在'{content}'，忽略此次操作")        
 
-class LimitedLengthString:
-    def __init__(self, maxlen=8000):
-        self.data = deque()
-        self.len = 0
-        self.maxlen = maxlen
+#     def get_string(self):
+#         result = '\n'.join(self.data)
+#         return result[-self.maxlen:]    
+# message_buffer = LimitedLengthString()
+# endregion: LimitedLengthString
 
-    def append(self, contents:Union[str,List[str],List[AnyMessage]]):
-        if not isinstance(contents,list):
-            contents = [contents]
-        for content in contents:
-            content = content.content if isinstance(content,AnyMessage) else content
-            content = content.strip()
-            if content:
-                if content not in self.data:
-                    self.data.append(content)
-                    self.len += len(content)
-                    while self.len > self.maxlen:
-                        popped = self.data.popleft()
-                        self.len -= len(popped)
-                else:
-                    logger.info(f"LimitedLengthString中已经存在'{content}'，忽略此次操作")        
+# region
+### Data model and Chains Definitions
 
-    def get_string(self):
-        result = '\n'.join(self.data)
-        return result[-self.maxlen:]
-    
-message_buffer = LimitedLengthString()
-
-# region: Router Data model Class Definitions
-### Begin: Router Data model Class Definitions
-
-question_rewrite_system_prompt = """结合上下文context部分考虑重写原始问题，使得原始问题更加明确全面，但要保留原始问题的本来意思或意图。
-    如果原始问题中有不明确的实体指代,如该公司，他，这个地方等，请尽量用明确的实体内容来替换掉不明确的实体指代。
-    如果不需要改写，请直接返回原始问题本身。
+question_rewrite_system_prompt = """根据上下文'Context'，对原始问题('Question'后面的内容)进行改写【但仅限于实体消歧(Disambiguation)、指代消解(Co-reference Resolution)，绝不能改变原始问题的本来意思或意图】，使得原始问题更加明确具体。
+    如果不需要改写或者不确信需要改写，请直接返回原始问题本身。
     仅仅需要返回问题内容本身，绝不能有任何额外的解释或内容。
     返回格式必须为Json:{"q":$question}，请使用改写后的问题内容替换$question
     """
@@ -101,10 +92,11 @@ question_rewrite_prompt = lambda x: ChatPromptTemplate.from_messages(
     [
         SystemMessage(question_rewrite_system_prompt),
         HumanMessage(
-            f"'Context':\n{x['context']}\n'EndOfContext' \nQuestion: {x['question']} \nAnswer: "
+            f"'Context':\n{x['context']}\n'EndOfContext' \n'Question': {x['question']} \nAnswer: "
         )
     ]
 )
+# messages = question_rewrite_prompt({'context':"历史消息内容",'question':'请绘制sin(x)曲线图'}).format_messages()
 question_rewrite_chain = question_rewrite_prompt | llm_model
 
 class WEB_SEARCH(BaseModel):
@@ -125,70 +117,7 @@ prompt = lambda x: ChatPromptTemplate.from_messages(
 )
 # LLM Chain for query regenerating
 llm_chain = prompt | llm_model | StrOutputParser()
-def web_search(state:GraphAgentState):
-    """
-    Web search based on the re-phrased question.
 
-    Args:
-        state (dict): The current graph state
-
-    Returns:
-        state (dict): Updates documents key with appended web results
-    """
-
-    print("---WEB SEARCH---")
-    question = state["question"]
-    try:
-        query_generated = os.environ['rag_args']
-        os.environ['rag_args'] = ''
-        if os.environ['rag_args']:
-            print(f"os.environ['rag_args']必须置为'',但现在的值为{os.environ['rag_args']} ")
-            raise Exception
-        if not query_generated:
-            query_generated = llm_chain.invoke({"question": question,"context":'请生成合适并且简洁的搜索引擎查询关键词,不需要任何额外的解释或内容'},config=invoke_llm_config)
-    except:
-        query_generated = question
-    print(f'{question=}')
-    print(f'{query_generated=}')
-
-
-    # Web search
-    docs = asyncio.run(get_web_search_documents(query_generated,max_doc_nums=4))
-    if not docs:
-        return {"documents": [], "question_searched":{question:False}}
-    
-    if docs[0].metadata.get("search_engine",None)!="tavily_search":
-        chunks_relevant = env_models_instance.split_and_get_chunks_relevant_from_documents(query=question,docs_list=docs,) #get embedding retriever and reranker results
-    else:
-       chunks_relevant = docs 
-    referens = []
-    filtered_source = []
-    if chunks_relevant:
-        _sources =[d.metadata.get("source",None) for d in chunks_relevant]
-        sources = set([s for s in _sources if s])
-        logger.info("相关的【网页标题】网址为:") 
-               
-        for s in sources:
-            title = "TavilySearchResult无标题"
-            for web_result in chunks_relevant:
-                if s == web_result.metadata.get("source",None):
-                    title = web_result.metadata.get("title","TavilySearchResult无标题")
-                    filtered_source.append(web_result)
-                    break
-            print(f'【{title}】{s}')
-            referens.append(s)
-    if referens:
-        referens_str = "   【参考网页为】:  \n"
-        for i,r in enumerate(referens):
-            # referens_str += f"    [{i+1}] <a href={r}>{r}</a>\n"
-            referens_str += f"    {i+1}. [{r}]({r})  \n"
-            
-        os.environ["REFERENCE"] = referens_str
-        print(f'{referens_str=}')
-    else:
-       os.environ["REFERENCE"] = '' 
-
-    return {"documents": filtered_source, "question_searched":{question:True}}     
 
 
 
@@ -269,44 +198,11 @@ def extract_code(text):
         if single_match:
             return single_match.group(1).strip()
 
-def submit_code_to_ipykernel_api(code:str):
-    # KERNEL_API_BASE = os.getenv("KERNEL_API_BASE",'http://localhost')
-    # API_PORT = os.getenv("API_PORT",5011)
-    # kernel_api_url = f"{KERNEL_API_BASE}:{API_PORT}/api"
-    kernel_api_url = env_models_instance.kernel_api_url
-    # 故意制造错误，好测试本地执行的情况
-    # kernel_api_url = env_models_instance.kernel_api_url + "error"
-    requestjson = {'command':code}
-    # /data/projects/JqChat/jqchat/kernel_program/main.py中的handle_request方法
-    try:
-        resp = requests.post(kernel_api_url, json=requestjson)
-        result_dict = json_repair.loads(resp.content) #注意resp.content的类型为byte
-        result = result_dict.get("result",None)
-        if result=="success":
-            logger.info("代码提交执行成功！")
-            time.sleep(1)
-            resp = requests.get(kernel_api_url)
-            print(resp)
-            return True
-        else:
-            logger.error("代码提交执行失败！")
-            return False
-    except Exception as e:
-        logger.error(f"代码提交执行失败！错误信息为:{e}")
-        return False
-    
-    try:
-        resp = requests.get(kernel_api_url)
-        print(resp)
-        # results = [result_queue.get() for _ in range(result_queue.qsize())]
-    except:
-        pass
-
 def display_code(code:str):
-    _code = f"""\n   
-    ```python 
+    _code = f"""
+    ```python
     {code}
-    ```\n
+    ```
     """
     return _code
 
@@ -342,8 +238,10 @@ class GradeCodingRelavance(BaseModel,extra='allow'):
     k: str = Field(description="Whether a user question is relevant to [code generating/executing,file processing/analyzing, data exploring/analyzing], k must be 'yes' or 'no'")
 
 prompt_coding_relevant_grader = """You are a grader assessing relevance of a user question to [code generating/executing,file processing/analyzing, data exploring/analyzing]. Response me with a simple JSON string can be directly consumed by  ‘json.loads’ method, must be ‘{{"k":"yes"}}’ or  ‘{{"k":"no"}}’,'yes' means a user question is related to Python code generating/code executing.No preamble or explaination."""
-structured_llm_coding_relevant_grader = llm_model.with_structured_output(GradeCodingRelavance,method='json_mode')
-# structured_llm_coding_relevant_grader = llm_model.with_structured_output(GradeCodingRelavance)
+if env_models_instance.need_json_mode:
+    structured_llm_coding_relevant_grader = llm_model.with_structured_output(GradeCodingRelavance,method='json_mode')
+else:
+    structured_llm_coding_relevant_grader = llm_model.with_structured_output(GradeCodingRelavance)
 
 coding_relevance_prompt = ChatPromptTemplate.from_messages(
     [
@@ -361,8 +259,10 @@ class GradeDocumentsRelavance(BaseModel,extra='allow'):
     k: str = Field(description="Whether Documents are relevant to the question, k must be 'yes' or 'no'")
 
 prompt_documents_relevant_grader = """You are a grader assessing relevance of a retrieved document to a user question. If the document contains keyword(s) or semantic meaning related to the user question, grade it as relevant. It does not need to be a stringent test.The goal is to filter out erroneous retrievals. Response me with a simple JSON string can be directly consumed by  ‘json.loads’ method, must be ‘{{"k":"yes"}}’ or  ‘{{"k":"no"}}’,'yes' means a retrieved document is related to a user question.No preamble or explaination."""
-structured_llm_documents_relevant_grader = llm_model.with_structured_output(GradeDocumentsRelavance,method='json_mode')
-# structured_llm_documents_relevant_grader = llm_model.with_structured_output(GradeDocumentsRelavance)
+if env_models_instance.need_json_mode:
+    structured_llm_documents_relevant_grader = llm_model.with_structured_output(GradeDocumentsRelavance,method='json_mode')
+else:
+    structured_llm_documents_relevant_grader = llm_model.with_structured_output(GradeDocumentsRelavance)
 retrieval_document_relevance_prompt = ChatPromptTemplate.from_messages(
     [
         ("system",prompt_documents_relevant_grader),
@@ -437,11 +337,11 @@ def decide_to_generate(state:GraphAgentState):
 prompt_rag_part1 = "You are an assistant for question-answering tasks. Use the following retrieved documents to answer the question, each starting with a reference number like [x], where x is a number:"
 
 prompt_rag_part2 = """
-First, starting with "引用片段:  \n  ", find the quotes from the documents that are most relevant to answering the question, and then print them in numbered order. Each quote should be a relatively short summary sentence of the quoted document,and print in a seperated paragraph,by adding "  \n  ". 
+First, starting with "引用片段:"  \n  , find the quotes from the documents that are most relevant to answering the question, and then print them in numbered order. Each quote should be a relatively short summary sentence of the quoted document,and print in a seperated paragraph,by adding "  \n  ". 
 
 If there are no relevant quotes, write “No relevant quotes” instead.
 
-Then, answer the question, starting with "最终回答:  \n  ". Do not include or reference quoted content verbatim in the answer. Don’t say “According to Quote [1]” when answering. Instead make references to quotes relevant to each section of the answer solely by adding their bracketed reference numbers at the end of relevant quotes, If a section of the answer comes from multiple quotes, please list all applicable citations, like [1,2].
+Then, answer the question, starting with "最终回答:"  \n  . Do not include or reference quoted content verbatim in the answer. Don’t say “According to Quote [1]” when answering. Instead make references to quotes relevant to each section of the answer solely by adding their bracketed reference numbers at the end of relevant quotes, If a section of the answer comes from multiple quotes, please list all applicable citations, like [1,2].
 
 Thus, the format of your overall response should look like what’s shown between the tags. Make sure to strictly follow the formatting and spacing exactly.
 
@@ -490,8 +390,10 @@ class GradeSupported(BaseModel,extra='allow'):
     k: str = Field(description="Whether answer is supported by the facts, k must be 'yes' or 'no'")
 
 prompt_answer_is_supported_by_documents_grader = """You are a grader assessing whether an answer is supported by a set of facts. Response me with a simple JSON string can be directly consumed by  ‘json.loads’ method, must be ‘{{"k":"yes"}}’ or  ‘{{"k":"no"}}’,'yes' means the answer is supported by the provided set of facts.No preamble or explaination. """
-structured_llm_answer_is_supported_by_documents_grader = llm_model.with_structured_output(GradeSupported,method='json_mode')
-# structured_llm_answer_is_supported_by_documents_grader = llm_model.with_structured_output(GradeSupported)
+if env_models_instance.need_json_mode:
+    structured_llm_answer_is_supported_by_documents_grader = llm_model.with_structured_output(GradeSupported,method='json_mode')
+else:
+    structured_llm_answer_is_supported_by_documents_grader = llm_model.with_structured_output(GradeSupported)
 answer_is_supported_by_documents_prompt = ChatPromptTemplate.from_messages(
     [
         ("system", prompt_answer_is_supported_by_documents_grader),
@@ -505,8 +407,10 @@ class GradeAnswer(BaseModel,extra='allow'):
     k: str = Field(description="Whether answer addresses the question, k must be 'yes' or 'no'")
 
 prompt_answer_grader = """You are a grader assessing whether an answer addresses / resolves a question. Response me with a simple JSON string can be directly consumed by  ‘json.loads’ method, must be ‘{{"k":"yes"}}’ or  ‘{{"k":"no"}}’,'yes' means the answer addresses / resolves the question.No preamble or explaination."""
-structured_llm_answer_grader = llm_model.with_structured_output(GradeAnswer,method='json_mode')
-# structured_llm_answer_grader = llm_model.with_structured_output(GradeAnswer)
+if env_models_instance.need_json_mode:    
+    structured_llm_answer_grader = llm_model.with_structured_output(GradeAnswer,method='json_mode')
+else:
+    structured_llm_answer_grader = llm_model.with_structured_output(GradeAnswer)
 answer_prompt = ChatPromptTemplate.from_messages(
     [
         ("system",prompt_answer_grader),
@@ -530,14 +434,6 @@ def grade_generation_v_documents_and_question(state:GraphAgentState):
     question = state["question"]
     documents = state["documents"]
     generation = state["generation"]
-
-    # print(f"{len(documents[0].page_content)=}")
-
-    # doc_num = len(documents)
-    # token_len = int(2000/doc_num)
-    # for i in range(doc_num):
-    #     content = documents[i].page_content[-token_len:]
-    #     documents[i].page_content = content
      
     # Check hallucination / answer_is_supported_by_documents    
     try:
@@ -571,7 +467,7 @@ def grade_generation_v_documents_and_question(state:GraphAgentState):
             return "useful"
         else:
             print("---DECISION: GENERATION DOES NOT ADDRESS QUESTION---")
-            return "not useful"
+            # return "not useful"
             
             try:
                 question_has_searched = state["question_searched"][question]
@@ -640,15 +536,15 @@ class GraphAgent:
         self.question_id:str= self.get_random_id()
         self.question = ""
         self.question_rewrited = ""
-        self.config =  {"recursion_limit":recursion_limit,"configurable": {"thread_id":memory_thread_id }}
-        self.memory = SqliteSaver.from_conn_string("memory_checkpoints.sqlite")
-        # self.memory = AsyncSqliteSaver.from_conn_string("memory_checkpoints.async_sqlite")
+        self.invoke_graph_config =  {"recursion_limit":recursion_limit,"configurable": {"thread_id":memory_thread_id }}
+        conn = sqlite3.connect("memory_checkpoints.sqlite", check_same_thread=False)
+        self.memory = SqliteSaver(conn)
         
         self.message_idx_in_a_question_epoch = self.set_message_idx_in_a_question_epoch()
         self.graph = self.graph_definition()
         # self.visualize_graph()
         self.all_history_messages = self.get_all_history_messages()
-        self.question_related_messages = self.get_question_related_messages_from_state()
+        self.question_related_messages = []
     
     # endregion
     
@@ -665,20 +561,20 @@ class GraphAgent:
             print(f"An error occurred: {e}")
 
 
-    def makeup_message_with_question_id_idx(self,Message_ClassOrInstance:AnyMessage,content:Union[str,None]=None,question_id:Union[str,None]=None,idx_in_a_question_epoch:Union[int,None]=None):
+    def makeup_message_with_question_id_idx(self,Message_ClassOrInstance:BaseMessage,content:Union[str,None]=None,question_id:Union[str,None]=None,idx_in_a_question_epoch:Union[int,None]=None):
         if not question_id:
             question_id = self.question_id
         if not idx_in_a_question_epoch:
             idx_in_a_question_epoch = self.set_message_idx_in_a_question_epoch()
         _dict = {"question_id":question_id,"idx_in_a_question_epoch":idx_in_a_question_epoch}
-        if isinstance(Message_ClassOrInstance,AnyMessage):
+        if isinstance(Message_ClassOrInstance,BaseMessage):
             Message_ClassOrInstance.additional_kwargs.update(_dict)
             message = Message_ClassOrInstance
         else: 
             message = Message_ClassOrInstance(content=content,additional_kwargs=_dict)
         return message
     
-    def get_question_id_idx_from_message(self,message:AnyMessage):
+    def get_question_id_idx_from_message(self,message:BaseMessage):
         try:
             question_id = message.additional_kwargs.get("question_id","")
         except:            
@@ -720,24 +616,19 @@ class GraphAgent:
         return self.all_history_messages
     
     def get_question_related_messages_from_state(self,question="",reserve_last_n_messages_num=6,score_threshold=0.5):
-        self.question_related_messages = self._get_messages_from_state_by_key("question_related_messages")
         if not self.question_related_messages:
             messages = self.get_all_history_messages() ## 或者  messages = state['messages']
             question = question or self.question_rewrited
-
             if not question:
                 logger.warning('请传入非空的user question，或者先给self.question_rewrited赋值')
             else:
-                # if question=="还记得我叫什么吗？":
-                #     pass
                 question_related_messages = env_models_instance.filter_and_get_messages_relevant_to_query(query=question,messages_list=messages,reserve_last_n_messages_num = reserve_last_n_messages_num,score_threshold=score_threshold)
-                # env_models_instance.filter_and_get_messages_relevant_to_query(query=question,messages_list=messages,reserve_last_n_messages_num = reserve_last_n_messages_num,score_threshold=0.2)
                 self.question_related_messages = question_related_messages
-
         return self.question_related_messages
 
     def _get_messages_from_state_by_key(self,key:str):
-        messages = self.graph.get_state(config=self.config).values[key] 
+        # messages = self.graph.get_state(config=self.config).values[key] 
+        messages = self.graph.get_state(config=self.invoke_graph_config).values.get(key,[])
         return messages
     
     class VECTORSTORE(BaseModel):
@@ -768,6 +659,60 @@ class GraphAgent:
         # return {"documents": documents, "question": question,"messages":retrieve_message}
         return {"documents": documents, "question": question}
 
+    def web_search(self,state:GraphAgentState):
+        """
+        Web search based on the re-phrased question.
+
+        Args:
+            state (dict): The current graph state
+
+        Returns:
+            state (dict): Updates documents key with appended web results
+        """
+        print("---WEB SEARCH---")
+        query_generated = ''
+        question = state["question"]    
+        try:
+            user_variables_statedict = state["user_variables"]
+            query_generated = user_variables_statedict[self.user_id]['rag_args']
+            # 再将"rag_args"的值置为空字符串
+            _user_variables_statedict = {self.user_id:{"rag_args":'',"reference":""}}
+            state["user_variables"].update(_user_variables_statedict)
+        except:
+            pass
+        finally:
+            if not query_generated:
+                try:
+                    query_generated = llm_chain.invoke({"question": question,"context":'请生成合适并且简洁的搜索引擎查询关键词,不需要任何额外的解释或内容'},config=invoke_llm_config)
+                except:
+                    query_generated = question
+        logger.info(f'用户问题：{question=}')
+        logger.info(f'网络搜索：{query_generated=}')
+
+
+        # Web search
+        docs = asyncio.run(get_web_search_documents(query_generated,max_doc_nums=4))
+        if not docs:
+            return {"documents": [], "question_searched":{question:False}}
+        
+        if docs[0].metadata.get("search_engine",None)!="tavily_search":
+            chunks_relevant = env_models_instance.split_and_get_chunks_relevant_from_documents(query=question,docs_list=docs,) #get embedding retriever and reranker results
+        else:
+            chunks_relevant = docs 
+        referens = []
+        if chunks_relevant:
+            _sources =[d.metadata.get("source",None) for d in chunks_relevant]
+            referens = set([s for s in _sources if s])
+
+        if referens:
+            referens_str = "   【参考网页为】:  \n"
+            for i,r in enumerate(referens):
+                # referens_str += f"    [{i+1}] <a href={r}>{r}</a>\n"
+                referens_str += f"    {i+1}. [{r}]({r})  \n"
+            _user_variables_statedict = {self.user_id:{"rag_args":'',"reference":referens_str}}
+            state["user_variables"].update(_user_variables_statedict)    
+            logger.info(f'{referens_str=}')
+        return {"documents": chunks_relevant, "question_searched":{question:True}}     
     # endregion 类内方法  
     
     # region:Graph定义
@@ -775,7 +720,7 @@ class GraphAgent:
         graph = StateGraph(GraphAgentState)
         graph.add_node("llm",self.call_llm)
         graph.add_node("action", self.take_action)
-        graph.add_node("web_search", web_search)
+        graph.add_node("web_search", self.web_search)
         graph.add_node("vectorstore", self.vectorstore )
         graph.add_node("grade_documents", grade_documents )
         graph.add_node("generate", self.generate)
@@ -819,8 +764,11 @@ class GraphAgent:
                 "useful": END,
             },
         )
-        
         return graph.compile(checkpointer=self.memory)
+        # with self.memory as checkpointer:
+        #     app = graph.compile(checkpointer=checkpointer)
+        #     # return graph.compile(checkpointer=self.memory)
+        #     return app
     
     def take_action(self, state:GraphAgentState):
         tool_calls = state['messages'][-1].tool_calls
@@ -870,12 +818,15 @@ class GraphAgent:
         return {'messages': results,'question_related_messages':results}
     
     # 直接获取或者尝试进一步解析出tool_calls
-    def exists_action(self,state:GraphAgentState):        
+    def exists_action(self,state:GraphAgentState):
+        valid_toolcalls = [toolcall for toolcall in state['messages'][-1].tool_calls if toolcall['name'] in self.all_tools_names]
+        state['messages'][-1].tool_calls = valid_toolcalls        
         result = state['messages'][-1]
         print("xxxxxxxxxxxxxxxxxxxxxxxxxxxx")
         print(f'{result.content=}')
         print("xxxxxxxxxxxxxxxxxxxxxxxxxxxx")
         finish_reason = "No Finish Reason"
+        
         try:
             returned_tool_calling_nums = len(result.tool_calls)
             finish_reason = result.response_metadata["finish_reason"]
@@ -920,13 +871,31 @@ class GraphAgent:
             tool_call_1_name = tool_call_1['name']
             if tool_call_1_name in self.routing_tool_names:
                 logger.info(f"Returned first ToolName is '{tool_call_1_name}', So routing to '{tool_call_1_name}' Node......")
-                # 有些模型会同时生成多个调用（如deep seek），但又要求tool_call与tool_response必须对应起来，所以此处只好生成一一对应的tool_response message
-                for tool in result.tool_calls[1:]:
-                    makeup_aimessage_with_tool_call = ToolMessage(content='',name=tool["name"],tool_call_id=tool["id"])
-                    messages = state["messages"]
-                    messages.append(makeup_aimessage_with_tool_call)  
-                    state.update({"messages":messages})               
+                # 如果是WEB_SEARCH，要将搜索query保存到state中，方便在web_search时使用
+                if tool_call_1_name in ["WEB_SEARCH"]:
+                    try:
+                        search_query = tool_call_1['args']['query']
+                        user_variables_statedict = {self.user_id:{"rag_args":search_query,"reference":""}}
+                        state["user_variables"].update(user_variables_statedict)
+                    except:
+                        logger.warning(f"导航到'{tool_call_1_name}' Node，但无法获取到search_query")
+                    
+                    
+                # 有些模型会同时生成多个调用（如deep seek），但又要求tool_call与tool_response必须对应起来
+                # 所以此处回头去更新AIMessage的值，因是第一个导航工具，所以只需保留第一个
+                if returned_tool_calling_nums > 1:
+                    state['messages'][-1].tool_calls = [tool_call_1]
+              
                 return tool_call_1_name
+            elif tool_call_1_name in self.executable_tool_names:
+                if returned_tool_calling_nums > 1:
+                    executable_tools = [toolcall for toolcall in result.tool_calls if toolcall['name'] in self.executable_tool_names]
+                    state['messages'][-1].tool_calls = executable_tools
+                    
+            else:
+                pass
+                    
+                
             
         else:
             logger.info(f'No returned tool_calling and {finish_reason=}')
@@ -945,73 +914,53 @@ class GraphAgent:
     def call_llm(self,state: GraphAgentState):
         # 当前message
         input_message = state.get('messages')[-1]
-        # 获取历史相关message        
-        reserve_last_n_messages_num=min(len(self.question_related_messages)+1,7) # 当前问题已存在时，只保留当前问题轮次数。超出6时，会过滤            
-        question_related_messages = self.get_question_related_messages_from_state(reserve_last_n_messages_num=reserve_last_n_messages_num,score_threshold=0.2)
-        assert self.question_related_messages == question_related_messages,"self.get_question_related_messages_from_state方法里应同步更新了self.question_related_messages"        
+        # 获取历史相关message
+        if len(self.question_related_messages)==0: 
+            # 设置reserve_last_n_messages_num=1，表示：新的问题开始时，此时应该只有1个message(即新的用户问题)；
+            # 其他的都作为历史消息，然后从历史消息中检索与当前相关的。检索出的所有相关历史消息会抽取出内容，组装成一个Humanmessage；后面再加一个组装的AIMessage
+            question_related_messages = self.get_question_related_messages_from_state(reserve_last_n_messages_num=1,score_threshold=0.3)
+            assert self.question_related_messages == question_related_messages,"self.get_question_related_messages_from_state方法里应同步更新了self.question_related_messages"
+        else:
+            question_related_messages = self.question_related_messages          
+
         # 历史 + 当前
         if input_message not in question_related_messages:
             question_related_messages.append(input_message)
         if self.system_message:
             messages = self.system_message + question_related_messages            
-        logger.info(f"call_llm:调用LLM时的消息数为:{len(messages)}")
+        logger.info(f"call_llm:调用LLM时的消息数为:{len(messages)}")        
         
-        try:
-        #     message = None            
-        #     # 为了保证在线模型要求的tool_call AIMessage 和 tool_response ToolMessage要求的一一对应，且tool_call_id要匹配的上
-        #     tool_messages = [t for t in messages if isinstance(t,ToolMessage)]
-        #     tool_response_ids = [t.tool_call_id for t in tool_messages]
-        #     ai_messages_with_tool_calls = [t for t in messages if isinstance(t,AIMessage) and len(t.tool_calls)>0]
-        #     tool_call_ids = []
-        #     ai_messages_with_tool_calls_but_has_no_crospongding_tool_message = []
-        #     tool_messages_but_has_no_crospongding_ai_message = []
-        #     for t in ai_messages_with_tool_calls:
-        #         ts = t.tool_calls
-        #         for _t in ts:
-        #             if _t["id"] not in tool_response_ids:
-        #                 ai_messages_with_tool_calls_but_has_no_crospongding_tool_message.append(_t)
-        #             else:
-        #                 tool_call_ids.append(_t["id"])
-        #     for t in tool_messages:
-        #         if t.tool_call_id not in tool_call_ids:
-        #             tool_messages_but_has_no_crospongding_ai_message.append(t)
-            
-        #     invalid_messages = tool_messages_but_has_no_crospongding_ai_message + ai_messages_with_tool_calls_but_has_no_crospongding_tool_message
-        #     filtered_messages = [m for m in messages if m not in invalid_messages] 
-        #     if len(filtered_messages)!=len(messages):
-        #         logger.debug('有不匹配的ai_messages_with_tool_calls_but_has_no_crospongding_tool_message或tool_messages_but_has_no_crospongding_ai_message过滤掉了') 
-            
-            # 实际上这里应该把tool_call AIMessage 和 tool_response ToolMessage都过滤掉，因为它们只是中间过程
-            # tool_messages = [t for t in messages if isinstance(t,ToolMessage)]
-            # ai_messages_with_tool_calls = [t for t in messages if isinstance(t,AIMessage) and len(t.tool_calls)>0]
-            # invalid_messages = ai_messages_with_tool_calls + tool_messages
-            # filtered_messages = [m for m in messages if m not in invalid_messages]
-            try: 
-                # message = self.model.invoke(filtered_messages,config=self.config)
-                message = self.model.invoke(messages,config=self.config)
-            except Exception as e:
-                logger.error(f'！！！大语言模型执行失败，！！！错误消息为:{e}')
-                # logger.error('请检查大语言模型接口服务状态,并查看传入的消息列表，如下：')            
-                # for m in messages:
-                #     m.pretty_print()
-            if message:
+        if len(messages)>30:
+            _error_str = f'error!消息数量大于30，为避免进入错误循环，主动退出执行！'
+            logger.error(_error_str)
+            message=AIMessage(content=_error_str)
+        else:
+            try:
+                message = self.model.invoke(messages,config=invoke_llm_config)                
+                # 尝试获取finish_reason，如发现因token限制导致的大模型输出不完整或异常，给出警告提示
                 try: 
                     finish_reason = message.response_metadata["finish_reason"]
                     if finish_reason ==  "length":
                         reason = 'a finish_reason of “length” means that the AI had more data to output but the limitations of that call prevented it from finishing'
                         model_name = self.model.bound.model_name
                         max_tokens = self.model.bound.max_tokens
-                        logger.warning(f'LLM({model_name})返回: finish_reason ==  "length" [{reason}]，当前设置的max_tokens={max_tokens}，请检查调整该设置')
-                        print(f'LLM({model_name})返回: finish_reason ==  "length" [{reason}]，当前设置的max_tokens={max_tokens}，请检查调整该设置值!')
+                        _warning_str = f'LLM({model_name})返回: finish_reason ==  "length" [{reason}]，当前设置的max_tokens={max_tokens}，请检查调整该设置'
+                        logger.warning(_warning_str)
+                        print("警告Warning:"+_warning_str)
                 except Exception as e:
                     logger.error("无法获取到finish_reason，错误消息为：{e}")
-                    message.pretty_print()
+                    # message.pretty_print()
+            except Exception as e:
+                logger.error(f'！！！大语言模型执行失败，！！！错误消息为:{e}')
+                message=AIMessage(content=f'error!大语言模型执行失败，错误消息为:{e}')
+                # logger.error('请检查大语言模型接口服务状态,并查看传入的消息列表，如下：')            
+                # for m in messages:
+                #     m.pretty_print()
+                    
+        message = self.makeup_message_with_question_id_idx(message)
+        question_related_messages.append(message)
+        return {'messages': message,'question_related_messages':question_related_messages}
 
-                message = self.makeup_message_with_question_id_idx(message)
-                question_related_messages.append(message)
-                return {'messages': message,'question_related_messages':question_related_messages}
-        except Exception as e:
-            logger.error(f'大语言模型执行时的前处理或后处理出现了错误:{e}')
 
     def generate(self,state:GraphAgentState):
         """
@@ -1035,12 +984,12 @@ class GraphAgent:
 
         # RAG generation
         referens = []
-        sources =[d.metadata.get("source",d.metadata.get("source",None)) for d in documents]
-        # sources = set([s for s in _sources if s])
+        _sources =[d.metadata.get("source",d.metadata.get("source",None)) for d in documents]
+        sources = set([s for s in _sources if s])
         referens = list(sources)
-
-        referens_str = "参考'type_placeholder':  \n"
-        if referens:        
+        
+        if referens:
+            referens_str = "参考'type_placeholder':  \n"        
             for i,r in enumerate(referens):
                 referens_str += f"    {i+1}. [{r}]({r})  \n"
                 if r.startswith("http"):
@@ -1048,16 +997,15 @@ class GraphAgent:
                 else:
                     referens_str = referens_str.replace("'type_placeholder'","文档")
 
-            os.environ["REFERENCE"] = referens_str
-            print(f'{referens_str=}')
-        # else:
-        #    os.environ["REFERENCE"] = '' 
+            _user_variables_statedict = {self.user_id:{"rag_args":'',"reference":referens_str}}
+            state["user_variables"].update(_user_variables_statedict)  
+            logger.info(f'{referens_str=}')
         generation = rag_node.invoke({"documents": documents, "question": question, "messages":messages},config=invoke_llm_config)
+        logger.debug(f"{generation=}")
         last_message = state["messages"][-1]
-        tool_call_id = ''
-        # todo 如果tool_call_id==""
+        # todo 如果tool_call_id!=""
         # 就需要先建立一个AIMessage with tc
-        tool_call_id==""
+        tool_call_id=""
         try:
             if isinstance(last_message,AIMessage):
                 for tool_call in last_message.tool_calls:
@@ -1067,7 +1015,7 @@ class GraphAgent:
                         break
             elif isinstance(last_message,ToolMessage):
                 logger.debug(f"ToolMessage {last_message.name} call for 'generate' node......")
-                tool_call_id =f'call_{(shortuuid.uuid())}'
+                tool_call_id =f'call_{str(uuid.uuid4())}'
                 makeup_aimessage_with_tool_call = AIMessage(name="tool_calls",content="tool_call generating by 'intenal'",tool_calls=[{"name":"gerneration","args":{"query":'makeuped query'},"id":tool_call_id}])
                 makeup_aimessage_with_tool_call = self.makeup_message_with_question_id_idx(makeup_aimessage_with_tool_call)
                 messages = state["messages"]
@@ -1078,28 +1026,32 @@ class GraphAgent:
                 logger.warning(f"不应该出现的情况:{last_message.type}")
                 
         except:
-            state["messages"]
             logger.warning(f"{tool_call['name']} cannot find a tool_call_id to makeup ToolMessage!")        
-            tool_call_id = f'call_{str(uuid.uuid4())}'
+            tool_call_id = ''
         # print(generation)
-        generation_tool_message = ToolMessage(content="tool_call finished by 'generate'",name='generate',tool_call_id=tool_call_id)
-        generation_tool_message = self.makeup_message_with_question_id_idx(generation_tool_message)
         # 最后生成AIMessage可能最合适，因为generate节点直接到Graph的"end"节点
         generation_ai_message = AIMessage(content=generation,name='generate')
         generation_ai_message = self.makeup_message_with_question_id_idx(generation_ai_message)
-        generation_messages = [generation_tool_message,generation_ai_message]
+        if tool_call_id:
+            generation_tool_message = ToolMessage(content="tool_call finished by 'generate'",name='generate',tool_call_id=tool_call_id)
+            generation_tool_message = self.makeup_message_with_question_id_idx(generation_tool_message)
+            generation_messages = [generation_tool_message,generation_ai_message]
+        else:
+            generation_messages = [generation_ai_message]
         return {"documents": documents, "question": question, "generation": generation, "messages":generation_messages,"question_related_messages":generation_messages}
     
     def code_generation(self,state:GraphAgentState):
         user_question = state["question"]
         last_message = state["messages"][-1]
         question_related_messages = state["question_related_messages"]
-        message_buffer.append(question_related_messages)
+        for m in question_related_messages:
+            if m.content == user_question:
+                question_related_messages.remove(m)
+                            
+        context = "\n".join([m.content for m in question_related_messages if m.content and m.name!='history_ai'])
 
         user_code_prompt = f"""First, here is a history of what I asked you to do earlier. 
-        [BEGINOFHISTORY]:
-        {message_buffer.get_string()}
-        [ENDOFHISTORY].
+        {context}        
         Aiming to help the user in the best possible way with the below [USER_QUESTION] do one of the following:
         1. Write Python code, in a triple backtick Markdown code block, that supports what the user is trying to achieve. Follows the system instructions between [GENERATE_PYTHON_INSTRUCTIONS] and [EndOf_GENERATE_PYTHON_INSTRUCTIONS]
         2. Answer the question the user asks.
@@ -1113,7 +1065,7 @@ class GraphAgent:
         human_message = HumanMessage(content=user_code_prompt)
         code,code_text = "",""
         try:
-            code_generated = llm_model.invoke([sys_message,human_message])
+            code_generated = llm_model.invoke([sys_message,human_message],config=invoke_llm_config)
             code_text = code_generated.content.strip()        
             code = extract_code(code_text)
         except Exception as e:
@@ -1122,6 +1074,11 @@ class GraphAgent:
         if code:
             logger.info('生成、抽取到的代码为：\n' + code)
             code = merge_code_with_usual_imports(code) # 加入常用的imports，防止代码生成中出现的遗漏错误
+        else:
+            try:
+                code=last_message.tool_calls[0]["args"]["query"]
+            except:
+                code = "print('No Code Generated!')"
         tool_call_id = ''
         try:
             for tool_call in last_message.tool_calls:
@@ -1138,7 +1095,7 @@ class GraphAgent:
         code_message = ToolMessage(content=code,name='code_generation',tool_call_id = tool_call_id,additional_kwargs ={"code_text":code_text})
         code_message = self.makeup_message_with_question_id_idx(code_message)
         # 在线大模型服务要求tool_call aimessage 与 tool_response toolmessage要一一对应，所以这里要先生成一个tool_call aimessage
-        code_execution_tool_call_message = AIMessage(name="tool_calls",content="tool_call generating by 'code_generation'",tool_calls=[{"name":"CODE_EXECUTION","args":{"query":code},"id":f'call_{(shortuuid.uuid())}'}])
+        code_execution_tool_call_message = AIMessage(name="tool_calls_from_'code_generation'",content="",tool_calls=[{"name":"CODE_EXECUTION","args":{"query":code},"id":f'call_{str(uuid.uuid4())}'}])
         code_execution_tool_call_message = self.makeup_message_with_question_id_idx(code_execution_tool_call_message)
         messages = [code_message,code_execution_tool_call_message]
         return {'messages':messages,'question_related_messages':messages}
@@ -1149,13 +1106,13 @@ class GraphAgent:
         last_message = question_related_messages[-1]
         question_id = last_message.additional_kwargs.get('question_id','')
 
-        try:
-            for tool_call in last_message.tool_calls:
-                if tool_call["name"] == 'CODE_EXECUTION':
-                    tool_call_id = tool_call["id"]
-                    break
-        except:
-            tool_call_id = f'call_{str(uuid.uuid4())}'
+        tool_call_id = ''
+        
+        for tool_call in last_message.tool_calls:
+            if tool_call["name"] == 'CODE_EXECUTION':
+                tool_call_id = tool_call["id"]
+                break
+            
         tool_name = 'code_execution'
         code_executor=CodeExecutorTool()
         # 获取代码code和文本code_text
@@ -1201,39 +1158,42 @@ class GraphAgent:
                                 logger.warning(f"code_execution尝试从用户消息内容中直接提取代码时出现错误:{e}")
         try:
             if code:
-                message_content += code_text
                 logger.debug("......开始提交和执行代码......") 
-                # 提交代码到ipykernel_api执行   
-                # result = submit_code_to_ipykernel_api(code) #返回True或False
                 # 返回值为{"text"="",image=""}
-                result=code_executor.call(code=code)
-                if result:               
-                    message_content+=result['image']
-                    message_content+=result['text']
-                    logger.debug("......代码执行完毕......")
+                result,success=code_executor.call(code=code)
+                if  result :     
+                    if result['text']:
+                        message_content+=result['text']   
+                    if result['image']:       
+                        message_content+=result['image']
                 # 提交代码到ipykernel_api执行，尝试本地来执行
                 # 不应该需要本地执行
-                if not result:
-                    logger.info(f"......提交和执行代码失败，请检查服务接口......")
-                    logger.info(f".......尝试使用本地的python环境来来执行.......")
-                    # python_repl在本页代码开头处赋值的 
-                    result = python_repl(code)
+                # if not result:
+                #     logger.info(f"......提交和执行代码失败，请检查服务接口......")
+                #     logger.info(f".......尝试使用本地的python环境来来执行.......")
+                #     # python_repl在本页代码开头处赋值的 
+                #     result = python_repl(code)
 
                                     
-                    if "error" in result.lower():
-                        code = merge_code_with_usual_imports(code)
-                        # python_repl在本页代码开头处赋值的  
-                        result = python_repl(code)                                      
-                        if "error" in result.lower():
-                            raise Exception(result)
-                    else:
-                        _result = result if result else "None"
-                        message_content = f"python_repl代码运行成功,运行结果为Observation:{_result} （但如有图像，由于环境限制无法直接展示,可在本地环境中运行上述代码）"
-                
-                code_message = ToolMessage(content=message_content,name=tool_name,tool_call_id =tool_call_id,additional_kwargs ={"status":False,"code":code,"code_text":code_text})
+                #     if "error" in result.lower():
+                #         code = merge_code_with_usual_imports(code)
+                #         # python_repl在本页代码开头处赋值的  
+                #         result = python_repl(code)                                      
+                #         if "error" in result.lower():
+                #             raise Exception(result)
+                #     else:
+                #         _result = result if result else "None"
+                #         message_content = f"python_repl代码运行成功,运行结果为Observation:{_result} （但如有图像，由于环境限制无法直接展示,可在本地环境中运行上述代码）"
+                if not tool_call_id:
+                    tool_call_id =f'call_{str(uuid.uuid4())}'
+                    makeup_aimessage_with_tool_call = AIMessage(name="tool_calls",content="tool_call generating by 'intenal'",tool_calls=[{"name":"code_gerneration","args":{"query":'makeuped query'},"id":tool_call_id}])
+                    makeup_aimessage_with_tool_call = self.makeup_message_with_question_id_idx(makeup_aimessage_with_tool_call)
+                    messages = state["messages"]
+                    messages.append(makeup_aimessage_with_tool_call) 
+                    state.update({"messages":messages}) 
+                code_message = ToolMessage(content=message_content,name=tool_name,tool_call_id =tool_call_id,additional_kwargs ={"status":success,"code":code,"code_text":code_text})
                 code_message = self.makeup_message_with_question_id_idx(code_message)            
                 return {'messages':code_message,'question_related_messages':code_message}
-
             else:
                 raise Exception("code_execution无法获取可执行的代码！")        
 
@@ -1252,7 +1212,7 @@ class GraphAgent:
             results = [makeup_tool_message,makeup_human_message]   
             return {'messages': results,'question_related_messages':results}       
         
-    def run_conversation(self,user_question:str,allow_question_rewrite=False):
+    def run_conversation(self,user_question:str,allow_question_rewrite=True):
         print('================='*5)
         print('================='*5)
         print(f"开始会话:{user_question}")
@@ -1260,21 +1220,23 @@ class GraphAgent:
         # logger.info(f"老的{self.question_id=}")
         logger.debug(f"切记新的问题对话前，要先更新user_question 和 question_id！老的[{self.question_id=}]")
         self.question_id = self.get_random_id()
-        self.question = user_question #因为涉及获取question相关的历史消息，以及根据question相关的历史消息改写question（rewrite），放到self.question供调用
-        # self.question_related_messages = self.get_question_related_messages_from_state(user_question,reserve_last_n_messages_num=0)
-        self.question_related_messages = []
+        self.question = user_question
+        self.question_rewrited = user_question #后面会使用self.question_rewrited提交给大模型，就要确保self.question_rewrited有值        
         
-        logger.warning("此处要默认不改写问题，但实际需要获取用户是否运行改写的设置")
-                
-        self.question_rewrited = user_question #后面会使用self.question_rewrited提交给大模型，就要确保self.question_rewrited有值
+        logger.warning(f"此处默认改写问题设置为{allow_question_rewrite=}，但实际需要获取用户是否运行改写的设置")        
         if allow_question_rewrite:
-            if self.question_related_messages:
+            related_history_messages = self.get_question_related_messages_from_state(user_question,reserve_last_n_messages_num=7)
+            if related_history_messages:
+                if related_history_messages[-1].content == user_question:
+                    related_history_messages = related_history_messages[0:-1]
+            self.question_related_messages = [] # self.get_question_related_messages_from_state会默认设置self.question_related_messages的值，这里再设置为[]
+            if related_history_messages:
                 question_rewrited = ''            
                 rewrite_message_returned = None
                 # 尝试获取question_rewrited 
                 try:
-                    context = "\n".join([m.content for m in self.question_related_messages if m.content])
-                    rewrite_message_returned = question_rewrite_chain.invoke({'context':context,'question':user_question})
+                    context = "\n".join([m.content for m in related_history_messages if m.content and m.name!='history_ai'])
+                    rewrite_message_returned = question_rewrite_chain.invoke({'context':context,'question':user_question},config=invoke_llm_config)
                     json_content = json_repair.loads(rewrite_message_returned.content)
                     if json_content:
                         question_rewrited = json_content.get("q","")                
@@ -1290,18 +1252,25 @@ class GraphAgent:
                     if question_rewrited != self.question_rewrited:
                         logger.warning(f"进行了问题改写:{self.question_rewrited} => {question_rewrited}")
                         self.question_rewrited = question_rewrited ##仅在问题内容变化后，才赋值给self.question_rewrited，改写前已设置self.question_rewrited = user_question
+                    else:
+                        logger.warning(f"改写问题与原始问题一致:{self.question_rewrited} == {question_rewrited}")
 
         logger.debug(f"USER[id:{self.user_id}]的问题['{self.question_rewrited}'] (新的question_id: [{self.question_id})]")
-        input_message = self.makeup_message_with_question_id_idx(HumanMessage,content=self.question_rewrited)       
-        result = self.graph.invoke({"messages": [input_message],"question":self.question_rewrited,"question_related_messages":[]},config=self.config)
+        input_message = self.makeup_message_with_question_id_idx(HumanMessage,content=self.question_rewrited)
+        #   {"$user_id":{"rag_args":"$rag_args","reference":"$reference"}} 
+        
+        user_variables_statedict = {self.user_id:{"rag_args":"","reference":""}}
+        result = self.graph.invoke({"messages": [input_message],"question":self.question_rewrited,"question_related_messages":[],"user_variables":user_variables_statedict},config=self.invoke_graph_config)
         
         logger.debug(f"==USER[id:{self.user_id}]的问题[id:{self.question_id}]，允许问题改写:{allow_question_rewrite}")
         print(f'====问题和答案====')        
         print(f"原始问题>>:{user_question}")
         print(f"改写问题>>:{self.question_rewrited} [{allow_question_rewrite=}]")
         answer = result['messages'][-1].content
-        referens_str = os.getenv("REFERENCE", '')
-        os.environ["REFERENCE"]= ''
+        answer = display_text(answer)
+        user_variables_statedict = self._get_messages_from_state_by_key("user_variables")        
+        referens_str = user_variables_statedict[self.user_id]['reference']
+        # 因为该问题已经结束，所以无需更新user_variables_statedict的'reference'值
         if referens_str:
             answer = f'\n{referens_str}\n' + answer
         print(f"==AI回答:>>:{answer}")
@@ -1322,25 +1291,26 @@ tavily_search_tool = TavilySearchResults(max_results=4) #increased number of res
 
 if __name__ == "__main__":
     user_questions = [
+        '你好，我的名字是张结魁，请记住我的名字',
+        '请搜索我与晶奇公司的相关网页，说明我与晶奇公司的关系',
         '请绘制sin(x)曲线',
         "安徽省食品药品监督管理局行政审批系统项目总体计划的版本号是多少，批准人是谁？",
         '请搜索合肥大蜀山，然后提供详细介绍', 
         '请查询明天从合肥到上海的航班,以及南昌到北京的航班',
         '请直接执行代码：print("Hello World")',
-        '请使用Python来绘制sin(x)的曲线图',
-        '你好，我的名字是张结魁，你呢',
+        '请使用Python来绘制sin(x)的曲线图',        
         '合肥大蜀山',          
         '请查询明天从合肥到上海的航班',
         '请使用python_repl_tool来计算1到100的和',
         '请调用python_repl_tool工具，一个计算1到100的和,另一个计算10的阶乘，并实际执行工具获取计算结果',
         "请搜索网络然后回答问题：What is the weather in SF and LA? ",
         "Who won the super bowl in 2024? In what state is the winning team headquarters located?What is the GDP of that state? ",
-        "前面我已告诉你我的名字，还记得我叫什么吗？"
+        "还记得我的名字吗？"
     ]
     my_main_bot = GraphAgent(executable_tools=executable_tools,routing_tools_wrapped_in_class=route_tools)
 
     for user_question in user_questions:
-        if user_question=="还记得我叫什么吗？":
+        if user_question == user_questions[-1]:
             pass
         answer = my_main_bot.run_conversation(user_question=user_question)
         pass

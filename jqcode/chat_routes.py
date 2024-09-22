@@ -78,14 +78,18 @@ def completions(
         for m in messages[::-1]:
             if isinstance(m,ToolMessage):
                 if m.name.lower()=='code_execution':
-                    if m.additional_kwargs['question_id'] == chat_bot.question_id:
+                    # text+=m.content
+                    if m.additional_kwargs['question_id'] == chat_bot.question_id and m.additional_kwargs['status'] is True :
                         code = m.additional_kwargs['code']
                         break
     except Exception as e:
-        logger.warning("获取'code_execution'的code失败:{e}")
+        logger.warning(f"获取'code_execution'的code失败:{e}")
         code = ''
     if code:
-        text = display_code(code)+display_text(text)
+        # text =text+"\n"+display_code(code)
+        text=display_text(text)
+        text=display_code(code)+text
+        
             
 
     return JSONResponse(content={"text":text},status_code=200)

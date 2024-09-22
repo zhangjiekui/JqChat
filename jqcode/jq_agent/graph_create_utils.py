@@ -6,7 +6,8 @@ from typing import List,Union, TypedDict
 from langchain_openai import ChatOpenAI
 from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
 from langchain_core.messages import BaseMessage, HumanMessage,SystemMessage,ToolMessage,AIMessage
-from langchain_core.pydantic_v1 import BaseModel, Field
+from pydantic import BaseModel
+# from langchain_core.pydantic_v1 import BaseModel, Field
 from langchain_core.runnables import Runnable,RunnablePassthrough,RunnableLambda
 
 # create_tool_calling_agent是Langchain(v0.1.16)最新推出的统一的ToolAgent接口！

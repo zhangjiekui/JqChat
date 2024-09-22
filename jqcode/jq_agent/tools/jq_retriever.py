@@ -236,6 +236,7 @@ def get_retriever(vectorstore:ElasticsearchStore=None,index_name:str=None,chat_o
     return compression_retriever
 
 if __name__ == "__main__":
+    invoke_llm_config = env_models_instance.invoke_llm_config
     input_files = [fr'/data/projects/JqChatV2/JqChat/jqcode/jq_readers/.test_files/.testinputdocs/A方案.docx'] 
     input_files += [fr'/data/projects/JqChatV2/JqChat/jqcode/jq_readers/.test_files/.testinputdocs/PPQA000_质量保证过程.doc']
     # input_files = []   
@@ -243,14 +244,14 @@ if __name__ == "__main__":
     index_name='zjk_jqesclient_test'
     compression_retriever = get_retriever(index_name=index_name,chat_on_docs_list=input_files,add_docs_list_to_kb=True) 
     # docs1 = compression_retriever.invoke("晶奇公司在哪一年获得ISO9001国际质量体系认证？")
-    docs1 = compression_retriever.invoke("组织级质量保证计划审查")
-    docs2 = compression_retriever.invoke("各类医疗卫生机构规范化处置能力。完善重大疫情医疗废物应急处置机制")
+    docs1 = compression_retriever.invoke("组织级质量保证计划审查",config=invoke_llm_config)
+    docs2 = compression_retriever.invoke("各类医疗卫生机构规范化处置能力。完善重大疫情医疗废物应急处置机制",config=invoke_llm_config)
     # docs2用以测试是否返回文档确实限定在了给定的文件列表范围内,因为index_name='health'包含了很多其他的文档
 
     # 构建非过滤检索器
     compression_retriever.base_retriever.retrievers[0].search_kwargs={}
     compression_retriever.base_retriever.retrievers[1].search_kwargs={}
-    docs3 = compression_retriever.invoke("各类医疗卫生机构规范化处置能力。完善重大疫情医疗废物应急处置机制")
+    docs3 = compression_retriever.invoke("各类医疗卫生机构规范化处置能力。完善重大疫情医疗废物应急处置机制",config=invoke_llm_config)
  
     for docs in [docs1,docs2,docs3]:
         print("&&&&&&&&&&&&&&&&&&&&&")

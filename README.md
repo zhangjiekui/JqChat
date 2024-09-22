@@ -29,6 +29,20 @@ or
 ```
 export PYTHONPATH=/data/projects/JqChatV2/JqChat:/data/projects/JqChatV2/JqChat/jqcode:/data/projects/JqChatV2/JqChat/kernel_program:/data/projects/JqChatV2/JqChat/web
 ```
+## vllm6.0+与qwen2.5已支持函数调用 
+https://qwen.readthedocs.io/zh-cn/latest/framework/function_call.html#vllm
+https://qwenlm.github.io/zh/blog/qwen2.5/
+https://docs.vllm.ai/en/stable/serving/openai_compatible_server.html#extra-parameters-for-chat-api
+
+### Context Length: Full 131,072 tokens and generation 8192 tokens
+```
+VLLM_ALLOW_ENGINE_USE_RAY=1 vllm serve  /data/models/Qwen2.5-14B-Instruct-GPTQ-Int4/ --served-model-name qwen25b70 --enable-auto-tool-choice --tool-call-parser hermes --host 0.0.0.0 --port 9997 --max-model-len 32000 --tensor-parallel-size 1 --distributed-executor-backend ray --use_v2_block_manager --gpu-memory-utilization 0.95 --quantization gptq_marlin
+```
+
+```
+VLLM_USE_MODELSCOPE=True CUDA_VISIBLE_DEVICES=0,1,2,3 VLLM_ALLOW_ENGINE_USE_RAY=1 vllm serve /data/models/Qwen2.5-72B-Instruct-GPTQ-Int4/ --served-model-name qwen25b70 --enable-auto-tool-choice --tool-call-parser hermes --host 0.0.0.0 --port 9997 --max-model-len 32000 --tensor-parallel-size 4 --distributed-executor-backend ray --use_v2_block_manager --gpu-memory-utilization 0.90 --quantization gptq_marlin
+```
+
 ## Ollama： qwen2和llama3.1_70b_chinese_chat
 都支持Tools
 ```
