@@ -69,8 +69,6 @@ def completions(
     print(f"{chat_bot.user_id=}")
     text = chat_bot.run_conversation(user_question=user_prompt)
     
-
-    
     # returned_str
     messages = chat_bot.get_all_history_messages()
     code = ''
@@ -86,13 +84,12 @@ def completions(
         logger.warning(f"获取'code_execution'的code失败:{e}")
         code = ''
     if code:
-        # text =text+"\n"+display_code(code)
+        code=display_code(code)
         text=display_text(text)
-        text=display_code(code)+text
-        
-            
-
-    return JSONResponse(content={"text":text},status_code=200)
+        code_text=code +"\n"+text
+    else:
+        code_text = text
+    return JSONResponse(content={"text":code_text},status_code=200)
 
 @chat_router.post('/upload',summary="上传接口")
 async def upload_file(

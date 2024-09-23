@@ -199,11 +199,7 @@ def extract_code(text):
             return single_match.group(1).strip()
 
 def display_code(code:str):
-    _code = f"""
-    ```python
-    {code}
-    ```
-    """
+    _code = f"""\n```python\n{code}\n```"""
     return _code
 
 def display_text(text:str):
@@ -705,9 +701,8 @@ class GraphAgent:
             referens = set([s for s in _sources if s])
 
         if referens:
-            referens_str = "   【参考网页为】:  \n"
+            referens_str = "   参考网页:  \n"
             for i,r in enumerate(referens):
-                # referens_str += f"    [{i+1}] <a href={r}>{r}</a>\n"
                 referens_str += f"    {i+1}. [{r}]({r})  \n"
             _user_variables_statedict = {self.user_id:{"rag_args":'',"reference":referens_str}}
             state["user_variables"].update(_user_variables_statedict)    
@@ -904,26 +899,28 @@ class GraphAgent:
         return exists_action_or_not
     
     def code_execution_passed(self,state:GraphAgentState):
-        status = False
-        last_message = state['question_related_messages'][-1]
-        if isinstance(last_message,ToolMessage):
-            if last_message.name.lower() == 'code_execution':
-                status = last_message.additional_kwargs.get("status",False)
-        return "end" if status else "llm"
+        # status = False
+        # last_message = state['question_related_messages'][-1]
+        # if isinstance(last_message,ToolMessage):
+        #     if last_message.name.lower() == 'code_execution':
+        #         status = last_message.additional_kwargs.get("status",False)
+        # return "end" if status else "llm"
+        return "llm"
 
     def call_llm(self,state: GraphAgentState):
-        # 当前message
-        input_message = state.get('messages')[-1]
+    # 历史 + 当前
         # 获取历史相关message
+        question_related_messages = state.get('question_related_messages',[])
+        self.question_related_messages = question_related_messages
         if len(self.question_related_messages)==0: 
             # 设置reserve_last_n_messages_num=1，表示：新的问题开始时，此时应该只有1个message(即新的用户问题)；
             # 其他的都作为历史消息，然后从历史消息中检索与当前相关的。检索出的所有相关历史消息会抽取出内容，组装成一个Humanmessage；后面再加一个组装的AIMessage
             question_related_messages = self.get_question_related_messages_from_state(reserve_last_n_messages_num=1,score_threshold=0.3)
             assert self.question_related_messages == question_related_messages,"self.get_question_related_messages_from_state方法里应同步更新了self.question_related_messages"
-        else:
-            question_related_messages = self.question_related_messages          
 
-        # 历史 + 当前
+        
+        # 当前message
+        input_message = state.get('messages')[-1]
         if input_message not in question_related_messages:
             question_related_messages.append(input_message)
         if self.system_message:
@@ -1033,7 +1030,7 @@ class GraphAgent:
         generation_ai_message = AIMessage(content=generation,name='generate')
         generation_ai_message = self.makeup_message_with_question_id_idx(generation_ai_message)
         if tool_call_id:
-            generation_tool_message = ToolMessage(content="tool_call finished by 'generate'",name='generate',tool_call_id=tool_call_id)
+            generation_tool_message = ToolMessage(content="",name='generate',tool_call_id=tool_call_id)
             generation_tool_message = self.makeup_message_with_question_id_idx(generation_tool_message)
             generation_messages = [generation_tool_message,generation_ai_message]
         else:
@@ -1095,7 +1092,7 @@ class GraphAgent:
         code_message = ToolMessage(content=code,name='code_generation',tool_call_id = tool_call_id,additional_kwargs ={"code_text":code_text})
         code_message = self.makeup_message_with_question_id_idx(code_message)
         # 在线大模型服务要求tool_call aimessage 与 tool_response toolmessage要一一对应，所以这里要先生成一个tool_call aimessage
-        code_execution_tool_call_message = AIMessage(name="tool_calls_from_'code_generation'",content="",tool_calls=[{"name":"CODE_EXECUTION","args":{"query":code},"id":f'call_{str(uuid.uuid4())}'}])
+        code_execution_tool_call_message = AIMessage(name="code_generation_calling_execution",content="",tool_calls=[{"name":"CODE_EXECUTION","args":{"query":code},"id":f'call_{str(uuid.uuid4())}'}])
         code_execution_tool_call_message = self.makeup_message_with_question_id_idx(code_execution_tool_call_message)
         messages = [code_message,code_execution_tool_call_message]
         return {'messages':messages,'question_related_messages':messages}
@@ -1166,27 +1163,9 @@ class GraphAgent:
                         message_content+=result['text']   
                     if result['image']:       
                         message_content+=result['image']
-                # 提交代码到ipykernel_api执行，尝试本地来执行
-                # 不应该需要本地执行
-                # if not result:
-                #     logger.info(f"......提交和执行代码失败，请检查服务接口......")
-                #     logger.info(f".......尝试使用本地的python环境来来执行.......")
-                #     # python_repl在本页代码开头处赋值的 
-                #     result = python_repl(code)
-
-                                    
-                #     if "error" in result.lower():
-                #         code = merge_code_with_usual_imports(code)
-                #         # python_repl在本页代码开头处赋值的  
-                #         result = python_repl(code)                                      
-                #         if "error" in result.lower():
-                #             raise Exception(result)
-                #     else:
-                #         _result = result if result else "None"
-                #         message_content = f"python_repl代码运行成功,运行结果为Observation:{_result} （但如有图像，由于环境限制无法直接展示,可在本地环境中运行上述代码）"
                 if not tool_call_id:
                     tool_call_id =f'call_{str(uuid.uuid4())}'
-                    makeup_aimessage_with_tool_call = AIMessage(name="tool_calls",content="tool_call generating by 'intenal'",tool_calls=[{"name":"code_gerneration","args":{"query":'makeuped query'},"id":tool_call_id}])
+                    makeup_aimessage_with_tool_call = AIMessage(name="tool_calls",content="",tool_calls=[{"name":"code_generation_calling_execution","args":{"query":'makeuped query'},"id":tool_call_id}])
                     makeup_aimessage_with_tool_call = self.makeup_message_with_question_id_idx(makeup_aimessage_with_tool_call)
                     messages = state["messages"]
                     messages.append(makeup_aimessage_with_tool_call) 
