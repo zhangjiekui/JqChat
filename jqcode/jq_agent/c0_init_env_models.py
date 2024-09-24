@@ -182,7 +182,9 @@ def get_custom_handlers():
     custom_handler = JqCustomLlmHandler()
     std_out_handler = StdOutCallbackHandler()
     file_handler = JqCustomLlmFileHandler(llm_handler_file_path)
-    return [custom_handler,std_out_handler,file_handler]
+    return [custom_handler,file_handler]
+    # return [custom_handler,std_out_handler,file_handler]
+
 
 def replace_multiple_newlines(text):
     return re.sub(r'\n+', '\n', text)
@@ -609,7 +611,7 @@ class InitEnvModels:
             
     # https://github.com/langchain-ai/langgraph/blob/main/examples/managing-conversation-history.ipynb
     # 历史相关信息首先获得相关的字符串内容，然后组装成一条HumanMessage，再生成一条AIMessage
-    # makeup_aimesaage = AIMessage(content="I know, I have get the converstion history.")    
+    # makeup_aimesaage = AIMessage(content="I know, I have got the converstion history.")    
     # 避免历史消息类型的拼装（符合HumanMessage、AIMessage、[ToolMessage if AIMessage is a ToolCall AIMessage]），引入不相关、不必要的消息
     # 返回最近的n条消息列表，并且保证是以HumanMessage开头的，符合HumanMessage、AIMessage、[ToolMessage if AIMessage is a ToolCall AIMessage]
     def filter_and_get_messages_relevant_to_query(self,query:str,messages_list:List[BaseMessage],reserve_last_n_messages_num=0,reserve_message_types:tuple=(HumanMessage,AIMessage),text_splitter=None,embed_model=None,reranker=None,
@@ -680,7 +682,7 @@ class InitEnvModels:
                     history_context = "\nHere is the conversation history.\n[BEGINOFHISTORY]:\n" + history_context + "\n[ENDOFHISTORY].\n"
         
                     makeup_human_message = HumanMessage(content=history_context,name="history_context")
-                    makeup_ai_mesaage = AIMessage(content="I know, I have get the converstion history.",name='history_ai')
+                    makeup_ai_mesaage = AIMessage(content="I know, I have got the converstion history.",name='history_ai')
                     all_messages = [makeup_human_message,makeup_ai_mesaage] + last_n_messages
                     return all_messages
                 else:

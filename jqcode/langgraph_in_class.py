@@ -1230,7 +1230,9 @@ class GraphAgent:
                 if question_rewrited:
                     if question_rewrited != self.question_rewrited:
                         logger.warning(f"进行了问题改写:{self.question_rewrited} => {question_rewrited}")
-                        self.question_rewrited = question_rewrited ##仅在问题内容变化后，才赋值给self.question_rewrited，改写前已设置self.question_rewrited = user_question
+                        both_question = f"原始的用户Query：{self.question_rewrited}（及供参考的用户Query：{question_rewrited}）"
+                        self.question_rewrited = both_question
+                        # self.question_rewrited = question_rewrited ##仅在问题内容变化后，才赋值给self.question_rewrited，改写前已设置self.question_rewrited = user_question
                     else:
                         logger.warning(f"改写问题与原始问题一致:{self.question_rewrited} == {question_rewrited}")
 
@@ -1270,22 +1272,22 @@ tavily_search_tool = TavilySearchResults(max_results=4) #increased number of res
 
 if __name__ == "__main__":
     user_questions = [
-        # '晶奇公司的厦门市智慧民政一体化平台建设方案的编制依据，给出详尽的文件名称和问号等内容列表',
         '你好，我的名字是张结魁，请记住我的名字',
         '请搜索我与晶奇公司的相关网页，说明我与晶奇公司的关系',
-        # '请绘制sin(x)曲线',
-        # "安徽省食品药品监督管理局行政审批系统项目总体计划的版本号是多少，批准人是谁？",
-        # '请搜索合肥大蜀山，然后提供详细介绍', 
-        # '请查询明天从合肥到上海的航班,以及南昌到北京的航班',
-        # '请直接执行代码：print("Hello World")',
-        # '请使用Python来绘制sin(x)的曲线图',        
-        # '合肥大蜀山',          
-        # '请查询明天从合肥到上海的航班',
-        # '请使用python_repl_tool来计算1到100的和',
-        # '请调用python_repl_tool工具，一个计算1到100的和,另一个计算10的阶乘，并实际执行工具获取计算结果',
-        # "请搜索网络然后回答问题：What is the weather in SF and LA? ",
-        # "Who won the super bowl in 2024? In what state is the winning team headquarters located?What is the GDP of that state? ",
-        # "还记得我的名字吗？"
+        '晶奇公司的厦门市智慧民政一体化平台建设方案的编制依据，给出详尽的文件名称和文号等内容列表',
+        '请绘制sin(x)曲线',
+        "晶奇公司编制的安徽省食品药品监督管理局行政审批系统项目总体计划的版本号是多少，批准人是谁？",
+        '请搜索合肥大蜀山，然后提供详细介绍', 
+        '请查询明天从合肥到上海的航班,以及南昌到北京的航班',
+        '请直接执行代码：print("Hello World")',
+        '请使用Python来绘制sin(x)的曲线图',        
+        '合肥大蜀山',          
+        '请查询明天从合肥到上海的航班',
+        '请使用python_repl_tool来计算1到100的和',
+        '请调用python_repl_tool工具，一个计算1到100的和,另一个计算10的阶乘，并实际执行工具获取计算结果',
+        "请搜索网络然后回答问题：What is the weather in SF and LA? ",
+        "Who won the super bowl in 2024? In what state is the winning team headquarters located?What is the GDP of that state? ",
+        "还记得我的名字吗？"
     ]
     my_main_bot = GraphAgent(executable_tools=executable_tools,routing_tools_wrapped_in_class=route_tools)
 
