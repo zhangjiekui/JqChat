@@ -5,6 +5,7 @@ import sys
 import yaml
 import copy
 import hashlib
+import pickle
 from pathlib import Path
 from base64 import b64encode
 from datetime import datetime
@@ -23,6 +24,9 @@ logger = jqkj_logger(__file__).get_logger()
 
 MAX_DOCS_TO_GET = 10**4
 anytree_dict_exporter = DictExporter()
+
+def get_size_m(obj):
+    return len(pickle.dumps(obj))/1024/1024
 
 def md5_file_value(file_base64_data:bytes):#Binary value encoded as a Base64 string
     md5_hash = hashlib.md5()
@@ -175,7 +179,9 @@ class JqElasticsearchDocumentStore(JqBaseDocumentStore):
             actions_list.append(action)
             es_index_doc_id_list.append(es_index_doc_id)
 
-        try:        
+        try: 
+            # \usr\share\elasticsearch\config\elasticsearch.yml
+            # add: http.max_content_length: 2147483647b   
             success, failed = self.es_bulk(self.client, actions_list)
             logger.info(f"Added/Updated {success} documents to index '{self.index_name}'")
             failed_num = failed if failed else 0
@@ -187,6 +193,17 @@ class JqElasticsearchDocumentStore(JqBaseDocumentStore):
             return status,lm_documents,es_index_doc_id_list
         except Exception as e:
             logger.error(e)
+            if "413" in str(e) or "429" in str(e):
+                logger.warning(fr"上传的文件太大，请参照下面修改\usr\share\elasticsearch\config\elasticsearch.yml，但最大不能超过2G！")
+                config_str = """
+                http.max_content_length: 2147483647b
+                indices.breaker.total.use_real_memory: True
+                indices.breaker.fielddata.limit: 80%                
+                """
+                logger.warning(config_str)
+                logger.warning("And, increase the es docker memory to '10GB' via docker run --name es01 --net elastic -p 9200:9200 -it -m 10GB")
+                logger.warning("And, docker cp /data/projects/JqChatV2/JqChat/jqcode/jq_docstores/backend_docstore_utils/jvm.options es815:/usr/share/elasticsearch/config/jvm.options.d/jvm.options")
+
             try:
                 error = e.errors[0]
                 logger.error(error["index"]["error"])

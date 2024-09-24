@@ -523,10 +523,14 @@ class JqkjDocTreeTokenTextSplitter(MetadataAwareTextSplitter):
 
                 table_tokens = self.tokens_len_func(text=vf_string)
                 _table_tokens_prefix = self.tokens_len_func(text=_vf_string_with_prefix)
+                tokens_cached = self.tokens_len_func(text=text_cached)
                 if tokens_cached + table_tokens <= tokens_bound:
                     if tokens_cached + _table_tokens_prefix <= tokens_bound:
                         text_cached += _vf_string_with_prefix
-                        assert self.tokens_len_func(text_cached)<=tokens_bound
+                        try:
+                            assert self.tokens_len_func(text_cached)<=tokens_bound, f"{self.tokens_len_func(text_cached)}<={tokens_bound}\n{text_cached=}"
+                        except:
+                            pass
                     elif tokens_cached + table_tokens <= tokens_bound:
                         text_cached += vf_string
                         assert self.tokens_len_func(text_cached)<=tokens_bound

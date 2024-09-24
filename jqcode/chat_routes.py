@@ -93,7 +93,7 @@ def completions(
 
 @chat_router.post('/upload',summary="上传接口")
 async def upload_file(
-      files: List[UploadFile] = File(..., description="上传文件，支持多文件"),
+     files: List[UploadFile] = File(..., description="上传文件，支持多文件"),
      knowledge_id: str = Body(None, description="知识库ID"),
      uid: str = Body(None, description="用户ID"),
     ):

@@ -529,7 +529,7 @@ class InitEnvModels:
     # 方式一，使用LangChain indexing API，防止重复插入
     # https://python.langchain.com/docs/modules/data_connection/indexing 
 
-    def get_es_searchstore_index_documents(self,documents,embedding,index_name,es_connection=None,cleanup="incremental",clear_before_add_index=True,strategy=None,source_id_key="source"):
+    def get_es_searchstore_index_documents(self,documents,embedding,index_name,es_connection=None,cleanup="incremental",clear_before_add_index=False,strategy=None,source_id_key="source"):
         assert index_name, "参数index_name（ES的索引名称）不得为空！"
         assert documents,  "参数documents（待索引的文档）不得为空！"
         if not es_connection:

@@ -477,12 +477,13 @@ class KBServiceFactory:
 #     return data
     
 def get_kb_details() -> List[Dict]:
-    kbs_in_folder = list_kbs_from_es()
+    kbs_in_folder = list_kbs_from_folder()
+    kbs_in_es = list_kbs_from_es()
 
     from jqcode.jq_docstores.jq_es_client import JqEsClient
     jq_es_client = JqEsClient()
 
-    kbs_in_es = []
+    
     for kb in kbs_in_folder:
         kb_info = jq_es_client.get_index_info(index_name=kb)
         kb_dict = {

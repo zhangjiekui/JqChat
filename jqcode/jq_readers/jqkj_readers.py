@@ -168,7 +168,7 @@ class JqkjDocxReader(BaseReader):
         # metadata = docx_document.metadata
         file = Path(file_path)
         filename=file.name
-        image_file_path: Path = Path('/media/temp/wendang/OCR接口性能报告.docx')
+        # image_file_path: Path = Path('/media/temp/wendang/OCR接口性能报告.docx')
         # logger.debug(f"构建文档树：{file}")
 
 
@@ -202,8 +202,14 @@ class JqkjDocxReader(BaseReader):
                     if len(text)>50 and "Heading" in style_name:  # 如果标题文本长度超出一定限制，则判为正文
                         style_name  = 'Normal'
                     if  "Heading" in style_name: #标题节点
-                        level = style_name.split(' ')[-1]
-                        level = int(level) # Heading level              
+                        if style_name=="Heading":
+                            level=0
+                        else:
+                            try:
+                                level = style_name.split(' ')[-1]
+                                level = int(level) # Heading level
+                            except:
+                                level = 0
 
                         if level>pre_level:
                             parent_node = pre_node
@@ -234,8 +240,8 @@ class JqkjDocxReader(BaseReader):
                         pre_node = node # 正文节点，不能作为父节点候选
 
                 # 图片节点
-                # img_metadatas_list = self.extract_imgs(block,docx_document, file, image_list, imgid_list, w_pict_images_list_id, w_pict_images_list_fn, pic_pic_images_list_id, pic_pic_images_list_fn) 
-                img_metadatas_list = self.extract_imgs(block,docx_document, image_file_path, image_list, imgid_list, w_pict_images_list_id, w_pict_images_list_fn, pic_pic_images_list_id, pic_pic_images_list_fn) 
+                img_metadatas_list = self.extract_imgs(block,docx_document, file, image_list, imgid_list, w_pict_images_list_id, w_pict_images_list_fn, pic_pic_images_list_id, pic_pic_images_list_fn) 
+                # img_metadatas_list = self.extract_imgs(block,docx_document, image_file_path, image_list, imgid_list, w_pict_images_list_id, w_pict_images_list_fn, pic_pic_images_list_id, pic_pic_images_list_fn) 
                  
                 for img_metadata in img_metadatas_list:
                     # 创建图片节点

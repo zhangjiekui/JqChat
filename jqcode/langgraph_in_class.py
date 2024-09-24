@@ -1191,7 +1191,7 @@ class GraphAgent:
             results = [makeup_tool_message,makeup_human_message]   
             return {'messages': results,'question_related_messages':results}       
         
-    def run_conversation(self,user_question:str,allow_question_rewrite=True):
+    def run_conversation(self,user_question:str,allow_question_rewrite=False):
         print('================='*5)
         print('================='*5)
         print(f"开始会话:{user_question}")

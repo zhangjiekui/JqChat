@@ -173,13 +173,10 @@ class JqEsClient():
             (4) 将文档chunks文本和向量存储到doc_index
         """
     # 1、可选。创建知识库，并在metastore中写入该知识库的元数据（如名称、描述、创建者)
-        if index_name not in self.metastores.index_names or not self.client.indices.exists(index=index_name):
-            print(f"创建知识库{index_name},并在metastore中写入该知识库的元数据(如名称、描述、创建者)")       
-            index_store = self.create_doc_index(index_name=index_name,description=description,index_creator=current_user)
-            print(f"应已创建知识库{index_name}，并在{self.metastores.index_name}中有该知识库({index_name})的描述等元信息")
-        else:
-            print(f"知识库{index_name}已存在,并在metastore中存在{self.metastores.index_names}") 
-            index_store = JqElasticsearchIndexStore(index_name=index_name)
+        print(f"创建知识库{index_name},并在metastore中写入该知识库的元数据(如名称、描述、创建者)")       
+        index_store = self.create_doc_index(index_name=index_name,description=description,index_creator=current_user)
+        print(f"应已创建知识库{index_name}，并在{self.metastores.index_name}中有该知识库({index_name})的描述等元信息")
+        
     # 2、读取文件
         simple_reader = JqkjSimpleDirectoryReader(input_dir=input_dir,input_files=input_files, 
                                                   overwrite_existing_converted_files=overwrite_existing_converted_files,required_exts=required_exts,exclude_hidden=exclude_hidden)
@@ -195,7 +192,7 @@ class JqEsClient():
         lc_splitted_documents = [LcDocument(page_content=doc.text,metadata=doc.metadata) for doc in lm_splitted_documents] #转换为langchain格式
         print(f"从{len(lm_documents)}个文件中，生成的切片数为:{len(lc_splitted_documents)}")
     # 5、将文件切片写入知识库    
-        vectorstore = env_models_instance.get_es_searchstore_index_documents(documents=lc_splitted_documents, embedding=embed_model,index_name=index_name,source_id_key='source')        
+        vectorstore = env_models_instance.get_es_searchstore_index_documents(documents=lc_splitted_documents, embedding=embed_model,index_name=index_name,source_id_key='source',clear_before_add_index=False)        
         es_index_doc_ids,es_index_doc_filepaths = index_store.get_all_unique_fileids_filepaths()
         for i in range(len(es_index_doc_ids)):
             print(f"序号：{i+1},Id:{es_index_doc_ids[i]},Path:{es_index_doc_filepaths[i]}")
@@ -224,9 +221,17 @@ if __name__ == "__main__":
 
     # status = jq_es_client.drop_doc_index(index_name=index_name)
     
-    input_dir = "/media/temp/UPLOAD_DOCS/knowledge_base/create1/content"
-    vectorstore = jq_es_client.chunks_indexing_from_input_dir_or_files(current_user='',index_name='health_new',
-                                                                    description="为了测试chunks_indexing_from_input_dir_or_files方法，从提供一个文件目录，自动建立metastore,原始文件上传到docstore，并完成知识库向量索引",
-                                                                    input_dir = input_dir)
+    # input_dir = "/media/temp/UPLOAD_DOCS/knowledge_base/create1/content"
+    input_files = [fr"/data/projects/JqChatV2/UPLOAD_DOCS/knowledge_base/zjk_jqesclient_test/content/附件2+芜湖市信息化项目方案建议书编制提纲.docx"]
+    des = "A vectorstore/knowledge base containing documents related to 晶奇公司、安徽晶奇网络科技股份有限公司、医疗卫生、医疗健康、医疗服务、医疗政策、medical treatment & health. 凡是与晶奇公司、安徽晶奇网络科技股份有限公司及医疗健康相关的问题，都必须使用vectorstore工具。MUST use the vectorstore for questions on these topics."
+    # v = jq_es_client.create_doc_index(index_name='zjk_jqesclient_test',description=des)
+    # vectorstore = jq_es_client.chunks_indexing_from_input_dir_or_files(current_user='',index_name='zjk_jqesclient_test',
+    #                                                                 description=des,
+    #                                                                 input_files = input_files)
+    
+    input_dir = "/data/projects/JqChatV2/UPLOAD_DOCS/knowledge_base/zjk_jqesclient_test/content/"
+    vectorstore = jq_es_client.chunks_indexing_from_input_dir_or_files(current_user='',index_name='zjk_jqesclient_test',
+                                                                    description=des,
+                                                                    input_dir=input_dir)
     pass
     

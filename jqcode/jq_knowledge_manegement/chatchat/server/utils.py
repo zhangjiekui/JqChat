@@ -263,7 +263,9 @@ def get_Embeddings(
 
 
 def check_embed_model(embed_model: str = DEFAULT_EMBEDDING_MODEL) -> bool:
-    embeddings = get_Embeddings(embed_model=embed_model)
+    from jqcode.jq_agent.c0_init_env_models import env_models_instance
+    embeddings = env_models_instance.get_emb_8k_rerank_model()[0]
+    # _embeddings = get_Embeddings(embed_model=embed_model)
     try:
         embeddings.embed_query("this is a test")
         return True

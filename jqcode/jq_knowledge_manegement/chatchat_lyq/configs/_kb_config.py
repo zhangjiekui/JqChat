@@ -132,7 +132,7 @@ class ConfigKbFactory(core_config.ConfigFactory[ConfigKb]):
             "faiss": {},
 
             "es": {
-                "host": "10.1.150.105",
+                "host": "10.1.150.106",
                 "port": "9200",
                 "index_name": "test_index",
                 "user": "",
