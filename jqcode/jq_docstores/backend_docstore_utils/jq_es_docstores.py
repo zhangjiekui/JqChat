@@ -201,8 +201,9 @@ class JqElasticsearchDocumentStore(JqBaseDocumentStore):
                 indices.breaker.fielddata.limit: 80%                
                 """
                 logger.warning(config_str)
-                logger.warning("And, increase the es docker memory to '10GB' via docker run --name es01 --net elastic -p 9200:9200 -it -m 10GB")
-                logger.warning("And, docker cp /data/projects/JqChatV2/JqChat/jqcode/jq_docstores/backend_docstore_utils/jvm.options es815:/usr/share/elasticsearch/config/jvm.options.d/jvm.options")
+                logger.warning("And, increase the es docker memory to '10GB' when first run the docker: docker run --name es01 --net elastic -p 9200:9200 -it -m 10240M --memory-swap 20480M")
+                logger.warning("Or, update the running docker: docker update -m 10240M --memory-swap 20480M  0325c01ba3cd")
+                logger.warning("And, add JVM config: docker cp /data/projects/JqChatV2/JqChat/jqcode/jq_docstores/backend_docstore_utils/jvm.options es815:/usr/share/elasticsearch/config/jvm.options.d/jvm.options")
 
             try:
                 error = e.errors[0]

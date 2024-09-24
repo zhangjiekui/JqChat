@@ -83,16 +83,16 @@ class GraphAgentState(TypedDict):
 # region
 ### Data model and Chains Definitions
 
-question_rewrite_system_prompt = """根据上下文'Context'，对原始问题('Question'后面的内容)进行改写【但仅限于实体消歧(Disambiguation)、指代消解(Co-reference Resolution)，绝不能改变原始问题的本来意思或意图】，使得原始问题更加明确具体。
-    如果不需要改写或者不确信需要改写，请直接返回原始问题本身。
+question_rewrite_system_prompt = """你是一位擅长根据上下文'Context'，对原始问题('Query'后面的内容)进行优化重写的专家。目标是使得原始问题更加明确具体，但又绝不能改变原始问题的本来意思或意图，所以请秉持谨慎、忠实的态度，具体方法建议仅使用实体消歧(Disambiguation)、指代消解(Co-reference Resolution)等技术。
+    如果不确信需要进行优化重写，请直接返回原始问题本身。
     仅仅需要返回问题内容本身，绝不能有任何额外的解释或内容。
-    返回格式必须为Json:{"q":$question}，请使用改写后的问题内容替换$question
+    返回格式必须为Json:{"q":$Query}，请使用改写后的问题内容替换$Query
     """
 question_rewrite_prompt = lambda x: ChatPromptTemplate.from_messages(
     [
         SystemMessage(question_rewrite_system_prompt),
         HumanMessage(
-            f"'Context':\n{x['context']}\n'EndOfContext' \n'Question': {x['question']} \nAnswer: "
+            f"'Context':\n{x['context']}\n'EndOfContext' \n'Query': {x['question']} \nAnswer: "
         )
     ]
 )
@@ -1191,7 +1191,7 @@ class GraphAgent:
             results = [makeup_tool_message,makeup_human_message]   
             return {'messages': results,'question_related_messages':results}       
         
-    def run_conversation(self,user_question:str,allow_question_rewrite=False):
+    def run_conversation(self,user_question:str,allow_question_rewrite=True):
         print('================='*5)
         print('================='*5)
         print(f"开始会话:{user_question}")
@@ -1270,21 +1270,22 @@ tavily_search_tool = TavilySearchResults(max_results=4) #increased number of res
 
 if __name__ == "__main__":
     user_questions = [
+        # '晶奇公司的厦门市智慧民政一体化平台建设方案的编制依据，给出详尽的文件名称和问号等内容列表',
         '你好，我的名字是张结魁，请记住我的名字',
         '请搜索我与晶奇公司的相关网页，说明我与晶奇公司的关系',
-        '请绘制sin(x)曲线',
-        "安徽省食品药品监督管理局行政审批系统项目总体计划的版本号是多少，批准人是谁？",
-        '请搜索合肥大蜀山，然后提供详细介绍', 
-        '请查询明天从合肥到上海的航班,以及南昌到北京的航班',
-        '请直接执行代码：print("Hello World")',
-        '请使用Python来绘制sin(x)的曲线图',        
-        '合肥大蜀山',          
-        '请查询明天从合肥到上海的航班',
-        '请使用python_repl_tool来计算1到100的和',
-        '请调用python_repl_tool工具，一个计算1到100的和,另一个计算10的阶乘，并实际执行工具获取计算结果',
-        "请搜索网络然后回答问题：What is the weather in SF and LA? ",
-        "Who won the super bowl in 2024? In what state is the winning team headquarters located?What is the GDP of that state? ",
-        "还记得我的名字吗？"
+        # '请绘制sin(x)曲线',
+        # "安徽省食品药品监督管理局行政审批系统项目总体计划的版本号是多少，批准人是谁？",
+        # '请搜索合肥大蜀山，然后提供详细介绍', 
+        # '请查询明天从合肥到上海的航班,以及南昌到北京的航班',
+        # '请直接执行代码：print("Hello World")',
+        # '请使用Python来绘制sin(x)的曲线图',        
+        # '合肥大蜀山',          
+        # '请查询明天从合肥到上海的航班',
+        # '请使用python_repl_tool来计算1到100的和',
+        # '请调用python_repl_tool工具，一个计算1到100的和,另一个计算10的阶乘，并实际执行工具获取计算结果',
+        # "请搜索网络然后回答问题：What is the weather in SF and LA? ",
+        # "Who won the super bowl in 2024? In what state is the winning team headquarters located?What is the GDP of that state? ",
+        # "还记得我的名字吗？"
     ]
     my_main_bot = GraphAgent(executable_tools=executable_tools,routing_tools_wrapped_in_class=route_tools)
 

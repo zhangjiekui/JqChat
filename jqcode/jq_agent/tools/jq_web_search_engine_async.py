@@ -43,13 +43,18 @@ valid_prefix='http://www.baidu.com/link?url='
 filter_out_host = ['github.com','google.com','huggingface.co'] #这些网站的网页内容，基本无法成功访问、获取
 html2text_handler = html2text.HTML2Text()
 
+def get_user_agents():
+    try:
+        ua = UserAgent()
+        user_agents = ua.random
+    except:
+        print('使用fake_useragent获取user_agents失败，请检查!只好使用预定义的user_agents，但反爬虫机制的存在，成功获取搜索结果的概率会降低！')
+        user_agents = 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/108.0.0.0 Safari/537.36 Edg/108.0.1462.76'
+    return user_agents
 
-try:
-    ua = UserAgent()
-    user_agents = ua.random
-except:
-    print('使用fake_useragent获取user_agents失败，请检查!只好使用预定义的user_agents，但反爬虫机制的存在，成功获取搜索结果的概率会降低！')
-    user_agents = 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/108.0.0.0 Safari/537.36 Edg/108.0.1462.76'
+def is_query_chinese(query):
+    pattern = re.compile(r'[\u4e00-\u9fa5]')
+    return bool(re.search(pattern, query))
 
 def convert_search_query(query,join_character='+'):
     '''
@@ -60,25 +65,53 @@ def convert_search_query(query,join_character='+'):
     '''
     query = query.strip()
     query = re.sub(r' +', ' ', query)
-    if join_character:
-        query_terms = query.strip().split(' ')
-        query = join_character.join(query_terms)
+    if is_query_chinese(query):        
+        if join_character:
+            query_terms = query.strip().split(' ')
+            query = join_character.join(query_terms)
     return query
 
-def is_query_chinese(query):
-    pattern = re.compile(r'[\u4e00-\u9fa5]')
-    return bool(re.search(pattern, query))
+
 
 def get_random_elements(my_list, N):
     random_elements = random.sample(my_list, N)
     return random_elements
+
+class SearXNG:
+    def __init__(self,):
+        self.HEADERS = {"User-Agent": get_user_agents()}
+        self.url = "https://search.inetol.net/search?q="
+        self.url = "https://search.indst.eu/search?q="
+        
+      
+    def search(self,query):
+        session = requests.Session()
+        session.headers = self.HEADERS
+        url = self.url + query
+        response = session.get(url=url)
+        if response.status_code == 200:
+            print("SearXNG搜索：",url)
+        else:
+            print(f"SearXNG搜索失败（response.status_code != 200）: {url}")
+            return []
+                                        
+        response.encoding = "utf-8"
+        soup = BeautifulSoup(response.text, "lxml")
+        # Finding all 'a' tags which typically contain href attribute for links
+        links = [urljoin(url, a["href"]) for a in soup.find_all("a", href=True) if a["href"]]
+        
+        valid_links = [link for link in links if link.startswith(valid_prefix)]
+        valid_links_without_repeated = sorted(set(valid_links),key=valid_links.index)
+        
+        return valid_links_without_repeated    
+
 
 class BaiduSearch:
     def __init__(self):
         # 请求头信息
         self.HEADERS = {"Accept": "text/html",
             "Content-Type": "application/x-www-form-urlencoded",
-            "User-Agent": user_agents,
+            "User-Agent": get_user_agents(),
             "Referer": "https://www.baidu.com/",
             "Accept-Encoding": "gzip, deflate",
             "Accept-Language": "zh-CN,zh;q=0.9"
@@ -109,7 +142,7 @@ class BaiduSearch:
 
 class BingSearch:
     def __init__(self,):
-        self.HEADERS = {"User-Agent": user_agents}
+        self.HEADERS = {"User-Agent": get_user_agents()}
         self.url = 'https://www.bing.com/search?q='
 
     def search(self,query):
@@ -175,11 +208,13 @@ class JinaSearch:
 
 
 @func_set_timeout(timeout_value)
-def get_search_result_links(query): 
+def get_search_result_links(query):
+    # searxng =SearXNG() 
     baidu = BaiduSearch()
     bing =  BingSearch()
     jina =  JinaSearch()
-    urls = []
+    urls = []  
+    query = convert_search_query(query)    
     if is_query_chinese(query):        
         urls = baidu.search(query)
         url_num = len(urls) if urls else 0
@@ -533,11 +568,18 @@ def replace_multiple_newlines(text):
 
 if __name__ == "__main__":
     queries = ['中国科学技术大学','how python install langchain langgraph package','合肥大蜀山和科学岛','合肥大蜀山 科学岛','合肥八中 校区数量','   合肥八中   校区数量   ']
-    queries = ['中国科学技术大学','how python install langchain langgraph package','合肥大蜀山和科学岛','合肥大蜀山 科学岛','合肥八中 校区数量','   合肥八中   校区数量   ']
+    queries = ['how python install langchain langgraph package','合肥大蜀山和科学岛','合肥大蜀山 科学岛','合肥八中 校区数量','   合肥八中   校区数量   ']
+    # searxng =SearXNG()    
+    
     for query in queries:
         print('~~'*20)
         print('~~'*20)
         print(f'原始query={query}')
+    
+        # urls = searxng.search(query)
+        # print(urls)
+        
+        
         docs = asyncio.run(get_web_search_documents(query,max_doc_nums=10))
         print(f"获取到{len(docs)}个网页文档")
         for doc in docs:
