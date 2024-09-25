@@ -180,7 +180,7 @@ class JqCustomLlmFileHandler(FileCallbackHandler):
 
 def get_custom_handlers():
     custom_handler = JqCustomLlmHandler()
-    std_out_handler = StdOutCallbackHandler()
+    # std_out_handler = StdOutCallbackHandler()
     file_handler = JqCustomLlmFileHandler(llm_handler_file_path)
     return [custom_handler,file_handler]
     # return [custom_handler,std_out_handler,file_handler]

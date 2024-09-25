@@ -12,11 +12,13 @@ from typing import (
     Tuple,
     Union,
     cast,
+    Literal
 )
 import aiohttp
 from aiohttp import request
 from aiomultiprocess import Pool
 import requests
+from requests.compat import _resolve_char_detection #()chardat
 from bs4 import BeautifulSoup
 from fake_useragent import UserAgent
 import html2text
@@ -26,6 +28,10 @@ from langchain_community.document_loaders.async_html import _build_metadata
 from langchain_community.tools.tavily_search import TavilySearchResults
 
 from func_timeout import func_set_timeout, FunctionTimedOut
+from selenium import webdriver
+from selenium.webdriver.chrome.options import Options
+from selenium.webdriver.chrome.service import Service
+from chromedriver_py import binary_path # this will get you the path variable
 
 import urllib3
 from urllib.parse import urljoin
@@ -39,9 +45,10 @@ timeout_value = 60
 USING_JINA_AI_READER = os.getenv("USING_JINA_AI_READER",True)
 jina_reader_prefix = 'https://r.jina.ai/'
 valid_prefix='http://www.baidu.com/link?url='
-
-filter_out_host = ['github.com','google.com','huggingface.co'] #这些网站的网页内容，基本无法成功访问、获取
+#这些网站的网页内容，基本无法成功访问、获取,要么没有实质性性的文本内容
+filter_out_host = ("image.baidu.com","haokan.baidu.com","map.baidu.com","www.bilibili.com","tv.sohu.com",'github.com','google.com','huggingface.co','web.archive.org') 
 html2text_handler = html2text.HTML2Text()
+chardet = _resolve_char_detection()
 
 def get_user_agents():
     try:
@@ -71,40 +78,185 @@ def convert_search_query(query,join_character='+'):
             query = join_character.join(query_terms)
     return query
 
-
-
 def get_random_elements(my_list, N):
     random_elements = random.sample(my_list, N)
     return random_elements
 
-class SearXNG:
-    def __init__(self,):
-        self.HEADERS = {"User-Agent": get_user_agents()}
-        self.url = "https://search.inetol.net/search?q="
-        self.url = "https://search.indst.eu/search?q="
-        
-      
-    def search(self,query):
-        session = requests.Session()
-        session.headers = self.HEADERS
-        url = self.url + query
-        response = session.get(url=url)
-        if response.status_code == 200:
-            print("SearXNG搜索：",url)
-        else:
-            print(f"SearXNG搜索失败（response.status_code != 200）: {url}")
-            return []
-                                        
-        response.encoding = "utf-8"
-        soup = BeautifulSoup(response.text, "lxml")
-        # Finding all 'a' tags which typically contain href attribute for links
-        links = [urljoin(url, a["href"]) for a in soup.find_all("a", href=True) if a["href"]]
-        
-        valid_links = [link for link in links if link.startswith(valid_prefix)]
-        valid_links_without_repeated = sorted(set(valid_links),key=valid_links.index)
-        
-        return valid_links_without_repeated    
+class JqSeleniumSearchBaiduAndSearXNG:
+    """将百度搜索和SearXNG结合起来，一步获取搜索结果Urls列表`.
 
+    This is useful for loading pages that require javascript to render.
+
+    Attributes:
+        se_searxng_host:str,要使用的SearXNG，可从https://searx.space/查看获取
+        filter_out_host:tuple,要过滤掉的网站或域名，要么是基本无法成功访问、获取（如Google）,要么是没有实质性性的文本内容（如视频、地图）
+        browser (str): The browser to use, either 'chrome' or 'firefox'.
+        binary_location (Optional[str]): The location of the browser binary.
+        executable_path (Optional[str]): The path to the browser executable.
+        headless (bool): If True, the browser will run in headless mode.
+        arguments [List[str]]: List of arguments to pass to the browser.
+    """
+    def __init__(
+        self, 
+        filter_out_host:tuple = filter_out_host,       
+        se_searxng_host:str ="https://search.inetol.net",        
+        browser:Literal["chrome", "firefox"] = "chrome",
+        binary_location: Optional[str] = None,
+        executable_path: Optional[str] = binary_path,
+        headless: bool = True,
+        arguments: List[str] = ['--disable-gpu','--disable-gpu','--disable-dev-shm-usage','--remote-debugging-pipe'],
+    ):
+        try:
+            import selenium  # noqa:F401
+        except ImportError:
+            raise ImportError(
+                "selenium package not found, please install it with "
+                "`pip install selenium`"
+            )
+
+        self.browser = browser
+        self.binary_location = binary_location
+        self.executable_path = executable_path
+        self.headless = headless
+        self.arguments = arguments
+        self.driver = self._get_driver()
+        
+        self.se_baidu_host:str="https://www.baidu.com"
+        self.se_baidu_url = f"{self.se_baidu_host}/s?ie=utf-8&tn=baidu&wd="
+        self.se_baidu_params:str=""
+        self.se_baidu_valid_prefix:tuple=('http://www.baidu.com/link?url=',)
+        self.se_baidu_invalid_prefixes:tuple = ("https://image.baidu.com","https://haokan.baidu.com","https://map.baidu.com")
+        self.se_baidu_invalid_fields_or_suffixes:str = ("?anchor=","?fr=",)
+        
+        self.se_searxng_host:str=se_searxng_host
+        self.se_searxng_url = f"{self.se_searxng_host}/search?q="
+        self.se_searxng_params:str='&category_general=1&language=all&time_range=&safesearch=2&theme=simple'
+        self.se_searxng_valid_prefix:tuple=('http',)
+        self.se_searxng_invalid_prefixes:tuple = (self.se_searxng_host,'https://github.com/searxng',)
+        self.se_searxng_fields_or_suffixes:tuple = ()
+        self.session = requests.Session()
+        
+        self.invalid_domains:tuple =filter_out_host
+
+    def _get_driver(self) -> Literal["Chrome", "Firefox"]:
+        """Create and return a WebDriver instance based on the specified browser.
+
+        Raises:
+            ValueError: If an invalid browser is specified.
+
+        Returns:
+            Union[Chrome, Firefox]: A WebDriver instance for the specified browser.
+        """
+        if self.browser.lower() == "chrome":
+            from selenium.webdriver import Chrome
+            from selenium.webdriver.chrome.options import Options as ChromeOptions
+            from selenium.webdriver.chrome.service import Service
+
+            chrome_options = ChromeOptions()
+
+            for arg in self.arguments:
+                chrome_options.add_argument(arg)
+
+            if self.headless:
+                chrome_options.add_argument("--headless")
+                chrome_options.add_argument("--no-sandbox")
+            if self.binary_location is not None:
+                chrome_options.binary_location = self.binary_location
+            if self.executable_path is None:
+                return Chrome(options=chrome_options)
+            return Chrome(
+                options=chrome_options,
+                service=Service(executable_path=self.executable_path),
+            )
+        elif self.browser.lower() == "firefox":
+            from selenium.webdriver import Firefox
+            from selenium.webdriver.firefox.options import Options as FirefoxOptions
+            from selenium.webdriver.firefox.service import Service
+
+            firefox_options = FirefoxOptions()
+
+            for arg in self.arguments:
+                firefox_options.add_argument(arg)
+
+            if self.headless:
+                firefox_options.add_argument("--headless")
+            if self.binary_location is not None:
+                firefox_options.binary_location = self.binary_location
+            if self.executable_path is None:
+                return Firefox(options=firefox_options)
+            return Firefox(
+                options=firefox_options,
+                service=Service(executable_path=self.executable_path),
+            )
+        else:
+            raise ValueError("Invalid browser specified. Use 'chrome' or 'firefox'.")
+
+    def search(self,query:str):
+        query = convert_search_query(query)
+        search_baidu_url = self.se_baidu_url + query + self.se_baidu_params
+        logger.warning(f"Baidu搜索:{search_baidu_url}") 
+        self.driver.get(search_baidu_url)
+        page_content = self.driver.page_source
+        soup = BeautifulSoup(page_content, "lxml")
+        baidu_result_links = [urljoin(self.se_baidu_url, a["href"]) for a in soup.find_all("a", href=True) if a["href"]]
+        for valid_prefix in self.se_baidu_valid_prefix:
+            baidu_result_links = [link for link in baidu_result_links if link.startswith(valid_prefix)]            
+        baidu_result_links_without_repeated = sorted(set(baidu_result_links),key=baidu_result_links.index)
+        baidu_result_links_real = []
+        # 获取百度搜索结果列表的真实地址
+        # 如'http://www.baidu.com/link?url=h6vPEeCUjt5yEvYIVRcHupL3R0fiHI7Fw-402uHI2LUZMFMZTDysUjwbOq1XUqbC' ==> 'https://www.hfss.gov.cn/'
+        for url in baidu_result_links_without_repeated:
+            response = self.session.get(url,allow_redirects=False)
+            url = response.headers.get("Location",None)
+            if url:
+                if not url.startswith(self.se_baidu_invalid_prefixes):
+                    if url not in baidu_result_links_real:
+                        baidu_result_links_real.append(url)
+            else:
+                logger.warning(f"无法获取的百度搜索结果的真实URL，所以跳过{url}")
+        
+        search_searxng_url = self.se_searxng_url + query + self.se_searxng_params
+        logger.warning(f"SearXNG搜索:{search_searxng_url}")
+        self.driver.get(search_searxng_url)
+        page_content = self.driver.page_source
+        soup = BeautifulSoup(page_content, "lxml")
+        searxng_result_links = [urljoin(self.se_searxng_url, a["href"]) for a in soup.find_all("a", href=True) if a["href"]]
+            
+        for valid_prefix in self.se_searxng_valid_prefix:
+            searxng_result_links = [link for link in searxng_result_links if link.startswith(valid_prefix)]
+            
+        searxng_result_links_without_repeated = sorted(set(searxng_result_links),key=searxng_result_links.index)
+        searxng_result_links_real = []
+        for url in searxng_result_links_without_repeated:     
+            if not url.startswith(self.se_searxng_invalid_prefixes): 
+                if not url in searxng_result_links_real:
+                     searxng_result_links_real.append(url)  
+            
+        _all_urls = baidu_result_links_real + searxng_result_links_real
+        _all_urls = sorted(set(_all_urls),key=_all_urls.index)
+        all_urls = []
+        # all_urls = ['https://baike.baidu.com/item/%E5%90%88%E8%82%A5%E5%A4%A7%E8%9C%80%E5%B1%B1%E5%9B%BD%E5%AE%B6%E6%A3%AE%E6%9E%97%E5%85%AC%E5%9B%AD/22176384?anchor=1#1'] 
+        # all_urls +=['https://baike.baidu.com/item/%E5%90%88%E8%82%A5%E5%A4%A7%E8%9C%80%E5%B1%B1%E5%9B%BD%E5%AE%B6%E6%A3%AE%E6%9E%97%E5%85%AC%E5%9B%AD/22176384?anchor=3#3']
+        # all_urls +=['https://baike.baidu.com/item/%E5%90%88%E8%82%A5%E5%A4%A7%E8%9C%80%E5%B1%B1%E5%9B%BD%E5%AE%B6%E6%A3%AE%E6%9E%97%E5%85%AC%E5%9B%AD/22176384']
+        for url in _all_urls:
+            if "baidu.com" in url:
+                for invalid_field_or_suffix in self.se_baidu_invalid_fields_or_suffixes:
+                    if invalid_field_or_suffix in url:
+                        new_url = url.split(invalid_field_or_suffix)[0]
+                        if new_url not in all_urls:
+                            all_urls.append(new_url)
+            else:
+                if url not in all_urls:
+                    all_urls.append(url)       
+
+        for invalid_domain in self.invalid_domains:
+            for url in all_urls:
+                if invalid_domain in url:
+                     all_urls.remove(url)
+
+        logger.warning(f"Baidu和SearXNG共获取到{len(all_urls)=}个搜索结果")
+                
+        return all_urls
 
 class BaiduSearch:
     def __init__(self):
@@ -117,6 +269,9 @@ class BaiduSearch:
             "Accept-Language": "zh-CN,zh;q=0.9"
         }
         self.url = "https://www.baidu.com/s?ie=utf-8&tn=baidu&wd=" 
+        self.valid_prefix = 'http://www.baidu.com/link?url='
+        self.invalid_prefixes = ("https://image.baidu.com")
+        self.invalid_fields = "?anchor="
 
 
     def search(self,query):
@@ -138,7 +293,19 @@ class BaiduSearch:
         valid_links = [link for link in links if link.startswith(valid_prefix)]
         valid_links_without_repeated = sorted(set(valid_links),key=valid_links.index)
         
-        return valid_links_without_repeated
+        filtered_real_and_valid_urls = []
+        for url in valid_links_without_repeated:
+            with session.get(url,headers=session.headers,allow_redirects=False) as response:
+                real_url = response.headers.get("Location",None)
+                if real_url:
+                    if not real_url.startswith(self.invalid_prefixes):
+                        if self.invalid_fields in real_url:
+                            real_url = real_url.split(self.invalid_fields)[0]
+                        if real_url not in filtered_real_and_valid_urls:
+                            filtered_real_and_valid_urls.append(real_url)
+                else:
+                    logger.debug(f"无法获取的百度搜索结果的真实URL，所以跳过{url}")        
+        return filtered_real_and_valid_urls
 
 class BingSearch:
     def __init__(self,):
@@ -206,10 +373,15 @@ class JinaSearch:
             valid_links_without_repeated = sorted(set(bing_links),key=bing_links.index)
             return valid_links_without_repeated
 
-
 @func_set_timeout(timeout_value)
 def get_search_result_links(query):
-    # searxng =SearXNG() 
+    baidu_searxng =JqSeleniumSearchBaiduAndSearXNG() 
+    urls = baidu_searxng.search(query)
+    return urls
+
+@func_set_timeout(timeout_value)
+def _get_search_result_links(query):
+    baidu_searxng =JqSeleniumSearchBaiduAndSearXNG() 
     baidu = BaiduSearch()
     bing =  BingSearch()
     jina =  JinaSearch()
@@ -296,14 +468,17 @@ class AsyncHtmlLoaderBypassException(AsyncHtmlLoader):
                             allow_redirects=False,
                             **self.requests_kwargs,
                         ) as response:
-                            try:
-                                if url.startswith('http://www.baidu.com/link?'):
-                                    real_url = response.headers.get("Location",None)
-                                    if real_url:
-                                        url = real_url
+                            try:                                
                                 text = await response.text()
                             except UnicodeDecodeError:
-                                logger.error(f"Failed to decode content from {url}")
+                                try:
+                                    encoding = chardet.detect(response._body)["encoding"]                                
+                                    text = await response.text(encoding=encoding)
+                                except UnicodeDecodeError:
+                                    try:
+                                        text = await response.text(encoding='GB2312')                                    
+                                    except Exception as e:
+                                        logger.error(f"Failed to decode content from {url}:e")
                                 
                             # return url,text
                     except (aiohttp.ClientConnectionError, TimeoutError) as e:
@@ -337,10 +512,11 @@ class AsyncHtmlLoaderBypassException(AsyncHtmlLoader):
             return url, real_url,  text
     async def alazy_load(self) -> AsyncIterator[Document]:
         """Lazy load text from the url(s) in web_path."""
-        async for url, real_url,  text in self._lazy_fetch_all(
+        async for url, real_url, text in self._lazy_fetch_all(
             self.web_paths, self.preserve_order
         ):
-            yield self._to_document(url, real_url,  text)        
+            if text:
+                yield self._to_document(url, real_url, text)        
     def _to_document(self, url: str, real_url:str,text: str) -> Document:
         from bs4 import BeautifulSoup
 
@@ -363,9 +539,10 @@ async def get_webpages_texts_by_langchain_document_loader_from_urls(urls,max_doc
     docs_transformed_completed = []
     try:
         async for doc in docs_async_generator:                
-            page_content = html2text_handler.handle(doc.page_content)
-            transformed_document = Document(page_content=page_content, metadata={**doc.metadata})
-            docs_transformed_completed.append(transformed_document)
+            page_content = html2text_handler.handle(doc.page_content).strip()
+            if len(page_content)>50:
+                transformed_document = Document(page_content=page_content, metadata={**doc.metadata})
+                docs_transformed_completed.append(transformed_document)
             if len(docs_transformed_completed) == max_doc_nums:
                 break 
     except Exception as e:
@@ -379,10 +556,10 @@ async def get_webpages_texts_by_langchain_document_loader_from_urls(urls,max_doc
     return docs
 
 @func_set_timeout(timeout_value)
-async def get_webpages_texts_by_jina_ai_reader_from_urls(urls,docs=[]):
+async def get_webpages_texts_by_jina_ai_reader_from_urls(urls,docs=[],max_doc_nums=4):
         headers = {"x-respond-with": "html"}
         jina_urls = [jina_reader_prefix + url for url in urls]
-        max_doc_nums = len(jina_urls)
+        # max_doc_nums = len(jina_urls)
         jina_docs = await get_webpages_texts_by_langchain_document_loader_from_urls(jina_urls,max_doc_nums=max_doc_nums,header_template=headers)
         docs += jina_docs
         return docs
@@ -407,12 +584,12 @@ async def get_search_result_documents(urls,query,document_loader_class=AsyncHtml
 
     url_nums = len(urls) 
     print(f'共有{url_nums}条Urls')
-    if max_doc_nums<url_nums:
-        # urls = urls[:max_doc_nums]
-        urls = get_random_elements(urls,max_doc_nums)
-        print(f'拟随机获取{max_doc_nums}条Urls的搜索结果')
-    else:
-        print(f'拟获取全部{url_nums}条Urls的搜索结果')
+    # if max_doc_nums<url_nums:
+    #     # urls = urls[:max_doc_nums]
+    #     urls = get_random_elements(urls,max_doc_nums)
+    #     print(f'拟随机获取{max_doc_nums}条Urls的搜索结果')
+    # else:
+    #     print(f'拟获取全部{url_nums}条Urls的搜索结果')
 
     docs = []
     try:
@@ -428,7 +605,7 @@ async def get_search_result_documents(urls,query,document_loader_class=AsyncHtml
             if docs:
                 urls_getted = []
                 for d in docs:
-                    url_getted = d.metadata.get('baidu_url',False)
+                    url_getted = d.metadata.get('source',False)
                     if url_getted:
                         urls_getted.append(url_getted)
                 _urls = list(set(urls) - set(urls_getted)) 
@@ -437,11 +614,11 @@ async def get_search_result_documents(urls,query,document_loader_class=AsyncHtml
                 print(f'       -------urls_getted:{len(urls_getted)}')
                 print(f'       -------_urls:{len(_urls)}')
                 print('================================================')
-
-
-                print(f"继续尝试使用jina_reader获取{len(_urls)=}个网页内容")
+                jina_num = max_doc_nums - len(docs)
+                jina_num = min(jina_num,len(_urls))
+                print(f"继续尝试使用jina_reader再从{len(_urls)=}个urls中获取{jina_num}网页内容")
             try:
-                docs = await get_webpages_texts_by_jina_ai_reader_from_urls(_urls,docs=docs)
+                docs = await get_webpages_texts_by_jina_ai_reader_from_urls(_urls,docs=docs,max_doc_nums=jina_num)
             except FunctionTimedOut as e:
                 print(f'尝试使用jina_reader获取网页内容超时！只获取到{len(docs)}个文档。')
             except Exception as e:
@@ -477,20 +654,22 @@ async def get_web_search_documents(query,max_doc_nums=4):
         for doc in docs:        
             page_content = doc.page_content
 
-            webpage_title = ""
-            webpage_description = ""
+            _webpage_title = ""
+            _webpage_description = ""
             metadata = doc.metadata
             if metadata:
                 webpage_title = metadata.get("title","")
                 if webpage_title:
-                    webpage_title = "【标题】" + webpage_title + " " 
+                    if webpage_title not in page_content:
+                        _webpage_title = "【标题】" + webpage_title + " " 
                 webpage_description = metadata.get("description","")
                 if webpage_description:
-                    webpage_description = " " + "【描述】" + webpage_description  
+                    if webpage_description not in page_content:
+                        _webpage_description = " " + "【描述】" + webpage_description  
             if page_content:
-                if (webpage_title or webpage_description):
-                        page_content = "【内容】" + page_content       
-                        doc.page_content = webpage_title + page_content + webpage_description
+                if (_webpage_title or _webpage_description):
+                        page_content = "【内容】" + page_content                               
+                        doc.page_content = _webpage_title + page_content + _webpage_description
         return docs
 
     except Exception as e:
@@ -515,9 +694,7 @@ async def _get_web_search_documents(query,max_doc_nums=4):
         logger.warning(f'直接调用TavilySearchResults获得搜索结果失败:{e}')
 
 
-    # 如果上面的代码执行正常（没有异常抛出），就会正常return docs，不会执行下面的代码
-    query = convert_search_query(query)
-    
+    # 如果上面的代码执行正常（没有异常抛出），就会正常return docs，不会执行下面的代码   
     # 获取搜索引擎结果列表URLs
     urls = []
     try:
@@ -569,16 +746,12 @@ def replace_multiple_newlines(text):
 if __name__ == "__main__":
     queries = ['中国科学技术大学','how python install langchain langgraph package','合肥大蜀山和科学岛','合肥大蜀山 科学岛','合肥八中 校区数量','   合肥八中   校区数量   ']
     queries = ['how python install langchain langgraph package','合肥大蜀山和科学岛','合肥大蜀山 科学岛','合肥八中 校区数量','   合肥八中   校区数量   ']
-    # searxng =SearXNG()    
     
     for query in queries:
         print('~~'*20)
         print('~~'*20)
-        print(f'原始query={query}')
-    
-        # urls = searxng.search(query)
-        # print(urls)
-        
+        print(f'原始query={query}')    
+       
         
         docs = asyncio.run(get_web_search_documents(query,max_doc_nums=10))
         print(f"获取到{len(docs)}个网页文档")
