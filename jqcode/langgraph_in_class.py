@@ -611,8 +611,9 @@ class GraphAgent:
         self.all_history_messages = self._get_messages_from_state_by_key("messages") 
         return self.all_history_messages
     
-    def get_question_related_messages_from_state(self,question="",reserve_last_n_messages_num=6,score_threshold=0.5):
+    def get_question_related_messages_from_state(self,question="",reserve_last_n_messages_num=6,score_threshold=0.3):
         if not self.question_related_messages:
+        # if True:
             messages = self.get_all_history_messages() ## 或者  messages = state['messages']
             question = question or self.question_rewrited
             if not question:
@@ -653,6 +654,8 @@ class GraphAgent:
         # 所以此次不添加retrieve_message，而是到grade_documents节点，仅保留过滤后的
         # retrieve_message = ToolMessage(content=retrieve_results,name='retrieve')
         # return {"documents": documents, "question": question,"messages":retrieve_message}
+        for d in documents:
+            d.page_content=f'[relevance_score={d.metadata.get("relevance_score",0)}]{d.page_content}'
         return {"documents": documents, "question": question}
 
     def web_search(self,state:GraphAgentState):
@@ -706,7 +709,7 @@ class GraphAgent:
                 referens_str += f"    {i+1}. [{r}]({r})  \n"
             _user_variables_statedict = {self.user_id:{"rag_args":'',"reference":referens_str}}
             state["user_variables"].update(_user_variables_statedict)    
-            logger.info(f'{referens_str=}')
+            logger.debug(f'{referens_str=}')
         return {"documents": chunks_relevant, "question_searched":{question:True}}     
     # endregion 类内方法  
     
@@ -996,7 +999,7 @@ class GraphAgent:
 
             _user_variables_statedict = {self.user_id:{"rag_args":'',"reference":referens_str}}
             state["user_variables"].update(_user_variables_statedict)  
-            logger.info(f'{referens_str=}')
+            logger.debug(f'{referens_str=}')
         generation = rag_node.invoke({"documents": documents, "question": question, "messages":messages},config=invoke_llm_config)
         logger.debug(f"{generation=}")
         last_message = state["messages"][-1]
@@ -1200,11 +1203,12 @@ class GraphAgent:
         logger.debug(f"切记新的问题对话前，要先更新user_question 和 question_id！老的[{self.question_id=}]")
         self.question_id = self.get_random_id()
         self.question = user_question
-        self.question_rewrited = user_question #后面会使用self.question_rewrited提交给大模型，就要确保self.question_rewrited有值        
+        self.question_rewrited = user_question #后面会使用self.question_rewrited提交给大模型，就要确保self.question_rewrited有值
+        self.question_related_messages = [] #新一轮会话，将问题相关的信息记录置为空        
         
         logger.warning(f"此处默认改写问题设置为{allow_question_rewrite=}，但实际需要获取用户是否运行改写的设置")        
         if allow_question_rewrite:
-            related_history_messages = self.get_question_related_messages_from_state(user_question,reserve_last_n_messages_num=7)
+            related_history_messages = self.get_question_related_messages_from_state(user_question,reserve_last_n_messages_num=7,score_threshold=0.7)
             if related_history_messages:
                 if related_history_messages[-1].content == user_question:
                     related_history_messages = related_history_messages[0:-1]
@@ -1230,7 +1234,7 @@ class GraphAgent:
                 if question_rewrited:
                     if question_rewrited != self.question_rewrited:
                         logger.warning(f"进行了问题改写:{self.question_rewrited} => {question_rewrited}")
-                        both_question = f"原始的用户Query：{self.question_rewrited}（及供参考的用户Query：{question_rewrited}）"
+                        both_question = f"原始的用户Query：{self.question_rewrited}（及重写后的用户Query：{question_rewrited}）"
                         self.question_rewrited = both_question
                         # self.question_rewrited = question_rewrited ##仅在问题内容变化后，才赋值给self.question_rewrited，改写前已设置self.question_rewrited = user_question
                     else:

@@ -1,5 +1,10 @@
 import pathlib
-VERBOSE = True
+VERBOSE = "False"
+def if_log_verbose(VERBOSE = VERBOSE):
+    if VERBOSE == "False":
+        return False
+    if VERBOSE == "True":
+        return True
 # root_dir = pathlib.Path(__file__).resolve().parent.parent.parent.parent
 root_dir = pathlib.Path().resolve()
 logfile_path = root_dir/'jqchat_agent.log'

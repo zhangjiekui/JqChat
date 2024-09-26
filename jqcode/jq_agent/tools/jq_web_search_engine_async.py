@@ -474,11 +474,8 @@ class AsyncHtmlLoaderBypassException(AsyncHtmlLoader):
                                 try:
                                     encoding = chardet.detect(response._body)["encoding"]                                
                                     text = await response.text(encoding=encoding)
-                                except UnicodeDecodeError:
-                                    try:
-                                        text = await response.text(encoding='GB2312')                                    
-                                    except Exception as e:
-                                        logger.error(f"Failed to decode content from {url}:e")
+                                except UnicodeDecodeError as e:
+                                    logger.error(f"Failed to decode content from {url} using detected {encoding=}:{e}")
                                 
                             # return url,text
                     except (aiohttp.ClientConnectionError, TimeoutError) as e:

@@ -40,10 +40,19 @@ from transformers import AutoTokenizer
 from pydantic import PrivateAttr
 import json_repair
 from langchain_core.utils.input import print_text
-from jqcode.jq_config.general_config import llm_handler_file_path
+from jqcode.jq_config.general_config import llm_handler_file_path,if_log_verbose,logfile_path
+
 from jqcode.jq_utils.logger import jqkj_logger
 logger = jqkj_logger(__file__).get_logger()
 
+VERBOSE = if_log_verbose()
+print("=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*")
+print("日志信息：")
+print(f"if_log_verbose = {VERBOSE}, 说明：在 jqcode/jq_config/general_config.py 中设置")
+print(f"logfile_path = {logfile_path} ,说明：如果if_log_verbose=False，则只记录Waring和Error")
+print(f"llm_handler_logfile_path = {llm_handler_file_path} ,说明：专门记录LLM的输入输出，且不受if_log_verbose影响")
+print("=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*")
+print("\n\n")
 
 # os.environ['LANGCHAIN_TRACING_V2'] = 'true'
 # os.environ['LANGCHAIN_ENDPOINT'] = 'https://api.smith.langchain.com'
@@ -151,11 +160,10 @@ class JqCustomLlmHandler(BaseCallbackHandler):
             print(content)
         print(">>>>>>>>>>>>>>>>>>>>>>>>>模型输出：结束>>>>>>>>>>>>>>>>>>>>>>>>>")
         
-class JqCustomLlmFileHandler(FileCallbackHandler):
-    
+class JqCustomLlmFileHandler(FileCallbackHandler):    
     
     def __init__(
-        self, filename: str=llm_handler_file_path, mode: str = "a", color: Optional[str] = None
+        self, filename: str=llm_handler_file_path, mode: str = "w", color: Optional[str] = None
     ):
         super().__init__(filename=filename,mode=mode,color=color)
         
@@ -178,11 +186,12 @@ class JqCustomLlmFileHandler(FileCallbackHandler):
         print_text(">>>>>>>>>>>>>>>>>>>>>>>>>模型输出：结束>>>>>>>>>>>>>>>>>>>>>>>>>",end="\n",file=self.file,)
         
 
-def get_custom_handlers():
-    custom_handler = JqCustomLlmHandler()
-    # std_out_handler = StdOutCallbackHandler()
+def get_custom_handlers(vebose=VERBOSE):
+    custom_handler = JqCustomLlmHandler()    
     file_handler = JqCustomLlmFileHandler(llm_handler_file_path)
-    return [custom_handler,file_handler]
+    handlers = [custom_handler,file_handler] if vebose else [file_handler]
+    return handlers
+    # std_out_handler = StdOutCallbackHandler()
     # return [custom_handler,std_out_handler,file_handler]
 
 
@@ -266,9 +275,7 @@ class InitEnvModels:
         self.need_custom_tool_call_parse = self.llm_model_card.get('need_custom_tool_call_parse',False)
         self.need_json_mode = self.llm_model_card.get('need_json_mode',False)
         
-        _DEBUG_STR = os.environ.get('DEBUG_LLM_USING_CUSTOM_HANDLER',"False")
-        _DEBUG = True if _DEBUG_STR=="True" else False
-        handlers = get_custom_handlers() if _DEBUG else []
+        handlers = get_custom_handlers()
         invoke_llm_config = {'callbacks' : handlers}
         self.invoke_llm_config = invoke_llm_config
 
@@ -573,7 +580,7 @@ class InitEnvModels:
         return es_searchstore
 
     def split_and_get_chunks_relevant_from_documents(self,query:str, docs_list:List[Document]=None,text_splitter=None,embed_model=None,reranker=None,
-                                                    if_reranking:bool=True,retriever_docs_num=10,final_docs_num=4,score_threshold=0.3,only_use_reranker:bool=True):
+                                                    if_reranking:bool=True,retriever_docs_num=10,final_docs_num=4,score_threshold=0.3,only_use_reranker:bool=False):
         
         docs_list_cleaned = []
         for doc in docs_list:
@@ -601,6 +608,8 @@ class InitEnvModels:
                 chunks_relevant = retriever.invoke(query,config=self.invoke_llm_config)
         # 只返回relevance_score>=score_threshold的
         chunks_relevant = [d for d in chunks_relevant if d.metadata.get("relevance_score",0)>=score_threshold]
+        for d in chunks_relevant:
+            d.page_content=f'[relevance_score={d.metadata.get("relevance_score",0)}]{d.page_content}'
         return chunks_relevant
 
     def is_toolcall_aimessage(self, message):

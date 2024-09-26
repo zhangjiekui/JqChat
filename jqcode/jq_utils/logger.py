@@ -4,8 +4,8 @@ from pathlib import Path
 import threading
 # sys.path.append("..")
 # sys.path.append('/root/projectbs/langchainproject')
-from jqcode.jq_config.general_config import logfile_path,VERBOSE
-
+from jqcode.jq_config.general_config import logfile_path,if_log_verbose
+VERBOSE = if_log_verbose()
 logfile_path = logfile_path
 stem = logfile_path.stem
 
@@ -29,7 +29,7 @@ class jqkj_logger(logging.Logger):
         # if not Path(logfile_path).exists():
         #     os.mk(logfile_path.parent)
         self.mtex = threading.Lock() if using_multi_thread else None
-        self.lf = logging.FileHandler(logfile_path,mode='a',encoding='utf-8')  # 打印到文件
+        self.lf = logging.FileHandler(logfile_path,mode='w',encoding='utf-8')  # 打印到文件
         self.sm = logging.StreamHandler()  # 打印到终端
         # Formatter对象：日志格式
         formmater1 = logging.Formatter('%(message)s  [%(asctime)s %(levelname)s:%(name)s(%(lineno)d)]',datefmt='%Y-%m-%d %H:%M')
