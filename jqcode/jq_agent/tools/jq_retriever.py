@@ -9,12 +9,14 @@ from langchain_community.retrievers import ElasticSearchBM25Retriever
 from llama_index.core.readers.file.base import default_file_metadata_func
 from jqcode.jq_readers.jqkj_readers import JqkjSimpleDirectoryReader,JqkjDocxReader
 from jqcode.jq_readers.backend_reader_utils.jqkj_doc_tree_utils import jieba_pre_process
-from jqcode.jq_agent.c0_init_env_models import env_models_instance
+from jqcode.jq_agent.c0_init_env_models import env_models_instance,JqVectorStoreRetrieverWithScore
 from jqcode.jq_utils.logger import jqkj_logger
 logger = jqkj_logger(__file__).get_logger()
 
+
+
 def get_retriever(vectorstore:ElasticsearchStore=None,index_name:str=None,chat_on_docs_list:List[str]=None,add_docs_list_to_kb=True,default_temp_index_name:str="temp_index_for_upload_files",
-                  top_k:int=10,source_id_key='source',required_exts=['.doc','.docx','.pdf','.md']):
+                  top_k:int=10,score_threshold:float=0.1,source_id_key='source',required_exts=['.doc','.docx','.pdf','.md']):
     
     llm = env_models_instance.chat_model
     embed_model = env_models_instance.embed_model
@@ -26,7 +28,8 @@ def get_retriever(vectorstore:ElasticsearchStore=None,index_name:str=None,chat_o
 
 # 如果是已经有了vectorstore
     if vectorstore:
-        vector_retriever = vectorstore.as_retriever(search_type="similarity", search_kwargs={"k":top_k})
+        # vector_retriever = vectorstore.as_retriever(search_type="similarity", search_kwargs={"k":top_k})
+        vector_retriever = JqVectorStoreRetrieverWithScore(vectorstore=vectorstore,search_type="similarity_score_threshold", search_kwargs={"score_threshold":score_threshold,"k":top_k}) 
 
 # 如果是chat on docs, 则获取基于文件过滤的retriever
     elif chat_on_docs_list:
@@ -179,7 +182,8 @@ def get_retriever(vectorstore:ElasticsearchStore=None,index_name:str=None,chat_o
     
         if default_vectorstore and RESERVED_FILTER_BY_FILES:
                 filters = {"terms":{f"metadata.{source_id_key}.keyword": RESERVED_FILTER_BY_FILES}} 
-                vector_retriever = default_vectorstore.as_retriever(search_type="similarity", search_kwargs={"k":top_k,"filter":filters})
+                # vector_retriever = default_vectorstore.as_retriever(search_type="similarity", search_kwargs={"k":top_k,"filter":filters})
+                vector_retriever = JqVectorStoreRetrieverWithScore(vectorstore=default_vectorstore,search_type="similarity_score_threshold", search_kwargs={"score_threshold":score_threshold,"k":top_k,"filter":filters})
             #region:文件过滤检索器的测试
                 # file_list = [RESERVED_FILTER_BY_FILES[0]]
                 # filters = {"terms":{f"metadata.{source_id_key}.keyword": file_list}}
@@ -219,7 +223,8 @@ def get_retriever(vectorstore:ElasticsearchStore=None,index_name:str=None,chat_o
 # 则返回一个默认的基于整个知识库的retriever,index必须为用户指定的index_name
     if not vector_retriever:
         default_vectorstore = env_models_instance.get_es_searchstore(es_connection=es_connection,embedding=embed_model,index_name=index_name)
-        vector_retriever = default_vectorstore.as_retriever(search_type="similarity", search_kwargs={"k":top_k})
+        # vector_retriever = default_vectorstore.as_retriever(search_type="similarity", search_kwargs={"k":top_k})
+        vector_retriever = JqVectorStoreRetrieverWithScore(vectorstore=default_vectorstore,search_type="similarity_score_threshold", search_kwargs={"score_threshold":score_threshold,"k":top_k}) 
 
 # 增强：集成检索器和重排序
     # 单一retriever
@@ -228,7 +233,8 @@ def get_retriever(vectorstore:ElasticsearchStore=None,index_name:str=None,chat_o
     identical_index_name = vector_retriever.vectorstore._store.index
     identical_search_kwargs = vector_retriever.search_kwargs     
     bm25_vectorstore = ElasticsearchStore(es_connection=es_connection, index_name=identical_index_name, strategy=ElasticsearchStore.BM25RetrievalStrategy())
-    bm25_retriever = bm25_vectorstore.as_retriever(search_kwargs=identical_search_kwargs)
+    # bm25_retriever = bm25_vectorstore.as_retriever(search_kwargs=identical_search_kwargs)
+    bm25_retriever = JqVectorStoreRetrieverWithScore(vectorstore=bm25_vectorstore,search_type="similarity_score_threshold",search_kwargs=identical_search_kwargs)
     ensemble_retriever = EnsembleRetriever(retrievers=[bm25_retriever,vector_retriever], weights=[0.3, 0.7])
     compression_retriever = ContextualCompressionRetriever(base_compressor=reranker, base_retriever=ensemble_retriever)
     if not compression_retriever:

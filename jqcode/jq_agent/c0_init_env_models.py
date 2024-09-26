@@ -26,6 +26,8 @@ from elasticsearch.helpers.vectorstore import BM25Strategy,SparseVectorStrategy,
 from langchain.indexes import SQLRecordManager, index
 from langchain.retrievers.document_compressors.base import BaseDocumentCompressor
 from langchain_core.messages import BaseMessage
+from langchain_core.vectorstores import VectorStoreRetriever
+from langchain.callbacks.manager import AsyncCallbackManagerForRetrieverRun,CallbackManagerForRetrieverRun
 from langchain_community.vectorstores import FAISS
 from langchain_community.vectorstores.utils import DistanceStrategy
 
@@ -59,6 +61,28 @@ print("\n\n")
 # os.environ['LANGCHAIN_API_KEY'] = "ls__fe150087fa0643f28b3eae3a07d57529"
 # os.environ['TAVILY_API_KEY'] = "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"
 
+def _add_scores_before_page_content(d:Document):
+    d.page_content = f'[relevance_score_retriever={d.metadata.get("relevance_score_retriever",0)},relevance_score_reranker={d.metadata.get("relevance_score_reranker",0)}]{d.page_content}'
+
+class JqVectorStoreRetrieverWithScore(VectorStoreRetriever):
+    # See https://github.com/langchain-ai/langchain/blob/61dd92f8215daef3d9cf1734b0d1f8c70c1571c3/libs/langchain/langchain/vectorstores/base.py#L500
+    def _get_relevant_documents(
+        self, query: str, *, run_manager: CallbackManagerForRetrieverRun
+    ) -> List[Document]:
+        docs_and_similarities = (
+            self.vectorstore.similarity_search_with_relevance_scores(
+                query, **self.search_kwargs
+            )
+        )
+
+        # Make the score part of the document metadata
+        for doc, similarity in docs_and_similarities:
+            doc.metadata["relevance_score_retriever"] = similarity
+            doc.page_content = f'[relevance_score_retriever={similarity:.2f}]{doc.page_content}'
+
+        docs = [doc for doc, _ in docs_and_similarities]
+        return docs
+    
 class JqXinferenceReranker(BaseDocumentCompressor):
     client: str = 'Xinference'
     top_n: int = 6
@@ -75,11 +99,13 @@ class JqXinferenceReranker(BaseDocumentCompressor):
         self,
         top_n: int = 6,
         model:Any =None,
+        threshold:float =0.2, #"""相关性阈值，低于此值的文档不返回."""
         **kwargs
     ):
         
         super().__init__(top_n=top_n, model=model,**kwargs)
         self._model = model
+        self.threshold = threshold
     
     # https://github.com/xorbitsai/inference/blob/7d83300a7694a0262b634007ea4164ea753e466f/xinference/model/rerank/core.py
     def rerank(
@@ -98,8 +124,7 @@ class JqXinferenceReranker(BaseDocumentCompressor):
     def compress_documents(
         self,
         documents: Union[Sequence[Document],Sequence[str]],
-        query: str,
-        threshold:float = 0.2, #"""相关性阈值，低于此值的文档不返回."""
+        query: str,        
         callbacks: Optional[Callbacks] = None,
     ) -> Sequence[Document]:
         """
@@ -131,10 +156,11 @@ class JqXinferenceReranker(BaseDocumentCompressor):
         final_results = []
         for result in rerank_result_list:
             score =  result['relevance_score']
-            if score>=threshold:
+            if score>=self.threshold:
                 doc_id = result['index']
                 doc = valid_doc_list[doc_id]
-                doc.metadata.update({"relevance_score":score})
+                doc.metadata.update({"relevance_score_reranker":score})
+                doc.page_content = f'[relevance_score_reranker={score:.2f}]{doc.page_content}'
                 final_results.append(doc)
        
         final_results = final_results[:self.top_n]
@@ -579,6 +605,9 @@ class InitEnvModels:
         es_searchstore.index_name=index_name
         return es_searchstore
 
+    from langchain_core.runnables import chain
+
+    
     def split_and_get_chunks_relevant_from_documents(self,query:str, docs_list:List[Document]=None,text_splitter=None,embed_model=None,reranker=None,
                                                     if_reranking:bool=True,retriever_docs_num=10,final_docs_num=4,score_threshold=0.3,only_use_reranker:bool=False):
         
@@ -589,27 +618,28 @@ class InitEnvModels:
         if not text_splitter:
             text_splitter = self.text_splitter
         text_chunks = text_splitter.split_documents(docs_list_cleaned)
-        
+                
         reranker = reranker if reranker else self.reranker
         reranker.top_n = final_docs_num
-
+        
+        # text_chunks.append(Document(query))
+        # chunks_relevant = []
         if only_use_reranker:            
             chunks_relevant = reranker.compress_documents(text_chunks,query)
         
         else:
-            embed_model  = embed_model if embed_model else self.embed_model        
-            if if_reranking:
-                retriever = FAISS.from_documents(text_chunks, embed_model, distance_strategy=DistanceStrategy.MAX_INNER_PRODUCT).as_retriever(search_type="mmr", search_kwargs={"score_threshold": score_threshold, "k": retriever_docs_num})
+            embed_model  = embed_model if embed_model else self.embed_model
+            vs=FAISS.from_documents(text_chunks, embed_model, distance_strategy=DistanceStrategy.MAX_INNER_PRODUCT)
+            retriever = JqVectorStoreRetrieverWithScore(vectorstore=vs,search_type="similarity_score_threshold", search_kwargs={"score_threshold": score_threshold, "k": retriever_docs_num})        
+            if if_reranking:                
                 compression_retriever = ContextualCompressionRetriever(base_compressor=reranker, base_retriever=retriever)
                 chunks_relevant = compression_retriever.invoke(query,config=self.invoke_llm_config)
             else:
-                retriever_docs_num = final_docs_num
-                retriever = FAISS.from_documents(text_chunks, embed_model, distance_strategy=DistanceStrategy.MAX_INNER_PRODUCT).as_retriever(search_type="mmr", search_kwargs={"score_threshold": score_threshold, "k": retriever_docs_num})
+                retriever.search_kwargs['k'] = final_docs_num
                 chunks_relevant = retriever.invoke(query,config=self.invoke_llm_config)
+      
         # 只返回relevance_score>=score_threshold的
-        chunks_relevant = [d for d in chunks_relevant if d.metadata.get("relevance_score",0)>=score_threshold]
-        for d in chunks_relevant:
-            d.page_content=f'[relevance_score={d.metadata.get("relevance_score",0)}]{d.page_content}'
+        chunks_relevant = [d for d in chunks_relevant if d.metadata.get("relevance_score_retriever",0)>=score_threshold]
         return chunks_relevant
 
     def is_toolcall_aimessage(self, message):

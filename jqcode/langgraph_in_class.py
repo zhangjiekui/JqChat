@@ -14,7 +14,7 @@ from langchain_core.output_parsers import StrOutputParser
 from langchain_core.tools import tool
 import sqlite3
 from langgraph.checkpoint.sqlite import SqliteSaver
-from jqcode.jq_agent.c0_init_env_models import env_models_instance,get_custom_handlers,clean_up_list_when_encounter_null_element
+from jqcode.jq_agent.c0_init_env_models import env_models_instance,clean_up_list_when_encounter_null_element
 from jqcode.jq_agent.tools.jq_functions_and_tools import get_flight_number,python_repl_tool
 from langchain_experimental.tools import PythonREPLTool
 from jqcode.jq_agent.tools.jq_retriever import get_retriever
@@ -619,7 +619,7 @@ class GraphAgent:
             if not question:
                 logger.warning('请传入非空的user question，或者先给self.question_rewrited赋值')
             else:
-                question_related_messages = env_models_instance.filter_and_get_messages_relevant_to_query(query=question,messages_list=messages,reserve_last_n_messages_num = reserve_last_n_messages_num,score_threshold=score_threshold)
+                question_related_messages = env_models_instance.filter_and_get_messages_relevant_to_query(if_reranking=True,query=question,messages_list=messages,reserve_last_n_messages_num = reserve_last_n_messages_num,score_threshold=score_threshold)
                 self.question_related_messages = question_related_messages
         return self.question_related_messages
 
@@ -654,8 +654,6 @@ class GraphAgent:
         # 所以此次不添加retrieve_message，而是到grade_documents节点，仅保留过滤后的
         # retrieve_message = ToolMessage(content=retrieve_results,name='retrieve')
         # return {"documents": documents, "question": question,"messages":retrieve_message}
-        for d in documents:
-            d.page_content=f'[relevance_score={d.metadata.get("relevance_score",0)}]{d.page_content}'
         return {"documents": documents, "question": question}
 
     def web_search(self,state:GraphAgentState):
@@ -1208,11 +1206,12 @@ class GraphAgent:
         
         logger.warning(f"此处默认改写问题设置为{allow_question_rewrite=}，但实际需要获取用户是否运行改写的设置")        
         if allow_question_rewrite:
-            related_history_messages = self.get_question_related_messages_from_state(user_question,reserve_last_n_messages_num=7,score_threshold=0.7)
+            related_history_messages = self.get_question_related_messages_from_state(user_question,reserve_last_n_messages_num=3,score_threshold=0.3)
             if related_history_messages:
                 if related_history_messages[-1].content == user_question:
                     related_history_messages = related_history_messages[0:-1]
-            self.question_related_messages = [] # self.get_question_related_messages_from_state会默认设置self.question_related_messages的值，这里再设置为[]
+            # 只有真的重写后，才置为[]? 见下方
+            # self.question_related_messages = [] # self.get_question_related_messages_from_state会默认设置self.question_related_messages的值，这里再设置为[]
             if related_history_messages:
                 question_rewrited = ''            
                 rewrite_message_returned = None
@@ -1233,12 +1232,12 @@ class GraphAgent:
                 # 处理question_rewrited 
                 if question_rewrited:
                     if question_rewrited != self.question_rewrited:
-                        logger.warning(f"进行了问题改写:{self.question_rewrited} => {question_rewrited}")
+                        logger.info(f"进行了问题改写:{self.question_rewrited} => {question_rewrited}")
                         both_question = f"原始的用户Query：{self.question_rewrited}（及重写后的用户Query：{question_rewrited}）"
                         self.question_rewrited = both_question
-                        # self.question_rewrited = question_rewrited ##仅在问题内容变化后，才赋值给self.question_rewrited，改写前已设置self.question_rewrited = user_question
+                        self.question_related_messages = []
                     else:
-                        logger.warning(f"改写问题与原始问题一致:{self.question_rewrited} == {question_rewrited}")
+                        logger.debug(f"改写问题与原始问题一致:{self.question_rewrited} == {question_rewrited}")
 
         logger.debug(f"USER[id:{self.user_id}]的问题['{self.question_rewrited}'] (新的question_id: [{self.question_id})]")
         input_message = self.makeup_message_with_question_id_idx(HumanMessage,content=self.question_rewrited)
