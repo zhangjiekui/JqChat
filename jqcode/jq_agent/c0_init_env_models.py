@@ -232,6 +232,10 @@ def clean_up_list_when_encounter_null_element(messages_a: list, messages_b: list
        
         if not messages_a or messages_a == messages_b:
             return messages_b
+        if messages_a in messages_b or messages_a[1:] in messages_b:
+            return messages_b
+        if messages_b in messages_a:
+            return messages_a
         else:
             # messages_a = [el for el in messages_a if el not in messages_b]
             return messages_a + messages_b

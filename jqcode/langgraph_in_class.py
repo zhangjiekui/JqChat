@@ -606,12 +606,12 @@ class GraphAgent:
         return self.message_idx_in_a_question_epoch
         
     def get_messages(self):
-        self.messages = self._get_messages_from_state_by_key("messages") 
-        return self.messages
+        messages = self._get_messages_from_state_by_key("messages") 
+        return messages
     
     def get_question_related_messages(self):
-        self.question_related_messages = self._get_messages_from_state_by_key("question_related_messages") 
-        return self.question_related_messages
+        question_related_messages = self._get_messages_from_state_by_key("question_related_messages") 
+        return question_related_messages
     
     def retrieve_question_related_messages_from_history(self,question="",reserve_last_n_messages_num=7,score_threshold=0.3):
         question_related_messages = []
@@ -820,7 +820,7 @@ class GraphAgent:
         state['messages'][-1].tool_calls = valid_toolcalls        
         result = state['messages'][-1]
         print("xxxxxxxxxxxxxxxxxxxxxxxxxxxx")
-        print(f'{result.content=}')
+        print(f'{result.tool_calls=};{result.content=}')
         print("xxxxxxxxxxxxxxxxxxxxxxxxxxxx")
         finish_reason = "No Finish Reason"
         
@@ -912,22 +912,36 @@ class GraphAgent:
     def call_llm(self,state: GraphAgentState):
     # 历史 + 当前
         # 获取历史相关message
-        question_related_messages = self.get_question_related_messages()
-        if len(question_related_messages)==0: 
-            # 设置reserve_last_n_messages_num=1，表示：新的问题开始时，此时应该只有1个message(即新的用户问题)；
-            # 其他的都作为历史消息，然后从历史消息中检索与当前相关的。检索出的所有相关历史消息会抽取出内容，组装成一个Humanmessage；后面再加一个组装的AIMessage
-            question_related_messages = self.retrieve_question_related_messages_from_history(reserve_last_n_messages_num=1,score_threshold=0.3)                   
+        messages = self.get_messages()
+        if len(messages) < 2:
+            question_related_messages = messages
+        else:
+            if messages[-1].additional_kwargs['question_id'] == messages[-2].additional_kwargs['question_id']:
+                question_related_messages = self.get_question_related_messages()
+            else: 
+                # 设置reserve_last_n_messages_num=1，表示：新的问题开始时，此时应该只有1个message(即新的用户问题)；
+                # 其他的都作为历史消息，然后从历史消息中检索与当前相关的。检索出的所有相关历史消息会抽取出内容，组装成一个Humanmessage；后面再加一个组装的AIMessage
+                question_related_messages = self.retrieve_question_related_messages_from_history(reserve_last_n_messages_num=1,score_threshold=0.3)                   
         # 当前message
         input_message = state.get('messages')[-1]
         if input_message not in question_related_messages:
             question_related_messages.append(input_message)
         if self.system_message:
-            messages = self.system_message + question_related_messages            
-        logger.info(f"call_llm:调用LLM时的消息数为:{len(messages)}")        
+            messages = self.system_message + question_related_messages
+        # for m in messages:
+        #     print(m.pretty_repr())            
+        logger.warning(f"call_llm:调用LLM时的消息数为:{len(messages)}")        
         
         if len(messages)>30:
             _error_str = f'error!消息数量大于30，为避免进入错误循环，主动退出执行！'
             logger.error(_error_str)
+            for m in messages:
+                m.pretty_print()
+                # logger.critical(m.pretty_repr())
+            print("==================================END===========================================")
+            import sys
+            sys.exit()
+
             message=AIMessage(content=_error_str)
             return {'messages': message,'question_related_messages':[]}
         else:
@@ -1291,7 +1305,7 @@ if __name__ == "__main__":
     my_main_bot = GraphAgent(executable_tools=executable_tools,routing_tools_wrapped_in_class=route_tools)
 
     for user_question in user_questions:
-        if user_question == user_questions[-1]:
+        if user_question == '晶奇公司编制的安徽省食品药品监督管理局行政审批系统项目总体计划的版本号是多少，批准人是谁？':
             pass
         answer = my_main_bot.run_conversation(user_question=user_question)
         pass

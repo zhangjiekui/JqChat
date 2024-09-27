@@ -25,7 +25,7 @@ from jqcode.jq_splitters.backend_splitter_utils.jq_chinese_recursive_text_splitt
 from jqcode.jq_agent.tools.jq_web_search_engine import is_query_chinese
 from jqcode.jq_utils.logger import jqkj_logger
 
-logger = jqkj_logger(__file__,using_multi_thread=True).get_logger()
+logger = jqkj_logger(__file__).get_logger()
 
 try:
     from llama_index.core.node_parser.node_utils import default_id_func    

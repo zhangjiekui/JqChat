@@ -1,16 +1,13 @@
 import logging
-import os,sys
-from pathlib import Path
-import threading
-# sys.path.append("..")
-# sys.path.append('/root/projectbs/langchainproject')
+import os
 from jqcode.jq_config.general_config import logfile_path,if_log_verbose
+
 VERBOSE = if_log_verbose()
 logfile_path = logfile_path
 stem = logfile_path.stem
 
 class jqkj_logger(logging.Logger):
-    def __init__(self,current_file_path=None,logfile_path = logfile_path,verbose=VERBOSE,propagate = True, using_multi_thread=True):
+    def __init__(self,current_file_path=None,logfile_path = logfile_path,verbose=VERBOSE,propagate = False):
         if current_file_path is None:
             current_file_path = __file__        
         try:
@@ -18,24 +15,19 @@ class jqkj_logger(logging.Logger):
             current_file_path = current_file_path[index:]
         except: 
             current_file_path = os.path.basename(current_file_path) 
-        super().__init__(name=current_file_path)
-
-                    
+        current_file_path=f"jqlogger( {current_file_path} "
+        super().__init__(name=current_file_path)                    
 
         self.logger = logging.getLogger(current_file_path)
         self.logger.propagate = propagate
         self.verbose = verbose
 
-        # if not Path(logfile_path).exists():
-        #     os.mk(logfile_path.parent)
-        self.mtex = threading.Lock() if using_multi_thread else None
         self.lf = logging.FileHandler(logfile_path,mode='w',encoding='utf-8')  # 打印到文件
         self.sm = logging.StreamHandler()  # 打印到终端
         # Formatter对象：日志格式
         formmater1 = logging.Formatter('%(message)s  [%(asctime)s %(levelname)s:%(name)s(%(lineno)d)]',datefmt='%Y-%m-%d %H:%M')
-
         # %(levelname)s:%(name)s(%(lineno)d)
-        formmater2 = logging.Formatter(f'%(message)s  [%(levelname)s:{current_file_path}(%(lineno)d)]')
+        formmater2 = logging.Formatter(f'%(message)s  [%(levelname)s:{current_file_path}第%(lineno)d行)]')
         # 为Handler对象绑定格式
         self.lf.setFormatter(formmater1)
         self.sm.setFormatter(formmater2)
@@ -57,52 +49,42 @@ class jqkj_logger(logging.Logger):
         self.logger.setLevel(level)
         self.lf.setLevel(10)
         self.sm.setLevel(10)
+        self.disable_third_parties_logging()
 
+    def disable_third_parties_logging(self):
+        jq_loggers = []
+        for log_name, log_obj in logging.Logger.manager.loggerDict.items():
+            if not log_name.lower().startswith('jq'):
+                # log_obj.disabled = True
+                try:
+                    log_obj.setLevel(logging.ERROR)
+                    # log_obj.disabled = True
+                except:
+                    pass
+            else:
+                jq_loggers.append(log_name)
+        # print(f"{jq_loggers=}")
+                
+    
     def get_logger(self):
         return self.logger
     
     def debug(self,message):        
         if self.verbose:
-            if self.mtex:
-                with self.mtex:
-                    self.logger.debug(message)
-            else:
-                self.logger.debug(message)
+            self.logger.debug(message)
     
     def info(self,message):
         if self.verbose:
-            if self.mtex:
-                with self.mtex:
-                    self.logger.info(message)
-            else:
-                self.logger.info(message)
+            self.logger.info(message)
 
     def warning(self,message,verbose=True):
-        verbose=verbose if verbose is not None else self.verbose
-        if self.verbose:
-            if self.mtex:
-                with self.mtex:
-                    self.warning.debug(message)
-            else:
-                self.logger.warning(message)
+        self.logger.warning(message)
 
     def error(self,message,verbose=True):
-        verbose=verbose if verbose is not None else self.verbose
-        if self.verbose:
-            if self.mtex:
-                with self.mtex:
-                    self.logger.error(message)
-            else:
-                self.logger.error(message)
+        self.logger.error(message)
 
     def critical(self,message,verbose=True):
-        verbose=verbose if verbose is not None else self.verbose
-        if self.verbose:
-            if self.mtex:
-                with self.mtex:
-                    self.logger.error(message)
-            else:
-                self.logger.error(message)
+        self.logger.error(message)
 
 
     

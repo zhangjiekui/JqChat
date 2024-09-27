@@ -56,7 +56,7 @@ from llama_index.readers.file import UnstructuredReader
 import asyncio
 
 from jqcode.jq_utils.logger import jqkj_logger
-logger = jqkj_logger(__file__,using_multi_thread=True).get_logger()
+logger = jqkj_logger(__file__).get_logger()
 
 file_type_processed_by_jqreader = [".pdf",".doc",".docx",".md",".html",".htm"]
 mutex = threading.Lock()

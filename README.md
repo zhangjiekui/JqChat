@@ -37,6 +37,19 @@ https://docs.vllm.ai/en/stable/serving/openai_compatible_server.html#extra-param
 ### Context Length: Full 131,072 tokens and generation 8192 tokens
 ```
 workon xinfer
+VLLM_USE_MODELSCOPE=True CUDA_VISIBLE_DEVICES=0,1,2,3 VLLM_ALLOW_ENGINE_USE_RAY=1 nohup vllm serve /data/xinference/modelscope/hub/qwen/Qwen2.5-72B-Instruct-AWQ --served-model-name qwen25b70 --enable-auto-tool-choice --tool-call-parser hermes --host 0.0.0.0 --port 9997 --max-model-len 32000 --tensor-parallel-size 4 --distributed-executor-backend ray --use_v2_block_manager --gpu-memory-utilization 0.90 >> /data/xinference/vllm.log 2>&1 &
+tail -f /data/xinference/vllm.log
+```
+ --quantization awq
+
+
+Known Issues:  
+https://github.com/QwenLM/Qwen2.5/blob/c7871179500a0ea688c97b0f6656dd6e8a28b555/docs/source/quantization/gptq.md#qwen25-72b-instruct-gptq-int4-cannot-stop-generation-properly 
+
+模型有更新，需重新下载
+  https://www.modelscope.cn/models/tclf90/qwen2.5-72b-instruct-gptq-int4
+```
+workon xinfer 
 VLLM_ALLOW_ENGINE_USE_RAY=1 vllm serve  /data/models/Qwen2.5-14B-Instruct-GPTQ-Int4/ --served-model-name qwen25b70 --enable-auto-tool-choice --tool-call-parser hermes --host 0.0.0.0 --port 9997 --max-model-len 32000 --tensor-parallel-size 1 --distributed-executor-backend ray --use_v2_block_manager --gpu-memory-utilization 0.95 --quantization gptq_marlin
 ```
 

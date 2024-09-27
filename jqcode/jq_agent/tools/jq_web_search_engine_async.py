@@ -433,7 +433,7 @@ class AsyncHtmlLoaderBypassException(AsyncHtmlLoader):
         raise_for_status: bool = False,
         ignore_load_errors: bool = False,
         *,
-        preserve_order: bool = True,
+        preserve_order: bool = False,
         trust_env: bool = False,
     ):
         super().__init__(
@@ -452,7 +452,7 @@ class AsyncHtmlLoaderBypassException(AsyncHtmlLoader):
             trust_env=trust_env
         )
     async def _fetch(
-        self, url: str, retries: int = 3, cooldown: int = 2, backoff: float = 1.5
+        self, url: str, retries: int = 1, cooldown: int = 2, backoff: float = 1.5
     ) -> str:
         
         text = ""
