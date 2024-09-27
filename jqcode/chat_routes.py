@@ -70,7 +70,7 @@ def completions(
     text = chat_bot.run_conversation(user_question=user_prompt)
     
     # returned_str
-    messages = chat_bot.get_all_history_messages()
+    messages = chat_bot.get_messages()
     code = ''
     try:
         for m in messages[::-1]:

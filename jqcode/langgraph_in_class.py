@@ -539,8 +539,6 @@ class GraphAgent:
         self.message_idx_in_a_question_epoch = self.set_message_idx_in_a_question_epoch()
         self.graph = self.graph_definition()
         # self.visualize_graph()
-        self.all_history_messages = self.get_all_history_messages()
-        self.question_related_messages = []
     
     # endregion
     
@@ -607,21 +605,24 @@ class GraphAgent:
             logger.warning(f'start_idx:{start_idx}必须是Union[int,None]')
         return self.message_idx_in_a_question_epoch
         
-    def get_all_history_messages(self):
-        self.all_history_messages = self._get_messages_from_state_by_key("messages") 
-        return self.all_history_messages
+    def get_messages(self):
+        self.messages = self._get_messages_from_state_by_key("messages") 
+        return self.messages
     
-    def get_question_related_messages_from_state(self,question="",reserve_last_n_messages_num=6,score_threshold=0.3):
-        if not self.question_related_messages:
-        # if True:
-            messages = self.get_all_history_messages() ## 或者  messages = state['messages']
+    def get_question_related_messages(self):
+        self.question_related_messages = self._get_messages_from_state_by_key("question_related_messages") 
+        return self.question_related_messages
+    
+    def retrieve_question_related_messages_from_history(self,question="",reserve_last_n_messages_num=7,score_threshold=0.3):
+        question_related_messages = []
+        messages = self.get_messages() ## 或者  messages = state['messages']
+        if messages:
             question = question or self.question_rewrited
             if not question:
                 logger.warning('请传入非空的user question，或者先给self.question_rewrited赋值')
             else:
                 question_related_messages = env_models_instance.filter_and_get_messages_relevant_to_query(if_reranking=True,query=question,messages_list=messages,reserve_last_n_messages_num = reserve_last_n_messages_num,score_threshold=score_threshold)
-                self.question_related_messages = question_related_messages
-        return self.question_related_messages
+        return question_related_messages
 
     def _get_messages_from_state_by_key(self,key:str):
         # messages = self.graph.get_state(config=self.config).values[key] 
@@ -911,15 +912,11 @@ class GraphAgent:
     def call_llm(self,state: GraphAgentState):
     # 历史 + 当前
         # 获取历史相关message
-        question_related_messages = state.get('question_related_messages',[])
-        self.question_related_messages = question_related_messages
-        if len(self.question_related_messages)==0: 
+        question_related_messages = self.get_question_related_messages()
+        if len(question_related_messages)==0: 
             # 设置reserve_last_n_messages_num=1，表示：新的问题开始时，此时应该只有1个message(即新的用户问题)；
             # 其他的都作为历史消息，然后从历史消息中检索与当前相关的。检索出的所有相关历史消息会抽取出内容，组装成一个Humanmessage；后面再加一个组装的AIMessage
-            question_related_messages = self.get_question_related_messages_from_state(reserve_last_n_messages_num=1,score_threshold=0.3)
-            assert self.question_related_messages == question_related_messages,"self.get_question_related_messages_from_state方法里应同步更新了self.question_related_messages"
-
-        
+            question_related_messages = self.retrieve_question_related_messages_from_history(reserve_last_n_messages_num=1,score_threshold=0.3)                   
         # 当前message
         input_message = state.get('messages')[-1]
         if input_message not in question_related_messages:
@@ -932,6 +929,7 @@ class GraphAgent:
             _error_str = f'error!消息数量大于30，为避免进入错误循环，主动退出执行！'
             logger.error(_error_str)
             message=AIMessage(content=_error_str)
+            return {'messages': message,'question_related_messages':[]}
         else:
             try:
                 message = self.model.invoke(messages,config=invoke_llm_config)                
@@ -1201,17 +1199,16 @@ class GraphAgent:
         logger.debug(f"切记新的问题对话前，要先更新user_question 和 question_id！老的[{self.question_id=}]")
         self.question_id = self.get_random_id()
         self.question = user_question
-        self.question_rewrited = user_question #后面会使用self.question_rewrited提交给大模型，就要确保self.question_rewrited有值
-        self.question_related_messages = [] #新一轮会话，将问题相关的信息记录置为空        
+        self.question_rewrited = user_question #后面会使用self.question_rewrited提交给大模型，就要确保self.question_rewrited有值  
         
         logger.warning(f"此处默认改写问题设置为{allow_question_rewrite=}，但实际需要获取用户是否运行改写的设置")        
         if allow_question_rewrite:
-            related_history_messages = self.get_question_related_messages_from_state(user_question,reserve_last_n_messages_num=3,score_threshold=0.3)
+            # 在重写时获取的最近的历史消息列表可以长一些，因为有些历史消息相关性不强，但能提供有用的上下文信息，并且获得的related_history_messages仅用于此次计算，不会真正附加到消息列表中
+            # 所以设置reserve_last_n_messages_num=7
+            related_history_messages = self.retrieve_question_related_messages_from_history(user_question,reserve_last_n_messages_num=7,score_threshold=0.3)
             if related_history_messages:
                 if related_history_messages[-1].content == user_question:
                     related_history_messages = related_history_messages[0:-1]
-            # 只有真的重写后，才置为[]? 见下方
-            # self.question_related_messages = [] # self.get_question_related_messages_from_state会默认设置self.question_related_messages的值，这里再设置为[]
             if related_history_messages:
                 question_rewrited = ''            
                 rewrite_message_returned = None
@@ -1235,14 +1232,13 @@ class GraphAgent:
                         logger.info(f"进行了问题改写:{self.question_rewrited} => {question_rewrited}")
                         both_question = f"原始的用户Query：{self.question_rewrited}（及重写后的用户Query：{question_rewrited}）"
                         self.question_rewrited = both_question
-                        self.question_related_messages = []
                     else:
                         logger.debug(f"改写问题与原始问题一致:{self.question_rewrited} == {question_rewrited}")
 
         logger.debug(f"USER[id:{self.user_id}]的问题['{self.question_rewrited}'] (新的question_id: [{self.question_id})]")
         input_message = self.makeup_message_with_question_id_idx(HumanMessage,content=self.question_rewrited)
-        #   {"$user_id":{"rag_args":"$rag_args","reference":"$reference"}} 
         
+        #   {"$user_id":{"rag_args":"$rag_args","reference":"$reference"}}        
         user_variables_statedict = {self.user_id:{"rag_args":"","reference":""}}
         result = self.graph.invoke({"messages": [input_message],"question":self.question_rewrited,"question_related_messages":[],"user_variables":user_variables_statedict},config=self.invoke_graph_config)
         
