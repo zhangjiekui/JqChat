@@ -613,7 +613,7 @@ class GraphAgent:
         question_related_messages = self._get_messages_from_state_by_key("question_related_messages") 
         return question_related_messages
     
-    def retrieve_question_related_messages_from_history(self,question="",reserve_last_n_messages_num=7,score_threshold=0.1):
+    def retrieve_question_related_messages_from_history(self,question="",reserve_last_n_messages_num=7,score_threshold=0.3):
         question_related_messages = []
         messages = self.get_messages() ## 或者  messages = state['messages']
         if messages:
@@ -919,7 +919,7 @@ class GraphAgent:
             # 刚开始的新问题
             # 设置reserve_last_n_messages_num=1，表示：新的问题开始时，此时应该只有1个message(即新的用户问题)；
             # 其他的都作为历史消息，然后从历史消息中检索与当前相关的。检索出的所有相关历史消息会抽取出内容，组装成一个Humanmessage；后面再加一个组装的AIMessage
-            question_related_messages = self.retrieve_question_related_messages_from_history(question=question,reserve_last_n_messages_num=1,score_threshold=0.1)
+            question_related_messages = self.retrieve_question_related_messages_from_history(question=question,reserve_last_n_messages_num=0,score_threshold=0.3)
         else:
             question_related_messages = state["question_related_messages"]
         # if len(messages) < 2:
@@ -1230,7 +1230,7 @@ class GraphAgent:
         if allow_question_rewrite:
             # 在重写时获取的最近的历史消息列表可以长一些，因为有些历史消息相关性不强，但能提供有用的上下文信息，并且获得的related_history_messages仅用于此次计算，不会真正附加到消息列表中
             # 所以设置reserve_last_n_messages_num=7
-            related_history_messages = self.retrieve_question_related_messages_from_history(user_question,reserve_last_n_messages_num=7,score_threshold=0.1)
+            related_history_messages = self.retrieve_question_related_messages_from_history(user_question,reserve_last_n_messages_num=7,score_threshold=0.3)
             if related_history_messages:
                 if related_history_messages[-1].content == user_question:
                     related_history_messages = related_history_messages[0:-1]

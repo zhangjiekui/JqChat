@@ -100,7 +100,7 @@ class JqXinferenceReranker(BaseDocumentCompressor):
         self,
         top_n: int = 6,
         model:Any =None,
-        threshold:float =0.1, #"""相关性阈值，低于此值的文档不返回."""
+        threshold:float =0.3, #"""相关性阈值，低于此值的文档不返回."""
         **kwargs
     ):
         
