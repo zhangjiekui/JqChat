@@ -915,22 +915,13 @@ class GraphAgent:
         messages = state["messages"]
         question = self.question_rewrited
 
-        if messages[-1].additional_kwargs['idx_in_a_question_epoch']==1:
-            # 刚开始的新问题
+        if messages[-1].additional_kwargs['idx_in_a_question_epoch']==1: # 刚开始的新问题            
             # 设置reserve_last_n_messages_num=1，表示：新的问题开始时，此时应该只有1个message(即新的用户问题)；
             # 其他的都作为历史消息，然后从历史消息中检索与当前相关的。检索出的所有相关历史消息会抽取出内容，组装成一个Humanmessage；后面再加一个组装的AIMessage
             question_related_messages = self.retrieve_question_related_messages_from_history(question=question,reserve_last_n_messages_num=0,score_threshold=0.3)
         else:
             question_related_messages = state["question_related_messages"]
-        # if len(messages) < 2:
-        #     question_related_messages = messages
-        # else:
-        #     if messages[-1].additional_kwargs['question_id'] == messages[-2].additional_kwargs['question_id']:
-        #         question_related_messages = self.get_question_related_messages()
-        #     else: 
-        #         # 设置reserve_last_n_messages_num=1，表示：新的问题开始时，此时应该只有1个message(即新的用户问题)；
-        #         # 其他的都作为历史消息，然后从历史消息中检索与当前相关的。检索出的所有相关历史消息会抽取出内容，组装成一个Humanmessage；后面再加一个组装的AIMessage
-        #         question_related_messages = self.retrieve_question_related_messages_from_history(question=question,reserve_last_n_messages_num=1,score_threshold=0.1)                   
+               
         # 当前message
         input_message = state.get('messages')[-1]
         if input_message not in question_related_messages:

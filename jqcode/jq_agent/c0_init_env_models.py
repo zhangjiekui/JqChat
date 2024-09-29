@@ -652,6 +652,7 @@ class InitEnvModels:
             retriever = get_retriever(vectorstore=es_vectorstore,top_k=retriever_docs_num,score_threshold=score_threshold) 
             chunks_relevant = retriever.invoke(query,config=self.invoke_llm_config) 
             
+            # region 使用Faiss
             # embed_model  = embed_model if embed_model else self.embed_model
             # # vs=FAISS.from_documents(text_chunks, embed_model, distance_strategy=DistanceStrategy.COSINE)
             # # retriever = JqVectorStoreRetrieverWithScore(vectorstore=vs,search_type="similarity_score_threshold", search_kwargs={"score_threshold": score_threshold, "k": retriever_docs_num})
@@ -662,6 +663,7 @@ class InitEnvModels:
             # else:
             #     retriever.search_kwargs['k'] = final_docs_num
             #     chunks_relevant = retriever.invoke(query,config=self.invoke_llm_config)
+            # endregion 使用Faiss
       
         return chunks_relevant
 
@@ -677,7 +679,7 @@ class InitEnvModels:
     # 避免历史消息类型的拼装（符合HumanMessage、AIMessage、[ToolMessage if AIMessage is a ToolCall AIMessage]），引入不相关、不必要的消息
     # 返回最近的n条消息列表，并且保证是以HumanMessage开头的，符合HumanMessage、AIMessage、[ToolMessage if AIMessage is a ToolCall AIMessage]
     def filter_and_get_messages_relevant_to_query(self,query:str,messages_list:List[BaseMessage],reserve_last_n_messages_num=0,reserve_message_types:tuple=(HumanMessage,AIMessage),text_splitter=None,embed_model=None,reranker=None,
-                                                    if_reranking:bool=True,retriever_docs_num=10,final_docs_num=4 ,score_threshold=0.1, only_use_reranker=False):
+                                                    if_reranking:bool=True,retriever_docs_num=10,final_docs_num=4 ,score_threshold=0.3, only_use_reranker=False):
     
         if not messages_list:
            return []        
