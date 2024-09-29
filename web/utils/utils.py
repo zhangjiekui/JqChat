@@ -465,7 +465,7 @@ class ApiRequest:
         knowledge_base_name: str,
     ):
         """
-        对应api.py/knowledge_base/delete_knowledge_base接口
+        对应api.py/knowledge_base/delete_knowledge_base接口  chatchat/server/knowledge_base/kb_api.py
         """
         response = self.post(
             "/knowledge_base/delete_knowledge_base",

@@ -452,7 +452,7 @@ class AsyncHtmlLoaderBypassException(AsyncHtmlLoader):
             trust_env=trust_env
         )
     async def _fetch(
-        self, url: str, retries: int = 1, cooldown: int = 2, backoff: float = 1.5
+        self, url: str, retries: int = 1, cooldown: int = 1, backoff: float = 1
     ) -> str:
         
         text = ""

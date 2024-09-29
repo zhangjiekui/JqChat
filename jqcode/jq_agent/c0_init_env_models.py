@@ -23,6 +23,7 @@ from langchain_elasticsearch import ElasticsearchStore
     # """DenseVectorStrategy： using K-nearest-neighbors retrieval."""
     # """DenseVectorScriptScoreStrategy：Exact nearest neighbors retrieval using the `script_score` query."""
 from elasticsearch.helpers.vectorstore import BM25Strategy,SparseVectorStrategy,DenseVectorStrategy,DenseVectorScriptScoreStrategy
+from elasticsearch.helpers.vectorstore._utils import DistanceMetric
 from langchain.indexes import SQLRecordManager, index
 from langchain.retrievers.document_compressors.base import BaseDocumentCompressor
 from langchain_core.messages import BaseMessage
@@ -75,10 +76,10 @@ class JqVectorStoreRetrieverWithScore(VectorStoreRetriever):
             )
         )
 
-        # Make the score part of the document metadata
+        # Make the score part of the document metadata        
         for doc, similarity in docs_and_similarities:
-            doc.metadata["relevance_score_retriever"] = similarity
-            doc.page_content = f'[relevance_score_retriever={similarity:.2f}]{doc.page_content}'
+            doc.metadata[f"relevance_score_retriever_{self.name}"] = similarity
+            # doc.page_content = f'[relevance_score_retriever={similarity:.2f}]{doc.page_content}'
 
         docs = [doc for doc, _ in docs_and_similarities]
         return docs
@@ -99,7 +100,7 @@ class JqXinferenceReranker(BaseDocumentCompressor):
         self,
         top_n: int = 6,
         model:Any =None,
-        threshold:float =0.2, #"""相关性阈值，低于此值的文档不返回."""
+        threshold:float =0.1, #"""相关性阈值，低于此值的文档不返回."""
         **kwargs
     ):
         
@@ -160,7 +161,15 @@ class JqXinferenceReranker(BaseDocumentCompressor):
                 doc_id = result['index']
                 doc = valid_doc_list[doc_id]
                 doc.metadata.update({"relevance_score_reranker":score})
-                doc.page_content = f'[relevance_score_reranker={score:.2f}]{doc.page_content}'
+                # get retriever_score
+                retriever_score_string=''
+                retriever_score_keys=['relevance_score_retriever_embedding','relevance_score_retriever_bm25']
+                for key in retriever_score_keys:
+                    if  key in doc.metadata.keys():
+                        retriever_score = doc.metadata.get(key,0)
+                        retriever_score_string += f"{key}={retriever_score:.2f};"
+                        # break                
+                doc.page_content = f'[{retriever_score_string}relevance_score_reranker={score:.2f}]{doc.page_content}'
                 final_results.append(doc)
        
         final_results = final_results[:self.top_n]
@@ -374,7 +383,7 @@ class InitEnvModels:
 
         self.all_indices = None
         self.all_indices = self.get_all_knowledge_base()
-        self.strategy = DenseVectorStrategy(hybrid=False)
+        self.strategy = DenseVectorStrategy(hybrid=False,rrf=False,distance=DistanceMetric.COSINE)
 
         self.default_chinese_analyzer_settings = {"index": {"analysis.analyzer.default.type": "ik_max_word","analysis.search_analyzer.default.type": "ik_smart"}}
     
@@ -573,6 +582,12 @@ class InitEnvModels:
         assert documents,  "参数documents（待索引的文档）不得为空！"
         if not es_connection:
             es_connection=self.get_es_connection()
+        
+        # 检查source_id_key是否存在，如果不存在就使用'page_content'
+        for document in documents:
+            if source_id_key not in document.metadata.keys():
+                document.metadata.update({'source':document.page_content})
+        
         embedding = embedding if embedding else self.get_emb_8k_rerank_model()[0]
         self.create_es_index_if_not_existes_with_default_chinese_analyzer(es_connection=es_connection,index_name=index_name)
         strategy = strategy if strategy else self.strategy
@@ -632,18 +647,22 @@ class InitEnvModels:
             chunks_relevant = reranker.compress_documents(text_chunks,query)
         
         else:
-            embed_model  = embed_model if embed_model else self.embed_model
-            vs=FAISS.from_documents(text_chunks, embed_model, distance_strategy=DistanceStrategy.MAX_INNER_PRODUCT)
-            retriever = JqVectorStoreRetrieverWithScore(vectorstore=vs,search_type="similarity_score_threshold", search_kwargs={"score_threshold": score_threshold, "k": retriever_docs_num})        
-            if if_reranking:                
-                compression_retriever = ContextualCompressionRetriever(base_compressor=reranker, base_retriever=retriever)
-                chunks_relevant = compression_retriever.invoke(query,config=self.invoke_llm_config)
-            else:
-                retriever.search_kwargs['k'] = final_docs_num
-                chunks_relevant = retriever.invoke(query,config=self.invoke_llm_config)
+            from jqcode.jq_agent.tools.jq_retriever import get_retriever
+            es_vectorstore = self.get_es_searchstore_index_documents(text_chunks, embed_model,index_name="temp_memory_or_web_results",clear_before_add_index=True) 
+            retriever = get_retriever(vectorstore=es_vectorstore,top_k=retriever_docs_num,score_threshold=score_threshold) 
+            chunks_relevant = retriever.invoke(query,config=self.invoke_llm_config) 
+            
+            # embed_model  = embed_model if embed_model else self.embed_model
+            # # vs=FAISS.from_documents(text_chunks, embed_model, distance_strategy=DistanceStrategy.COSINE)
+            # # retriever = JqVectorStoreRetrieverWithScore(vectorstore=vs,search_type="similarity_score_threshold", search_kwargs={"score_threshold": score_threshold, "k": retriever_docs_num})
+     
+            # if if_reranking:                
+            #     compression_retriever = ContextualCompressionRetriever(base_compressor=reranker, base_retriever=retriever)
+            #     chunks_relevant = compression_retriever.invoke(query,config=self.invoke_llm_config)
+            # else:
+            #     retriever.search_kwargs['k'] = final_docs_num
+            #     chunks_relevant = retriever.invoke(query,config=self.invoke_llm_config)
       
-        # 只返回relevance_score>=score_threshold的
-        chunks_relevant = [d for d in chunks_relevant if d.metadata.get("relevance_score_retriever",0)>=score_threshold]
         return chunks_relevant
 
     def is_toolcall_aimessage(self, message):
@@ -658,7 +677,7 @@ class InitEnvModels:
     # 避免历史消息类型的拼装（符合HumanMessage、AIMessage、[ToolMessage if AIMessage is a ToolCall AIMessage]），引入不相关、不必要的消息
     # 返回最近的n条消息列表，并且保证是以HumanMessage开头的，符合HumanMessage、AIMessage、[ToolMessage if AIMessage is a ToolCall AIMessage]
     def filter_and_get_messages_relevant_to_query(self,query:str,messages_list:List[BaseMessage],reserve_last_n_messages_num=0,reserve_message_types:tuple=(HumanMessage,AIMessage),text_splitter=None,embed_model=None,reranker=None,
-                                                    if_reranking:bool=True,retriever_docs_num=10,final_docs_num=6 ,score_threshold=0.5, only_use_reranker=False):
+                                                    if_reranking:bool=True,retriever_docs_num=10,final_docs_num=4 ,score_threshold=0.1, only_use_reranker=False):
     
         if not messages_list:
            return []        
@@ -716,7 +735,7 @@ class InitEnvModels:
                 reranker  = reranker if reranker else self.reranker
                 text_splitter  = text_splitter if text_splitter else self.text_splitter 
 
-                docs_from_messages = [Document(page_content=message_content,metadata={"message_index":message_index}) for message_index, message_content in enumerate(unique_history_messages_list)]
+                docs_from_messages = [Document(page_content=message_content,metadata={"message_index":message_index,"source":message_content}) for message_index, message_content in enumerate(unique_history_messages_list)]
                 chunks_relevant = self.split_and_get_chunks_relevant_from_documents(query, docs_from_messages,text_splitter=text_splitter,reranker=reranker,
                                                                             if_reranking=if_reranking,retriever_docs_num=retriever_docs_num, final_docs_num=final_docs_num,score_threshold=score_threshold,only_use_reranker=only_use_reranker)
                 if chunks_relevant:

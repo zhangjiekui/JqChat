@@ -613,7 +613,7 @@ class GraphAgent:
         question_related_messages = self._get_messages_from_state_by_key("question_related_messages") 
         return question_related_messages
     
-    def retrieve_question_related_messages_from_history(self,question="",reserve_last_n_messages_num=7,score_threshold=0.3):
+    def retrieve_question_related_messages_from_history(self,question="",reserve_last_n_messages_num=7,score_threshold=0.1):
         question_related_messages = []
         messages = self.get_messages() ## 或者  messages = state['messages']
         if messages:
@@ -625,8 +625,8 @@ class GraphAgent:
         return question_related_messages
 
     def _get_messages_from_state_by_key(self,key:str):
-        # messages = self.graph.get_state(config=self.config).values[key] 
-        messages = self.graph.get_state(config=self.invoke_graph_config).values.get(key,[])
+        state = self.graph.get_state(config=self.invoke_graph_config,subgraphs = True)
+        messages = state.values.get(key,[]) 
         return messages
     
     class VECTORSTORE(BaseModel):
@@ -912,16 +912,25 @@ class GraphAgent:
     def call_llm(self,state: GraphAgentState):
     # 历史 + 当前
         # 获取历史相关message
-        messages = self.get_messages()
-        if len(messages) < 2:
-            question_related_messages = messages
+        messages = state["messages"]
+        question = self.question_rewrited
+
+        if messages[-1].additional_kwargs['idx_in_a_question_epoch']==1:
+            # 刚开始的新问题
+            # 设置reserve_last_n_messages_num=1，表示：新的问题开始时，此时应该只有1个message(即新的用户问题)；
+            # 其他的都作为历史消息，然后从历史消息中检索与当前相关的。检索出的所有相关历史消息会抽取出内容，组装成一个Humanmessage；后面再加一个组装的AIMessage
+            question_related_messages = self.retrieve_question_related_messages_from_history(question=question,reserve_last_n_messages_num=1,score_threshold=0.1)
         else:
-            if messages[-1].additional_kwargs['question_id'] == messages[-2].additional_kwargs['question_id']:
-                question_related_messages = self.get_question_related_messages()
-            else: 
-                # 设置reserve_last_n_messages_num=1，表示：新的问题开始时，此时应该只有1个message(即新的用户问题)；
-                # 其他的都作为历史消息，然后从历史消息中检索与当前相关的。检索出的所有相关历史消息会抽取出内容，组装成一个Humanmessage；后面再加一个组装的AIMessage
-                question_related_messages = self.retrieve_question_related_messages_from_history(reserve_last_n_messages_num=1,score_threshold=0.3)                   
+            question_related_messages = state["question_related_messages"]
+        # if len(messages) < 2:
+        #     question_related_messages = messages
+        # else:
+        #     if messages[-1].additional_kwargs['question_id'] == messages[-2].additional_kwargs['question_id']:
+        #         question_related_messages = self.get_question_related_messages()
+        #     else: 
+        #         # 设置reserve_last_n_messages_num=1，表示：新的问题开始时，此时应该只有1个message(即新的用户问题)；
+        #         # 其他的都作为历史消息，然后从历史消息中检索与当前相关的。检索出的所有相关历史消息会抽取出内容，组装成一个Humanmessage；后面再加一个组装的AIMessage
+        #         question_related_messages = self.retrieve_question_related_messages_from_history(question=question,reserve_last_n_messages_num=1,score_threshold=0.1)                   
         # 当前message
         input_message = state.get('messages')[-1]
         if input_message not in question_related_messages:
@@ -1040,11 +1049,12 @@ class GraphAgent:
             tool_call_id = ''
         # print(generation)
         # 最后生成AIMessage可能最合适，因为generate节点直接到Graph的"end"节点
-        generation_ai_message = AIMessage(content=generation,name='generate')
-        generation_ai_message = self.makeup_message_with_question_id_idx(generation_ai_message)
         if tool_call_id:
             generation_tool_message = ToolMessage(content="",name='generate',tool_call_id=tool_call_id)
             generation_tool_message = self.makeup_message_with_question_id_idx(generation_tool_message)
+        generation_ai_message = AIMessage(content=generation,name='generate')
+        generation_ai_message = self.makeup_message_with_question_id_idx(generation_ai_message)
+        if tool_call_id:
             generation_messages = [generation_tool_message,generation_ai_message]
         else:
             generation_messages = [generation_ai_message]
@@ -1213,13 +1223,14 @@ class GraphAgent:
         logger.debug(f"切记新的问题对话前，要先更新user_question 和 question_id！老的[{self.question_id=}]")
         self.question_id = self.get_random_id()
         self.question = user_question
-        self.question_rewrited = user_question #后面会使用self.question_rewrited提交给大模型，就要确保self.question_rewrited有值  
+        self.question_rewrited = user_question #后面会使用self.question_rewrited提交给大模型，就要确保self.question_rewrited有值
+        self.message_idx_in_a_question_epoch = 0        
         
         logger.warning(f"此处默认改写问题设置为{allow_question_rewrite=}，但实际需要获取用户是否运行改写的设置")        
         if allow_question_rewrite:
             # 在重写时获取的最近的历史消息列表可以长一些，因为有些历史消息相关性不强，但能提供有用的上下文信息，并且获得的related_history_messages仅用于此次计算，不会真正附加到消息列表中
             # 所以设置reserve_last_n_messages_num=7
-            related_history_messages = self.retrieve_question_related_messages_from_history(user_question,reserve_last_n_messages_num=7,score_threshold=0.3)
+            related_history_messages = self.retrieve_question_related_messages_from_history(user_question,reserve_last_n_messages_num=7,score_threshold=0.1)
             if related_history_messages:
                 if related_history_messages[-1].content == user_question:
                     related_history_messages = related_history_messages[0:-1]
@@ -1251,6 +1262,7 @@ class GraphAgent:
 
         logger.debug(f"USER[id:{self.user_id}]的问题['{self.question_rewrited}'] (新的question_id: [{self.question_id})]")
         input_message = self.makeup_message_with_question_id_idx(HumanMessage,content=self.question_rewrited)
+        # self.graph.update_state(config=self.invoke_graph_config,values={"messages":input_message})
         
         #   {"$user_id":{"rag_args":"$rag_args","reference":"$reference"}}        
         user_variables_statedict = {self.user_id:{"rag_args":"","reference":""}}
@@ -1305,7 +1317,7 @@ if __name__ == "__main__":
     my_main_bot = GraphAgent(executable_tools=executable_tools,routing_tools_wrapped_in_class=route_tools)
 
     for user_question in user_questions:
-        if user_question == '晶奇公司编制的安徽省食品药品监督管理局行政审批系统项目总体计划的版本号是多少，批准人是谁？':
+        if user_question == '还记得我的名字吗？':
             pass
         answer = my_main_bot.run_conversation(user_question=user_question)
         pass

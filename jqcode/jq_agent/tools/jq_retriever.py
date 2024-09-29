@@ -1,3 +1,4 @@
+import copy
 from typing import List
 from pathlib import Path
 from langchain import schema
@@ -29,7 +30,7 @@ def get_retriever(vectorstore:ElasticsearchStore=None,index_name:str=None,chat_o
 # 如果是已经有了vectorstore
     if vectorstore:
         # vector_retriever = vectorstore.as_retriever(search_type="similarity", search_kwargs={"k":top_k})
-        vector_retriever = JqVectorStoreRetrieverWithScore(vectorstore=vectorstore,search_type="similarity_score_threshold", search_kwargs={"score_threshold":score_threshold,"k":top_k}) 
+        vector_retriever = JqVectorStoreRetrieverWithScore(name="embedding",vectorstore=vectorstore,search_type="similarity_score_threshold", search_kwargs={"score_threshold":score_threshold,"k":top_k}) 
 
 # 如果是chat on docs, 则获取基于文件过滤的retriever
     elif chat_on_docs_list:
@@ -183,7 +184,7 @@ def get_retriever(vectorstore:ElasticsearchStore=None,index_name:str=None,chat_o
         if default_vectorstore and RESERVED_FILTER_BY_FILES:
                 filters = {"terms":{f"metadata.{source_id_key}.keyword": RESERVED_FILTER_BY_FILES}} 
                 # vector_retriever = default_vectorstore.as_retriever(search_type="similarity", search_kwargs={"k":top_k,"filter":filters})
-                vector_retriever = JqVectorStoreRetrieverWithScore(vectorstore=default_vectorstore,search_type="similarity_score_threshold", search_kwargs={"score_threshold":score_threshold,"k":top_k,"filter":filters})
+                vector_retriever = JqVectorStoreRetrieverWithScore(name="embedding",vectorstore=default_vectorstore,search_type="similarity_score_threshold", search_kwargs={"score_threshold":score_threshold,"k":top_k,"filter":filters})
             #region:文件过滤检索器的测试
                 # file_list = [RESERVED_FILTER_BY_FILES[0]]
                 # filters = {"terms":{f"metadata.{source_id_key}.keyword": file_list}}
@@ -224,18 +225,21 @@ def get_retriever(vectorstore:ElasticsearchStore=None,index_name:str=None,chat_o
     if not vector_retriever:
         default_vectorstore = env_models_instance.get_es_searchstore(es_connection=es_connection,embedding=embed_model,index_name=index_name)
         # vector_retriever = default_vectorstore.as_retriever(search_type="similarity", search_kwargs={"k":top_k})
-        vector_retriever = JqVectorStoreRetrieverWithScore(vectorstore=default_vectorstore,search_type="similarity_score_threshold", search_kwargs={"score_threshold":score_threshold,"k":top_k}) 
+        vector_retriever = JqVectorStoreRetrieverWithScore(name="embedding",vectorstore=default_vectorstore,search_type="similarity_score_threshold", search_kwargs={"score_threshold":score_threshold,"k":top_k}) 
 
 # 增强：集成检索器和重排序
     # 单一retriever
     # compression_retriever = ContextualCompressionRetriever(base_compressor=reranker, base_retriever=vector_retriever)
     # 集成检索器retriever #
     identical_index_name = vector_retriever.vectorstore._store.index
-    identical_search_kwargs = vector_retriever.search_kwargs     
+    
+    # 设置bm25的score_threshold
+    identical_search_kwargs = copy.deepcopy(vector_retriever.search_kwargs)
+    identical_search_kwargs.update({'score_threshold': score_threshold*100})     
     bm25_vectorstore = ElasticsearchStore(es_connection=es_connection, index_name=identical_index_name, strategy=ElasticsearchStore.BM25RetrievalStrategy())
     # bm25_retriever = bm25_vectorstore.as_retriever(search_kwargs=identical_search_kwargs)
-    bm25_retriever = JqVectorStoreRetrieverWithScore(vectorstore=bm25_vectorstore,search_type="similarity_score_threshold",search_kwargs=identical_search_kwargs)
-    ensemble_retriever = EnsembleRetriever(retrievers=[bm25_retriever,vector_retriever], weights=[0.3, 0.7])
+    bm25_retriever = JqVectorStoreRetrieverWithScore(name="bm25",vectorstore=bm25_vectorstore,search_type="similarity_score_threshold",search_kwargs=identical_search_kwargs)
+    ensemble_retriever = EnsembleRetriever(retrievers=[vector_retriever,bm25_retriever], weights=[0.5, 0.5],id_key="source")
     compression_retriever = ContextualCompressionRetriever(base_compressor=reranker, base_retriever=ensemble_retriever)
     if not compression_retriever:
         logger.warning(f"未能获取到有效的Retriever：'{compression_retriever=}")

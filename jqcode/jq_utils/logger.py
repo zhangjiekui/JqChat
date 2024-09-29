@@ -16,8 +16,9 @@ class jqkj_logger(logging.Logger):
         except: 
             current_file_path = os.path.basename(current_file_path) 
         current_file_path=f"jqlogger( {current_file_path} "
-        super().__init__(name=current_file_path)                    
-
+        # super().__init__(name=current_file_path)
+        # self.logger = logging.getLogger(current_file_path)
+        super().__init__(name="jqlogger")
         self.logger = logging.getLogger(current_file_path)
         self.logger.propagate = propagate
         self.verbose = verbose
@@ -54,7 +55,7 @@ class jqkj_logger(logging.Logger):
     def disable_third_parties_logging(self):
         jq_loggers = []
         for log_name, log_obj in logging.Logger.manager.loggerDict.items():
-            if not log_name.lower().startswith('jq'):
+            if not log_name.lower().startswith('jqlogger'):
                 # log_obj.disabled = True
                 try:
                     log_obj.setLevel(logging.ERROR)
