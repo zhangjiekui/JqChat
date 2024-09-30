@@ -281,23 +281,35 @@ def grade_documents(state:GraphAgentState):
     print("---CHECK DOCUMENT RELEVANCE TO QUESTION---")
     question = state["question"]
     documents = state["documents"]
+    
+    if len(documents)==1:
+        documents = documents*4
 
     # Score each doc
     filtered_docs = []
-    for d in documents:
-        try:
-            score = retrieval_document_relevance_grader.invoke({"question": question, "document": d.page_content},config=invoke_llm_config)
-            grade = score.k
-            if grade == "yes":
-                print("---GRADE: DOCUMENT RELEVANT---")
-                filtered_docs.append(d)
-            else:
-                print("---GRADE: DOCUMENT NOT RELEVANT---")
-                continue
-        except Exception as e:
-            print(f"---ERROR: 无法获取'retrieval_document_relevance_grader'的判别结果，详细错误信息如下:---")
-            print(e)
-            filtered_docs.append(d)
+    try:
+        scores = retrieval_document_relevance_grader.batch([{"question": question, "document": d.page_content} for d in documents],config=invoke_llm_config)    
+        for i,score in enumerate(scores):
+            d = documents[i]
+            if True:        
+                grade = score.k
+                if grade == "yes":
+                    print("---GRADE: DOCUMENT RELEVANT---")
+                    filtered_docs.append(d)
+                else:
+                    metadata=d.metadata
+                    relevance_score_retriever_embedding = metadata.get('relevance_score_retriever_embedding',0)
+                    relevance_score_retriever_bm25 = metadata.get('relevance_score_retriever_bm25',0)
+                    relevance_score_reranker = metadata.get('relevance_score_reranker',0)
+                    if relevance_score_retriever_embedding > 0.7 or relevance_score_reranker>0.5 or relevance_score_retriever_bm25 > 70:
+                        filtered_docs.append(d)
+                    else:
+                        print("---GRADE: DOCUMENT NOT RELEVANT---")
+                    # continue
+    except Exception as e:
+        print(f"---ERROR: 无法获取'retrieval_document_relevance_grader'的判别结果，详细错误信息如下:---")
+        print(e)
+        filtered_docs.append(d)
     return {"documents": filtered_docs}
     # relevance_filtered_results = "\n".join([d.page_content for d in filtered_docs])
     # relevance_filtered_message = ToolMessage(content=relevance_filtered_results,name='grade_documents',tool_call_id='0')
@@ -1331,7 +1343,7 @@ if __name__ == "__main__":
         if user_question == '请绘制sin(x)曲线':
             pass
         answer = my_main_bot.run_conversation(user_question=user_question)
-        pass
+        # pass
 
 
 # source: https://learn.deeplearning.ai/courses/ai-agents-in-langgraph/lesson/3/langgraph-components    
