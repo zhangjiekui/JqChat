@@ -615,12 +615,18 @@ class GraphAgent:
     
     def retrieve_question_related_messages_from_history(self,question="",reserve_last_n_messages_num=7,score_threshold=0.3):
         question_related_messages = []
-        messages = self.get_messages() ## 或者  messages = state['messages']
+        messages = self.get_messages() ## 应该等价于 messages = state['messages']，但实际上这两者之间可能存在差异，原因目前不清楚      
         if messages:
             question = question or self.question_rewrited
             if not question:
                 logger.warning('请传入非空的user question，或者先给self.question_rewrited赋值')
             else:
+                # 由于self.get_messages() 与 state['messages'] 两者之间可能存在差异（原因目前不清楚）
+                # 这里进行特别处理 
+                if messages[-1].content!=question and reserve_last_n_messages_num==1:
+                    reserve_last_n_messages_num = reserve_last_n_messages_num -1
+                    # raise Exception(f"{messages[-1].content}!={question} and reserve_last_n_messages_num==1") 
+                    
                 question_related_messages = env_models_instance.filter_and_get_messages_relevant_to_query(if_reranking=True,query=question,messages_list=messages,reserve_last_n_messages_num = reserve_last_n_messages_num,score_threshold=score_threshold)
         return question_related_messages
 
@@ -915,15 +921,20 @@ class GraphAgent:
         messages = state["messages"]
         question = self.question_rewrited
 
-        if messages[-1].additional_kwargs['idx_in_a_question_epoch']==1: # 刚开始的新问题            
+        if messages[-1].additional_kwargs['idx_in_a_question_epoch']==0: # 刚开始的新问题            
             # 设置reserve_last_n_messages_num=1，表示：新的问题开始时，此时应该只有1个message(即新的用户问题)；
             # 其他的都作为历史消息，然后从历史消息中检索与当前相关的。检索出的所有相关历史消息会抽取出内容，组装成一个Humanmessage；后面再加一个组装的AIMessage
-            question_related_messages = self.retrieve_question_related_messages_from_history(question=question,reserve_last_n_messages_num=0,score_threshold=0.3)
+            question_related_messages = self.retrieve_question_related_messages_from_history(question=question,reserve_last_n_messages_num=1,score_threshold=0.3)
+            if len(question_related_messages)>3:
+                logger.warning(f"call_llm前获取到的{len(question_related_messages)=}，但本不应超过3")
+                # for m in messages:
+                #     print(m.pretty_repr()) 
+                # assert len(question_related_messages)<=3 
         else:
             question_related_messages = state["question_related_messages"]
                
         # 当前message
-        input_message = state.get('messages')[-1]
+        input_message = messages[-1]
         if input_message not in question_related_messages:
             question_related_messages.append(input_message)
         if self.system_message:
@@ -932,17 +943,26 @@ class GraphAgent:
         #     print(m.pretty_repr())            
         logger.warning(f"call_llm:调用LLM时的消息数为:{len(messages)}")        
         
-        if len(messages)>30:
-            _error_str = f'error!消息数量大于30，为避免进入错误循环，主动退出执行！'
+        max_messages_num = 30
+        if len(messages)>max_messages_num:
+            _error_str = f'error!消息数量大于{max_messages_num}，为避免陷入错误循环，主动退出执行！请修改该问题后重新提问。'
             logger.error(_error_str)
             for m in messages:
                 m.pretty_print()
                 # logger.critical(m.pretty_repr())
-            print("==================================END===========================================")
-            import sys
-            sys.exit()
-
+            print("==================================END Message===================================")
+            
+            # 重置消息列表
+            # 当前问题epoch/session仅保留用户问题消息本身，其余的全部删除
+            state_messages = state["messages"]
+            for m in state_messages[::-1]:
+                if isinstance(m,HumanMessage):
+                    break
+                else:
+                    state_messages.remove(m)               
+            state.update({"messages":state_messages})
             message=AIMessage(content=_error_str)
+            message = self.makeup_message_with_question_id_idx(message)
             return {'messages': message,'question_related_messages':[]}
         else:
             try:
@@ -967,9 +987,9 @@ class GraphAgent:
                 # for m in messages:
                 #     m.pretty_print()
                     
-        message = self.makeup_message_with_question_id_idx(message)
-        question_related_messages.append(message)
-        return {'messages': message,'question_related_messages':question_related_messages}
+            message = self.makeup_message_with_question_id_idx(message)
+            question_related_messages.append(message)
+            return {'messages': message,'question_related_messages':question_related_messages}
 
 
     def generate(self,state:GraphAgentState):
@@ -1214,8 +1234,8 @@ class GraphAgent:
         logger.debug(f"切记新的问题对话前，要先更新user_question 和 question_id！老的[{self.question_id=}]")
         self.question_id = self.get_random_id()
         self.question = user_question
-        self.question_rewrited = user_question #后面会使用self.question_rewrited提交给大模型，就要确保self.question_rewrited有值
-        self.message_idx_in_a_question_epoch = 0        
+        self.question_rewrited = user_question      # 后面会使用self.question_rewrited提交给大模型，就要确保self.question_rewrited有值
+        self.message_idx_in_a_question_epoch = -1   # 新的question epoch/session,重新设置idx       
         
         logger.warning(f"此处默认改写问题设置为{allow_question_rewrite=}，但实际需要获取用户是否运行改写的设置")        
         if allow_question_rewrite:
@@ -1308,7 +1328,7 @@ if __name__ == "__main__":
     my_main_bot = GraphAgent(executable_tools=executable_tools,routing_tools_wrapped_in_class=route_tools)
 
     for user_question in user_questions:
-        if user_question == '还记得我的名字吗？':
+        if user_question == '请绘制sin(x)曲线':
             pass
         answer = my_main_bot.run_conversation(user_question=user_question)
         pass
