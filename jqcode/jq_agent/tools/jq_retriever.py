@@ -239,7 +239,11 @@ def get_retriever(vectorstore:ElasticsearchStore=None,index_name:str=None,chat_o
     bm25_vectorstore = ElasticsearchStore(es_connection=es_connection, index_name=identical_index_name, strategy=ElasticsearchStore.BM25RetrievalStrategy())
     # bm25_retriever = bm25_vectorstore.as_retriever(search_kwargs=identical_search_kwargs)
     bm25_retriever = JqVectorStoreRetrieverWithScore(name="bm25",vectorstore=bm25_vectorstore,search_type="similarity_score_threshold",search_kwargs=identical_search_kwargs)
-    ensemble_retriever = EnsembleRetriever(retrievers=[vector_retriever,bm25_retriever], weights=[0.5, 0.5],id_key="source")
+    ensemble_retriever = EnsembleRetriever(retrievers=[vector_retriever,bm25_retriever], weights=[0.5, 0.5])
+    # 不能设置id_key="source"，现在"source"只到文件名或URL。因此无法区分切片，如果指定id_key="source"，切片会被合并
+    # 不设置id_key时，只会根据page_content进行Unique合并
+    # /root/.virtualenvs/test/lib/python3.10/site-packages/langchain/retrievers/ensemble.py中的weighted_reciprocal_rank方法
+    # ensemble_retriever = EnsembleRetriever(retrievers=[vector_retriever,bm25_retriever], weights=[0.5, 0.5],id_key="source")
     compression_retriever = ContextualCompressionRetriever(base_compressor=reranker, base_retriever=ensemble_retriever)
     if not compression_retriever:
         logger.warning(f"未能获取到有效的Retriever：'{compression_retriever=}")

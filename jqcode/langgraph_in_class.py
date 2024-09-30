@@ -278,42 +278,44 @@ def grade_documents(state:GraphAgentState):
         state (dict): Updates documents key with only filtered relevant documents
     """
 
-    print("---CHECK DOCUMENT RELEVANCE TO QUESTION---")
-    question = state["question"]
+    print("---BYPASS CHECK DOCUMENT RELEVANCE TO QUESTION---")
     documents = state["documents"]
+    return {"documents": documents}
+    # region
+    # question = state["question"]
+    # documents = state["documents"]
     
-    if len(documents)==1:
-        documents = documents*4
+    # # Score each doc
+    # filtered_docs = []
+    # try:
+    #     scores = retrieval_document_relevance_grader.batch([{"question": question, "document": d.page_content} for d in documents],config=invoke_llm_config)    
+    #     for i,score in enumerate(scores):
+    #         d = documents[i]  
+    #         grade = score.k
+    #         if grade == "yes":
+    #             print("---GRADE: DOCUMENT RELEVANT---")
+    #             filtered_docs.append(d)
+    #         else:
+    #             metadata=d.metadata
+    #             relevance_score_retriever_embedding = metadata.get('relevance_score_retriever_embedding',0)
+    #             relevance_score_retriever_bm25 = metadata.get('relevance_score_retriever_bm25',0)
+    #             relevance_score_reranker = metadata.get('relevance_score_reranker',0)
+    #             if relevance_score_retriever_embedding > 0.7 or relevance_score_reranker>0.5 or relevance_score_retriever_bm25 > 70:
+    #                 filtered_docs.append(d)
+    #                 print("---GRADE:LLM DOCUMENT NOT RELEVANT, BUT RETRIEVER 'relevance_score' IS HIGH---")
+    #                 print("---GRADE:SO STILL THINK DOCUMENT RELEVANT")
+    #             else:
+    #                 print("---GRADE: DOCUMENT NOT RELEVANT---")
 
-    # Score each doc
-    filtered_docs = []
-    try:
-        scores = retrieval_document_relevance_grader.batch([{"question": question, "document": d.page_content} for d in documents],config=invoke_llm_config)    
-        for i,score in enumerate(scores):
-            d = documents[i]
-            if True:        
-                grade = score.k
-                if grade == "yes":
-                    print("---GRADE: DOCUMENT RELEVANT---")
-                    filtered_docs.append(d)
-                else:
-                    metadata=d.metadata
-                    relevance_score_retriever_embedding = metadata.get('relevance_score_retriever_embedding',0)
-                    relevance_score_retriever_bm25 = metadata.get('relevance_score_retriever_bm25',0)
-                    relevance_score_reranker = metadata.get('relevance_score_reranker',0)
-                    if relevance_score_retriever_embedding > 0.7 or relevance_score_reranker>0.5 or relevance_score_retriever_bm25 > 70:
-                        filtered_docs.append(d)
-                    else:
-                        print("---GRADE: DOCUMENT NOT RELEVANT---")
-                    # continue
-    except Exception as e:
-        print(f"---ERROR: 无法获取'retrieval_document_relevance_grader'的判别结果，详细错误信息如下:---")
-        print(e)
-        filtered_docs.append(d)
-    return {"documents": filtered_docs}
+    # except Exception as e:
+    #     print(f"---ERROR: 无法获取'retrieval_document_relevance_grader'的判别结果，详细错误信息如下:---")
+    #     print(e)
+    #     filtered_docs.append(d)
+    # return {"documents": filtered_docs}
     # relevance_filtered_results = "\n".join([d.page_content for d in filtered_docs])
     # relevance_filtered_message = ToolMessage(content=relevance_filtered_results,name='grade_documents',tool_call_id='0')
     # return {"documents": filtered_docs, "question": question, "messages":relevance_filtered_message}
+    # endregion
 
 # 3. Decide to Generate if Retrieved Documents is Relevant Route to web_search
 def decide_to_generate(state:GraphAgentState):
