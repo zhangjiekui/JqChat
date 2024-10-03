@@ -136,8 +136,11 @@ class JqkjDocxReader(BaseReader):
                
             # 'original_source_jq'(转换前的文件pdf/doc/md的文件路径，如果本就是docx文件,则与original_source_converted_jq一致),
             # 'source'键是为了与chatchat中的reader保持一致的，取值与'original_source_jq'一致
-            # 'original_source_converted_jq':转换后的docx文件路径   
-            metadata = {"file_name_jq": file_path.name,"file_doc_object_jq":doc,"file_doc_tree_jq":doc_tree,'df_table_list_jq':df_table_list}
+            # 'original_source_converted_jq':转换后的docx文件路径
+            
+            # 多进程情况下，"file_doc_object_jq":doc 会因为序列化/反序列化问题导致错误，所以此处不将其作为元数据的一部分   
+            # metadata = {"file_name_jq": file_path.name,"file_doc_object_jq":doc,"file_doc_tree_jq":doc_tree,'df_table_list_jq':df_table_list}
+            metadata = {"file_name_jq": file_path.name,"file_doc_tree_jq":doc_tree,'df_table_list_jq':df_table_list}
             if extra_info is not None:
                 metadata.update(extra_info)
             
@@ -374,13 +377,15 @@ class JqkjDocxReader(BaseReader):
         all_tree_nodes = list(PreOrderIter(file_tree))
         img_nodes = [node for node in all_tree_nodes if node.type == TreeNodeType.IMAGE]
         if len(img_nodes):
-            logger.debug(f"{len(img_nodes)=}")
+            logger.debug(f"开始文件{str(file_path)}中的图片文字识别：{len(img_nodes)=}")
             img_src_and_data_tuple_list = [(treenode.image_filepath_jq,treenode.img_blob_jq) for treenode in img_nodes] #得到[(img_src,img_data)...]
             results = treenodes_img_to_text_in_batch([file_path,img_src_and_data_tuple_list])
-            logger.debug(f"{len(results)=}")
+            logger.debug(f"识别出得到的结果数量为：{len(results)=}")
             assert len(img_nodes) == len(results)
             for i,img_node in enumerate(img_nodes):
                 img_node.text = results[i]
+        else:
+            logger.debug(f"文件{str(file_path)}中不存在图片")
         return file_tree, df_table_list
    
     def extract_imgs(self, block:Paragraph, docx_document: DocxDocument, file: Path, image_list, imgid_list, w_pict_images_list_id, w_pict_images_list_fn, pic_pic_images_list_id, pic_pic_images_list_fn):
@@ -565,21 +570,21 @@ def _test_JqkjDocxReader(file_paths=[fr"/media/temp/发票识别接口文档.md"
         trees.append(doc_tree)
         df_tables.append(df_table_list)
         
-        logger.debug(f"=========输出[{document.metadata['source']}]中的部分内容=========")
-        n=100
-        logger.debug('---'*10+f"输出document.text前{n}字符"+'---'*10)
-        logger.debug(f"{document.text[:n]}")
+        # logger.debug(f"=========输出[{document.metadata['source']}]中的部分内容=========")
+        # n=100
+        # logger.debug('---'*10+f"输出document.text前{n}字符"+'---'*10)
+        # logger.debug(f"{document.text[:n]}")
 
-        logger.debug('###'*30)
+        # logger.debug('###'*30)
 
-        logger.debug('---'*10+f"输出document.text后{n}字符"+'---'*10)
-        logger.debug(f"{document.text[-n:]}")
-        logger.debug('---'*30)
+        # logger.debug('---'*10+f"输出document.text后{n}字符"+'---'*10)
+        # logger.debug(f"{document.text[-n:]}")
+        # logger.debug('---'*30)
     
     return documents,trees,df_tables
 
 def _test_JqkjSimpleDirectoryReader():
-    convert_file_paths=[#fr'/data/projects/JqChatV2/JqChat/jqcode/jq_readers/.test_files/.testinputdocs/厦门市智慧民政一体化平台项目建设方案 V3.6.doc',
+    convert_file_paths=[fr'/data/projects/JqChatV2/JqChat/jqcode/jq_readers/.test_files/.testinputdocs/厦门市智慧民政一体化平台项目建设方案 V3.6.docx',
                         fr'/data/projects/JqChatV2/JqChat/jqcode/jq_readers/.test_files/.testinputdocs/test_zh.pdf',
                         fr'/data/projects/JqChatV2/JqChat/jqcode/jq_readers/.test_files/.testinputdocs/AAMIS_项目总体计划_120925.doc',
                         fr"/media/temp/发票识别接口文档.md"
@@ -587,17 +592,17 @@ def _test_JqkjSimpleDirectoryReader():
     
     
     
-    # simple_reader = JqkjSimpleDirectoryReader(input_files = convert_file_paths,output_dir_for_converted_files=fr"/data/projects/JqChatV2/JqChat/jqcode/jq_readers/.test_files/.outputdocs")
-    # documents1 = simple_reader.load_data()
-    # print(len(documents1))
+    simple_reader = JqkjSimpleDirectoryReader(input_files = convert_file_paths,output_dir_for_converted_files=fr"/data/projects/JqChatV2/JqChat/jqcode/jq_readers/.test_files/.outputdocs")
+    documents1 = simple_reader.load_data()
+    print(len(documents1))
     # 
     # documents1a = asyncio.run(simple_reader.aload_data())
     # print(len(documents1a))
 
-    input_file_dir = fr'/data/projects/JqChatV2/JqChat/jqcode/jq_readers/.test_files/.testinputdocs'
-    simple_reader2 = JqkjSimpleDirectoryReader(input_file_dir,exclude_hidden = False)
-    documents2 = simple_reader2.load_data()
-    print(len(documents2))
+    # input_file_dir = fr'/data/projects/JqChatV2/JqChat/jqcode/jq_readers/.test_files/.testinputdocs'
+    # simple_reader2 = JqkjSimpleDirectoryReader(input_file_dir,exclude_hidden = False)
+    # documents2 = simple_reader2.load_data()
+    # print(len(documents2))
 
     # documents2a = asyncio.run(simple_reader2.aload_data())
     # print(len(documents2a))
@@ -615,7 +620,7 @@ def _test_get_retriever():
     print(type(compression_retriever))
 if __name__ == "__main__":
 
-    documents,trees,df_tables = _test_JqkjDocxReader()
+    # documents,trees,df_tables = _test_JqkjDocxReader()
     _test_JqkjSimpleDirectoryReader()
     # _test_get_retriever()
 

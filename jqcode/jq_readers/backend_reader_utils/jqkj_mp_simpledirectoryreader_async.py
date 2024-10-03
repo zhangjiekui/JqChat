@@ -1,17 +1,13 @@
 """Simple reader that reads files of different formats from a directory."""
 
 from abc import ABC, abstractmethod
-import multiprocess
-from multiprocess import Pool
-from multiprocess.dummy import Pool as DummyPool
-# import multiprocessing.dummy
+import multiprocess as multiprocessing
 import os
-import logging
+import asyncio
 import mimetypes
-import warnings
 from datetime import datetime
 from functools import reduce
-import asyncio
+
 from itertools import repeat
 from pathlib import Path, PurePosixPath
 import fsspec
@@ -25,9 +21,9 @@ from tqdm import tqdm
 from jqcode.jq_utils.logger import jqkj_logger
 logger = jqkj_logger(__file__).get_logger()
 
-_cpu_nums = multiprocess.cpu_count()
+_cpu_nums = multiprocessing.cpu_count()
 cpu_nums_for_file_processing = int(_cpu_nums*0.8)
-multiprocess.set_start_method("fork")
+# multiprocess.set_start_method("spawn")
 class FileSystemReaderMixin(ABC):
     @abstractmethod
     def read_file_content(self, input_file: Path, **kwargs) -> bytes:
@@ -670,10 +666,9 @@ class SimpleDirectoryReader(BaseReader, ResourcesReaderMixin, FileSystemReaderMi
 
         if num_workers and num_workers > 1:
             # 使用多进程，但因为内含docx Document，会因为序列化/反序列化问题导致错误
-            # with multiprocessing.get_context("fork").Pool(num_workers) as p:
-            # 所以须改为多线程
-            # with DummyPool(num_workers) as p:
-            with Pool(num_workers) as p:
+            # 解决办法为/data/projects/JqChatV2/JqChat/jqcode/jq_readers/jqkj_readers.py L143行
+            # "file_doc_object_jq":doc 会因为序列化/反序列化问题导致错误，所以此处不将其作为元数据的一部分
+            with multiprocessing.get_context("fork").Pool(num_workers) as p:
                 results = p.starmap(
                     SimpleDirectoryReader.load_file,
                     list(zip(
