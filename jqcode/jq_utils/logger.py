@@ -16,11 +16,10 @@ class jqkj_logger(logging.Logger):
         except: 
             current_file_path = os.path.basename(current_file_path) 
         current_file_path=f"jqlogger( {current_file_path} "
-        # super().__init__(name=current_file_path)
-        # self.logger = logging.getLogger(current_file_path)
         super().__init__(name="jqlogger")
+        self.propagate=propagate
         self.logger = logging.getLogger(current_file_path)
-        self.logger.propagate = propagate
+        self.logger.parent = self
         self.verbose = verbose
 
         self.lf = logging.FileHandler(logfile_path,mode='w',encoding='utf-8')  # 打印到文件
@@ -48,25 +47,17 @@ class jqkj_logger(logging.Logger):
         '''
         level = 10 if self.verbose else 30
         self.logger.setLevel(level)
-        self.lf.setLevel(10)
-        self.sm.setLevel(10)
         self.disable_third_parties_logging()
 
     def disable_third_parties_logging(self):
-        jq_loggers = []
         for log_name, log_obj in logging.Logger.manager.loggerDict.items():
-            if not log_name.lower().startswith('jqlogger'):
-                # log_obj.disabled = True
+            if not log_name.lower().startswith('jqlogger'):            
                 try:
                     log_obj.setLevel(logging.ERROR)
                     # log_obj.disabled = True
                 except:
                     pass
-            else:
-                jq_loggers.append(log_name)
-        # print(f"{jq_loggers=}")
-                
-    
+
     def get_logger(self):
         return self.logger
     
@@ -87,11 +78,6 @@ class jqkj_logger(logging.Logger):
     def critical(self,message,verbose=True):
         self.logger.error(message)
 
-
-    
-
-
-    
 
 if __name__ == "__main__":
 
