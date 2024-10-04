@@ -37,7 +37,7 @@ def load_project_env():
     dotenv_loaded = False
     # 只载入一次
     if env_loaded_value_in_env != "True":    
-        print('\n\n')
+        print('\n')
         print('=*'*20)
         env_dir = find_dotenv()
         if not env_dir:
@@ -53,7 +53,7 @@ def load_project_env():
             print(f"=*=* load_dotenv('{env_dir}')失败，请检查！")
             os.environ["env_loaded"] = "False"
         print('=*'*20)
-        print('\n\n')
+        print('\n')
     else:
         dotenv_loaded = True
     return dotenv_loaded

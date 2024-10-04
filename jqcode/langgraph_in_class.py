@@ -709,7 +709,7 @@ class GraphAgent:
 
 
         # Web search
-        docs = asyncio.run(get_web_search_documents(query_generated,max_doc_nums=4))
+        docs = asyncio.run(get_web_search_documents(question,query_generated,max_doc_nums=4))
         if not docs:
             return {"documents": [], "question_searched":{question:False}}
         
@@ -1345,7 +1345,7 @@ if __name__ == "__main__":
         if user_question == '请绘制sin(x)曲线':
             pass
         answer = my_main_bot.run_conversation(user_question=user_question)
-        # pass
+        pass
 
 
 # source: https://learn.deeplearning.ai/courses/ai-agents-in-langgraph/lesson/3/langgraph-components    

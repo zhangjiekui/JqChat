@@ -12,13 +12,13 @@ ocr = RapidOCR()
 emf = EMF() #处理emf图片需要的
 
 _cpu_nums = multiprocessing.cpu_count()
-cpu_nums_for_img_ocr = int(_cpu_nums*0.7)
+cpu_nums_for_img_ocr = int(_cpu_nums*0.8)
 
-def treenode_img_to_text(img_src_and_data_tuple:tuple,delete_emf_wmf_png_file=True):
+def treenode_img_to_text(img_src_and_data_tuple_list:tuple,delete_emf_wmf_png_file=True):
     result = ''
     #分隔符最好选用jqcode/jq_splitters/backend_splitter_utils/jq_chinese_recursive_text_splitter.py的第98行定义的
     _separator = ' '
-    img_src,img_data=img_src_and_data_tuple
+    img_src,img_data=img_src_and_data_tuple_list
     try:
         if img_src.endswith(('.emf','.wmf')):
             try:
@@ -29,7 +29,7 @@ def treenode_img_to_text(img_src_and_data_tuple:tuple,delete_emf_wmf_png_file=Tr
                         _text = rec.values['string'].strip()
                         if _text:
                             result += _separator + _text
-                logger.debug(f"图片[{img_src}]中的EMF/WMF文本:\n{result}")
+                logger.debug(f"$$图片[{img_src}]中的EMF/WMF文本:\n{result}")
             except Exception as e:
                 logger.debug(f"无法加载EMF/WMF图片[{img_src}]:{e}")
                 logger.debug(f"尝试转换成.png文件，再OCR识别")
@@ -57,7 +57,7 @@ def treenode_img_to_text(img_src_and_data_tuple:tuple,delete_emf_wmf_png_file=Tr
                             ocr_texts = [line[1].strip() for line in ocr_result if line[1].strip()]
                             #分隔符最好选用jqcode/jq_splitters/backend_splitter_utils/jq_chinese_recursive_text_splitter.py的第98行定义的
                             result = _separator.join(ocr_texts) 
-                            logger.debug(f"图片[{img_src}]中的OCR文本:\n{result}")
+                            logger.debug(f"$$图片[{img_src}]中的OCR文本:\n{result}")
                     else:
                         logger.error(f"尝试转换成.png文件失败!")
                 except:
@@ -83,27 +83,25 @@ def treenode_img_to_text(img_src_and_data_tuple:tuple,delete_emf_wmf_png_file=Tr
                 ocr_texts = [line[1].strip() for line in ocr_result if line[1].strip()]
                 #分隔符最好选用jqcode/jq_splitters/backend_splitter_utils/jq_chinese_recursive_text_splitter.py的第98行定义的
                 result = _separator.join(ocr_texts) 
-                logger.debug(f"图片[{img_src}]中的OCR文本:\n{result}")
+                logger.debug(f"$$图片[{img_src}]中的OCR文本:\n{result}")
     except Exception as e:
         logger.warning(f'获取图片[{img_src}]中的文本失败,详细信息为{e}')
     result = f"【{img_src}的OCR文本】"+ result
     return result
 
-def treenodes_img_to_text_in_batch(filepath_and_img_src_and_data_tuple_list, processes=None):
-    file_path=filepath_and_img_src_and_data_tuple_list[0]
-    img_src_and_data_tuple_list = filepath_and_img_src_and_data_tuple_list[1]
+def treenodes_img_to_text_in_batch(img_src_and_data_tuple_list, processes=None):
     
     if processes:
         processes = min(processes,cpu_nums_for_img_ocr)
     else:
         processes = cpu_nums_for_img_ocr
-    processes = min(len(img_src_and_data_tuple_list),processes)
-    logger.warning(f"=====正在执行文件{file_path}中的图片文字识别，共有{len(img_src_and_data_tuple_list)}张图片=====")    
-    logger.debug(f"~~~~~~~~~~~~~~~treenodes_img_to_text_in_batch进程池数量为{processes}~~~~~~~~~~~~~~~")
+    processes = min(len(img_src_and_data_tuple_list),processes)      
+    logger.debug(f"~~~~~~~~~~~~~~~开始：treenodes_img_to_text_in_batch进程池数量为{processes}~~~~~~~~~~~~~~~")
     with multiprocessing.Pool(processes) as p:
         results = p.map(treenode_img_to_text,img_src_and_data_tuple_list)
-    logger.debug(f"~~~~~~~~~~~~~~~treenodes_img_to_text_in_batch进程池数量为{processes}~~~~~~~~~~~~~~~")
+    logger.debug(f"~~~~~~~~~~~~~~~结束：treenodes_img_to_text_in_batch进程池数量为{processes}~~~~~~~~~~~~~~~")
     return results
+
 
 
 

@@ -48,6 +48,9 @@ valid_prefix='http://www.baidu.com/link?url='
 #这些网站的网页内容，基本无法成功访问、获取,要么没有实质性性的文本内容
 filter_out_host = ("image.baidu.com","haokan.baidu.com","map.baidu.com","www.bilibili.com","tv.sohu.com",'github.com','google.com','huggingface.co','web.archive.org') 
 html2text_handler = html2text.HTML2Text()
+html2text_handler.ignore_images=True
+html2text_handler.ignore_links=True
+html2text_handler.ignore_mailto_links=True
 chardet = _resolve_char_detection()
 
 def get_user_agents():
@@ -529,28 +532,43 @@ class AsyncHtmlLoaderBypassException(AsyncHtmlLoader):
         return Document(page_content=text, metadata=metadata)
 
 @func_set_timeout(timeout_value)
-async def get_webpages_texts_by_langchain_document_loader_from_urls(urls,max_doc_nums=4,header_template=None,timeout_seconds:int=10):    
-    loader = AsyncHtmlLoaderBypassException(urls,requests_per_second=max_doc_nums,header_template=header_template, autoset_encoding=True,verify_ssl=False,raise_for_status=False,ignore_load_errors=True,preserve_order=False,requests_kwargs={"timeout":timeout_seconds})
+async def get_webpages_texts_by_langchain_document_loader_from_urls(urls,question,query,max_doc_nums=4,header_template=None,timeout_seconds:int=10):
+    """
+    Args:
+        question:str 用户的问题
+        query：搜索引擎query
+        两者可能一致
+    """    
+    from jqcode.langgraph_in_class import retrieval_document_relevance_grader 
+    requests_per_second = min(len(urls),max_doc_nums*2)   
+    loader = AsyncHtmlLoaderBypassException(urls,requests_per_second=requests_per_second,header_template=header_template, autoset_encoding=True,verify_ssl=False,raise_for_status=False,ignore_load_errors=True,preserve_order=False,requests_kwargs={"timeout":timeout_seconds})
     # async with async
     docs_async_generator = loader.alazy_load()        
     docs_transformed_completed = []
     try:
-        async for doc in docs_async_generator:                
+        async for doc in docs_async_generator:                                         
             page_content = html2text_handler.handle(doc.page_content).strip()
-            if len(page_content)>50:
-                transformed_document = Document(page_content=page_content, metadata={**doc.metadata})
-                docs_transformed_completed.append(transformed_document)
+            length = len(page_content)
+            if 20000>length>500: # 只保留page_content长度>500的，太短了意味着可能没有实质性的文本内容；或者<20000的，太长了会导致无法获取retrieval_document_relevance_grader相关性评分
+                try:
+                    if question!=query:
+                        q_str = f"'{question}' 或者 '搜索引擎Query: {query}'"
+                    else:
+                        q_str = question
+                    grade = retrieval_document_relevance_grader.invoke({"document":page_content,"question":q_str})
+                    # grade = retrieval_document_relevance_grader.batch([{"document":page_content,"question":question},{"document":page_content,"question":query}])
+                    relavant = grade.k
+                    if relavant == "yes": 
+                        transformed_document = Document(page_content=page_content, metadata={**doc.metadata})
+                        docs_transformed_completed.append(transformed_document)
+                except Exception as e:
+                    logger.warning(f"无法获取网页内容与问题的相关性评分：{e}")
             if len(docs_transformed_completed) == max_doc_nums:
-                break 
+                break
     except Exception as e:
         logger.error(f'get_webpages_texts_by_langchain_document_loader_from_urls失败:{e}')                     
     
-    # 只保留page_content长度>50的
-    if docs_transformed_completed:
-        docs = [doc for doc in docs_transformed_completed if len(doc.page_content.strip())>50]
-    else:
-        docs = []
-    return docs
+    return docs_transformed_completed
 
 @func_set_timeout(timeout_value)
 async def get_webpages_texts_by_jina_ai_reader_from_urls(urls,docs=[],max_doc_nums=4):
@@ -562,7 +580,13 @@ async def get_webpages_texts_by_jina_ai_reader_from_urls(urls,docs=[],max_doc_nu
         return docs
 
 @func_set_timeout(timeout_value)
-async def get_search_result_documents(urls,query,document_loader_class=AsyncHtmlLoader,max_doc_nums=4,filter_out_host = filter_out_host):
+async def get_search_result_documents(urls,question,query,document_loader_class=AsyncHtmlLoader,max_doc_nums=4,filter_out_host = filter_out_host):
+    """
+    Args:
+        question:str 用户的问题
+        query：搜索引擎query
+        两者可能一致
+    """
     # https://www.comet.com/site/blog/langchain-document-loaders-for-web-data/
             # 内容应该是NewsURLLoader比较适合RAG
             # 但SeleniumURLLoader似乎可以防屏蔽
@@ -590,7 +614,7 @@ async def get_search_result_documents(urls,query,document_loader_class=AsyncHtml
 
     docs = []
     try:
-        docs =await get_webpages_texts_by_langchain_document_loader_from_urls(urls, max_doc_nums=max_doc_nums)
+        docs =await get_webpages_texts_by_langchain_document_loader_from_urls(urls,question,query,max_doc_nums=max_doc_nums)
     except FunctionTimedOut as e:
         print(f'直接获取URLs网页超时！只获取到{len(docs)}个文档。{e}')
     except Exception as e:
@@ -645,9 +669,15 @@ def get_tavily_search_result_documents(query,max_doc_nums=4):
 # 最终的方法调用，建议用户只调用该方法
 # 根据query，返回最多max_doc_nums个结果文档，返回结果类型为:list[langchain_core.documents.base.Document]
 @func_set_timeout(timeout_value)
-async def get_web_search_documents(query,max_doc_nums=4):
+async def get_web_search_documents(question,query,max_doc_nums=4):
+    """
+    Args:
+        question:str 用户的问题
+        query：搜索引擎query
+        两者可能一致
+    """
     try:
-        docs = await _get_web_search_documents(query,max_doc_nums=max_doc_nums)
+        docs = await _get_web_search_documents(question,query,max_doc_nums=max_doc_nums)
         for doc in docs:        
             page_content = doc.page_content
 
@@ -674,12 +704,19 @@ async def get_web_search_documents(query,max_doc_nums=4):
         return []
 
 @func_set_timeout(timeout_value)
-async def _get_web_search_documents(query,max_doc_nums=4):
+async def _get_web_search_documents(question,query,max_doc_nums=4):
+    """
+    Args:
+        question:str 用户的问题
+        query：搜索引擎query
+        两者可能一致
+    """
     docs = []
     if not query:
         print(f"提交到Web_Search的query为空！直接返回空列表。")
         return docs
     try:
+        raise Exception("测试：不使用tavily_search_query")
         tavily_search_query = convert_search_query(query,join_character=None)          
         print(f'{tavily_search_query=}')
         docs = get_tavily_search_result_documents(tavily_search_query,max_doc_nums=max_doc_nums)
@@ -710,7 +747,7 @@ async def _get_web_search_documents(query,max_doc_nums=4):
     docs = None
     if urls:
         try:
-            docs = await get_search_result_documents(urls,query,max_doc_nums=max_doc_nums)
+            docs = await get_search_result_documents(urls,question,query,max_doc_nums=max_doc_nums)
             if docs:
                 return docs        
         except FunctionTimedOut as e:
@@ -750,7 +787,7 @@ if __name__ == "__main__":
         print(f'原始query={query}')    
        
         
-        docs = asyncio.run(get_web_search_documents(query,max_doc_nums=10))
+        docs = asyncio.run(get_web_search_documents(query,query,max_doc_nums=4))
         print(f"获取到{len(docs)}个网页文档")
         for doc in docs:
             print(f"文档的类型为{type(doc).__name__}")

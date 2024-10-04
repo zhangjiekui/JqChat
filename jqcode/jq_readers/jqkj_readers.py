@@ -3,10 +3,9 @@
 Contains parsers for docx, pdf files.
 
 """
-# from jqkjlibs.configs import general_config
-# general_config.VERBOSE = True
-import os
 
+import os
+import time
 from datetime import datetime
 from pathlib import Path
 from os.path import basename,dirname,join
@@ -50,7 +49,7 @@ from jqcode.jq_readers.backend_reader_utils.jqkj_docs_converter import convert_f
 from jqcode.jq_readers.backend_reader_utils.jqkj_doc_tree_utils import find_nearest_parent_but_not_TableOrImageNode,TreeNodeType
 from anytree import PreOrderIter
 from jqcode.jq_readers.backend_reader_utils.jqkj_doc_tree_utils import compare_with_zip_docx2img,get_paras_in_table
-
+from jqcode.jq_config.general_config import if_log_verbose
 
 from llama_index.readers.file import UnstructuredReader
 import asyncio
@@ -128,8 +127,7 @@ class JqkjDocxReader(BaseReader):
             doc = self.DocumentFunc(self.file_path)           
             # text = "\n".join([paragraph.text for paragraph in doc.paragraphs if len(paragraph.text.strip())>0])
             text = '将从metadata["file_doc_tree_jq"]中获取，并替代这里的文字'
-            logger.debug(f"\n\n")              
-            logger.debug(f"#######开始将文档{self.file_path}解析为树结构")
+            logger.warning(f"\n#######开始将文档[{self.file_path}]解析为树结构#######")
             doc_tree,df_table_list = self.parse_docx_into_tree(doc,self.file_path)
             texts = [node.text for node in doc_tree.descendants]
             text = "\n".join(texts) #包含了图片识别出和表格转换出来的文本
@@ -175,7 +173,6 @@ class JqkjDocxReader(BaseReader):
         # logger.debug(f"构建文档树：{file}")
 
 
-        logger.debug('==='*30)
         node_numbering=1 
             # type = TreeNodeType.DOCUMENT('DIRECTORY', 'DOCUMENT', 'TEXT', 'TABLE', 'IMAGE',"INDEX")
         file_tree = Node(f'{filename}',type=TreeNodeType.DOCUMENT, numbering=node_numbering,level=-100,text=f'{filename}') 
@@ -306,7 +303,9 @@ class JqkjDocxReader(BaseReader):
                     # 但创建的Anytree节点数量应是len(imgid_list)
                 # 验证文档中实际具有的，已读取到的和保存的表格数量是否一致
                 # 验证是否所有的Anytree图片表格节点都已成功创建
-        if False:
+        
+        VERBOSE = if_log_verbose()
+        if VERBOSE:
             try:
                 logger.debug(f"\n=========验证[{file_path}]读取结果是否正确=========")
                 # logger.debug(f"\n=========验证读取结果是否正确=========")
@@ -369,7 +368,7 @@ class JqkjDocxReader(BaseReader):
                                 assert _node.is_leaf and _node.type==TreeNodeType.IMAGE, f'表格节点{table_node}的子节点，必须是图片节点和叶子节点！'
                     logger.debug(f'已创建的Table_Node数量为{table_nodes_number}')
                     logger.debug(f'    |==| 经assert断言检查，[len(docx_document.tables)、len(df_table_list)、len(table_nodes)]长度一致,均为{table_number},已确认成功创建全部Table_Node，且其子节点全部为图片节点和叶子节点')
-                logger.debug('==='*30)
+                print('==='*30)
             except Exception as ex:
                 logger.error(f'===验证过程中出现了错误，请检查。错误信息如下:===\n{ex}')
                 
@@ -377,15 +376,15 @@ class JqkjDocxReader(BaseReader):
         all_tree_nodes = list(PreOrderIter(file_tree))
         img_nodes = [node for node in all_tree_nodes if node.type == TreeNodeType.IMAGE]
         if len(img_nodes):
-            logger.debug(f"开始文件{str(file_path)}中的图片文字识别：{len(img_nodes)=}")
-            img_src_and_data_tuple_list = [(treenode.image_filepath_jq,treenode.img_blob_jq) for treenode in img_nodes] #得到[(img_src,img_data)...]
-            results = treenodes_img_to_text_in_batch([file_path,img_src_and_data_tuple_list])
-            logger.debug(f"识别出得到的结果数量为：{len(results)=}")
+            img_src_and_data_tuple_list = [(f"{filename}/{treenode.image_filepath_jq}",treenode.img_blob_jq) for treenode in img_nodes] #得到[(img_src,img_data)...]
+            logger.warning(f"\n$$$$$$$正在执行文件[{filename}]中的图片文字识别，共有{len(img_src_and_data_tuple_list)}张图片$$$$$$$")  
+            results = treenodes_img_to_text_in_batch(img_src_and_data_tuple_list)
+            logger.warning(f"$$$$$$$识别出得到的结果数量为：{len(results)=}$$$$$$$")
             assert len(img_nodes) == len(results)
             for i,img_node in enumerate(img_nodes):
                 img_node.text = results[i]
         else:
-            logger.debug(f"文件{str(file_path)}中不存在图片")
+            logger.debug(f"$$$$$$$文件[{str(file_path)}]中不存在图片，无需识别$$$$$$$")
         return file_tree, df_table_list
    
     def extract_imgs(self, block:Paragraph, docx_document: DocxDocument, file: Path, image_list, imgid_list, w_pict_images_list_id, w_pict_images_list_fn, pic_pic_images_list_id, pic_pic_images_list_fn):
@@ -591,13 +590,19 @@ def _test_JqkjSimpleDirectoryReader():
                         ]
     
     
-    
+    start_time = time.time()
     simple_reader = JqkjSimpleDirectoryReader(input_files = convert_file_paths,output_dir_for_converted_files=fr"/data/projects/JqChatV2/JqChat/jqcode/jq_readers/.test_files/.outputdocs")
     documents1 = simple_reader.load_data()
-    print(len(documents1))
+    print(f"{len(documents1)=}")
+    end_time = time.time()
+    logger.warning(f"Total time load_data: {end_time - start_time} seconds")
     # 
-    # documents1a = asyncio.run(simple_reader.aload_data())
-    # print(len(documents1a))
+    start_time = time.time()
+    documents1a = asyncio.run(simple_reader.aload_data())
+    print(f"{len(documents1a)}")
+    end_time = time.time()
+    logger.warning(f"Total time load_data: {end_time - start_time} seconds")
+    pass
 
     # input_file_dir = fr'/data/projects/JqChatV2/JqChat/jqcode/jq_readers/.test_files/.testinputdocs'
     # simple_reader2 = JqkjSimpleDirectoryReader(input_file_dir,exclude_hidden = False)

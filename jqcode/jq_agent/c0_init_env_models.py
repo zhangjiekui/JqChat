@@ -55,7 +55,7 @@ print(f"if_log_verbose = {VERBOSE}, 说明：在 jqcode/jq_config/general_config
 print(f"logfile_path = {logfile_path} ,说明：如果if_log_verbose=False，则只记录Waring和Error")
 print(f"llm_handler_logfile_path = {llm_handler_file_path} ,说明：专门记录LLM的输入输出，且不受if_log_verbose影响")
 print("=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*")
-print("\n\n")
+print("\n")
 
 # os.environ['LANGCHAIN_TRACING_V2'] = 'true'
 # os.environ['LANGCHAIN_ENDPOINT'] = 'https://api.smith.langchain.com'
@@ -539,7 +539,7 @@ class InitEnvModels:
             # print('-------Elasticsearch Connection详细信息-------')
             # print(self.es_connection.info())
             # print('-------Elasticsearch Connection详细信息-------')
-            print('-------可以通过Kibana URL查看:| http://127.0.0.1:5601 | http://10.1.150.105:5601 |-------')
+            print('-------可以通过Kibana URL查看:| http://127.0.0.1:5601 | http://10.1.150.105:5601 |-------\n')
         return self.es_connection
 
     def create_es_index_if_not_existes_with_default_chinese_analyzer(self, es_connection=None,index_name:str=None):

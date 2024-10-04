@@ -653,9 +653,6 @@ class SimpleDirectoryReader(BaseReader, ResourcesReaderMixin, FileSystemReaderMi
         Returns:
             List[Document]: A list of documents.
         """
-        logger.warning(f"############################## Warning ################################")
-        logger.warning(f"多线程情况下打印/日志记录会存在问题，如需调试，请设置num_workers=1,当前{num_workers=}")
-        logger.warning(f"############################## Warning ################################")
         documents = []
 
         files_to_process = self.input_files
