@@ -379,7 +379,7 @@ class JqkjDocxReader(BaseReader):
             img_src_and_data_tuple_list = [(f"{filename}/{treenode.image_filepath_jq}",treenode.img_blob_jq) for treenode in img_nodes] #得到[(img_src,img_data)...]
             logger.warning(f"\n$$$$$$$正在执行文件[{filename}]中的图片文字识别，共有{len(img_src_and_data_tuple_list)}张图片$$$$$$$")  
             results = treenodes_img_to_text_in_batch(img_src_and_data_tuple_list)
-            logger.warning(f"$$$$$$$识别出得到的结果数量为：{len(results)=}$$$$$$$")
+            logger.warning(f"\n$$$$$$$识别出得到的结果数量为：{len(results)=}$$$$$$$")
             assert len(img_nodes) == len(results)
             for i,img_node in enumerate(img_nodes):
                 img_node.text = results[i]
@@ -553,9 +553,9 @@ class JqkjSimpleDirectoryReader(SimpleDirectoryReader):
 
 def _test_JqkjDocxReader(file_paths=[fr"/media/temp/发票识别接口文档.md",'/data/projects/JqChatV2/JqChat/jqcode/jq_readers/.test_files/.testinputdocs/test_zh.pdf']):
     # fr'D:\biaoshu\pdf_docx_convert\UserGuide.docx',
-    reader = JqkjDocxReader(file_path=file_paths[0])
-    d = reader.load()
-
+    # reader = JqkjDocxReader(file_path=file_paths[0])
+    # d = reader.load()
+    reader = JqkjDocxReader()
     documents = []
     trees = []
     df_tables = []
@@ -604,13 +604,13 @@ def _test_JqkjSimpleDirectoryReader():
     logger.warning(f"Total time load_data: {end_time - start_time} seconds")
     pass
 
-    # input_file_dir = fr'/data/projects/JqChatV2/JqChat/jqcode/jq_readers/.test_files/.testinputdocs'
-    # simple_reader2 = JqkjSimpleDirectoryReader(input_file_dir,exclude_hidden = False)
-    # documents2 = simple_reader2.load_data()
-    # print(len(documents2))
+    input_file_dir = fr'/data/projects/JqChatV2/JqChat/jqcode/jq_readers/.test_files/.testinputdocs'
+    simple_reader2 = JqkjSimpleDirectoryReader(input_file_dir,exclude_hidden = False)
+    documents2 = simple_reader2.load_data()
+    print(len(documents2))
 
-    # documents2a = asyncio.run(simple_reader2.aload_data())
-    # print(len(documents2a))
+    documents2a = asyncio.run(simple_reader2.aload_data())
+    print(len(documents2a))
 
 
 
@@ -620,12 +620,12 @@ def _test_get_retriever():
     input_files = [fr'/data/projects/JqChatV2/JqChat/jqcode/jq_readers/.test_files/.testinputdocs/A方案.docx'] 
     input_files += [fr'/data/projects/JqChatV2/JqChat/jqcode/jq_readers/.test_files/.testinputdocs/PPQA000_质量保证过程.doc']   
     index_name='temp_index_for_upload_files'
-    compression_retriever = get_retriever(index_name=index_name,chat_on_docs_list=[],add_docs_list_to_kb=False)
-    # compression_retriever = get_retriever(index_name=index_name,chat_on_docs_list=input_files,add_docs_list_to_kb=False)     
+    # compression_retriever = get_retriever(index_name=index_name,chat_on_docs_list=[],add_docs_list_to_kb=False)
+    compression_retriever = get_retriever(index_name=index_name,chat_on_docs_list=input_files,add_docs_list_to_kb=False)     
     print(type(compression_retriever))
 if __name__ == "__main__":
 
     # documents,trees,df_tables = _test_JqkjDocxReader()
-    _test_JqkjSimpleDirectoryReader()
-    # _test_get_retriever()
+    # _test_JqkjSimpleDirectoryReader()
+    _test_get_retriever()
 

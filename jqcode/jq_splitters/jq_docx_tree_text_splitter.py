@@ -605,9 +605,12 @@ class JqkjDocTreeTokenTextSplitter(MetadataAwareTextSplitter):
         lm_base_node.metadata["file_path_docx_jq"] = file_path_docx
 
         _metadata = lm_base_node.metadata
-        del _metadata['file_doc_object_jq']
-        del _metadata['file_doc_tree_jq']
-        del _metadata['df_table_list_jq']
+        _metadata.pop('file_doc_object_jq',None)
+        _metadata.pop('file_doc_tree_jq',None)
+        _metadata.pop('df_table_list_jq',None)
+        # del _metadata['file_doc_object_jq']
+        # del _metadata['file_doc_tree_jq']
+        # del _metadata['df_table_list_jq']
 
 
         llama_index_nodes = [TextNode(text=chunk,metadata = _metadata ,excluded_embed_metadata_keys=lm_base_node.excluded_embed_metadata_keys,excluded_llm_metadata_keys=lm_base_node.excluded_llm_metadata_keys) for chunk in chunks_saved]
