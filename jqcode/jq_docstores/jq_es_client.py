@@ -33,6 +33,7 @@ class JqEsClient():
         :param current_user: 当前用户的标识，默认为 None，表示不限制用户
         :return: 知识库名字的列表
         """
+        private_system_indices = ["temp_memory_or_web_results","temp_index_for_upload_files","unimetastore","docstore"]
         try:
             # 如果没有指定用户，则查询所有索引
             if current_user:
@@ -47,7 +48,7 @@ class JqEsClient():
 
             # 将响应转换为索引名列表，并排除系统索引（以 '.' 开头的）
             kb_names = [index_info['index'] for index_info in response if not index_info['index'].startswith('.')]
-            
+            kb_names = [kb_name for kb_name in kb_names if kb_name not in private_system_indices]
             logger.info(f"Found {len(kb_names)} knowledge bases")
             return kb_names
 
@@ -60,7 +61,7 @@ class JqEsClient():
         try:
             # 首先，检查索引是否存在
             if not self.client.indices.exists(index=index_name):
-                print(f"Index {index_name} does not exist.")
+                logger.warning(f"Index {index_name} does not exist.")
                 return None
 
             # 使用 index_name 生成 index_id
@@ -70,17 +71,17 @@ class JqEsClient():
             docs = self.metastores.get_docs_by_ids(index_id)
             
             if not docs:
-                print(f"Failed to retrieve metadata for index {index_name}")
+                logger.warning(f"Failed to retrieve metadata for index {index_name}")
                 return None
 
             # 从元数据中获取 description
             metadata = docs[0]['_source']
             description = metadata.get('description')
-            print(f"Retrieved description: {description}")
+            logger.info(f"index_name:{index_name}; index_description: {description}")
             
             return description
         except Exception as e:
-            print(f"An error occurred: {e}")
+            logger.error(f"An error occurred: {e}")
             return None
 
         

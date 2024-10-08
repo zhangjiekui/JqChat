@@ -47,7 +47,6 @@ from jqcode.jq_knowledge_manegement.chatchat.server.knowledge_base.utils import 
     list_kbs_from_es
 )
 from jqcode.jq_knowledge_manegement.chatchat.server.utils import check_embed_model as _check_embed_model
-
 from jqcode.jq_docstores.jq_es_client import JqEsClient
 jq_es_client = JqEsClient()
 
@@ -479,23 +478,16 @@ class KBServiceFactory:
 def get_kb_details() -> List[Dict]:
     kbs_in_folder = list_kbs_from_folder()
     kbs_in_es = list_kbs_from_es()
-
-    from jqcode.jq_docstores.jq_es_client import JqEsClient
-    jq_es_client = JqEsClient()
-
-    
-    for kb in kbs_in_folder:
+    kbs_in_es_dict = []    
+    for kb in kbs_in_es:
         kb_info = jq_es_client.get_index_info(index_name=kb)
         kb_dict = {
             "kb_name": kb,
             "kb_info": kb_info
         }
-
-        kbs_in_es.append(kb_dict)
-
+        kbs_in_es_dict.append(kb_dict)
 
     result = {}
-
     for kb in kbs_in_folder:
         result[kb] = {
             "kb_name": kb,
@@ -508,13 +500,13 @@ def get_kb_details() -> List[Dict]:
             "in_es": False,
         }
 
-    for kb_detail in kbs_in_es:
+    for kb_detail in kbs_in_es_dict:
         kb_name = kb_detail["kb_name"]
         kb_detail["in_es"] = True
         if kb_name in result:
             result[kb_name].update(kb_detail)
         else:
-            kb_detail["in_folder"] = False
+            kb_detail["in_folder"] = True
             result[kb_name] = kb_detail
 
     data = []

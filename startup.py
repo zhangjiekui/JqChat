@@ -39,7 +39,10 @@ try:
     from streamlit.web import bootstrap
 except ImportError:
     from streamlit import bootstrap
-logger = logging.getLogger()
+# logger = logging.getLogger()
+from jqcode.jq_utils.logger import jqkj_logger
+
+logger = jqkj_logger(__file__).get_logger()
 
 
 # 设置numexpr最大线程数，默认为CPU核心数
@@ -63,9 +66,6 @@ def _set_app_event(app: FastAPI, started_event:Event = None): # type: ignore
 def run_api_server(
     started_event:Event = None, run_mode: str = None # type: ignore
 ):
-
-
-
     logger.info(f"Api MODEL_PLATFORMS: {MODEL_PLATFORMS}")
     set_httpx_config()
     app = create_app(run_mode=run_mode)
@@ -90,7 +90,7 @@ def run_webui(
 ):
 
 
-    logger.info(f"Webui MODEL_PLATFORMS: {MODEL_PLATFORMS}")
+    # logger.info(f"Webui MODEL_PLATFORMS: {MODEL_PLATFORMS}")
     set_httpx_config()
 
     host = WEBUI_SERVER["host"]
@@ -235,8 +235,8 @@ def parse_args() -> argparse.ArgumentParser:
 
 def dump_server_info(after_start=False, args=None):
 
-
-    print("=" * 30 + "Langchain-Chatchat Configuration" + "=" * 30)
+    print("\n")
+    print("=*" * 5 + "JqChat Configuration" + "=*" * 5)
     print(f"操作系统：{platform.platform()}.")
     print(f"python版本：{sys.version}")
     print(f"项目版本：{VERSION}")
@@ -246,12 +246,12 @@ def dump_server_info(after_start=False, args=None):
     if after_start:
         print(f"服务端运行信息：")
         if args.api:
-            print(f"    Chatchat Api Server: {api_address()}")
+            print(f"    JqChat Api Server: {api_address()}")
         if args.webui:
-            print(f"    Chatchat WEBUI Server: {webui_address()}")
+            print(f"    JqChat WEBUI Server: {webui_address()}")
         if args.kernel:
-            print(f"    Chatchat Kernel Server: http://0.0.0.0:{APP_PORT}")
-    print("=" * 30 + "Langchain-Chatchat Configuration" + "=" * 30)
+            print(f"    JqChat Kernel Server: http://0.0.0.0:{APP_PORT}")
+    print("=*" * 5 + "JqChat Configuration" + "=*" * 5)
     print("\n")
 
 
@@ -283,7 +283,8 @@ async def start_main_server():
     signal.signal(signal.SIGINT, handler("SIGINT"))
     signal.signal(signal.SIGTERM, handler("SIGTERM"))
 
-    mp.set_start_method("spawn")
+    # mp.set_start_method("spawn")
+    # mp.set_start_method("fork")
     manager = mp.Manager()
     run_mode = None
 
@@ -368,7 +369,7 @@ async def start_main_server():
     if process_count() == 0:
         parser.print_help()
     else:
-        dump_server_info(after_start=False,args=args)
+        dump_server_info(after_start=True,args=args)
         try:
             if p := processes.get("kernel"):
                 logger.info(f"启动KERNEL服务：{p.name}")
@@ -416,12 +417,12 @@ async def start_main_server():
 
 def main():
     # 添加这行代码
-    print("###"*20)    
+    print("=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*")    
     project_root_path = pathlib.Path().resolve()
     print(f"应用启动路径:{project_root_path}")
     print(f"本项目中添加使用的Python路径为：{set(sys.path)}")
     print(f"本项目运行日志位置: {project_root_path}/jqchat_agent.log")
-    print("###"*20)    
+    print("=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*")    
     mp.freeze_support()
     create_tables()
     asyncio.run(start_main_server())

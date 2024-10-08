@@ -625,7 +625,7 @@ def _test_get_retriever():
     print(type(compression_retriever))
 if __name__ == "__main__":
 
-    # documents,trees,df_tables = _test_JqkjDocxReader()
-    # _test_JqkjSimpleDirectoryReader()
+    documents,trees,df_tables = _test_JqkjDocxReader()
+    _test_JqkjSimpleDirectoryReader()
     _test_get_retriever()
 
