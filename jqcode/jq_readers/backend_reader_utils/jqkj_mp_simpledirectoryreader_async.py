@@ -666,7 +666,8 @@ class SimpleDirectoryReader(BaseReader, ResourcesReaderMixin, FileSystemReaderMi
             # 解决办法为/data/projects/JqChatV2/JqChat/jqcode/jq_readers/jqkj_readers.py L143行
             # "file_doc_object_jq":doc 会因为序列化/反序列化问题导致错误，所以此处不将其作为元数据的一部分
             # with multiprocessing.get_context("fork").Pool(num_workers) as p:
-            with multiprocessing.get_context("spawn").Pool(num_workers) as p:
+            # with multiprocessing.get_context("spawn").Pool(num_workers) as p:
+            with multiprocessing.Pool(num_workers) as p:
                 results = p.starmap(
                     SimpleDirectoryReader.load_file,
                     list(zip(
