@@ -463,6 +463,7 @@ class AsyncHtmlLoaderBypassException(AsyncHtmlLoader):
         try:
             async with aiohttp.ClientSession(trust_env=self.trust_env) as session:
                 for i in range(retries):
+                    # print(f"retries:{i} for {url}")
                     try:
                         async with session.get(
                             url,
@@ -498,8 +499,7 @@ class AsyncHtmlLoaderBypassException(AsyncHtmlLoader):
             # raise ValueError(".....retry count exceeded.....")
         except Exception as e:
             if self.ignore_load_errors:
-                logger.error(f"无法获得到{url},错误信息为:{str(e) or type(e).__name__}")
-                
+                logger.error(f"无法获得到{url},错误信息为:{str(e) or type(e).__name__}")                
             else:
                 raise e
         finally:
@@ -555,8 +555,8 @@ async def get_webpages_texts_by_langchain_document_loader_from_urls(urls,questio
                         q_str = f"'{question}' 或者 '搜索引擎Query: {query}'"
                     else:
                         q_str = question
-                    grade = retrieval_document_relevance_grader.invoke({"document":page_content,"question":q_str})
-                    # grade = retrieval_document_relevance_grader.batch([{"document":page_content,"question":question},{"document":page_content,"question":query}])
+                    # grade = retrieval_document_relevance_grader.invoke({"document":page_content,"question":q_str})
+                    grade = await retrieval_document_relevance_grader.ainvoke({"document":page_content,"question":q_str})
                     relavant = grade.k
                     if relavant == "yes": 
                         transformed_document = Document(page_content=page_content, metadata={**doc.metadata})
@@ -716,7 +716,7 @@ async def _get_web_search_documents(question,query,max_doc_nums=4):
         print(f"提交到Web_Search的query为空！直接返回空列表。")
         return docs
     try:
-        raise Exception("测试：不使用tavily_search_query")
+        # raise Exception("测试：不使用tavily_search_query")
         tavily_search_query = convert_search_query(query,join_character=None)          
         print(f'{tavily_search_query=}')
         docs = get_tavily_search_result_documents(tavily_search_query,max_doc_nums=max_doc_nums)

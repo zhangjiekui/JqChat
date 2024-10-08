@@ -846,8 +846,7 @@ if __name__ == '__main__':
     tools = [accept,reject]
     toos_dict = {tool.name:tool for tool in tools}
     rendered_tools = render_text_description(tools)
-    # llm = env_models_instance.get_ollama_chat_model(tools=tools)
-    llm = env_models_instance.get_langchain_chat_model().bind_tools(tools)
+    llm = env_models_instance.chat_model.bind_tools(tools)
     print("==========="*10)
     system_prompt = f"""You are an assistant that has access to functions.
         ONLY Use them:
@@ -899,7 +898,7 @@ if __name__ == '__main__':
     res = LLM(prompt,system_prompt)
     print(res)
     
-    llm = env_models_instance.get_langchain_chat_model()
+    llm = env_models_instance.chat_model
     res = llm.invoke("你好")
     print(res)
 
@@ -920,7 +919,7 @@ if __name__ == '__main__':
 
     # open_ai = env_models_instance.get_openai()
     # openai_client = env_models_instance.get_openai_client()
-    langchain_chat_model = env_models_instance.get_langchain_chat_model()
+    langchain_chat_model = env_models_instance.chat_model
     embed_model,embedding_model_8k,reranker = env_models_instance.get_emb_8k_rerank_model()
     res = langchain_chat_model.invoke([SystemMessage('请使用中文回答我！'), HumanMessage('你好')])
     print(res)

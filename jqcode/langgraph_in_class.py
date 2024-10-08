@@ -267,6 +267,7 @@ retrieval_document_relevance_prompt = ChatPromptTemplate.from_messages(
     ]
 )
 retrieval_document_relevance_grader = retrieval_document_relevance_prompt | structured_llm_documents_relevant_grader
+
 def grade_documents(state:GraphAgentState):
     """
     Determines whether the retrieved documents are relevant to the question.
@@ -537,7 +538,7 @@ class GraphAgent:
         self.executable_tool_dict = {t.name: t for t in executable_tools} 
         
         if llm_model is None:
-            llm_model = env_models_instance.get_langchain_chat_model()
+            llm_model = env_models_instance.chat_model
         self.model = llm_model.bind_tools(self.all_tools)
 
         self.system_message = [SystemMessage(content=_system_message_content)]
