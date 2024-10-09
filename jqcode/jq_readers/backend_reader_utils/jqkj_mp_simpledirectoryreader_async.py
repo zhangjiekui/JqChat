@@ -662,54 +662,34 @@ class SimpleDirectoryReader(BaseReader, ResourcesReaderMixin, FileSystemReaderMi
         num_workers = min(num_workers,len(self.input_files))
         num_workers = min(num_workers,cpu_nums_for_file_processing)
 
-        if num_workers and num_workers > 1: 
-            # 如果确需解决daemonic processes are not allowed to have children，
-            # 原因:try and create a Pool from within a child worker that was already created with a Pool
-            # 可以参考：https://blog.mbedded.ninja/programming/languages/python/python-multiprocessing/
-            
-            
-            # 使用多进程，但因为内含docx Document，会因为序列化/反序列化问题导致错误
-            # 解决办法为/data/projects/JqChatV2/JqChat/jqcode/jq_readers/jqkj_readers.py L143行
-            # "file_doc_object_jq":doc 会因为序列化/反序列化问题导致错误，所以此处不将其作为元数据的一部分
-            # with multiprocessing.get_context("fork").Pool(num_workers) as p:
-            # with multiprocessing.get_context("spawn").Pool(num_workers) as p:
-            with multiprocessing.Pool(num_workers) as p:
-                # results = p.starmap(
-                results = p.starmap_async(
-                    SimpleDirectoryReader.load_file,
-                    list(zip(
-                        files_to_process,
-                        repeat(self.file_metadata),
-                        repeat(self.file_extractor),
-                        repeat(self.filename_as_id),
-                        repeat(self.encoding),
-                        repeat(self.errors),
-                        repeat(self.raise_on_error),
-                        repeat(fs),
-                    )),
-                )
-                documents = reduce(lambda x, y: x + y, results.get())
-                # documents = reduce(lambda x, y: x + y, results)  # 与results = p.starmap匹配使用
 
-        else:
-            if show_progress:
-                files_to_process = tqdm(
-                    self.input_files, desc="Loading files", unit="file"
-                )
-            for input_file in files_to_process:
-                # print(f"{input_file=}")
-                documents.extend(
-                    SimpleDirectoryReader.load_file(
-                        input_file=input_file,
-                        file_metadata=self.file_metadata,
-                        file_extractor=self.file_extractor,
-                        filename_as_id=self.filename_as_id,
-                        encoding=self.encoding,
-                        errors=self.errors,
-                        raise_on_error=self.raise_on_error,
-                        fs=fs,
-                    )
-                )
+        # 如果确需解决daemonic processes are not allowed to have children，
+        # 原因:try and create a Pool from within a child worker that was already created with a Pool
+        # 可以参考：https://blog.mbedded.ninja/programming/languages/python/python-multiprocessing/
+        
+        
+        # 使用多进程，但因为内含docx Document，会因为序列化/反序列化问题导致错误
+        # 解决办法为/data/projects/JqChatV2/JqChat/jqcode/jq_readers/jqkj_readers.py L143行
+        # "file_doc_object_jq":doc 会因为序列化/反序列化问题导致错误，所以此处不将其作为元数据的一部分
+        # with multiprocessing.get_context("fork").Pool(num_workers) as p:
+        # with multiprocessing.get_context("spawn").Pool(num_workers) as p:
+        with multiprocessing.Pool(num_workers) as p:
+            # results = p.starmap(
+            results = p.starmap_async(
+                SimpleDirectoryReader.load_file,
+                list(zip(
+                    files_to_process,
+                    repeat(self.file_metadata),
+                    repeat(self.file_extractor),
+                    repeat(self.filename_as_id),
+                    repeat(self.encoding),
+                    repeat(self.errors),
+                    repeat(self.raise_on_error),
+                    repeat(fs),
+                )),
+            )
+            documents = reduce(lambda x, y: x + y, results.get())
+            # documents = reduce(lambda x, y: x + y, results)  # 与results = p.starmap匹配使用
 
         return self._exclude_metadata(documents)
 
