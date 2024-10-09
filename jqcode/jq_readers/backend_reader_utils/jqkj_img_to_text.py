@@ -1,5 +1,5 @@
 import subprocess,os
-import multiprocessing
+import multiprocess as multiprocessing
 from pathlib import Path
 from rapidocr_onnxruntime import RapidOCR
 # from rapidocr_paddle import RapidOCR # For GPU

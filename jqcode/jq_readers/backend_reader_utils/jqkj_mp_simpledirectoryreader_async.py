@@ -661,7 +661,7 @@ class SimpleDirectoryReader(BaseReader, ResourcesReaderMixin, FileSystemReaderMi
         _num_workers = num_workers if num_workers else len(self.input_files)
         num_workers = min(_num_workers,cpu_nums_for_file_processing)
 
-        if num_workers and num_workers > 1:
+        if num_workers and num_workers >= 1:
             # 使用多进程，但因为内含docx Document，会因为序列化/反序列化问题导致错误
             # 解决办法为/data/projects/JqChatV2/JqChat/jqcode/jq_readers/jqkj_readers.py L143行
             # "file_doc_object_jq":doc 会因为序列化/反序列化问题导致错误，所以此处不将其作为元数据的一部分
@@ -683,25 +683,25 @@ class SimpleDirectoryReader(BaseReader, ResourcesReaderMixin, FileSystemReaderMi
                 )
                 documents = reduce(lambda x, y: x + y, results)
 
-        else:
-            if show_progress:
-                files_to_process = tqdm(
-                    self.input_files, desc="Loading files", unit="file"
-                )
-            for input_file in files_to_process:
-                # print(f"{input_file=}")
-                documents.extend(
-                    SimpleDirectoryReader.load_file(
-                        input_file=input_file,
-                        file_metadata=self.file_metadata,
-                        file_extractor=self.file_extractor,
-                        filename_as_id=self.filename_as_id,
-                        encoding=self.encoding,
-                        errors=self.errors,
-                        raise_on_error=self.raise_on_error,
-                        fs=fs,
-                    )
-                )
+        # else:
+        #     if show_progress:
+        #         files_to_process = tqdm(
+        #             self.input_files, desc="Loading files", unit="file"
+        #         )
+        #     for input_file in files_to_process:
+        #         # print(f"{input_file=}")
+        #         documents.extend(
+        #             SimpleDirectoryReader.load_file(
+        #                 input_file=input_file,
+        #                 file_metadata=self.file_metadata,
+        #                 file_extractor=self.file_extractor,
+        #                 filename_as_id=self.filename_as_id,
+        #                 encoding=self.encoding,
+        #                 errors=self.errors,
+        #                 raise_on_error=self.raise_on_error,
+        #                 fs=fs,
+        #             )
+        #         )
 
         return self._exclude_metadata(documents)
 

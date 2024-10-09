@@ -564,7 +564,13 @@ class JqkjDocTreeTokenTextSplitter(MetadataAwareTextSplitter):
                             chunks_saved.append(text_cached.strip('\n'))
                             # cur_title_node,pre_title_node,cur_ancestors_text_placeholder,pre_ancestors_text_placeholder = get_pre_title_nodes_text(cur_node,cur_title_node=cur_title_node,pre_title_node=pre_title_node,cur_ancestors_text_placeholder=cur_ancestors_text_placeholder,pre_ancestors_text_placeholder=pre_ancestors_text_placeholder)
                             text_cached = cur_ancestors_text_placeholder + column_names + row
-                            assert self.tokens_len_func(text_cached)<=tokens_bound
+                            if self.tokens_len_func(text_cached)>tokens_bound:
+                                logger.warning(f"新的表格文本切分时，单行文本tokens超过限制{self.tokens_len_func(text_cached)}>{tokens_bound}")
+                                logger.warning(f"{self.tokens_len_func(text_cached)}>{tokens_bound}")
+                                # 跳过改行
+                                text_cached = cur_ancestors_text_placeholder + column_names
+                                
+                                
             # 如果循环已经结束，需保证最后的text_cached也要读入
             if cur_node == last_nodes:
                 if len(text_cached.strip('\n'))>0:
