@@ -505,9 +505,13 @@ def grade_generation_v_documents_and_question(state:GraphAgentState):
 executable_tools = [get_flight_number,python_repl_tool]
 # executable_tools = [get_flight_number]
 route_tools = [WEB_SEARCH,CODE_GENERATION,CODE_EXECUTION]
-
+default_index_description = "向量库/知识库工具(vectorstore/knowledge base)：关于安徽晶奇网络科技股份有限公司（简称晶奇公司）、医疗卫生、医疗健康、医疗服务、医疗政策、信息化产品方案、技术文档等等方面的文档知识库. 凡是安徽晶奇网络科技股份有限公司及医疗健康相关的问题，都必须使用该vectorstore工具。"
+# "A vectorstore/knowledge base containing documents related to 晶奇公司、安徽晶奇网络科技股份有限公司、医疗卫生、医疗健康、医疗服务、医疗政策、medical treatment & health. 凡是与晶奇公司、安徽晶奇网络科技股份有限公司及医疗健康相关的问题，都必须使用vectorstore工具。MUST use the vectorstore for questions on these topics."}
 class GraphAgent:
-    def __init__(self,executable_tools:list=executable_tools, routing_tools_wrapped_in_class:list=route_tools, llm_model:ChatOpenAI=None,chat_on_docs_list:List[str]=None,add_docs_list_to_kb:bool=True, kb_base_dict:dict={"index_name": 'zjk_jqesclient_test' , "description":"A vectorstore/knowledge base containing documents related to 晶奇公司、安徽晶奇网络科技股份有限公司、医疗卫生、医疗健康、医疗服务、医疗政策、medical treatment & health. 凡是与晶奇公司、安徽晶奇网络科技股份有限公司及医疗健康相关的问题，都必须使用vectorstore工具。MUST use the vectorstore for questions on these topics."}, recursion_limit:int=25, memory_thread_id:str=shortuuid.uuid()) -> None:
+    def __init__(self,executable_tools:list=executable_tools, routing_tools_wrapped_in_class:list=route_tools, 
+                 llm_model:ChatOpenAI=None,chat_on_docs_list:List[str]=None,add_docs_list_to_kb:bool=True, 
+                 kb_base_dict:dict={"index_name": 'zjk_jqesclient_test', "description":default_index_description}, 
+                 recursion_limit:int=25, memory_thread_id:str=shortuuid.uuid()) -> None:
         
     # region: 初始化
         # 获取知识库相关的信息

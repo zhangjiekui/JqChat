@@ -23,7 +23,7 @@ from jqcode.jq_knowledge_manegement.chatchat.server.knowledge_base.kb_service.ba
 )
 from jqcode.jq_knowledge_manegement.chatchat.server.knowledge_base.utils import LOADER_DICT, get_file_path
 from jqcode.jq_knowledge_manegement.chatchat.server.utils import get_config_models
-
+from jqcode.jq_agent.c0_init_env_models import env_models_instance
 
 from web.utils.utils import *
 
@@ -91,7 +91,9 @@ def knowledge_base_page(api: ApiRequest, is_lite: bool = None):
 
     def format_selected_kb(kb_name: str) -> str:
         if kb := kb_list.get(kb_name):
-            return f"{kb_name} ({kb['vs_type']} @ {kb['embed_model']})"
+            embed_model_name = env_models_instance.embedding_model_name
+            return f"{kb_name} (es @ embed_model_name)"
+        #   return f"{kb_name} ({kb['vs_type']} @ {kb['embed_model']})"
         else:
             return kb_name
 

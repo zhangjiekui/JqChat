@@ -222,7 +222,7 @@ def list_files_from_es(kb_name: str, search_text: str = None) -> list:
         result = es.search(index=kb_name, body=query)
         print(f"Total hits: {result['hits']['total']['value']}")
         docs = [hit["_source"]["metadata"]["file_name"] for hit in result["hits"]["hits"]]
-        print(f"Extracted file names: {docs}")
+        # print(f"Extracted file names: {docs}")
     except Exception as e:
         print(f"An error occurred: {e}")
         docs = []
