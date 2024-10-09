@@ -658,17 +658,24 @@ class SimpleDirectoryReader(BaseReader, ResourcesReaderMixin, FileSystemReaderMi
         files_to_process = self.input_files
         fs = fs or self.fs
 
-        _num_workers = num_workers if num_workers else len(self.input_files)
-        num_workers = min(_num_workers,cpu_nums_for_file_processing)
+        num_workers = num_workers if num_workers else len(self.input_files)
+        num_workers = min(num_workers,len(self.input_files))
+        num_workers = min(num_workers,cpu_nums_for_file_processing)
 
-        if num_workers and num_workers > 1:
+        if num_workers and num_workers > 1: 
+            # 如果确需解决daemonic processes are not allowed to have children，
+            # 原因:try and create a Pool from within a child worker that was already created with a Pool
+            # 可以参考：https://blog.mbedded.ninja/programming/languages/python/python-multiprocessing/
+            
+            
             # 使用多进程，但因为内含docx Document，会因为序列化/反序列化问题导致错误
             # 解决办法为/data/projects/JqChatV2/JqChat/jqcode/jq_readers/jqkj_readers.py L143行
             # "file_doc_object_jq":doc 会因为序列化/反序列化问题导致错误，所以此处不将其作为元数据的一部分
             # with multiprocessing.get_context("fork").Pool(num_workers) as p:
             # with multiprocessing.get_context("spawn").Pool(num_workers) as p:
             with multiprocessing.Pool(num_workers) as p:
-                results = p.starmap(
+                # results = p.starmap(
+                results = p.starmap_async(
                     SimpleDirectoryReader.load_file,
                     list(zip(
                         files_to_process,
@@ -681,7 +688,8 @@ class SimpleDirectoryReader(BaseReader, ResourcesReaderMixin, FileSystemReaderMi
                         repeat(fs),
                     )),
                 )
-                documents = reduce(lambda x, y: x + y, results)
+                documents = reduce(lambda x, y: x + y, results.get())
+                # documents = reduce(lambda x, y: x + y, results)  # 与results = p.starmap匹配使用
 
         else:
             if show_progress:
@@ -708,7 +716,7 @@ class SimpleDirectoryReader(BaseReader, ResourcesReaderMixin, FileSystemReaderMi
     async def aload_data(
         self,
         show_progress: bool = True,
-        num_workers: Optional[int] = 10,
+        num_workers: Optional[int] = None,
         fs: Optional[fsspec.AbstractFileSystem] = None,
     ) -> List[Document]:
         """
@@ -727,6 +735,7 @@ class SimpleDirectoryReader(BaseReader, ResourcesReaderMixin, FileSystemReaderMi
         fs = fs or self.fs
         
         num_workers = num_workers if num_workers else len(self.input_files)
+        num_workers = min(num_workers,len(self.input_files))
         num_workers = min(num_workers,cpu_nums_for_file_processing)
         coroutines = [self.aload_file(input_file) for input_file in files_to_process]        
         if num_workers:

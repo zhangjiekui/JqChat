@@ -3,6 +3,7 @@ import sys
 # sys.path.insert(0, project_root)
 
 import time 
+import asyncio
 from langchain.schema import Document as LcDocument
 from jqcode.jq_agent.c0_init_env_models import env_models_instance
 from jqcode.jq_docstores.backend_docstore_utils.jq_es_metastores import JqElasticsearchUniMetaStore, md5_id_from_text
@@ -181,7 +182,8 @@ class JqEsClient():
     # 2、读取文件
         simple_reader = JqkjSimpleDirectoryReader(input_dir=input_dir,input_files=input_files, 
                                                   overwrite_existing_converted_files=overwrite_existing_converted_files,required_exts=required_exts,exclude_hidden=exclude_hidden)
-        lm_documents = simple_reader.load_data()
+        # lm_documents = simple_reader.load_data()
+        lm_documents = asyncio.run(simple_reader.aload_data())
         print(f"读取到的文件数量:{len(lm_documents)=}")
     # 3、上传到文件库(docstore)，并在lm_documents元数据中加入存储库(docstore)及文件对应ID等信息
         status,lm_documents_with_added_index_info_metadata,es_index_doc_id_list = self.docstores.add_or_update_index_metadata_if_id_exists(lm_documents=lm_documents,file_upload_user=current_user)

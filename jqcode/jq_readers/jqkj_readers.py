@@ -596,7 +596,7 @@ def _test_JqkjSimpleDirectoryReader():
     print(f"{len(documents1)=}")
     end_time = time.time()
     logger.warning(f"Total time load_data: {end_time - start_time} seconds")
-    # 
+    pass 
     start_time = time.time()
     documents1a = asyncio.run(simple_reader.aload_data())
     print(f"{len(documents1a)}")
