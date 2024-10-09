@@ -1,6 +1,9 @@
 import json
 import os
 import urllib
+import sys
+# project_root = '/media/yqli/JqChat'
+# sys.path.insert(0, project_root)
 from typing import Dict, List
 from pathlib import Path
 from fastapi import Body, File, Form, Query, UploadFile
@@ -39,6 +42,9 @@ from jqcode.jq_knowledge_manegement.chatchat.server.utils import (
     run_in_thread_pool,
 )
 
+from jqcode.jq_docstores.jq_es_client import JqEsClient
+jq_es_client = JqEsClient()
+
 
 def search_docs(
     query: str = Body("", description="用户输入", examples=["你好"]),
@@ -48,13 +54,13 @@ def search_docs(
     top_k: int = Body(VECTOR_SEARCH_TOP_K, description="匹配向量数"),
     score_threshold: float = Body(
         SCORE_THRESHOLD,
-        description="知识库匹配相关度阈值，取值范围在0-1之间，"
-        "SCORE越小，相关度越高，"
-        "取到1相当于不筛选，建议设置在0.5左右",
+        description="知识库匹配相关度阈值,取值范围在0-1之间,"
+        "SCORE越小,相关度越高,"
+        "取到1相当于不筛选,建议设置在0.5左右",
         ge=0.0,
         le=1.0,
     ),
-    file_name: str = Body("", description="文件名称，支持 sql 通配符"),
+    file_name: str = Body("", description="文件名称,支持 sql 通配符"),
     metadata: dict = Body({}, description="根据 metadata 进行过滤，仅支持一级键"),
 ) -> List[Dict]:
     kb = KBServiceFactory.get_service_by_name(knowledge_base_name)
@@ -151,21 +157,9 @@ def _save_files_in_thread(
         yield result
 
 
-# def files2docs(files: List[UploadFile] = File(..., description="上传文件，支持多文件"),
-#                 knowledge_base_name: str = Form(..., description="知识库名称", examples=["samples"]),
-#                 override: bool = Form(False, description="覆盖已有文件"),
-#                 save: bool = Form(True, description="是否将文件保存到知识库目录")):
-#     def save_files(files, knowledge_base_name, override):
-#         for result in _save_files_in_thread(files, knowledge_base_name=knowledge_base_name, override=override):
-#             yield json.dumps(result, ensure_ascii=False)
-
-#     def files_to_docs(files):
-#         for result in files2docs_in_thread(files):
-#             yield json.dumps(result, ensure_ascii=False)
-
-
 def upload_docs(
     files: List[UploadFile] = File(..., description="上传文件，支持多文件"),
+    # file_path: str = '',
     knowledge_base_name: str = Form(
         ..., description="知识库名称", examples=["samples"]
     ),
@@ -174,8 +168,8 @@ def upload_docs(
     chunk_size: int = Form(CHUNK_SIZE, description="知识库中单段文本最大长度"),
     chunk_overlap: int = Form(OVERLAP_SIZE, description="知识库中相邻文本重合长度"),
     zh_title_enhance: bool = Form(ZH_TITLE_ENHANCE, description="是否开启中文标题加强"),
-    docs: str = Form("", description="自定义的docs，需要转为json字符串"),
-    not_refresh_vs_cache: bool = Form(False, description="暂不保存向量库（用于FAISS）"),
+    docs: str = Form("", description="自定义的docs,需要转为json字符串"),
+    not_refresh_vs_cache: bool = Form(False, description="暂不保存向量库(用于FAISS)"),
 ) -> BaseResponse:
     """
     API接口:上传文件并/或向量化
@@ -202,11 +196,16 @@ def upload_docs(
         if filename not in file_names:
             file_names.append(filename)
 
+    # from jqcode.jq_docstores.jq_es_client import JqEsClient
+    # jq_es_client = JqEsClient()
     # 对保存的文件进行向量化
     if to_vector_store:
+
+        file_path = get_file_path(knowledge_base_name=knowledge_base_name, doc_name=filename)
         result = update_docs(
             knowledge_base_name=knowledge_base_name,
             file_names=file_names,
+            file_path = file_path,
             override_custom_docs=True,
             chunk_size=chunk_size,
             chunk_overlap=chunk_overlap,
@@ -215,8 +214,8 @@ def upload_docs(
             not_refresh_vs_cache=True,
         )
         failed_files.update(result.data["failed_files"])
-        if not not_refresh_vs_cache:
-            kb.save_vector_store()
+        # if not not_refresh_vs_cache:
+        #     kb.save_vector_store()
 
     return BaseResponse(
         code=200, msg="文件上传与向量化完成", data={"failed_files": failed_files}
@@ -231,7 +230,7 @@ def delete_docs(
 ) -> BaseResponse:
     if not validate_kb_name(knowledge_base_name):
         return BaseResponse(code=403, msg="Don't attack me")
-
+ 
     knowledge_base_name = urllib.parse.unquote(knowledge_base_name)
     kb = KBServiceFactory.get_service_by_name(knowledge_base_name)
     if kb is None:
@@ -279,6 +278,13 @@ def update_info(
     return BaseResponse(code=200, msg=f"知识库介绍修改完成", data={"kb_info": kb_info})
 
 
+
+# # 使用示例
+# result = update_info("yqli", "这个版本会在遇到问题时给出提示，而不是直接报错终止程序。同时，它仍然会尽可能地继续处理其他文件和目录。")
+# print(f"Knowledge base added or updated: {result}")
+
+
+
 def update_docs(
     knowledge_base_name: str = Body(
         ..., description="知识库名称", examples=["samples"]
@@ -286,84 +292,102 @@ def update_docs(
     file_names: List[str] = Body(
         ..., description="文件名称，支持多文件", examples=[["file_name1", "text.txt"]]
     ),
+    file_path: str = Body(
+        ..., description="文件路径", examples=[""]),
     chunk_size: int = Body(CHUNK_SIZE, description="知识库中单段文本最大长度"),
     chunk_overlap: int = Body(OVERLAP_SIZE, description="知识库中相邻文本重合长度"),
     zh_title_enhance: bool = Body(ZH_TITLE_ENHANCE, description="是否开启中文标题加强"),
     override_custom_docs: bool = Body(False, description="是否覆盖之前自定义的docs"),
-    docs: str = Body("", description="自定义的docs，需要转为json字符串"),
-    not_refresh_vs_cache: bool = Body(False, description="暂不保存向量库（用于FAISS）"),
+    docs: str = Body("", description="自定义的docs,需要转为json字符串"),
+    not_refresh_vs_cache: bool = Body(False, description="暂不保存向量库用于FAISS"),
 ) -> BaseResponse:
     """
     更新知识库文档
     """
-    if not validate_kb_name(knowledge_base_name):
-        return BaseResponse(code=403, msg="Don't attack me")
+    for filename in file_names:
+        file_path = get_file_path(knowledge_base_name=knowledge_base_name, doc_name=filename)
+    
+        result = jq_es_client.chunks_indexing_from_input_dir_or_files(
+                current_user = "",
+                index_name =knowledge_base_name,
+                description = None,
+                
+                input_dir=None,
+                input_files=file_path, 
+                overwrite_existing_converted_files=False,
+                required_exts=['.pdf', '.doc', '.docx', '.md', '.html', '.htm', '.py', '.txt'],
+                exclude_hidden=False
+            
+            )
+    
+        if not validate_kb_name(knowledge_base_name):
+            return BaseResponse(code=403, msg="Don't attack me")
 
-    kb = KBServiceFactory.get_service_by_name(knowledge_base_name)
-    if kb is None:
-        return BaseResponse(code=404, msg=f"未找到知识库 {knowledge_base_name}")
+        kb = KBServiceFactory.get_service_by_name(knowledge_base_name)
+        if kb is None:
+            return BaseResponse(code=404, msg=f"未找到知识库 {knowledge_base_name}")
 
-    failed_files = {}
-    kb_files = []
-    docs = json.loads(docs) if docs else {}
+        failed_files = {}
+        kb_files = []
+        docs = json.loads(docs) if docs else {}
 
-    # 生成需要加载docs的文件列表
-    for file_name in file_names:
-        file_detail = get_file_detail(kb_name=knowledge_base_name, filename=file_name)
+    # # 生成需要加载docs的文件列表
+    # for file_name in file_names:
+        file_detail = get_file_detail(kb_name=knowledge_base_name, filename=filename)
         # 如果该文件之前使用了自定义docs，则根据参数决定略过或覆盖
         if file_detail.get("custom_docs") and not override_custom_docs:
             continue
-        if file_name not in docs:
+        if filename not in docs:
             try:
                 kb_files.append(
                     KnowledgeFile(
-                        filename=file_name, knowledge_base_name=knowledge_base_name
+                        filename=filename, knowledge_base_name=knowledge_base_name
                     )
                 )
             except Exception as e:
-                msg = f"加载文档 {file_name} 时出错：{e}"
+                msg = f"加载文档 {filename} 时出错：{e}"
                 logger.error(
                     f"{e.__class__.__name__}: {msg}",
                     exc_info=e if log_verbose else None,
                 )
-                failed_files[file_name] = msg
+                failed_files[filename] = msg
 
-    # 从文件生成docs，并进行向量化。
-    # 这里利用了KnowledgeFile的缓存功能，在多线程中加载Document，然后传给KnowledgeFile
-    for status, result in files2docs_in_thread(
-        kb_files,
-        chunk_size=chunk_size,
-        chunk_overlap=chunk_overlap,
-        zh_title_enhance=zh_title_enhance,
-    ):
-        if status:
-            kb_name, file_name, new_docs = result
-            kb_file = KnowledgeFile(
-                filename=file_name, knowledge_base_name=knowledge_base_name
-            )
-            kb_file.splited_docs = new_docs
-            kb.update_doc(kb_file, not_refresh_vs_cache=True)
-        else:
-            kb_name, file_name, error = result
-            failed_files[file_name] = error
+    # # 从文件生成docs，并进行向量化。
+    # # 这里利用了KnowledgeFile的缓存功能，在多线程中加载Document，然后传给KnowledgeFile
+    # for status, result in files2docs_in_thread(
+    #     kb_files,
+    #     chunk_size=chunk_size,
+    #     chunk_overlap=chunk_overlap,
+    #     zh_title_enhance=zh_title_enhance,
+    # ):
+    #     if status:
+    #         kb_name, file_name, new_docs = result
+    #         kb_file = KnowledgeFile(
+    #             filename=file_name, knowledge_base_name=knowledge_base_name
+    #         )
+    #         kb_file.splited_docs = new_docs
+    #         kb.update_doc(kb_file, not_refresh_vs_cache=True)
+    #     else:
+    #         kb_name, file_name, error = result
+    #         failed_files[file_name] = error
 
-    # 将自定义的docs进行向量化
-    for file_name, v in docs.items():
-        try:
-            v = [x if isinstance(x, Document) else Document(**x) for x in v]
-            kb_file = KnowledgeFile(
-                filename=file_name, knowledge_base_name=knowledge_base_name
-            )
-            kb.update_doc(kb_file, docs=v, not_refresh_vs_cache=True)
-        except Exception as e:
-            msg = f"为 {file_name} 添加自定义docs时出错：{e}"
-            logger.error(
-                f"{e.__class__.__name__}: {msg}", exc_info=e if log_verbose else None
-            )
-            failed_files[file_name] = msg
+    # # 将自定义的docs进行向量化
+    # for file_name, v in docs.items():
+    #     try:
+    #         v = [x if isinstance(x, Document) else Document(**x) for x in v]
+    #         kb_file = KnowledgeFile(
+    #             filename=file_name, knowledge_base_name=knowledge_base_name
+    #         )
+    #         kb.update_doc(kb_file, docs=v, not_refresh_vs_cache=True)
+    #     except Exception as e:
+    #         msg = f"为 {file_name} 添加自定义docs时出错:{e}"
+    #         logger.error(
+    #             f"{e.__class__.__name__}: {msg}", exc_info=e if log_verbose else None
+    #         )
+    #         failed_files[file_name] = msg
 
-    if not not_refresh_vs_cache:
-        kb.save_vector_store()
+    # if not not_refresh_vs_cache:
+    #     kb.save_vector_store()
 
     return BaseResponse(
         code=200, msg=f"更新文档完成", data={"failed_files": failed_files}
