@@ -1,7 +1,9 @@
 import os
 import time
 from typing import Dict, Literal, Tuple
-
+import sys
+# project_root = '/media/yqli/JqChat'
+# sys.path.insert(0, project_root)
 import pandas as pd
 import streamlit as st
 import streamlit_antd_components as sac
@@ -67,7 +69,7 @@ def file_exists(kb: str, selected_rows: List) -> Tuple[str, str]:
             return file_name, file_path
     return "", ""
 
-
+ 
 def knowledge_base_page(api: ApiRequest, is_lite: bool = None):
     try:
         kb_list = {x["kb_name"]: x for x in get_kb_details()}
@@ -92,8 +94,7 @@ def knowledge_base_page(api: ApiRequest, is_lite: bool = None):
     def format_selected_kb(kb_name: str) -> str:
         if kb := kb_list.get(kb_name):
             embed_model_name = env_models_instance.embedding_model_name
-            return f"{kb_name} (es @ embed_model_name)"
-        #   return f"{kb_name} ({kb['vs_type']} @ {kb['embed_model']})"
+            return f"{kb_name} (es @ {embed_model_name})"
         else:
             return kb_name
 
@@ -207,6 +208,7 @@ def knowledge_base_page(api: ApiRequest, is_lite: bool = None):
         ):
             ret = api.upload_kb_docs(
                 files,
+                # file_path,
                 knowledge_base_name=kb,
                 override=True,
                 chunk_size=chunk_size,
@@ -312,6 +314,7 @@ def knowledge_base_page(api: ApiRequest, is_lite: bool = None):
                 api.update_kb_docs(
                     kb,
                     file_names=file_names,
+                    file_path=os.path.dirname(file_path),
                     chunk_size=chunk_size,
                     chunk_overlap=chunk_overlap,
                     zh_title_enhance=True,
