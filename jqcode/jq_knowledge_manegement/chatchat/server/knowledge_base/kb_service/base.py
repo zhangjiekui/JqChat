@@ -1,5 +1,5 @@
 import operator
-import os
+import os,shutil
 from abc import ABC, abstractmethod
 from pathlib import Path
 from typing import Dict, List, Optional, Tuple, Union
@@ -17,6 +17,7 @@ from jqcode.jq_knowledge_manegement.chatchat.configs import (
 from jqcode.jq_knowledge_manegement.chatchat.server.db.models.knowledge_base_model import KnowledgeBaseSchema
 from jqcode.jq_knowledge_manegement.chatchat.server.db.repository.knowledge_base_repository import (
     add_kb_to_db,
+    add_kb_to_es,
     delete_kb_from_db,
     get_kb_detail,
     kb_exists,
@@ -30,6 +31,7 @@ from jqcode.jq_knowledge_manegement.chatchat.server.db.repository.knowledge_file
     delete_file_from_db,
     delete_files_from_db,
     file_exists_in_db,
+    file_exists_in_es,
     get_file_detail,
     list_docs_from_db,
     list_docs_from_es,
@@ -42,24 +44,20 @@ from jqcode.jq_knowledge_manegement.chatchat.server.knowledge_base.utils import 
     KnowledgeFile,
     get_doc_path,
     get_kb_path,
+    get_file_path,
     list_files_from_folder,
     list_kbs_from_folder,
     list_kbs_from_es
 )
 from jqcode.jq_knowledge_manegement.chatchat.server.utils import check_embed_model as _check_embed_model
+
 from jqcode.jq_docstores.jq_es_client import JqEsClient
 jq_es_client = JqEsClient()
 
 
 class SupportedVSType:
     FAISS = "faiss"
-    # MILVUS = "milvus"
-    # DEFAULT = "default"
-    # ZILLIZ = "zilliz"
-    # PG = "pg"
-    # RELYT = "relyt"
     ES = "es"
-    # CHROMADB = "chromadb"
 
 
 class KBService(ABC):
@@ -101,15 +99,6 @@ class KBService(ABC):
         if not os.path.exists(self.doc_path):
             os.makedirs(self.doc_path)
 
-        # status = add_kb_to_db(
-        #     self.kb_name, self.kb_info, self.vs_type(), self.embed_model
-        # )
-
-        # if status:
-        #     self.do_create_kb()
-
-
-
         status = jq_es_client.create_doc_index(self.kb_name, self.kb_info)
 
 
@@ -119,19 +108,9 @@ class KBService(ABC):
         """
         删除向量库中所有内容
         """
-        # self.do_clear_vs()
-        # status = delete_files_from_db(self.kb_name)
 
         status = jq_es_client.drop_doc_index(self.kb_name)
         return status
-
-    # def drop_kb(self):
-    #     """
-    #     删除知识库
-    #     """
-    #     self.do_drop_kb()
-    #     status = delete_kb_from_db(self.kb_name)
-    #     return status
 
 
     def drop_kb(self):
@@ -139,6 +118,17 @@ class KBService(ABC):
         删除知识库
         """
         status = jq_es_client.drop_doc_index(self.kb_name)
+         
+        kb_name_path = get_kb_path(self.kb_name)
+        
+        if os.path.exists(kb_name_path):
+            try:
+                shutil.rmtree(kb_name_path)
+                print(f"Successfully removed directory: {kb_name_path}")
+            except Exception as e:
+                print(f"Error removing directory {kb_name_path}: {str(e)}")
+        else:
+            print(f"Directory does not exist: {kb_name_path}")
         return status
 
 
@@ -190,8 +180,9 @@ class KBService(ABC):
         """
         从知识库删除文件
         """
-        self.do_delete_doc(kb_file, **kwargs)
-        # status = delete_file_from_db(kb_file)
+
+        status = jq_es_client.delete_file_from_es_kb(kb_file.kb_name, kb_file.filename)
+
         status = True
         if delete_content and os.path.exists(kb_file.filepath):
             os.remove(kb_file.filepath)
@@ -202,7 +193,8 @@ class KBService(ABC):
         更新知识库介绍
         """
         self.kb_info = kb_info
-        status = add_kb_to_db(
+
+        status = add_kb_to_es(
             self.kb_name, self.kb_info, self.vs_type(), self.embed_model
         )
         return status
@@ -221,13 +213,11 @@ class KBService(ABC):
             self.delete_doc(kb_file, **kwargs)
             return self.add_doc(kb_file, docs=docs, **kwargs)
 
+    
     def exist_doc(self, file_name: str):
-        return file_exists_in_db(
-            KnowledgeFile(knowledge_base_name=self.kb_name, filename=file_name)
-        )
+        return file_exists_in_es(kb_name=self.kb_name, filename=file_name)
 
     def list_files(self):
-        # return list_files_from_db(self.kb_name)
         return list_files_from_es(self.kb_name)
 
     def count_files(self):
@@ -279,10 +269,6 @@ class KBService(ABC):
         """
         通过file_name或metadata检索Document
         """
-        # doc_infos = list_docs_from_db(
-        #     kb_name=self.kb_name, file_name=file_name, metadata=metadata
-        # )
-
         doc_infos = list_docs_from_es(
             kb_name=self.kb_name, file_name=file_name, metadata=metadata
         )
@@ -333,8 +319,7 @@ class KBService(ABC):
     @classmethod
     def list_kbs(cls):
         return list_kbs_from_db()
-        # return list_kbs_from_es()
-
+        
     def exists(self, kb_name: str = None):
         kb_name = kb_name or self.kb_name
         return kb_exists(kb_name)
@@ -442,26 +427,41 @@ class KBServiceFactory:
 
 # def get_kb_details() -> List[Dict]:
 #     kbs_in_folder = list_kbs_from_folder()
-    
-#     kbs_in_db: List[KnowledgeBaseSchema] = KBService.list_kbs()
+#     kbs_in_es_list = list_kbs_from_es()
+#     kbs_in_es_list = [x for x in kbs_in_es_list if x != 'unimetastore' and x != 'docstore' ]
+
+#     from jqcode.jq_docstores.jq_es_client import JqEsClient
+#     jq_es_client = JqEsClient()
+
+#     kbs_in_es = []
+#     for kb in kbs_in_es_list:
+#         kb_info = jq_es_client.get_index_info(index_name=kb)
+#         kb_dict = {
+#             "kb_name": kb,
+#             "kb_info": kb_info,
+#             "vs_type": "es",
+#             "embed_model": "bce-embedding-base_v1",
+
+#         }
+
+#         kbs_in_es.append(kb_dict)
+
+
 #     result = {}
 
 #     for kb in kbs_in_folder:
 #         result[kb] = {
 #             "kb_name": kb,
-#             "vs_type": "",
 #             "kb_info": "",
-#             "embed_model": "",
 #             "file_count": 0,
 #             "create_time": None,
 #             "in_folder": True,
-#             "in_db": False,
+#             "in_es": False,
 #         }
 
-#     for kb_detail in kbs_in_db:
-#         kb_detail = kb_detail.model_dump()
+#     for kb_detail in kbs_in_es:
 #         kb_name = kb_detail["kb_name"]
-#         kb_detail["in_db"] = True
+#         kb_detail["in_es"] = True
 #         if kb_name in result:
 #             result[kb_name].update(kb_detail)
 #         else:
@@ -474,7 +474,8 @@ class KBServiceFactory:
 #         data.append(v)
 
 #     return data
-    
+
+
 def get_kb_details() -> List[Dict]:
     kbs_in_folder = list_kbs_from_folder()
     kbs_in_es = list_kbs_from_es()
@@ -524,7 +525,7 @@ def get_kb_file_details(kb_name: str) -> List[Dict]:
         return []
 
     files_in_folder = list_files_from_folder(kb_name)
-    # files_in_db = kb.list_files()
+
     files_in_es = kb.list_files()
     files_in_es = {}.fromkeys(files_in_es).keys()
     result = {}
