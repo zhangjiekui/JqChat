@@ -1,4 +1,5 @@
-import multiprocessing,subprocess,os
+import subprocess,os
+import multiprocessing
 from pathlib import Path
 from rapidocr_onnxruntime import RapidOCR
 # from rapidocr_paddle import RapidOCR # For GPU
@@ -89,8 +90,7 @@ def treenode_img_to_text(img_src_and_data_tuple_list:tuple,delete_emf_wmf_png_fi
     result = f"【{img_src}的OCR文本】"+ result
     return result
 
-def treenodes_img_to_text_in_batch(img_src_and_data_tuple_list, processes=None):
-    
+def treenodes_img_to_text_in_batch(img_src_and_data_tuple_list, processes=None):    
     if processes:
         processes = min(processes,cpu_nums_for_img_ocr)
     else:
@@ -101,6 +101,8 @@ def treenodes_img_to_text_in_batch(img_src_and_data_tuple_list, processes=None):
         results = p.map(treenode_img_to_text,img_src_and_data_tuple_list)
     logger.debug(f"~~~~~~~~~~~~~~~结束：treenodes_img_to_text_in_batch进程池数量为{processes}~~~~~~~~~~~~~~~")
     return results
+
+
 
 
 

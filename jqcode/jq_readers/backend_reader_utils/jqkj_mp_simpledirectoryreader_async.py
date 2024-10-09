@@ -23,7 +23,7 @@ logger = jqkj_logger(__file__).get_logger()
 
 _cpu_nums = multiprocessing.cpu_count()
 cpu_nums_for_file_processing = int(_cpu_nums*0.8)
-# multiprocess.set_start_method("spawn")
+
 class FileSystemReaderMixin(ABC):
     @abstractmethod
     def read_file_content(self, input_file: Path, **kwargs) -> bytes:
