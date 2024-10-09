@@ -59,7 +59,7 @@ def delete_kb(
         return BaseResponse(code=404, msg=f"未找到知识库 {knowledge_base_name}")
 
     try:
-        status = kb.clear_vs()
+        # status = kb.clear_vs()
         status = kb.drop_kb()
         if status:
             return BaseResponse(code=200, msg=f"成功删除知识库 {knowledge_base_name}")
