@@ -5,6 +5,12 @@ from jqcode.jq_knowledge_manegement.chatchat.server.db.models.knowledge_base_mod
 from jqcode.jq_knowledge_manegement.chatchat.server.db.session import with_session
 
 
+from jqcode.jq_docstores.jq_es_client import JqEsClient
+jq_es_client = JqEsClient()
+
+
+
+
 @with_session
 def add_kb_to_db(session, kb_name, kb_info, vs_type, embed_model):
     # 创建知识库实例
@@ -25,6 +31,37 @@ def add_kb_to_db(session, kb_name, kb_info, vs_type, embed_model):
     return True
 
 
+def add_kb_to_es(kb_name, kb_info, vs_type, embed_model):
+    jq_es_client = JqEsClient()
+    
+    try:
+        # 创建知识库索引并添加元数据
+        index_store = jq_es_client.create_doc_index(
+            index_name=kb_name,
+            description=kb_info,
+            index_creator=''
+        )
+        
+        if index_store is None:
+            print(f"Failed to create or access index {kb_name}")
+            return False
+        
+        # 如果需要，这里可以添加更多的操作，比如添加文档等
+        # 例如：
+        # jq_es_client.chunks_indexing_from_input_dir_or_files(
+        #     current_user=current_user,
+        #     index_name=kb_name,
+        #     description=kb_info,
+        #     input_dir="path/to/documents"
+        # )
+        
+        print(f"Knowledge base {kb_name} created or updated successfully")
+        return True
+    except Exception as e:
+        print(f"Error adding knowledge base to Elasticsearch: {e}")
+        return False
+
+
 @with_session
 def list_kbs_from_db(session, min_file_count: int = -1):
     kbs = (
@@ -35,12 +72,6 @@ def list_kbs_from_db(session, min_file_count: int = -1):
     kbs = [KnowledgeBaseSchema.model_validate(kb) for kb in kbs]
     return kbs
 
-
-@with_session
-def list_kbs_from_es():
-
-    kbs = [KnowledgeBaseSchema.model_validate(kb) for kb in kbs]
-    return kbs
 
 
 @with_session
