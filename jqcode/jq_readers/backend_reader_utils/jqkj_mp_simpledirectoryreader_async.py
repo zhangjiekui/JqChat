@@ -1,7 +1,8 @@
 """Simple reader that reads files of different formats from a directory."""
 
 from abc import ABC, abstractmethod
-import multiprocess as multiprocessing
+# import multiprocess as multiprocessing
+import multiprocessing
 import os
 import asyncio
 import mimetypes
