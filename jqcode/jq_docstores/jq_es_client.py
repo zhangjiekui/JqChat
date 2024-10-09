@@ -1,5 +1,5 @@
-import sys
-# project_root = '/media/temp/JqChat'
+import sys,os,logging
+# project_root = '/media/yqli/JqChat'
 # sys.path.insert(0, project_root)
 
 import time 
@@ -156,15 +156,58 @@ class JqEsClient():
                 logger.warning(f"{index_name=}本不存在，无需删除")
 
             return True
-                
-    
+        
+
+    def delete_file_from_es_kb(self, kb_name: str, filename: str) -> bool:
+        """
+        删除知识库中的文件及其所有块。
+
+        :param kb_name: 知识库的名称
+        :param filename: 要删除的文件名
+        :return: 如果所有块删除成功返回True,否则返回False
+        """
+        try:
+            # 根据文件名查找所有匹配的文档ID（假设文件名存储在"metadata.file_name"字段中）
+            search_result = self.client.search(index=kb_name, body={
+                "query": {
+                    "match": {
+                        "metadata.file_name": filename
+                    }
+                }
+            })
+
+            # 如果找到文档，删除所有匹配的文档
+            if search_result['hits']['total']['value'] > 0:
+                for hit in search_result['hits']['hits']:
+                    document_id = hit['_id']
+                    delete_result = self.client.delete(index=kb_name, id=document_id)
+                    if delete_result['result'] == 'deleted':
+                        logging.info(f"Document block '{filename}' with ID '{document_id}' deleted successfully from index '{kb_name}'.")
+                    else:
+                        logging.warning(f"Document block '{filename}' with ID '{document_id}' found but could not be deleted.")
+                        return False
+                logging.info(f"All document blocks for '{filename}' deleted successfully from index '{kb_name}'.")
+                return True
+            else:
+                logging.warning(f"File '{filename}' not found in index '{kb_name}'.")
+                return False
+        except Exception as e:
+            logging.error(f"Error deleting document blocks: {e}")
+            return False
+        
+
     def chunks_indexing_from_input_dir_or_files(self,
             # 当前用户，将在create_doc_index和add_or_update_index_metadata_if_id_exists方法中使用
             current_user:str,
             #create_doc_index方法相关参数：创建知识库，并在metastores中增加所建知识库的相关元数据描述信息
-            index_name:str="",description:str=None,
+            index_name:str="",
+            description:str=None,
             #JqkjSimpleDirectoryReader实例化相关参数，读取文件 
-            input_dir:str=None,input_files:list=None, overwrite_existing_converted_files=False,required_exts=required_exts_in_reader,exclude_hidden=False
+            input_dir:str=None,
+            input_files:list=None, 
+            overwrite_existing_converted_files=False,
+            required_exts=required_exts_in_reader,
+            exclude_hidden=False
         ):
         """
             将文档chunks文本和向量存储到doc_index
@@ -174,13 +217,18 @@ class JqEsClient():
             (4) 将文档chunks文本和向量存储到doc_index
         """
     # 1、可选。创建知识库，并在metastore中写入该知识库的元数据（如名称、描述、创建者)
-        print(f"创建知识库{index_name},并在metastore中写入该知识库的元数据(如名称、描述、创建者)")       
-        index_store = self.create_doc_index(index_name=index_name,description=description,index_creator=current_user)
-        print(f"应已创建知识库{index_name}，并在{self.metastores.index_name}中有该知识库({index_name})的描述等元信息")
-        
+        if index_name not in self.metastores.index_names or not self.client.indices.exists(index=index_name):
+            print(f"创建知识库{index_name},并在metastore中写入该知识库的元数据(如名称、描述、创建者)")       
+            index_store = self.create_doc_index(index_name=index_name,description=description,index_creator=current_user)
+            print(f"应已创建知识库{index_name}，并在{self.metastores.index_name}中有该知识库({index_name})的描述等元信息")
+        else:
+            print(f"知识库{index_name}已存在,并在metastore中存在{self.metastores.index_names}") 
+            index_store = JqElasticsearchIndexStore(index_name=index_name)
     # 2、读取文件
         simple_reader = JqkjSimpleDirectoryReader(input_dir=input_dir,input_files=input_files, 
-                                                  overwrite_existing_converted_files=overwrite_existing_converted_files,required_exts=required_exts,exclude_hidden=exclude_hidden)
+                                                  overwrite_existing_converted_files=overwrite_existing_converted_files,
+                                                  required_exts=required_exts,
+                                                  exclude_hidden=exclude_hidden)
         lm_documents = simple_reader.load_data()
         print(f"读取到的文件数量:{len(lm_documents)=}")
     # 3、上传到文件库(docstore)，并在lm_documents元数据中加入存储库(docstore)及文件对应ID等信息
@@ -207,6 +255,8 @@ if __name__ == "__main__":
     # current_user='elastic'
 
     jq_es_client = JqEsClient()
+    # status = jq_es_client.delete_file_from_es_kb('liyuanqin', 'OCR接口性能报告.docx')
+    # status = jq_es_client.delete_file_from_es_kb('liyuanqin', '测试文本.txt')
     # # status = jq_es_client.create_doc_index(index_name='tempuse',
     # #                                        description="创建一个测试知识库知识库,该知识库主要用测试获取基本信息功能")
     
@@ -222,17 +272,13 @@ if __name__ == "__main__":
 
     # status = jq_es_client.drop_doc_index(index_name=index_name)
     
-    # input_dir = "/media/temp/UPLOAD_DOCS/knowledge_base/create1/content"
-    input_files = [fr"/data/projects/JqChatV2/UPLOAD_DOCS/knowledge_base/zjk_jqesclient_test/content/附件2+芜湖市信息化项目方案建议书编制提纲.docx"]
-    des = "A vectorstore/knowledge base containing documents related to 晶奇公司、安徽晶奇网络科技股份有限公司、医疗卫生、医疗健康、医疗服务、医疗政策、medical treatment & health. 凡是与晶奇公司、安徽晶奇网络科技股份有限公司及医疗健康相关的问题，都必须使用vectorstore工具。MUST use the vectorstore for questions on these topics."
-    # v = jq_es_client.create_doc_index(index_name='zjk_jqesclient_test',description=des)
-    # vectorstore = jq_es_client.chunks_indexing_from_input_dir_or_files(current_user='',index_name='zjk_jqesclient_test',
-    #                                                                 description=des,
-    #                                                                 input_files = input_files)
-    
-    input_dir = "/data/projects/JqChatV2/UPLOAD_DOCS/knowledge_base/zjk_jqesclient_test/content/"
-    vectorstore = jq_es_client.chunks_indexing_from_input_dir_or_files(current_user='',index_name='zjk_jqesclient_test',
-                                                                    description=des,
-                                                                    input_dir=input_dir)
+    # input_dir = "/media/project/UPLOAD_DOCS/knowledge_base/liyuanqin/content"
+    # input_files = "/media/project/UPLOAD_DOCS/knowledge_base/liyuanqin/content/OCR接口性能报告.docx"
+    input_files = "/media/project/UPLOAD_DOCS/knowledge_base/liyuanqin/content/Agent调试跟踪1.txt"
+    # input_files = ["/media/project/JqChat/发票识别接口文档.docx"]
+    vectorstore = jq_es_client.chunks_indexing_from_input_dir_or_files(current_user='',index_name='liyuanqin',
+                                                                    description=None,
+                                                                    input_dir = None,
+                                                                    input_files=input_files)
     pass
     
