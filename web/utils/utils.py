@@ -444,6 +444,8 @@ class ApiRequest:
         knowledge_base_name: str,
         vector_store_type: str = DEFAULT_VS_TYPE,
         embed_model: str = DEFAULT_EMBEDDING_MODEL,
+        kb_info: str = None,
+
     ):
         """
         对应api.py/knowledge_base/create_knowledge_base接口
@@ -452,6 +454,7 @@ class ApiRequest:
             "knowledge_base_name": knowledge_base_name,
             "vector_store_type": vector_store_type,
             "embed_model": embed_model,
+            "kb_info": kb_info
         }
 
         response = self.post(
@@ -465,7 +468,9 @@ class ApiRequest:
         knowledge_base_name: str,
     ):
         """
-        对应api.py/knowledge_base/delete_knowledge_base接口  chatchat/server/knowledge_base/kb_api.py
+        对应api.py/knowledge_base/delete_knowledge_base接口,
+        jqcode/jq_knowledge_manegement/chatchat/server/knowledge_base/kb_api.py delete_kb方法
+        jqcode/jq_knowledge_manegement/chatchat/server/knowledge_base/kb_service/base.py  drop_kb方法
         """
         response = self.post(
             "/knowledge_base/delete_knowledge_base",
@@ -528,7 +533,7 @@ class ApiRequest:
         not_refresh_vs_cache: bool = False,
     ):
         """
-        对应api.py/knowledge_base/upload_docs接口
+        对应api.py/knowledge_base/upload_docs接口,JqChat/jqcode/jq_knowledge_manegement/chatchat/server/knowledge_base/kb_doc_api.py  upload_docs方法
         """
 
         def convert_file(file, filename=None):
@@ -604,6 +609,7 @@ class ApiRequest:
         self,
         knowledge_base_name: str,
         file_names: List[str],
+        file_path: str = '',
         override_custom_docs: bool = False,
         chunk_size=CHUNK_SIZE,
         chunk_overlap=OVERLAP_SIZE,
@@ -612,11 +618,12 @@ class ApiRequest:
         not_refresh_vs_cache: bool = False,
     ):
         """
-        对应api.py/knowledge_base/update_docs接口
+        对应api.py/knowledge_base/update_docs接口,JqChat/jqcode/jq_knowledge_manegement/chatchat/server/knowledge_base/kb_doc_api.py update_docs
         """
         data = {
             "knowledge_base_name": knowledge_base_name,
             "file_names": file_names,
+            "file_path": file_path,
             "override_custom_docs": override_custom_docs,
             "chunk_size": chunk_size,
             "chunk_overlap": chunk_overlap,
@@ -785,17 +792,3 @@ def get_img_base64(file_name: str) -> str:
 if __name__ == "__main__":
     api = ApiRequest()
     aapi = AsyncApiRequest()
-
-    # with api.chat_chat("你好") as r:
-    #     for t in r.iter_text(None):
-    #         print(t)
-
-    # r = api.chat_chat("你好", no_remote_api=True)
-    # for t in r:
-    #     print(t)
-
-    # r = api.duckduckgo_search_chat("室温超导最新研究进展", no_remote_api=True)
-    # for t in r:
-    #     print(t)
-
-    # print(api.list_knowledge_bases())
