@@ -182,17 +182,6 @@ def count_files_from_db(session, kb_name: str) -> int:
     )
 
 
-# @with_session
-# def list_files_from_db(session, kb_name):
-#     files = (
-#         session.query(KnowledgeFileModel)
-#         .filter(KnowledgeFileModel.kb_name.ilike(kb_name))
-#         .all()
-#     )
-#     docs = [f.file_name for f in files]
-#     return docs
-
-
 def list_files_from_es(kb_name: str, search_text: str = None) -> list:
     es = env_models_instance.get_es_connection()
     
@@ -218,7 +207,7 @@ def list_files_from_es(kb_name: str, search_text: str = None) -> list:
             "size": 10000
         }
 
-    try:
+    try: 
         result = es.search(index=kb_name, body=query)
         print(f"Total hits: {result['hits']['total']['value']}")
         docs = [hit["_source"]["metadata"]["file_name"] for hit in result["hits"]["hits"]]
@@ -345,34 +334,33 @@ def file_exists_in_db(session, kb_file: KnowledgeFile):
     return True if existing_file else False
 
 
-# @with_session
-# def get_file_detail(session, kb_name: str, filename: str) -> dict:
-#     file: KnowledgeFileModel = (
-#         session.query(KnowledgeFileModel)
-#         .filter(
-#             KnowledgeFileModel.file_name.ilike(filename),
-#             KnowledgeFileModel.kb_name.ilike(kb_name),
-#         )
-#         .first()
-#     )
-#     if file:
-#         return {
-#             "kb_name": file.kb_name,
-#             "file_name": file.file_name,
-#             "file_ext": file.file_ext,
-#             "file_version": file.file_version,
-#             "document_loader": file.document_loader_name,
-#             "text_splitter": file.text_splitter_name,
-#             "create_time": file.create_time,
-#             "file_mtime": file.file_mtime,
-#             "file_size": file.file_size,
-#             "custom_docs": file.custom_docs,
-#             "docs_count": file.docs_count,
-#         }
-#     else:
-#         return {}
+def file_exists_in_es(kb_name: str, filename: str) -> dict:
+    es = env_models_instance.get_es_connection()
+    # 构建搜索查询
+    query = {
+        "query": {
+            "bool": {
+                "must": [
+                    {"term": {"kb_name": kb_name}},
+                    {"term": {"filename.keyword": filename}}
+                ]
+            }
+        },
+        "size": 1  # 我们只需要知道是否存在,所以只返回一个结果
+    }
     
-
+    # 执行搜索
+    try:
+        result = es.search(index="your_index_name", body=query)
+        
+        # 检查是否有匹配的文档
+        if result['hits']['total']['value'] > 0:
+            return True
+        else:
+            return False
+    except Exception as e:
+        print(f"Error searching Elasticsearch: {str(e)}")
+        return False
 
 
 def get_file_detail(kb_name: str, filename: str) -> dict:
