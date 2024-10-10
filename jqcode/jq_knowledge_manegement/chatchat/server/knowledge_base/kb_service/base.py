@@ -392,16 +392,16 @@ class KBServiceFactory:
             "embed_model": embed_model,
             "kb_info": kb_info,
         }
-        if SupportedVSType.FAISS == vector_store_type:
-            from jqcode.jq_knowledge_manegement.chatchat.server.knowledge_base.kb_service.faiss_kb_service import (
-                FaissKBService,
-            )
+        # if SupportedVSType.FAISS == vector_store_type:
+        #     from jqcode.jq_knowledge_manegement.chatchat.server.knowledge_base.kb_service.faiss_kb_service import (
+        #         FaissKBService,
+        #     )
 
-            return FaissKBService(**params)
+        #     return FaissKBService(**params)
 
 
 
-        elif SupportedVSType.ES == vector_store_type:
+        if SupportedVSType.ES == vector_store_type:
             from jqcode.jq_knowledge_manegement.chatchat.server.knowledge_base.kb_service.es_kb_service import (
                 ESKBService,
             )
