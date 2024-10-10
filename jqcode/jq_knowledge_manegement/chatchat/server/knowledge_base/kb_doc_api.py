@@ -441,7 +441,8 @@ def download_doc(
 def recreate_vector_store(
     knowledge_base_name: str = Body(..., examples=["samples"]),
     allow_empty_kb: bool = Body(True),
-    vs_type: str = Body(DEFAULT_VS_TYPE),
+    # vs_type: str = Body(DEFAULT_VS_TYPE),
+    vs_type: str = 'es',
     embed_model: str = Body(DEFAULT_EMBEDDING_MODEL),
     chunk_size: int = Body(CHUNK_SIZE, description="知识库中单段文本最大长度"),
     chunk_overlap: int = Body(OVERLAP_SIZE, description="知识库中相邻文本重合长度"),
@@ -471,42 +472,88 @@ def recreate_vector_store(
                 kb.create_kb()
                 files = list_files_from_folder(knowledge_base_name)
                 kb_files = [(file, knowledge_base_name) for file in files]
+                
                 i = 0
-                for status, result in files2docs_in_thread(
-                    kb_files,
-                    chunk_size=chunk_size,
-                    chunk_overlap=chunk_overlap,
-                    zh_title_enhance=zh_title_enhance,
-                ):
-                    if status:
-                        kb_name, file_name, docs = result
-                        kb_file = KnowledgeFile(
-                            filename=file_name, knowledge_base_name=kb_name
-                        )
-                        kb_file.splited_docs = docs
+                for file_name in files:
+                    file_path = get_file_path(knowledge_base_name=knowledge_base_name, doc_name=file_name)
+                    
+                    try:
+                        result = jq_es_client.chunks_indexing_from_input_dir_or_files(
+                                current_user = "",
+                                index_name =knowledge_base_name,
+                                description = None,
+                                
+                                input_dir=None,
+                                input_files=file_path, 
+                                overwrite_existing_converted_files=False,
+                                required_exts=['.pdf', '.doc', '.docx', '.md', '.html', '.htm', '.py', '.txt'],
+                                exclude_hidden=False
+                            
+                            )
+                        i += 1
                         yield json.dumps(
-                            {
-                                "code": 200,
-                                "msg": f"({i + 1} / {len(files)}): {file_name}",
-                                "total": len(files),
-                                "finished": i + 1,
-                                "doc": file_name,
-                            },
-                            ensure_ascii=False,
-                        )
-                        kb.add_doc(kb_file, not_refresh_vs_cache=True)
-                    else:
-                        kb_name, file_name, error = result
+                                {
+                                    "code": 200,
+                                    "msg": f"({i + 1} / {len(files)}): {file_name}",
+                                    "total": len(files),
+                                    "finished": i + 1,
+                                    "doc": file_name,
+                                },
+                                ensure_ascii=False,
+                            )
+                        
+                        # kb_file = KnowledgeFile(
+                        #     filename=file_name, knowledge_base_name=knowledge_base_name
+                        # )
+                        # kb.add_doc(kb_file, not_refresh_vs_cache=True)
+                    except Exception as error:
                         msg = f"添加文件‘{file_name}’到知识库‘{knowledge_base_name}’时出错：{error}。已跳过。"
-                        logger.error(msg)
                         yield json.dumps(
-                            {
-                                "code": 500,
-                                "msg": msg,
-                            }
-                        )
-                    i += 1
-                if not not_refresh_vs_cache:
-                    kb.save_vector_store()
+                                {
+                                    "code": 500,
+                                    "msg": msg,
+                                }
+                            )
+                        i += 1
+                    # if not not_refresh_vs_cache:
+                    #     kb.save_vector_store()
+                
+                # i = 0
+                # for status, result in files2docs_in_thread(
+                #     kb_files,
+                #     chunk_size=chunk_size,
+                #     chunk_overlap=chunk_overlap,
+                #     zh_title_enhance=zh_title_enhance,
+                # ):
+                #     if status:
+                #         kb_name, file_name, docs = result
+                #         kb_file = KnowledgeFile(
+                #             filename=file_name, knowledge_base_name=kb_name
+                #         )
+                #         kb_file.splited_docs = docs
+                #         yield json.dumps(
+                #             {
+                #                 "code": 200,
+                #                 "msg": f"({i + 1} / {len(files)}): {file_name}",
+                #                 "total": len(files),
+                #                 "finished": i + 1,
+                #                 "doc": file_name,
+                #             },
+                #             ensure_ascii=False,
+                #         )
+                #         kb.add_doc(kb_file, not_refresh_vs_cache=True)
+                #     else:
+                #         kb_name, file_name, error = result
+                #         msg = f"添加文件‘{file_name}’到知识库‘{knowledge_base_name}’时出错：{error}。已跳过。"
+                #         logger.error(msg)
+                #         yield json.dumps(
+                #             {
+                #                 "code": 500,
+                #                 "msg": msg,
+                #             }
+                #         )
+                #     i += 1
+                # if not not_refresh_vs_cache:
+                #     kb.save_vector_store()
 
     return EventSourceResponse(output())
