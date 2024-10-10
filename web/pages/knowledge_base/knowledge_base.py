@@ -362,7 +362,8 @@ def knowledge_base_page(api: ApiRequest, is_lite: bool = None):
                     if msg := check_error_msg(d):
                         st.toast(msg)
                     else:
-                        empty.progress(d["finished"] / d["total"], d["msg"])
+                        pass
+                        # empty.progress(d["finished"] / d["total"], d["msg"])
                 st.rerun()
 
         if cols[2].button(
