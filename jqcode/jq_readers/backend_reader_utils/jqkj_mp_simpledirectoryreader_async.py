@@ -1,8 +1,6 @@
 """Simple reader that reads files of different formats from a directory."""
 
 from abc import ABC, abstractmethod
-
-import multiprocessing
 # from concurrent.futures import ProcessPoolExecutor as Pool
 from concurrent.futures import ThreadPoolExecutor as Pool
 import os
@@ -24,8 +22,9 @@ from tqdm import tqdm
 from jqcode.jq_utils.logger import jqkj_logger
 logger = jqkj_logger(__file__).get_logger()
 
+import multiprocessing
 _cpu_nums = multiprocessing.cpu_count()
-cpu_nums_for_file_processing = int(_cpu_nums*0.75)
+parallel_nums_for_file_processing = int(_cpu_nums*0.75)
 
 class FileSystemReaderMixin(ABC):
     @abstractmethod
@@ -662,7 +661,7 @@ class SimpleDirectoryReader(BaseReader, ResourcesReaderMixin, FileSystemReaderMi
         
         num_workers = num_workers if num_workers else len(self.input_files)
         num_workers = min(num_workers,len(self.input_files))
-        num_workers = min(num_workers,cpu_nums_for_file_processing)
+        num_workers = min(num_workers,parallel_nums_for_file_processing)
        
         # from concurrent.futures import ProcessPoolExecutor as Pool
         with Pool(num_workers) as p:
@@ -708,7 +707,7 @@ class SimpleDirectoryReader(BaseReader, ResourcesReaderMixin, FileSystemReaderMi
         
         num_workers = num_workers if num_workers else len(self.input_files)
         num_workers = min(num_workers,len(self.input_files))
-        num_workers = min(num_workers,cpu_nums_for_file_processing)
+        num_workers = min(num_workers,parallel_nums_for_file_processing)
         coroutines = [self.aload_file(input_file) for input_file in files_to_process]        
         if num_workers:
             document_lists = await run_jobs(
