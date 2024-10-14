@@ -164,12 +164,7 @@ class KBService(ABC):
             self.delete_doc(kb_file)
             doc_infos = self.do_add_doc(docs, **kwargs)
             status = True
-            # status = add_file_to_db(
-            #     kb_file,
-            #     custom_docs=custom_docs,
-            #     docs_count=len(docs),
-            #     doc_infos=doc_infos,
-            # )
+
         else:
             status = False
         return status
@@ -392,14 +387,6 @@ class KBServiceFactory:
             "embed_model": embed_model,
             "kb_info": kb_info,
         }
-        # if SupportedVSType.FAISS == vector_store_type:
-        #     from jqcode.jq_knowledge_manegement.chatchat.server.knowledge_base.kb_service.faiss_kb_service import (
-        #         FaissKBService,
-        #     )
-
-        #     return FaissKBService(**params)
-
-
 
         if SupportedVSType.ES == vector_store_type:
             from jqcode.jq_knowledge_manegement.chatchat.server.knowledge_base.kb_service.es_kb_service import (
@@ -414,7 +401,6 @@ class KBServiceFactory:
 
     @staticmethod
     def get_service_by_name(kb_name: str) -> KBService:
-        # _, vs_type, embed_model = load_kb_from_db(kb_name)
         _, vs_type, embed_model = load_kb_from_es(kb_name)
         if _ is None:  # kb not in db, just return None
             return None
@@ -423,57 +409,6 @@ class KBServiceFactory:
     @staticmethod
     def get_default():
         return KBServiceFactory.get_service("default", SupportedVSType.DEFAULT)
-
-
-# def get_kb_details() -> List[Dict]:
-#     kbs_in_folder = list_kbs_from_folder()
-#     kbs_in_es_list = list_kbs_from_es()
-#     kbs_in_es_list = [x for x in kbs_in_es_list if x != 'unimetastore' and x != 'docstore' ]
-
-#     from jqcode.jq_docstores.jq_es_client import JqEsClient
-#     jq_es_client = JqEsClient()
-
-#     kbs_in_es = []
-#     for kb in kbs_in_es_list:
-#         kb_info = jq_es_client.get_index_info(index_name=kb)
-#         kb_dict = {
-#             "kb_name": kb,
-#             "kb_info": kb_info,
-#             "vs_type": "es",
-#             "embed_model": "bce-embedding-base_v1",
-
-#         }
-
-#         kbs_in_es.append(kb_dict)
-
-
-#     result = {}
-
-#     for kb in kbs_in_folder:
-#         result[kb] = {
-#             "kb_name": kb,
-#             "kb_info": "",
-#             "file_count": 0,
-#             "create_time": None,
-#             "in_folder": True,
-#             "in_es": False,
-#         }
-
-#     for kb_detail in kbs_in_es:
-#         kb_name = kb_detail["kb_name"]
-#         kb_detail["in_es"] = True
-#         if kb_name in result:
-#             result[kb_name].update(kb_detail)
-#         else:
-#             kb_detail["in_folder"] = False
-#             result[kb_name] = kb_detail
-
-#     data = []
-#     for i, v in enumerate(result.values()):
-#         v["No"] = i + 1
-#         data.append(v)
-
-#     return data
 
 
 def get_kb_details() -> List[Dict]:
