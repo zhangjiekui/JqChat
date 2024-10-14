@@ -272,7 +272,8 @@ if __name__ == "__main__":
 
     # status = jq_es_client.drop_doc_index(index_name=index_name)
     
-    input_dir = "/media/program/UPLOAD_DOCS/knowledge_base/liyuanqin/content"
+    # input_dir = "/media/program/UPLOAD_DOCS/knowledge_base/liyuanqin/content"
+    input_dir = fr'/data/projects/JqChatV2/JqChat/jqcode/jq_readers/.test_files/.testinputdocs'
     # input_files = "/media/program/UPLOAD_DOCS/knowledge_base/liyuanqin/content/OCR接口性能报告.docx"
     # input_files = "/media/program/UPLOAD_DOCS/knowledge_base/liyuanqin/content/Agent调试跟踪1.txt"
     # input_files = ["/media/project/JqChat/发票识别接口文档.docx"]

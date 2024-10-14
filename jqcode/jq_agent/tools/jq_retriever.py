@@ -272,7 +272,8 @@ if __name__ == "__main__":
         print("&&&&&&&&&&&&&&&&&&&&&")
         print(f'共检索到{len(docs)}篇文档：') 
         for i,h in enumerate(docs):
-            print(f'【{h.metadata.get("file_name",None) or h.metadata.get("source",None)}】文档片段[{i+1}](relevance_score:{h.metadata["relevance_score"]:.3f}):\n{h.page_content[:100]}')
+            relevance_score = h.metadata.get("relevance_score_retriever_embedding",h.metadata.get("relevance_score_retriever_embedding",0.0))
+            print(f'【{h.metadata.get("file_name",None) or h.metadata.get("source",None)}】文档片段[{i+1}](relevance_score:{relevance_score:.3f}):\n{h.page_content[:100]}')
             # print(f'文档片段[{i+1}](relevance_score:{h.metadata["relevance_score"]:.3f})') 
             print('~~~~~~~~~~~'*5)  
     print("结论：经过反复测试：文档过滤、集成检索、重排序都是Work的，但确实会有少数情况下(发生在文档相关性很低的时候)，会返回给定列表外的文档！") 

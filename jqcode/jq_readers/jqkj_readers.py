@@ -4,45 +4,29 @@ Contains parsers for docx, pdf files.
 
 """
 
-import os
 import time
-from datetime import datetime
 from pathlib import Path
 from os.path import basename,dirname,join
 from typing import Dict, List, Optional,Callable,Any
-import docx
 from docx.text.paragraph import Paragraph, Run
 from docx.parts.image import ImagePart
 from docx.table import _Cell, Table
 from docx.opc.constants import RELATIONSHIP_TYPE as RT
-import xml.etree.ElementTree as ET
-from docx.document import Document as doctwo
-from docx.oxml.table import CT_Tbl
-from docx.oxml.text.paragraph import CT_P
-
-from docx.shared import Pt
-from docx import Document as Document_compose
 import pandas as pd
 from xml.etree import ElementTree
 from io import StringIO
 import io
 import csv
-import base64
-
 import anytree
 from anytree import Node
-import threading
-
+from threading import Lock
 from docx.document import Document as DocxDocument
-
 from llama_index.core.readers.base import BaseReader
 from llama_index.core import Document as LmDocument
 
 import fsspec
 from fsspec.implementations.local import AbstractFileSystem
 
-# from llama_index.core.readers.file.base import SimpleDirectoryReader,default_file_metadata_func,_try_loading_included_file_formats
-# 修改为多线程，以便实现多Works工作（llama_index中的多进程实现因为无法序列化Document对象，会报错！）
 from jqcode.jq_readers.backend_reader_utils.jqkj_mp_simpledirectoryreader_async import SimpleDirectoryReader,default_file_metadata_func,_try_loading_included_file_formats
 from jqcode.jq_readers.backend_reader_utils.jqkj_img_to_text import treenodes_img_to_text_in_batch
 from jqcode.jq_readers.backend_reader_utils.jqkj_docs_converter import convert_file_to_docx
@@ -56,15 +40,13 @@ import asyncio
 
 from jqcode.jq_utils.logger import jqkj_logger
 logger = jqkj_logger(__file__).get_logger()
+temp_lock = Lock()
 
 file_type_processed_by_jqreader = [".pdf",".doc",".docx",".md",".html",".htm"]
-mutex = threading.Lock()
+
 class JqkjDocxReader(BaseReader):
     """Docx parser."""
     def __init__(self,file_path:str=None,save_img_file:bool = False):
-        # super().__init__()
-        # logger.warning(f'JqkjDocxReader:返回的text只是为了兼容llama_index的Reader要求，简单获取的。原始的doc/tree对象存放到了（llama_index）LmDocument document对象的metadata字典中，以便获取做进一步的精细化处理')
-        # 没放了
         try:
             from docx import Document as DocxDocumentFunc
         except ImportError:
@@ -87,83 +69,88 @@ class JqkjDocxReader(BaseReader):
 
     def load_data(self, file: Path, extra_info: Optional[Dict] = None,fs: Optional[AbstractFileSystem] = None,aysnc = False) -> List[LmDocument]:
         """
-        Parse docx file.      
+        Parse docx file.   
+        1、转换文件为docx
+        2、读取docx文件
+        3、解析docx文件为anytree
+            3.1 识别出图片中的文本
+           
         """
-        
-        file_path =file if file else self.file_path # 为了兼容chatchat，必须增加的属性
-        doc_original = str(file_path)         # 因self.file_path和file_path下面都可能会变，所以先保留原始的到doc_id
-        file_path = Path(file_path)        
-        
-        if file_path.exists():
-            self.file_path =  file_path
-
-        # 如果是经过JqkjSimpleDirectoryReader=>JqkjDocxReader，其实已经进行了文件类型转换，并且加入了'original_source_jq'，'source'键值，
-        # 这里仅需要处理直接实例化JqkjDocxReader自身的情形，并且不能更新 JqkjSimpleDirectoryReader=>JqkjDocxReader时 已经处理好的'original_source_jq'，'source'键值
-            # raise Exception("todo")
-            ext = file_path.suffix
-            if ext in ['.docx']:
+        with temp_lock:
+            file_path =file if file else self.file_path # 为了兼容chatchat，必须增加的属性
+            doc_original = str(file_path)         # 因self.file_path和file_path下面都可能会变，所以先保留原始的到doc_id
+            file_path = Path(file_path)        
+            
+            if file_path.exists():
                 self.file_path =  file_path
-                self.orginal_filepath_extra_info = {'original_source_jq':doc_original,'source':doc_original,'original_source_converted_jq':doc_original}
-                # 元数据中增加了文件扩展名
-                self.orginal_filepath_extra_info.update({"file_extention":ext})
-            elif ext in file_type_processed_by_jqreader:
-                input_filepaths_exist,input_filepaths_exist_and_replaced_by_docx_if_converted = convert_file_to_docx(file_path,overwrite=False)                
-                # self.file_path此时为转换后的docx文件路径
-                if input_filepaths_exist_and_replaced_by_docx_if_converted:
-                    self.file_path =  input_filepaths_exist_and_replaced_by_docx_if_converted[0]
-                    doc_original = input_filepaths_exist[0]                
-                    self.orginal_filepath_extra_info = {'original_source_jq':doc_original,'source':doc_original,'original_source_converted_jq':str(self.file_path)} #'source'键是为了与chatchat中的reader保持一致的
+
+            # 如果是经过JqkjSimpleDirectoryReader=>JqkjDocxReader，其实已经进行了文件类型转换，并且加入了'original_source_jq'，'source'键值，
+            # 这里仅需要处理直接实例化JqkjDocxReader自身的情形，并且不能更新 JqkjSimpleDirectoryReader=>JqkjDocxReader时 已经处理好的'original_source_jq'，'source'键值
+                # raise Exception("todo")
+                ext = file_path.suffix
+                if ext in ['.docx']:
+                    self.file_path =  file_path
+                    self.orginal_filepath_extra_info = {'original_source_jq':doc_original,'source':doc_original,'original_source_converted_jq':doc_original}
                     # 元数据中增加了文件扩展名
                     self.orginal_filepath_extra_info.update({"file_extention":ext})
+                elif ext in file_type_processed_by_jqreader:
+                    input_filepaths_exist,input_filepaths_exist_and_replaced_by_docx_if_converted = convert_file_to_docx(file_path,overwrite=False)                
+                    # self.file_path此时为转换后的docx文件路径
+                    if input_filepaths_exist_and_replaced_by_docx_if_converted:
+                        self.file_path =  input_filepaths_exist_and_replaced_by_docx_if_converted[0]
+                        doc_original = input_filepaths_exist[0]                
+                        self.orginal_filepath_extra_info = {'original_source_jq':doc_original,'source':doc_original,'original_source_converted_jq':str(self.file_path)} #'source'键是为了与chatchat中的reader保持一致的
+                        # 元数据中增加了文件扩展名
+                        self.orginal_filepath_extra_info.update({"file_extention":ext})
+                    else:
+                        logger.error(f"{file_path}转换成docx失败！")
                 else:
-                    logger.error(f"{file_path}转换成docx失败！")
+                    logger.error(f"JqkjDocxReader暂只支持{file_type_processed_by_jqreader},无法读取[{ext}]文件")           
+
             else:
-                logger.error(f"JqkjDocxReader暂只支持{file_type_processed_by_jqreader},无法读取[{ext}]文件")           
+                logger.error(f"文件不存在:{file_path}")
 
-        else:
-            logger.error(f"文件不存在:{file_path}")
+            if self.file_path.exists() and doc_original:
+                doc = self.DocumentFunc(self.file_path)           
+                # text = "\n".join([paragraph.text for paragraph in doc.paragraphs if len(paragraph.text.strip())>0])
+                text = '将从metadata["file_doc_tree_jq"]中获取，并替代这里的文字'
+                logger.warning(f"\n#######开始将文档[{self.file_path}]解析为树结构#######")
+                doc_tree,df_table_list = self.parse_docx_into_tree(doc,self.file_path)
+                texts = [node.text for node in doc_tree.descendants]
+                text = "\n".join(texts) #包含了图片识别出和表格转换出来的文本
+                
+                # 'original_source_jq'(转换前的文件pdf/doc/md的文件路径，如果本就是docx文件,则与original_source_converted_jq一致),
+                # 'source'键是为了与chatchat中的reader保持一致的，取值与'original_source_jq'一致
+                # 'original_source_converted_jq':转换后的docx文件路径
+                
+                # 多进程情况下，"file_doc_object_jq":doc 会因为序列化/反序列化问题导致错误，所以此处不将其作为元数据的一部分   
+                # metadata = {"file_name_jq": file_path.name,"file_doc_object_jq":doc,"file_doc_tree_jq":doc_tree,'df_table_list_jq':df_table_list}
+                metadata = {"file_name_jq": file_path.name,"file_doc_tree_jq":doc_tree,'df_table_list_jq':df_table_list}
+                if extra_info is not None:
+                    metadata.update(extra_info)
+                
+                if self.orginal_filepath_extra_info is not None:
+                    # 如果是经过JqkjSimpleDirectoryReader=>JqkjDocxReader，其实已经进行了文件类型转换，并且加入了'original_source_jq'，'source'键值
+                    # 所以此处判断'original_source_jq'键是否已经存在，如果不存在，才能更新
+                    if 'original_source_jq' not in metadata.keys():
+                        metadata.update(self.orginal_filepath_extra_info)
 
-        if self.file_path.exists() and doc_original:
-            doc = self.DocumentFunc(self.file_path)           
-            # text = "\n".join([paragraph.text for paragraph in doc.paragraphs if len(paragraph.text.strip())>0])
-            text = '将从metadata["file_doc_tree_jq"]中获取，并替代这里的文字'
-            logger.warning(f"\n#######开始将文档[{self.file_path}]解析为树结构#######")
-            doc_tree,df_table_list = self.parse_docx_into_tree(doc,self.file_path)
-            texts = [node.text for node in doc_tree.descendants]
-            text = "\n".join(texts) #包含了图片识别出和表格转换出来的文本
-               
-            # 'original_source_jq'(转换前的文件pdf/doc/md的文件路径，如果本就是docx文件,则与original_source_converted_jq一致),
-            # 'source'键是为了与chatchat中的reader保持一致的，取值与'original_source_jq'一致
-            # 'original_source_converted_jq':转换后的docx文件路径
-            
-            # 多进程情况下，"file_doc_object_jq":doc 会因为序列化/反序列化问题导致错误，所以此处不将其作为元数据的一部分   
-            # metadata = {"file_name_jq": file_path.name,"file_doc_object_jq":doc,"file_doc_tree_jq":doc_tree,'df_table_list_jq':df_table_list}
-            metadata = {"file_name_jq": file_path.name,"file_doc_tree_jq":doc_tree,'df_table_list_jq':df_table_list}
-            if extra_info is not None:
-                metadata.update(extra_info)
-            
-            if self.orginal_filepath_extra_info is not None:
-                # 如果是经过JqkjSimpleDirectoryReader=>JqkjDocxReader，其实已经进行了文件类型转换，并且加入了'original_source_jq'，'source'键值
-                # 所以此处判断'original_source_jq'键是否已经存在，如果不存在，才能更新
-                if 'original_source_jq' not in metadata.keys():
-                    metadata.update(self.orginal_filepath_extra_info)
+                if 'file_size' not in metadata.keys():
+                    # 调用/root/.virtualenvs/test/lib/python3.10/site-packages/llama_index/legacy/readers/file/base.py
+                    # default_file_metadata_func方法，来获取文件default_file_metadata
+                    default_file_metadata = default_file_metadata_func(doc_original)
+                    metadata.update(default_file_metadata)
 
-            if 'file_size' not in metadata.keys():
-                # 调用/root/.virtualenvs/test/lib/python3.10/site-packages/llama_index/legacy/readers/file/base.py
-                # default_file_metadata_func方法，来获取文件default_file_metadata
-                default_file_metadata = default_file_metadata_func(doc_original)
-                metadata.update(default_file_metadata)
-
-            _keys = list(metadata.keys())
-            # 保留元数据中的文件名可以用做分析
-            if "file_name" in _keys:
-                _keys.remove('file_name') 
-            document = LmDocument(text=text, metadata=metadata)
-            document.excluded_embed_metadata_keys.extend(_keys)
-            document.excluded_llm_metadata_keys.extend(_keys)
-            return [document]
-        else:
-            return []
+                _keys = list(metadata.keys())
+                # 保留元数据中的文件名可以用做分析
+                if "file_name" in _keys:
+                    _keys.remove('file_name') 
+                document = LmDocument(text=text, metadata=metadata)
+                document.excluded_embed_metadata_keys.extend(_keys)
+                document.excluded_llm_metadata_keys.extend(_keys)
+                return [document]
+            else:
+                return []
     
     def parse_docx_into_tree(self, docx_document:DocxDocument,file_path: Path) -> Node:
         # metadata = docx_document.metadata
@@ -311,7 +298,7 @@ class JqkjDocxReader(BaseReader):
                 # logger.debug(f"\n=========验证读取结果是否正确=========")
                 if len(image_list) == 0:
                     # logger.debug(f"[{file_path.name}]没有找到任何图片，请检查文件内容是否正确。")
-                    logger.debug(f"没有找到任何图片，请检查文件内容是否正确。")        
+                    logger.debug(f"没有找到任何图片，请检查文件内容解析是否准确。")        
                 else:
                     s = set(imgid_list)
                     re_s = [(item,imgid_list.count(item)) for item in s if imgid_list.count(item)>1]
@@ -356,7 +343,7 @@ class JqkjDocxReader(BaseReader):
                 table_number = len(docx_document.tables)
                 if table_number == 0:
                     # logger.debug(f"[{str(filename)}]没有找到任何表格，请检查文件内容是否正确。") 
-                    logger.debug(f"没有找到任何表格，请检查文件内容是否正确。")   
+                    logger.debug(f"没有找到任何表格，请检查文件内容解析是否准确。")   
                 else:
                     df_table_number = len(df_table_list)
                     table_nodes = anytree.search.findall(file_tree,filter_=lambda node:node.type==TreeNodeType.TABLE)
@@ -625,7 +612,7 @@ def _test_get_retriever():
     print(type(compression_retriever))
 if __name__ == "__main__":
 
-    documents,trees,df_tables = _test_JqkjDocxReader()
+    # documents,trees,df_tables = _test_JqkjDocxReader()
     _test_JqkjSimpleDirectoryReader()
     _test_get_retriever()
 

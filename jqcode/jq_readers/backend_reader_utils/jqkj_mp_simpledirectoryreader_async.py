@@ -1,8 +1,10 @@
 """Simple reader that reads files of different formats from a directory."""
 
 from abc import ABC, abstractmethod
-# import multiprocess as multiprocessing
+
 import multiprocessing
+# from concurrent.futures import ProcessPoolExecutor as Pool
+from concurrent.futures import ThreadPoolExecutor as Pool
 import os
 import asyncio
 import mimetypes
@@ -23,7 +25,7 @@ from jqcode.jq_utils.logger import jqkj_logger
 logger = jqkj_logger(__file__).get_logger()
 
 _cpu_nums = multiprocessing.cpu_count()
-cpu_nums_for_file_processing = int(_cpu_nums*0.8)
+cpu_nums_for_file_processing = int(_cpu_nums*0.75)
 
 class FileSystemReaderMixin(ABC):
     @abstractmethod
@@ -475,8 +477,8 @@ class SimpleDirectoryReader(BaseReader, ResourcesReaderMixin, FileSystemReaderMi
     @staticmethod
     def load_file(
         input_file: Path,
-        file_metadata: Callable[[str], Dict],
-        file_extractor: Dict[str, BaseReader],
+        file_metadata: Callable[[str], Dict]=None,
+        file_extractor: Dict[str, BaseReader]=None,
         filename_as_id: bool = False,
         encoding: str = "utf-8",
         errors: str = "ignore",
@@ -537,7 +539,7 @@ class SimpleDirectoryReader(BaseReader, ResourcesReaderMixin, FileSystemReaderMi
             try:
                 kwargs = {"extra_info": metadata}
                 if fs and not is_default_fs(fs):
-                    kwargs["fs"] = fs
+                    kwargs["fs"] = fs                
                 docs = reader.load_data(input_file, **kwargs)
             except ImportError as e:
                 # ensure that ImportError is raised so user knows
@@ -600,7 +602,7 @@ class SimpleDirectoryReader(BaseReader, ResourcesReaderMixin, FileSystemReaderMi
             try:
                 kwargs = {"extra_info": metadata}
                 if self.fs and not is_default_fs(self.fs):
-                    kwargs["fs"] = self.fs
+                    kwargs["fs"] = self.fs                
                 docs = await reader.aload_data(input_file, **kwargs)
             except ImportError as e:
                 # ensure that ImportError is raised so user knows
@@ -638,7 +640,6 @@ class SimpleDirectoryReader(BaseReader, ResourcesReaderMixin, FileSystemReaderMi
 
     def load_data(
         self,
-        show_progress: bool = False,
         num_workers: Optional[int] = None,
         fs: Optional[fsspec.AbstractFileSystem] = None,
     ) -> List[Document]:
@@ -658,27 +659,14 @@ class SimpleDirectoryReader(BaseReader, ResourcesReaderMixin, FileSystemReaderMi
 
         files_to_process = self.input_files
         fs = fs or self.fs
-
+        
         num_workers = num_workers if num_workers else len(self.input_files)
         num_workers = min(num_workers,len(self.input_files))
         num_workers = min(num_workers,cpu_nums_for_file_processing)
-
-
-        # 如果确需解决daemonic processes are not allowed to have children，
-        # 原因:try and create a Pool from within a child worker that was already created with a Pool
-        # 可以参考：https://blog.mbedded.ninja/programming/languages/python/python-multiprocessing/
-        
-        
-        # 使用多进程，但因为内含docx Document，会因为序列化/反序列化问题导致错误
-        # 解决办法为/data/projects/JqChatV2/JqChat/jqcode/jq_readers/jqkj_readers.py L143行
-        # "file_doc_object_jq":doc 会因为序列化/反序列化问题导致错误，所以此处不将其作为元数据的一部分
-        # with multiprocessing.get_context("fork").Pool(num_workers) as p:
-        # with multiprocessing.get_context("spawn").Pool(num_workers) as p:
-        with multiprocessing.Pool(num_workers) as p:
-            # results = p.starmap(
-            results = p.starmap_async(
-                SimpleDirectoryReader.load_file,
-                list(zip(
+       
+        # from concurrent.futures import ProcessPoolExecutor as Pool
+        with Pool(num_workers) as p:
+            zipped = zip(
                     files_to_process,
                     repeat(self.file_metadata),
                     repeat(self.file_extractor),
@@ -687,16 +675,19 @@ class SimpleDirectoryReader(BaseReader, ResourcesReaderMixin, FileSystemReaderMi
                     repeat(self.errors),
                     repeat(self.raise_on_error),
                     repeat(fs),
-                )),
+                ) 
+            params = zip(*zipped)
+            # params = list(params)
+            results = p.map(
+                SimpleDirectoryReader.load_file,
+                *params,
             )
-            documents = reduce(lambda x, y: x + y, results.get())
-            # documents = reduce(lambda x, y: x + y, results)  # 与results = p.starmap匹配使用
-
+            documents = reduce(lambda x, y: x + y, results)  
         return self._exclude_metadata(documents)
 
     async def aload_data(
         self,
-        show_progress: bool = True,
+        show_progress: bool = False,
         num_workers: Optional[int] = None,
         fs: Optional[fsspec.AbstractFileSystem] = None,
     ) -> List[Document]:
