@@ -738,7 +738,14 @@ class JqkjDocxReader(BaseReader):
         vf = io.StringIO()
         writer = csv.writer(vf)
         for row in table.rows:
-            writer.writerow(cell.text.replace(" ","").replace("\r\n","").replace("\n","") for cell in row.cells)
+            not_repeated_cell_texts = []
+            for cell in row.cells:
+                cell_text = cell.text.replace(" ","").replace("\r\n","").replace("\n","")
+                if cell_text not in not_repeated_cell_texts:
+                    not_repeated_cell_texts.append(cell_text)
+                else:
+                    not_repeated_cell_texts.append('')            
+            writer.writerow(cell for cell in not_repeated_cell_texts)
         vf.seek(0)
         vf_string = vf.getvalue()
         return pd.read_csv(vf, **kwargs),vf_string

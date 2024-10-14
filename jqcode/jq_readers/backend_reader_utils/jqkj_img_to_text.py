@@ -127,15 +127,15 @@ def treenodes_img_to_text_in_batch(img_src_and_data_tuple_list, processes=parall
         processes = min(processes,parallel_nums_for_img_ocr)
     else:
         processes = parallel_nums_for_img_ocr
-    processes = min(len(img_src_and_data_tuple_list),processes)      
-    logger.debug(f"~~~~~~~~~~~~~~~开始：treenodes_img_to_text_in_batch线/进程池数量为{processes}~~~~~~~~~~~~~~~")
-
+    img_nums = len(img_src_and_data_tuple_list)
+    processes = min(img_nums,processes)      
+    logger.warning(f"~~~~~~~~~~~~~~~开始：treenodes_img_to_text_in_batch线/进程池数量为{processes}~~~~~~~~~~~~~~~")
     with Pool(processes) as p:
         results = p.map(treenode_img_to_text,img_src_and_data_tuple_list)
         results = list(results)
-    logger.debug(f"~~~~~~~~~~~~~~~结束：treenodes_img_to_text_in_batch线/进程池数量为{processes}~~~~~~~~~~~~~~~")
+    logger.warning(f"~~~~~~~~~~~~~~~结束：treenodes_img_to_text_in_batch线/进程池数量为{processes}~~~~~~~~~~~~~~~")
     end_time = time.time()
-    logger.warning(f"Total time for OCR: {end_time - start_time} seconds")
+    logger.warning(f"~~~~~~~~~~~~~~~识别当前文件中的{img_nums}张图片，小计用时: 共{end_time - start_time:.1f}秒~~~~~~~~~~~~~~~")
     return results
 
 if __name__ == '__main__':

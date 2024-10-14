@@ -283,7 +283,7 @@ async def start_main_server():
     signal.signal(signal.SIGINT, handler("SIGINT"))
     signal.signal(signal.SIGTERM, handler("SIGTERM"))
 
-    # mp.set_start_method("spawn")
+    mp.set_start_method("spawn")
     # mp.set_start_method("fork")
     manager = mp.Manager()
     run_mode = None

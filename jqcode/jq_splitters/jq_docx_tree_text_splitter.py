@@ -158,8 +158,7 @@ def get_possible_zh_title_for_previous_sibling(cur_node,title_max_word_length=20
 
         if 'List Paragraph' in previous_sibling_style or other_conditions:   
             if is_possible_title(text=previous_sibling_text,title_max_word_length=title_max_word_length):
-                get_possible_zh_title = previous_sibling_text
- 
+                get_possible_zh_title = previous_sibling_text 
     return get_possible_zh_title
 
 def _get_pre_title_nodes_text(pre_title_nodes,normal_text:bool=False):
@@ -172,6 +171,8 @@ def _get_pre_title_nodes_text(pre_title_nodes,normal_text:bool=False):
             text_cached = f'\n<标题目录toc：{text_cached}/>'
             # <table column_names={col_text}/>
     else:
+        text_cached = ''
+    if len(text_cached)>100:
         text_cached = ''
     return text_cached
 
@@ -322,10 +323,10 @@ class JqkjDocTreeTokenTextSplitter(MetadataAwareTextSplitter):
     def add_text(self,text_cached:str='',cur_text:str='',cur_node=None,chunks_saved:list=[]):
         merge_status = True
         text_cached_tokens = self.tokens_len_func(text_cached)
-        text_tobe_added_tokens = self.tokens_len_func(cur_text)
+        text_to_be_added_tokens = self.tokens_len_func(cur_text)
 
         assert text_cached_tokens<=TOKEN_THRESHOLD, f"text_cached已有的tokens数量为{text_cached_tokens},已超过上限{TOKEN_THRESHOLD=}"
-        total_tokens = text_cached_tokens + text_tobe_added_tokens
+        total_tokens = text_cached_tokens + text_to_be_added_tokens
         
         if  total_tokens<= TOKEN_THRESHOLD:
             text_cached += cur_text
@@ -339,7 +340,7 @@ class JqkjDocTreeTokenTextSplitter(MetadataAwareTextSplitter):
         else:
             # logger.warning(f"{total_tokens=}，超出了上限{TOKEN_THRESHOLD=}")
             # logger.warning(f"{text_cached_tokens=}，又没有达到{TOKEN_THRESHOLD*0.8=}的切分标准")
-            # logger.warning(f"{text_tobe_added_tokens=}，建议先对text_tobe_added进行切分！")
+            # logger.warning(f"{text_tobe_added_tokens=}，建议先对text_to_be_added进行切分！")
             merge_status = False
         return text_cached,cur_text,chunks_saved,merge_status
 
@@ -510,12 +511,12 @@ class JqkjDocTreeTokenTextSplitter(MetadataAwareTextSplitter):
                     else:
                         assert self.tokens_len_func(text=text_cached) <= DEFAULT_CHUNK_SIZE,f"{self.tokens_len_func(text=text_cached)},\n{text_cached}"   
                         chunks_saved.append(text_cached.strip('\n'))
-                        text_cached = ''   
+                        text_cached = cur_ancestors_text_placeholder   
 
                 if tokens_cached >= max_chunk_size*cutoff_ratio_as_chunk:
                     assert self.tokens_len_func(text=text_cached) <= DEFAULT_CHUNK_SIZE,f"{self.tokens_len_func(text=text_cached)},\n{text_cached}"   
                     chunks_saved.append(text_cached.strip('\n'))
-                    text_cached = '' 
+                    text_cached = cur_ancestors_text_placeholder 
 
                 
                 vf_string = cur_node.text
@@ -527,10 +528,8 @@ class JqkjDocTreeTokenTextSplitter(MetadataAwareTextSplitter):
                 if tokens_cached + table_tokens <= tokens_bound:
                     if tokens_cached + _table_tokens_prefix <= tokens_bound:
                         text_cached += _vf_string_with_prefix
-                        try:
-                            assert self.tokens_len_func(text_cached)<=tokens_bound, f"{self.tokens_len_func(text_cached)}<={tokens_bound}\n{text_cached=}"
-                        except:
-                            pass
+                        assert self.tokens_len_func(text_cached)<=tokens_bound, f"{self.tokens_len_func(text_cached)}<={tokens_bound}\n{text_cached=}"
+
                     elif tokens_cached + table_tokens <= tokens_bound:
                         text_cached += vf_string
                         assert self.tokens_len_func(text_cached)<=tokens_bound
@@ -546,29 +545,35 @@ class JqkjDocTreeTokenTextSplitter(MetadataAwareTextSplitter):
 
                     column_names = '表格：' + '\r\n' + splits_on_row[0]
                     column_names_tokens = self.tokens_len_func(text=column_names)
+                    if column_names_tokens>100:
+                        column_names = ''
+                        column_names_tokens = 0
                     rows = splits_on_row[1:]
                     
                     if tokens_cached + column_names_tokens > tokens_bound:
                         assert self.tokens_len_func(text=text_cached) <= DEFAULT_CHUNK_SIZE,f"{self.tokens_len_func(text=text_cached)},\n{text_cached}"   
                         chunks_saved.append(text_cached.strip('\n'))
-                        text_cached = ''
+                        text_cached = cur_ancestors_text_placeholder + column_names
                     else:
                         text_cached += column_names
                         assert self.tokens_len_func(text_cached)<=tokens_bound
                     for row in rows:
-                        if self.tokens_len_func(text=text_cached)  + self.tokens_len_func(text=row) <= tokens_bound:
-                             text_cached += row
-                             assert self.tokens_len_func(text_cached)<=tokens_bound
-                        else:
+                        text_cached,row,chunks_saved,merge_status = self.add_text(text_cached=text_cached,cur_text=row,cur_node=cur_node,chunks_saved=chunks_saved)
+                        if not merge_status:
                             assert self.tokens_len_func(text=text_cached) <= DEFAULT_CHUNK_SIZE,f"{self.tokens_len_func(text=text_cached)},\n{text_cached}"   
-                            chunks_saved.append(text_cached.strip('\n'))
-                            # cur_title_node,pre_title_node,cur_ancestors_text_placeholder,pre_ancestors_text_placeholder = get_pre_title_nodes_text(cur_node,cur_title_node=cur_title_node,pre_title_node=pre_title_node,cur_ancestors_text_placeholder=cur_ancestors_text_placeholder,pre_ancestors_text_placeholder=pre_ancestors_text_placeholder)
-                            text_cached = cur_ancestors_text_placeholder + column_names + row
-                            if self.tokens_len_func(text_cached)>tokens_bound:
-                                logger.warning(f"新的表格文本切分时，单行文本tokens超过限制{self.tokens_len_func(text_cached)}>{tokens_bound}")
-                                logger.warning(f"{self.tokens_len_func(text_cached)}>{tokens_bound}")
-                                # 跳过改行
-                                text_cached = cur_ancestors_text_placeholder + column_names
+                            tokens_cached = self.tokens_len_func(text=text_cached)
+                            assert  tokens_cached<=tokens_bound
+                            # 【累积文本text_cached】与【当前行文本row】拼接
+                            # 要特别注意chunk_size的控制，详见_split_text方法中对chunk_size和hunk_overlap的处理
+                            chunks = self._split_text(row,chunk_size=max_chunk_size - tokens_cached)
+                            for chunk in chunks:
+                                _text = text_cached + chunk
+                                chunks_saved.append(_text.strip('\n'))
+                            # ====== text_cached已经处理完毕和当前行处理完毕                            
+                            text_cached = cur_ancestors_text_placeholder + column_names
+                    if text_cached:
+                        chunks_saved.append(text_cached.strip('\n'))
+                        text_cached = ''
                                 
                                 
             # 如果循环已经结束，需保证最后的text_cached也要读入
@@ -858,7 +863,7 @@ if __name__ == "__main__":
     input_files = [fr'/data/projects/JqChatV2/JqChat/jqcode/jq_readers/.test_files/.testinputdocs/A方案.docx'] 
     # input_files += [fr'/data/projects/JqChatV2/JqChat/jqcode/jq_readers/.test_files/.testinputdocs/InstallationGuide.docx']
     input_files += [fr'/data/projects/JqChatV2/JqChat/jqcode/jq_readers/.test_files/.testinputdocs/PPQA000_质量保证过程.doc'] 
-    input_files += [fr'/data/projects/JqChatV2/JqChat/jqcode/jq_readers/.test_files/.testinputdocs/厦门市智慧民政一体化平台项目建设方案 V3.6.docx'] 
+    # input_files += [fr'/data/projects/JqChatV2/JqChat/jqcode/jq_readers/.test_files/.testinputdocs/厦门市智慧民政一体化平台项目建设方案 V3.6.docx'] 
     # input_files = [fr'/data/projects/JqChatV2/JqChat/jqcode/jq_readers/.test_files/.testinputdocs/PPQA000_质量保证过程.doc']
     # input_files = [fr'/data/projects/JqChatV2/JqChat/jqcode/jq_readers/.test_files/.testinputdocs_debug/test_zh.docx']
 
@@ -877,23 +882,19 @@ if __name__ == "__main__":
     query9 = '厦门市智慧民政一体化的建设内容包括哪些？'
 
     qs = [q,query0,query1,query2,query3,query4,query5,query6,query7,query8,query9]
-    # qs = [query7]
-
-
-    
+    # qs = [query7]   
    
 
 
     
     llm = env_models_instance.chat_model
     index_name='zjk_jqesclient_test'
-    compression_retriever = get_retriever(index_name=index_name,chat_on_docs_list=None,add_docs_list_to_kb=True)
+    compression_retriever = get_retriever(index_name=index_name,chat_on_docs_list=input_files,add_docs_list_to_kb=True)
     # compression_retriever = get_retriever(index_name=index_name)
     # chain_type:stuff、refine、map_reduce 和 map_rerank
     qa_chain_RetrievalQA = RetrievalQA.from_chain_type(llm,retriever=compression_retriever,return_source_documents=True, chain_type="stuff")
 
     from langchain.chains.question_answering.stuff_prompt import system_template
-    logger.info(f"USING SYSTEM PROMPY from /root/miniconda3/envs/test/lib/python3.9/site-packages/langchain/chains/question_answering/stuff_prompt.py")
     logger.info(f"USING ‘REVICED’ SYSTEM PROMPY:\n{system_template}")
 
 
@@ -909,7 +910,7 @@ if __name__ == "__main__":
         print(f'共检索到{len(hits)}篇文档：')
         for i,h in enumerate(hits):
             # print(f'文档片段[{i+1}](relevance_score:{h.metadata["relevance_score"]:.3f}):\n{h.page_content}')
-            print(f'【{h.metadata.get("file_name",None) or h.metadata.get("source",None)}】文档片段[{i+1}](relevance_score:{h.metadata["relevance_score"]:.3f})')
+            print(f'【{h.metadata.get("file_name",None) or h.metadata.get("source",None)}】文档片段[{i+1}]')
             if limited_to_files:
                 if h.metadata["source"] not in limited_to_files:
                     logger.warning(f"检索出的文档片段不在指定文件范围内!限定的文件范围:\n{limited_to_files}")

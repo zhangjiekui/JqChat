@@ -446,11 +446,25 @@ class JqkjDocxReader(BaseReader):
 
         Return: a single DataFrame
         """
-        
         vf = io.StringIO()
         writer = csv.writer(vf)
         for row in table.rows:
-            writer.writerow(cell.text.replace(" ","").replace("\r\n","").replace("\n","") for cell in row.cells)
+            not_repeated_cell_texts = []
+            for cell in row.cells:
+                cell_text = cell.text.replace(" ","").replace("\r\n","").replace("\n","")
+                if cell_text not in not_repeated_cell_texts:
+                    not_repeated_cell_texts.append(cell_text)
+                else:
+                    not_repeated_cell_texts.append('')
+            all_row_cells_are_blank = True
+            for cell in not_repeated_cell_texts:
+                if  cell != '':
+                    all_row_cells_are_blank = False
+                    break
+            if not all_row_cells_are_blank:           
+                writer.writerow(cell for cell in not_repeated_cell_texts)
+            else:
+                pass
         vf.seek(0)
         vf_string = vf.getvalue()
         return pd.read_csv(vf, **kwargs),vf_string
@@ -588,7 +602,7 @@ def _test_JqkjSimpleDirectoryReader():
     documents1a = asyncio.run(simple_reader.aload_data())
     print(f"{len(documents1a)}")
     end_time = time.time()
-    logger.warning(f"Total time load_data: {end_time - start_time} seconds")
+    logger.warning(f"Total time aload_data: {end_time - start_time} seconds")
     pass
 
     input_file_dir = fr'/data/projects/JqChatV2/JqChat/jqcode/jq_readers/.test_files/.testinputdocs'
