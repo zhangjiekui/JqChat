@@ -1,5 +1,10 @@
-import warnings,sys
+import warnings
 warnings.filterwarnings("ignore")
+warnings.filterwarnings('ignore',message='unstructured',append=True) 
+warnings.filterwarnings('ignore',message='profiles',append=True) 
+warnings.filterwarnings('ignore',message='datasets',module='datasets',append=True) 
+warnings.filterwarnings('ignore',message='PyTorch',module='datasets',append=True) 
+
 import os,sys,pathlib
 os.environ['USER_AGENT'] = 'myagent'
 import re
@@ -44,18 +49,30 @@ from pydantic import PrivateAttr
 import json_repair
 from langchain_core.utils.input import print_text
 from jqcode.jq_config.general_config import llm_handler_file_path,if_log_verbose,logfile_path
-
-from jqcode.jq_utils.logger import jqkj_logger
+from jqcode.jq_utils.logger import jqkj_logger,is_main_process
 logger = jqkj_logger(__file__).get_logger()
 
+import multiprocessing as mp
+try:
+    mp.set_start_method("spawn")
+    logger.warning('已成功设置mp.set_start_method("spawn")，后面如果再次尝试设置会try...catch打印报错信息，可忽略')
+except Exception as e:
+    logger.debug(f"仅提醒，可忽略：mp.set_start_method('spawn') error:{e}")        
+finally:
+    # mp.set_start_method("fork")
+    current_method = mp.get_start_method()
+    logger.debug(f'Current multiprocessing start method:{current_method}') # 获取当前启动多进程的方法 
+from concurrent.futures import ProcessPoolExecutor as Pool
+
 VERBOSE = if_log_verbose()
-print("=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*")
-print("日志信息：")
-print(f"if_log_verbose = {VERBOSE}, 说明：在 jqcode/jq_config/general_config.py 中设置")
-print(f"logfile_path = {logfile_path} ,说明：如果if_log_verbose=False，则只记录Waring和Error")
-print(f"llm_handler_logfile_path = {llm_handler_file_path} ,说明：专门记录LLM的输入输出，且不受if_log_verbose影响")
-print("=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*")
-print("\n")
+if is_main_process():
+    print("=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*")
+    print("日志信息：")
+    print(f"if_log_verbose = {VERBOSE}, 说明：在 jqcode/jq_config/general_config.py 中设置")
+    print(f"logfile_path = {logfile_path} ,说明：如果if_log_verbose=False，则只记录Waring和Error")
+    print(f"llm_handler_logfile_path = {llm_handler_file_path} ,说明：专门记录LLM的输入输出，且不受if_log_verbose影响")
+    print("=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*")
+    print("\n")
 
 # os.environ['LANGCHAIN_TRACING_V2'] = 'true'
 # os.environ['LANGCHAIN_ENDPOINT'] = 'https://api.smith.langchain.com'
@@ -370,6 +387,9 @@ class InitEnvModels:
         self.kernel_api_url = f"{KERNEL_API_BASE}:{API_PORT}/api"
         root_dir = pathlib.Path().resolve()
         self.workspace = str(root_dir/'workspace/')
+        
+        self.ocr = self._init_ocr_instances()
+        self.ocr_pool = Pool(10)
 
         self.chat_model = None
         self.get_langchain_chat_model()
@@ -534,12 +554,12 @@ class InitEnvModels:
                 basic_auth=("elastic", self.ELASTIC_PASSWORD),
                 request_timeout=600 #这个设置很重要  elastic_transport.ConnectionTimeout: Connection timed out
             )
-
-            print(f'当前使用的Elasticsearch URL为:| { self.ES_URL } |')
-            # print('-------Elasticsearch Connection详细信息-------')
-            # print(self.es_connection.info())
-            # print('-------Elasticsearch Connection详细信息-------')
-            print('-------可以通过Kibana URL查看:| http://127.0.0.1:5601 | http://10.1.150.105:5601 |-------\n')
+            if is_main_process():                    
+                print(f'当前使用的Elasticsearch URL为:| { self.ES_URL } |')
+                # print('-------Elasticsearch Connection详细信息-------')
+                # print(self.es_connection.info())
+                # print('-------Elasticsearch Connection详细信息-------')
+                print('-------可以通过Kibana URL查看:| http://127.0.0.1:5601 | http://10.1.150.105:5601 |-------\n')
         return self.es_connection
 
     def create_es_index_if_not_existes_with_default_chinese_analyzer(self, es_connection=None,index_name:str=None):
@@ -571,6 +591,28 @@ class InitEnvModels:
         strategy = strategy if strategy else self.strategy           
         es_searchstore = ElasticsearchStore(es_connection=es_connection, index_name=index_name, embedding=embedding,strategy=strategy)
         return es_searchstore
+    
+    def _init_ocr_instances(self):
+        try:
+            # raise Exception("调试，不使用多线程GPU RapidOCR的情况")
+            from rapidocr_paddle import RapidOCR # For GPU    
+            ocr = RapidOCR(det_use_cuda=True, cls_use_cuda=True, rec_use_cuda=True)
+            if is_main_process():
+                logger.warning(f"将使用多进程GPU RapidOCR (rapidocr_paddle)")
+        except Exception as e:
+            if is_main_process():
+                logger.warning(f"初始化GPU RapidOCR (rapidocr_paddle)失败:{e}")
+                logger.warning(f"将使用多进程CPU RapidOCR (rapidocr_onnxruntime)")
+            from rapidocr_onnxruntime import RapidOCR
+            ocr = RapidOCR()
+        return ocr
+    
+    def get_ocr(self):
+        return self.ocr
+    
+    def get_ocr_pool(self):
+        return self.ocr_pool
+        
     
   
 

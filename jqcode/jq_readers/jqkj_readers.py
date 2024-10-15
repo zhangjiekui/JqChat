@@ -365,8 +365,10 @@ class JqkjDocxReader(BaseReader):
         if len(img_nodes):
             img_src_and_data_tuple_list = [(f"{filename}/{treenode.image_filepath_jq}",treenode.img_blob_jq) for treenode in img_nodes] #得到[(img_src,img_data)...]
             logger.warning(f"\n$$$$$$$正在执行文件[{filename}]中的图片文字识别，共有{len(img_src_and_data_tuple_list)}张图片$$$$$$$")  
+            start_time = time.time()
             results = treenodes_img_to_text_in_batch(img_src_and_data_tuple_list)
-            logger.warning(f"\n$$$$$$$识别出得到的结果数量为：{len(results)=}$$$$$$$")
+            end_time = time.time()
+            logger.warning(f"\n$$$$$$$识别出得到的结果数量为：{len(results)=},共计用时: {end_time - start_time:.3f}秒~~~~~~~~~~~~~~~$$$$$$$")
             assert len(img_nodes) == len(results)
             for i,img_node in enumerate(img_nodes):
                 img_node.text = results[i]

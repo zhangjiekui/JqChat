@@ -326,6 +326,7 @@ class JqElasticsearchIndexStore(JqBaseDocumentStore):
     
     def get_all_docs(self) -> list:
         """Get all documents"""
+        self.client.indices.refresh(index=self.index_name)
         query_dict = {"query": {"match_all": {}}, "size": MAX_DOCS_TO_GET}
         return self.query_raw(query_dict)
     
@@ -352,6 +353,7 @@ class JqElasticsearchIndexStore(JqBaseDocumentStore):
     def _count(self) -> int:
         """Count number of documents"""
         try:
+            self.client.indices.refresh(index=self.index_name)
             count = int(
                 self.client.cat.count(index=self.index_name, format="json")[0]["count"]
             )
@@ -362,6 +364,7 @@ class JqElasticsearchIndexStore(JqBaseDocumentStore):
     
     def _ids(self) -> set[str]:
         try:
+            self.client.indices.refresh(index=self.index_name)
             docs = self.get_all_docs()
             ids = [doc["_id"] for doc in docs]
             return set(ids)

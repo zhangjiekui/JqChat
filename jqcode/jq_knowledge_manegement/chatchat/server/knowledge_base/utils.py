@@ -12,9 +12,6 @@ from langchain.docstore.document import Document
 from langchain.text_splitter import MarkdownHeaderTextSplitter, TextSplitter
 from langchain_community.document_loaders import JSONLoader, TextLoader
 from jqcode.jq_readers.backend_reader_utils.jqkj_docs_converter import jq_reader_list
-from jqcode.jq_docstores.jq_es_client import JqEsClient
-jq_es_client = JqEsClient()
-
 # from jqcode.jq_splitters.backend_splitter_utils.jq_chinese_recursive_text_splitter import JqChineseRecursiveTextSplitter
 #  /data/projects/JqChat/jqcode/jq_splitters/backend_splitter_utils/jq_chinese_recursive_text_splitter.py
 from jqcode.jq_knowledge_manegement.chatchat.configs import (
@@ -70,6 +67,8 @@ def list_kbs_from_folder():
 
 
 def list_kbs_from_es():
+    from jqcode.jq_docstores.jq_es_client import JqEsClient
+    jq_es_client = JqEsClient()
 
     return jq_es_client.get_all_kb()
 

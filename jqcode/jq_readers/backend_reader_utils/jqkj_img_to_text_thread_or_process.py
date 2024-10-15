@@ -1,50 +1,48 @@
-
-import subprocess,os
-import threading
 import time
-from concurrent.futures import ThreadPoolExecutor as Pool
-from threading import Lock
-from threading import Semaphore
-
-import multiprocessing
-# from concurrent.futures import ProcessPoolExecutor as Pool
-# from multiprocessing import Lock
-# from multiprocessing import Semaphore
+import subprocess,os
 from pathlib import Path
-from rapidocr_paddle import RapidOCR # For GPU
 from jqcode.jq_readers.backend_reader_utils.pyemf3project.pyemf3 import EMF
 from jqcode.jq_readers.backend_reader_utils.pyemf3project.pyemf3.emr import EXTTEXTOUTW
-from jqcode.jq_utils.logger import jqkj_logger
 from jqcode.jq_agent.c0_init_env_models import env_models_instance
+from jqcode.jq_utils.logger import jqkj_logger
 logger = jqkj_logger(__file__).get_logger()
 
-# 参考https://github.com/PaddlePaddle/Paddle/issues/56193
-num_ocr = 10
-ocr_objects = []
-for i in range(num_ocr):
-    ocr = RapidOCR(det_use_cuda=True, cls_use_cuda=True, rec_use_cuda=True,idx=i)
-    ocr_objects.append(ocr)
-parallel_counter = 0
-parallel_counter_lock = Lock()    
-ocr_parallel_count = len(ocr_objects)
-ocr_semaphore = Semaphore(value=ocr_parallel_count)  
-  
+try:
+    # raise Exception("调试，不使用多线程GPU RapidOCR的情况")
+    from rapidocr_paddle import RapidOCR # For GPU    
+    ocr = RapidOCR(det_use_cuda=True, cls_use_cuda=True, rec_use_cuda=True)
+    # from concurrent.futures import ThreadPoolExecutor as Pool
+    from concurrent.futures import ProcessPoolExecutor as Pool
+    from threading import Lock
+    ocr_lock = Lock()
+    parallel_nums_for_img_ocr = 4
+    logger.warning(f"将使用多线程GPU RapidOCR (rapidocr_paddle)")
+except Exception as e:
+    logger.warning(f"初始化GPU RapidOCR (rapidocr_paddle)失败:{e}")
+    logger.warning(f"将使用多进程CPU RapidOCR (rapidocr_onnxruntime)")
+    from rapidocr_onnxruntime import RapidOCR
+    ocr = RapidOCR()
+    from concurrent.futures import ProcessPoolExecutor as Pool
+    import multiprocessing
+    _cpu_nums = multiprocessing.cpu_count()
+    parallel_nums_for_img_ocr = int(_cpu_nums*0.75)
+
+# _separator = ' '
+# ocr_result,_  =ocr("/data/projects/JqChatV2/JqChat/jqcode/jq_readers/.test_files/.testinputdocs/厦门市智慧民政一体化平台项目建设方案 V3.6/_diffs/image1.png")
+# if ocr_result:
+#     ocr_texts = [line[1].strip() for line in ocr_result if line[1].strip()]
+#     #分隔符最好选用jqcode/jq_splitters/backend_splitter_utils/jq_chinese_recursive_text_splitter.py的第98行定义的
+#     result = _separator.join(ocr_texts) 
+#     logger.debug(f"$$图片中的OCR文本:\n{result}")
 emf = EMF() #处理emf图片需要的
 
-_cpu_nums = multiprocessing.cpu_count()
-cpu_nums_for_img_ocr = int(_cpu_nums*0.75)
+
 
 def treenode_img_to_text(img_src_and_data_tuple_list:tuple,delete_emf_wmf_png_file=True):
-    global ocr_objects
-    global parallel_counter
-    global parallel_counter_lock
-    global ocr_parallel_count
-    global ocr_semaphore
     result = ''
     #分隔符最好选用jqcode/jq_splitters/backend_splitter_utils/jq_chinese_recursive_text_splitter.py的第98行定义的
     _separator = ' '
     img_src,img_data=img_src_and_data_tuple_list
-
     try:
         if img_src.endswith(('.emf','.wmf')):
             try:
@@ -78,19 +76,11 @@ def treenode_img_to_text(img_src_and_data_tuple_list:tuple,delete_emf_wmf_png_fi
                     ])
                     if convert_result == 0: #代表转换成功
                         png_file = temp_working_dir + Path(emf_wmf_file).stem + ".png"
-                        with ocr_semaphore:
-                            current_thread_counter = 0
-                            try:
-                                parallel_counter_lock.acquire()
-                                parallel_counter += 1
-                                current_thread_counter = parallel_counter % ocr_parallel_count
-                                selected_ocr = ocr_objects[current_thread_counter]
-                                # with parallel_thread_counter_lock:
-                                ocr_result,_ = selected_ocr(png_file) 
-                            finally:
-                                parallel_counter_lock.release()
-
-
+                        if ocr_lock:
+                            with ocr_lock:
+                                ocr_result,_ = ocr(png_file) 
+                        else:
+                            ocr_result,_ = ocr(png_file) 
                         if ocr_result:
                             ocr_texts = [line[1].strip() for line in ocr_result if line[1].strip()]
                             #分隔符最好选用jqcode/jq_splitters/backend_splitter_utils/jq_chinese_recursive_text_splitter.py的第98行定义的
@@ -115,21 +105,12 @@ def treenode_img_to_text(img_src_and_data_tuple_list:tuple,delete_emf_wmf_png_fi
                             os.remove(emf_wmf_file)
                         if os.path.exists(png_file):
                             os.remove(png_file)
-        else:
-            with ocr_semaphore:
-                current_thread_counter = 0
-                try:
-                    parallel_counter_lock.acquire()
-                    parallel_counter += 1
-                    current_thread_counter = parallel_counter % ocr_parallel_count
-                    selected_ocr = ocr_objects[current_thread_counter]
-                    # with parallel_thread_counter_lock:
-                    ocr_result,_ = selected_ocr(img_data)  
-                finally:
-                    parallel_counter_lock.release()
-
-
-
+        else: 
+            if ocr_lock:
+                with ocr_lock:
+                    ocr_result,_ = ocr(img_data) 
+            else:
+                ocr_result,_ = ocr(img_data) 
             if ocr_result:
                 ocr_texts = [line[1].strip() for line in ocr_result if line[1].strip()]
                 #分隔符最好选用jqcode/jq_splitters/backend_splitter_utils/jq_chinese_recursive_text_splitter.py的第98行定义的
@@ -140,21 +121,21 @@ def treenode_img_to_text(img_src_and_data_tuple_list:tuple,delete_emf_wmf_png_fi
     result = f"【{img_src}的OCR文本】"+ result
     return result
 
-def treenodes_img_to_text_in_batch(img_src_and_data_tuple_list, processes=None):
+def treenodes_img_to_text_in_batch(img_src_and_data_tuple_list, processes=parallel_nums_for_img_ocr): 
     start_time = time.time()    
     if processes:
-        processes = min(processes,cpu_nums_for_img_ocr)
+        processes = min(processes,parallel_nums_for_img_ocr)
     else:
-        processes = cpu_nums_for_img_ocr
-    processes = min(len(img_src_and_data_tuple_list),processes)      
-    logger.debug(f"~~~~~~~~~~~~~~~开始：treenodes_img_to_text_in_batch进程池数量为{processes}~~~~~~~~~~~~~~~")
-    
+        processes = parallel_nums_for_img_ocr
+    img_nums = len(img_src_and_data_tuple_list)
+    processes = min(img_nums,processes)      
+    logger.warning(f"~~~~~~~~~~~~~~~开始：treenodes_img_to_text_in_batch线/进程池数量为{processes}~~~~~~~~~~~~~~~")
     with Pool(processes) as p:
         results = p.map(treenode_img_to_text,img_src_and_data_tuple_list)
         results = list(results)
-    logger.debug(f"~~~~~~~~~~~~~~~结束：treenodes_img_to_text_in_batch进程池数量为{processes}~~~~~~~~~~~~~~~")
+    logger.warning(f"~~~~~~~~~~~~~~~结束：treenodes_img_to_text_in_batch线/进程池数量为{processes}~~~~~~~~~~~~~~~")
     end_time = time.time()
-    logger.warning(f"Total time OCR: {end_time - start_time} seconds")
+    logger.warning(f"~~~~~~~~~~~~~~~识别当前文件中的{img_nums}张图片，小计用时: 共{end_time - start_time:.1f}秒~~~~~~~~~~~~~~~")
     return results
 
 if __name__ == '__main__':

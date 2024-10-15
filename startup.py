@@ -39,7 +39,6 @@ try:
     from streamlit.web import bootstrap
 except ImportError:
     from streamlit import bootstrap
-# logger = logging.getLogger()
 from jqcode.jq_utils.logger import jqkj_logger
 
 logger = jqkj_logger(__file__).get_logger()
@@ -277,14 +276,15 @@ async def start_main_server():
         def f(signal_received, frame):
             raise KeyboardInterrupt(f"{signalname} received")
 
-        return f
-
-    # This will be inherited by the child process if it is forked (not spawned)
+        return f    
+    # mp.set_start_method("forkserver")
+    # # mp.set_start_method("spawn")
+    # # mp.set_start_method("fork")
+    # # This will be inherited by the child process if it is forked (not spawned)
     signal.signal(signal.SIGINT, handler("SIGINT"))
     signal.signal(signal.SIGTERM, handler("SIGTERM"))
 
-    mp.set_start_method("spawn")
-    # mp.set_start_method("fork")
+
     manager = mp.Manager()
     run_mode = None
 
@@ -346,7 +346,8 @@ async def start_main_server():
                 started_event=api_started,
                 run_mode=run_mode,
             ),
-            daemon=True,
+            daemon=False,
+            # daemon=True,
         )    
         processes["api"] = process
     
@@ -422,10 +423,23 @@ def main():
     print(f"应用启动路径:{project_root_path}")
     print(f"本项目中添加使用的Python路径为：{set(sys.path)}")
     print(f"本项目运行日志位置: {project_root_path}/jqchat_agent.log")
-    print("=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*")    
+    
+    # mp.set_start_method("forkserver")
+    try:
+        mp.set_start_method("spawn")
+        logger.warning('已成功设置mp.set_start_method("spawn")，后面如果再次尝试设置会try...catch打印报错信息，可忽略')
+    except Exception as e:
+        logger.debug(f"仅提醒，可忽略：mp.set_start_method('spawn') error:{e}")        
+    finally:
+        # mp.set_start_method("fork")
+        current_method = mp.get_start_method()
+        logger.debug(f'Current multiprocessing start method:{current_method}') # 获取当前启动多进程的方法
+    print("=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*")
+       
     mp.freeze_support()
     create_tables()
     asyncio.run(start_main_server())
+
 
 if __name__ == "__main__":
     main()

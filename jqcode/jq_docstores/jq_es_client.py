@@ -277,8 +277,8 @@ if __name__ == "__main__":
     # input_files = "/media/program/UPLOAD_DOCS/knowledge_base/liyuanqin/content/OCR接口性能报告.docx"
     # input_files = "/media/program/UPLOAD_DOCS/knowledge_base/liyuanqin/content/Agent调试跟踪1.txt"
     # input_files = ["/media/project/JqChat/发票识别接口文档.docx"]
-    vectorstore = jq_es_client.chunks_indexing_from_input_dir_or_files(current_user='',index_name='liyuanqin',
-                                                                    description=None,
+    vectorstore = jq_es_client.chunks_indexing_from_input_dir_or_files(current_user='',index_name='table_test',
+                                                                    description="JqConverter跳过文件转换: /data/projects/JqChatV2/JqChat/jqcode/jq_readers/.test_files/.testinputdocs/A方案.txt",
                                                                     input_dir = input_dir,
                                                                     input_files=None)
     pass

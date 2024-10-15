@@ -1,6 +1,21 @@
 import logging
 import os
 from jqcode.jq_config.general_config import logfile_path,if_log_verbose
+import warnings
+warnings.filterwarnings('ignore', category=UserWarning)
+  
+def is_main_process(pid=None):
+    if pid is None:
+        pid = os.getpid()  # 获取当前进程的PID
+    try:
+        # 尝试获取父进程的PID
+        parent_pid = os.getppid()
+        # 如果父进程的PID与当前进程的PID相同，则当前进程是主进程
+        return pid == parent_pid
+    except Exception:
+        # 如果无法获取父进程的PID（例如，在Windows上），则当前进程可能是主进程
+        return True
+ 
 
 VERBOSE = if_log_verbose()
 logfile_path = logfile_path
@@ -70,13 +85,16 @@ class jqkj_logger(logging.Logger):
             self.logger.info(message)
 
     def warning(self,message,verbose=True):
-        self.logger.warning(message)
+        if is_main_process():
+            self.logger.warning(message)
 
     def error(self,message,verbose=True):
-        self.logger.error(message)
+        if is_main_process():
+            self.logger.error(message)
 
     def critical(self,message,verbose=True):
-        self.logger.error(message)
+        if is_main_process():
+            self.logger.error(message)
 
 
 if __name__ == "__main__":

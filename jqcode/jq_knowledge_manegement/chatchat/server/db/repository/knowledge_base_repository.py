@@ -4,13 +4,6 @@ from jqcode.jq_knowledge_manegement.chatchat.server.db.models.knowledge_base_mod
 )
 from jqcode.jq_knowledge_manegement.chatchat.server.db.session import with_session
 
-
-from jqcode.jq_docstores.jq_es_client import JqEsClient
-jq_es_client = JqEsClient()
-
-
-
-
 @with_session
 def add_kb_to_db(session, kb_name, kb_info, vs_type, embed_model):
     # 创建知识库实例
@@ -32,8 +25,8 @@ def add_kb_to_db(session, kb_name, kb_info, vs_type, embed_model):
 
 
 def add_kb_to_es(kb_name, kb_info, vs_type, embed_model):
-    jq_es_client = JqEsClient()
-    
+    from jqcode.jq_docstores.jq_es_client import JqEsClient
+    jq_es_client = JqEsClient()   
     try:
         # 创建知识库索引并添加元数据
         index_store = jq_es_client.create_doc_index(
