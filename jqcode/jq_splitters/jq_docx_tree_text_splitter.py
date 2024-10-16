@@ -543,7 +543,7 @@ class JqkjDocTreeTokenTextSplitter(MetadataAwareTextSplitter):
                     _splits_on_row = vf_string.split('\r\n')
                     splits_on_row = [row+'\r\n' for row in _splits_on_row]
 
-                    column_names = '表格：' + '\r\n' + splits_on_row[0]
+                    column_names = '表格：' + '[列名为]' + splits_on_row[0]
                     column_names_tokens = self.tokens_len_func(text=column_names)
                     if column_names_tokens>100:
                         column_names = ''

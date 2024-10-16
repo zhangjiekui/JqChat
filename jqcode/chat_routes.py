@@ -22,7 +22,7 @@ from jqcode.jq_utils.logger import jqkj_logger
 logger = jqkj_logger(__file__).get_logger()
 metastore = JqElasticsearchUniMetaStore()
 
-es_index_name = "yqli"
+es_index_name = "zjk_jqesclient_test"
 index_meta = metastore.search_docs_by_text(top_k=1,user_query_text=es_index_name,query_on_fileds=['index_name'],filter_by_status=['true'])
 index_meta_dict_default = index_meta[0]["_source"]
 
@@ -57,6 +57,7 @@ def completions(
     except:
         index_meta_dict = index_meta_dict_default
     # 是否有文件
+    print(index_meta_dict)
     add_docs_list_to_kb = False
     chat_on_docs_list=[]
     if len(files)>0:

@@ -39,7 +39,7 @@ try:
     from streamlit.web import bootstrap
 except ImportError:
     from streamlit import bootstrap
-from jqcode.jq_utils.logger import jqkj_logger
+from jqcode.jq_utils.logger import jqkj_logger,set_multiprocessing_context
 
 logger = jqkj_logger(__file__).get_logger()
 
@@ -424,19 +424,10 @@ def main():
     print(f"本项目中添加使用的Python路径为：{set(sys.path)}")
     print(f"本项目运行日志位置: {project_root_path}/jqchat_agent.log")
     
-    # mp.set_start_method("forkserver")
-    try:
-        mp.set_start_method("spawn")
-        logger.warning('已成功设置mp.set_start_method("spawn")，后面如果再次尝试设置会try...catch打印报错信息，可忽略')
-    except Exception as e:
-        logger.debug(f"仅提醒，可忽略：mp.set_start_method('spawn') error:{e}")        
-    finally:
-        # mp.set_start_method("fork")
-        current_method = mp.get_start_method()
-        logger.debug(f'Current multiprocessing start method:{current_method}') # 获取当前启动多进程的方法
-    print("=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*")
-       
+    set_multiprocessing_context(mp,context="spawn",logger=logger)
     mp.freeze_support()
+    print("=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*")      
+    
     create_tables()
     asyncio.run(start_main_server())
 

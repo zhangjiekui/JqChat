@@ -48,24 +48,16 @@ from transformers import AutoTokenizer
 from pydantic import PrivateAttr
 import json_repair
 from langchain_core.utils.input import print_text
+import multiprocessing 
+from concurrent.futures import ProcessPoolExecutor
 from jqcode.jq_config.general_config import llm_handler_file_path,if_log_verbose,logfile_path
-from jqcode.jq_utils.logger import jqkj_logger,is_main_process
+from jqcode.jq_utils.logger import jqkj_logger,is_main_process,set_multiprocessing_context
 logger = jqkj_logger(__file__).get_logger()
 
-import multiprocessing as mp
-try:
-    mp.set_start_method("spawn")
-    logger.warning('已成功设置mp.set_start_method("spawn")，后面如果再次尝试设置会try...catch打印报错信息，可忽略')
-except Exception as e:
-    logger.debug(f"仅提醒，可忽略：mp.set_start_method('spawn') error:{e}")        
-finally:
-    # mp.set_start_method("fork")
-    current_method = mp.get_start_method()
-    logger.debug(f'Current multiprocessing start method:{current_method}') # 获取当前启动多进程的方法 
-from concurrent.futures import ProcessPoolExecutor as Pool
+set_multiprocessing_context(multiprocessing,context="spawn",logger=logger)
 
 VERBOSE = if_log_verbose()
-if is_main_process():
+if is_main_process():    
     print("=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*")
     print("日志信息：")
     print(f"if_log_verbose = {VERBOSE}, 说明：在 jqcode/jq_config/general_config.py 中设置")
@@ -389,7 +381,7 @@ class InitEnvModels:
         self.workspace = str(root_dir/'workspace/')
         
         self.ocr = self._init_ocr_instances()
-        self.ocr_pool = Pool(10)
+        self.ocr_pool = ProcessPoolExecutor(10)
 
         self.chat_model = None
         self.get_langchain_chat_model()
@@ -607,19 +599,17 @@ class InitEnvModels:
             ocr = RapidOCR()
         return ocr
     
+    @lru_cache
     def get_ocr(self):
         return self.ocr
-    
+    @lru_cache
     def get_ocr_pool(self):
         return self.ocr_pool
-        
     
-  
-
     # 方式一，使用LangChain indexing API，防止重复插入
     # https://python.langchain.com/docs/modules/data_connection/indexing 
 
-    def get_es_searchstore_index_documents(self,documents,embedding,index_name,es_connection=None,cleanup="incremental",clear_before_add_index=False,strategy=None,source_id_key="source"):
+    def get_es_searchstore_index_documents(self,documents,embedding,index_name,es_connection=None,cleanup=None,clear_before_add_index=False,strategy=None,source_id_key="source",force_update=False):
         assert index_name, "参数index_name（ES的索引名称）不得为空！"
         assert documents,  "参数documents（待索引的文档）不得为空！"
         if not es_connection:
@@ -647,7 +637,7 @@ class InitEnvModels:
         if clear_before_add_index:
             _clear()
         
-        index_result_report=index(documents, record_manager, es_searchstore, cleanup=cleanup, source_id_key=source_id_key)
+        index_result_report=index(documents, record_manager, es_searchstore, cleanup=cleanup, source_id_key=source_id_key,force_update=force_update)
         logger.info(f'Index_Result report of "index_documents_to_es_searchstore":{index_result_report}')
 
         es_searchstore.client.indices.refresh(index=index_name)

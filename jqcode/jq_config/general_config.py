@@ -1,5 +1,5 @@
 import pathlib
-VERBOSE = "False"
+VERBOSE = "True"
 def if_log_verbose(VERBOSE = VERBOSE):
     if VERBOSE == "False":
         return False

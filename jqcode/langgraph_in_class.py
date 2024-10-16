@@ -22,6 +22,7 @@ import asyncio
 from jqcode.jq_agent.tools.jq_web_search_engine_async import get_web_search_documents,is_query_chinese,get_tavily_search_result_documents
 import os
 import re
+from pathlib import Path
 from jqcode.jq_code_executor.code_executor import CodeExecutorTool
 import json_repair
 import shortuuid
@@ -1039,11 +1040,18 @@ class GraphAgent:
         
         if referens:
             referens_str = "参考'type_placeholder':  \n"        
-            for i,r in enumerate(referens):
-                referens_str += f"    {i+1}. [{r}]({r})  \n"
+            for i,r in enumerate(referens):                
                 if r.startswith("http"):
+                    referens_str += f"    {i+1}. [{r}]({r})  \n"
                     referens_str = referens_str.replace("'type_placeholder'","网页")                
                 else:
+                    filename = Path(r).name
+                    # referens_str += f"    {i+1}. [{filename}](file://{r})  \n"
+                    # <a href="(https://10.1.150.105:8051/download/文件名.doc">文件名名称</a>
+                    # [文件名名称](https://10.1.150.105:8051/download/文件名.doc)
+                    # referens_str += f"    {i+1}. <a href='https://10.1.150.105:8051/download/文件名.doc'>{filename}</a>"
+                    referens_str += f"    {i+1}. <a href='/download/{filename}'>{filename}</a>  \n"
+                    referens_str += f"    {i+1}. [{filename}](https://10.1.150.105:8051/download/{filename})  \n"
                     referens_str = referens_str.replace("'type_placeholder'","文档")
 
             _user_variables_statedict = {self.user_id:{"rag_args":'',"reference":referens_str}}
