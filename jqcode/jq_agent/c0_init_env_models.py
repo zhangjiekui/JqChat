@@ -49,7 +49,7 @@ from transformers import AutoTokenizer
 from pydantic import PrivateAttr
 import json_repair
 from langchain_core.utils.input import print_text
-import multiprocessing 
+import multiprocessing
 from concurrent.futures import ProcessPoolExecutor
 from jqcode.jq_config.general_config import llm_handler_file_path,if_log_verbose,logfile_path
 from jqcode.jq_utils.logger import jqkj_logger,is_main_process,set_multiprocessing_context
@@ -383,7 +383,7 @@ class InitEnvModels:
 
         _pool_size = 8
         self.ocr_pool = ProcessPoolExecutor(_pool_size)
-        self.gpu_idxs = [0,1]
+        self.gpu_idxs = [0]
 
         self.chat_model = None
         self.get_langchain_chat_model()
@@ -586,7 +586,8 @@ class InitEnvModels:
         es_searchstore = ElasticsearchStore(es_connection=es_connection, index_name=index_name, embedding=embedding,strategy=strategy)
         return es_searchstore
     
-    def _init_ocr_instances(self):        
+    
+    def _init_ocr_instances(self):
         try:
             # raise Exception("调试，不使用多线程GPU RapidOCR的情况")
             from rapidocr_paddle import RapidOCR # For GPU 
@@ -601,12 +602,10 @@ class InitEnvModels:
             #     config["Cls"].update({"gpu_id":gpu_id})
             #     config["Rec"].update({"gpu_id":gpu_id})          
             ocr = RapidOCR(det_use_cuda=True, cls_use_cuda=True, rec_use_cuda=True,gpu_id=gpu_id)
-            if is_main_process():
-                logger.warning(f"将使用多进程GPU RapidOCR (rapidocr_paddle)")
-        except Exception as e:
-            if is_main_process():
-                logger.warning(f"初始化GPU RapidOCR (rapidocr_paddle)失败:{e}")
-                logger.warning(f"将使用多进程CPU RapidOCR (rapidocr_onnxruntime)")
+            logger.debug(f"将使用多进程GPU RapidOCR (rapidocr_paddle)")
+        except Exception as e:            
+            logger.debug(f"初始化GPU RapidOCR (rapidocr_paddle)失败:{e}")
+            logger.debug(f"将使用多进程CPU RapidOCR (rapidocr_onnxruntime)")
             from rapidocr_onnxruntime import RapidOCR
             ocr = RapidOCR()
         return ocr
@@ -615,7 +614,8 @@ class InitEnvModels:
         ocr = self._init_ocr_instances()
         return ocr
     
-    @lru_cache
+    
+    
     def get_ocr_pool(self):
         return self.ocr_pool
     
@@ -806,7 +806,7 @@ def get_env_models_instance():
     return _env_models_instance
 
 env_models_instance = get_env_models_instance()
-
+# ocr = env_models_instance.get_ocr()
 # region 留着备用
 # Visualized-BGE： https://github.com/FlagOpen/FlagEmbedding/tree/master/FlagEmbedding/visual 
 
