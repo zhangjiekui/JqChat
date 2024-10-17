@@ -20,8 +20,6 @@ logger = jqkj_logger(__file__).get_logger()
 #     logger.debug(f"$$图片中的OCR文本:\n{result}")
 emf = EMF() #处理emf图片需要的
 
-
-
 def treenode_img_to_text(img_src_and_data_tuple_list:tuple,delete_emf_wmf_png_file=True):
     ocr = env_models_instance.get_ocr()   
     result = ''

@@ -1042,16 +1042,13 @@ class GraphAgent:
             referens_str = "参考'type_placeholder':  \n"        
             for i,r in enumerate(referens):                
                 if r.startswith("http"):
-                    referens_str += f"    {i+1}. [{r}]({r})  \n"
+                    referens_str += f"    [{i+1}] [{r}]({r})  \n"
                     referens_str = referens_str.replace("'type_placeholder'","网页")                
                 else:
-                    filename = Path(r).name
-                    # referens_str += f"    {i+1}. [{filename}](file://{r})  \n"
-                    # <a href="(https://10.1.150.105:8051/download/文件名.doc">文件名名称</a>
-                    # [文件名名称](https://10.1.150.105:8051/download/文件名.doc)
-                    # referens_str += f"    {i+1}. <a href='https://10.1.150.105:8051/download/文件名.doc'>{filename}</a>"
-                    referens_str += f"    {i+1}. <a href='/download/{filename}'>{filename}</a>  \n"
-                    referens_str += f"    {i+1}. [{filename}](https://10.1.150.105:8051/download/{filename})  \n"
+                    paths =r[r.index("knowledge_base")+15:]
+                    filename=Path(r).name
+                    referens_str += f"    [{i+1}] <a href='http://10.1.150.105:7861/chat/knowledge/{paths}'>{filename}</a>  \n"
+                    #referens_str += f"    {i+1}. [{filename}](http//10.1.150.105:7861/chat/knowledge/{paths})  \n"
                     referens_str = referens_str.replace("'type_placeholder'","文档")
 
             _user_variables_statedict = {self.user_id:{"rag_args":'',"reference":referens_str}}

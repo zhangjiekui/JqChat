@@ -520,7 +520,7 @@ class JqkjDocTreeTokenTextSplitter(MetadataAwareTextSplitter):
 
                 
                 vf_string = cur_node.text
-                _vf_string_with_prefix = '表格：' + '\r\n' + vf_string
+                _vf_string_with_prefix = '[表格]：' + vf_string
 
                 table_tokens = self.tokens_len_func(text=vf_string)
                 _table_tokens_prefix = self.tokens_len_func(text=_vf_string_with_prefix)
@@ -543,7 +543,7 @@ class JqkjDocTreeTokenTextSplitter(MetadataAwareTextSplitter):
                     _splits_on_row = vf_string.split('\r\n')
                     splits_on_row = [row+'\r\n' for row in _splits_on_row]
 
-                    column_names = '表格：' + '[列名为]' + splits_on_row[0]
+                    column_names = '[表格]：' + splits_on_row[0]
                     column_names_tokens = self.tokens_len_func(text=column_names)
                     if column_names_tokens>100:
                         column_names = ''

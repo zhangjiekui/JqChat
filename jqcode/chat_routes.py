@@ -1,12 +1,10 @@
 
 import asyncio
 from typing import List
-from urllib import response
 import uuid
 from fastapi import APIRouter, Body, File, Form,  UploadFile
-
 import os
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse,FileResponse
 import asyncio
 import logging
 
@@ -29,7 +27,7 @@ index_meta_dict_default = index_meta[0]["_source"]
 # We know this Flask app is for local use. So we can disable the verbose Werkzeug logger
 log = logging.getLogger('werkzeug')
 log.setLevel(logging.ERROR)
-
+UPLOAD_FOLDER="workspace/"
 chat_router = APIRouter(prefix="/chat", tags=["Chat对话"])
 
 # 
@@ -130,11 +128,8 @@ def code():
     results=resp.json()
     return JSONResponse(content=results, status_code=200)
 
-@chat_router.post('/download/{file}',summary="获取执行code生成的文件")
-def downlaod(file):
-    file_path = os.path.join(UPLOAD_FOLDER, file)
-    with open(file_path, "rb") as file:
-        contents = file.read()
-        response.headers["Content-Disposition"] = f"attachment; filename={file_path}"
-        response.body = contents
-        return response
+    
+@chat_router.get('/knowledge/{knowledge}/content/{file}',summary="知识库ID下的文件")
+def download(knowledge,file):
+    file_path = os.path.join("/data/projects/JqChatV2/UPLOAD_DOCS/knowledge_base", knowledge,"content",file)
+    return FileResponse(file_path)
