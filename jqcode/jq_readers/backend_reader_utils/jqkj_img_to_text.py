@@ -41,7 +41,7 @@ def treenode_img_to_text(img_src_and_data_tuple_list:tuple,delete_emf_wmf_png_fi
                 logger.debug(f"无法加载EMF/WMF图片[{img_src}]:{e}")
                 logger.debug(f"尝试转换成.png文件，再OCR识别")
                 try:
-                    temp_working_dir = env_models_instance.workspace+fr"/tem_emf_wmf_files/"
+                    temp_working_dir = env_models_instance.abs_workspace+fr"temp/temp_emf_wmf_files/"
                     if not os.path.exists(temp_working_dir):
                         os.mkdir(temp_working_dir)
 

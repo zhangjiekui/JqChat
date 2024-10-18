@@ -711,5 +711,8 @@ LMDeploy 支持 InternLM2, InternLM2.5 和 Llama3.1 模型的工具调用
 #### 【Pypi】https://pypi.org/project/rapidocr-paddle/#history
 ![alt text](image.png)
 
+### build-lightweight-graphrag-with-sqlite https://medium.com/thedeephub/how-to-build-lightweight-graphrag-with-sqlite-1b387e056cbf
+### https://medium.com/thedeephub/how-to-scale-graphrag-with-neo4j-for-efficient-document-querying-f8be1ae4feb3
+
 
 

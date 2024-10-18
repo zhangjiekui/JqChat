@@ -39,14 +39,17 @@ def completions(
     files: List[str]=Body(alias="files",description="文档ID",default=None),
     code_message:str=Body(alias="code_message",default= None, description="执行code的信息"),
     ):
+    allow_conversation_memory=False
+    allow_question_rewrite=False
     print('============================================================')
     print('=============开始后台逻辑中....请稍后...........==============')
     print(f'====用户的问题是: {user_prompt}=============================')
     print(f'====所选的知识库是: {es_index_name}================================')
     print(f'====用户的ID是：{user_id}===================================')
-    print(f'====执行Code的信息：{code_message}==========================')
-    print(f'====文件的信息：{files}==========================')
-    
+    print(f'====执行代码的信息：{code_message if code_message else "没有要执行的代码"}==========================')
+    print(f'====上传的文件信息：{files if files else "没有上传的文件"}==========================')
+    print(f'====启用会话记忆：{allow_conversation_memory}==========================')
+    print(f'====启用问题重写：{allow_question_rewrite}==========================')
     print('============================================================')
     # samples是示例知识库，不在数据库中，存在本地文件中，所以查不到
     try:
@@ -64,7 +67,8 @@ def completions(
             file=os.path.join(UPLOAD_FOLDER, file)
             chat_on_docs_list.append(file)
     print(chat_on_docs_list)
-    chat_bot = GraphAgent(memory_thread_id=user_id, kb_base_dict=index_meta_dict,chat_on_docs_list=chat_on_docs_list,add_docs_list_to_kb=add_docs_list_to_kb)
+    chat_bot = GraphAgent(memory_thread_id=user_id, kb_base_dict=index_meta_dict,chat_on_docs_list=chat_on_docs_list,add_docs_list_to_kb=add_docs_list_to_kb,
+                          allow_conversation_memory=allow_conversation_memory,allow_question_rewrite=allow_question_rewrite)
     print(f"{chat_bot.user_id=}")
     text = chat_bot.run_conversation(user_question=user_prompt)
     

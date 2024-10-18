@@ -378,8 +378,20 @@ class InitEnvModels:
         KERNEL_API_BASE = os.getenv("KERNEL_API_BASE",'http://localhost')
         API_PORT = os.getenv("API_PORT",5011)
         self.kernel_api_url = f"{KERNEL_API_BASE}:{API_PORT}/api"
-        root_dir = pathlib.Path().resolve()
-        self.workspace = str(root_dir/'workspace/')        
+        
+        root_dir = pathlib.Path().resolve().parent        
+        workspace = os.getenv("workspace","/data/projects/JqChatV2/workspace")
+        if workspace.startswith('/'):
+            rel_workspace = os.path.basename(workspace)           
+            abs_workspace = workspace
+        else:
+            rel_workspace = workspace
+            abs_workspace = f"{root_dir}/{workspace}"         
+        workspace_url = os.getenv("workspace_url",f'http://10.1.150.105:7861/{rel_workspace}')
+        
+        self.rel_workspace = rel_workspace
+        self.abs_workspace = abs_workspace
+        self.workspace_url = workspace_url   
 
         _pool_size = 8
         self.ocr_pool = ProcessPoolExecutor(_pool_size)
