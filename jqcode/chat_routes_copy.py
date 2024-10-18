@@ -10,8 +10,8 @@ import pandas as pd
 import requests
 
 from jqcode.jq_code_executor.code_executor import CodeExecutorTool
-from jqcode.jq_knowledge_manegement.chatchat.server.db.repository.knowledge_base_repository import get_kb_detail, load_kb_from_db
-from jqcode.jq_knowledge_manegement.chatchat.server.knowledge_base.kb_service.base import get_kb_details
+# from jqcode.jq_knowledge_manegement.chatchat.server.db.repository.knowledge_base_repository import get_kb_detail, load_kb_from_db
+# from jqcode.jq_knowledge_manegement.chatchat.server.knowledge_base.kb_service.base import get_kb_details
 
 
 UPLOAD_FOLDER = 'workspace/'
@@ -50,6 +50,8 @@ async def chat_completions(
     doc_id: str = Body(alias="doc", description="知识库ID"),
     user_id: str = Body(alias="user", description="用户随机ID"),
     files: List[str]=Body(alias="files",description="文档ID",default=None),
+    is_rewrite: bool =Body(default=True,description="是否启用问题改写"),
+    is_memery:bool=Body(default=True,description="是否启用记忆"),
     code_message:str=Body(alias="code_message",default= None, description="执行code的信息"),
     
 ) :
@@ -60,6 +62,8 @@ async def chat_completions(
     print(f'====用户的ID是：{user_id}===================================')
     print(f'====执行Code的信息：{code_message}==========================')
     print(f'====文件的信息：{files}==========================')
+    print(f'====是否启用记忆:{is_memery}==========================')
+    print(f'====是否启用重写：{is_rewrite}==========================')
     print('============================================================')
     code=f"""
     ```python 
@@ -77,10 +81,10 @@ plt.plot(x,y)\n
 plt.show()
         """)
     # text+=result
-    kb_base=get_kb_detail(doc_id)
-    load_kb_from_db(doc_id)
-    kbs=get_kb_details()
-    print(kb_base)
+    # kb_base=get_kb_detail(doc_id)
+    # load_kb_from_db(doc_id)
+    # kbs=get_kb_details()
+    # print(kb_base)
     resp=JSONResponse(content={"code":code,"text":result['text']+result['image']})
     return resp
 

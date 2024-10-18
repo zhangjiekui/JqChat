@@ -12,7 +12,7 @@ import requests
 from jqcode.chat_prompt import *
 from jqcode.jq_knowledge_manegement.chatchat.server.db.repository.knowledge_base_repository import get_kb_detail
 from langchain_core.messages import ToolMessage
-
+from jqcode.jq_agent.c0_init_env_models import env_models_instance
 from jqcode.langgraph_in_class import GraphAgent,display_code, display_text
 from jqcode.jq_docstores.backend_docstore_utils.jq_es_metastores import JqElasticsearchUniMetaStore
 
@@ -37,10 +37,12 @@ def completions(
     es_index_name: str = Body(alias="doc", description="知识库ID"),
     user_id: str = Body(alias="user", description="用户随机ID"),
     files: List[str]=Body(alias="files",description="文档ID",default=None),
+    is_rewrite: bool =Body(default=True,description="是否启用问题改写"),
+    is_memory:bool=Body(default=True,description="是否启用记忆"),
     code_message:str=Body(alias="code_message",default= None, description="执行code的信息"),
     ):
-    allow_conversation_memory=False
-    allow_question_rewrite=False
+    allow_conversation_memory=is_memory
+    allow_question_rewrite=is_rewrite
     print('============================================================')
     print('=============开始后台逻辑中....请稍后...........==============')
     print(f'====用户的问题是: {user_prompt}=============================')
@@ -134,6 +136,11 @@ def code():
 
     
 @chat_router.get('/knowledge/{knowledge}/content/{file}',summary="知识库ID下的文件")
-def download(knowledge,file):
-    file_path = os.path.join("/data/projects/JqChatV2/UPLOAD_DOCS/knowledge_base", knowledge,"content",file)
+def download_knowledge(knowledge,file):
+    file_path = os.path.join(env_models_instance.abs_workspace,knowledge,"content",file)
+    return FileResponse(file_path)
+
+@chat_router.get('/download',summary="生成的文件下载")
+def download_code(file):
+    file_path = os.path.join(env_models_instance.abs_workspace, "code",file)
     return FileResponse(file_path)
