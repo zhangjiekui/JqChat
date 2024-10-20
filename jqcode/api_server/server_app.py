@@ -1,7 +1,7 @@
 import argparse
 import os
 from typing import Literal
-from jqcode.chat_routes import chat_router
+from jqcode.chat_routes import chat_router,workspace_router
 import uvicorn
 from fastapi import Body, FastAPI
 from fastapi.middleware.cors import CORSMiddleware
@@ -41,7 +41,7 @@ def create_app(run_mode: str = None):
 
     app.include_router(chat_router)
     app.include_router(kb_router)
-    # # app.include_router(tool_router)
+    app.include_router(workspace_router)
     # # app.include_router(openai_router)
     # # app.include_router(server_router)
 

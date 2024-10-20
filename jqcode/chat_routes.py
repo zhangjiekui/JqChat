@@ -29,7 +29,7 @@ log = logging.getLogger('werkzeug')
 log.setLevel(logging.ERROR)
 UPLOAD_FOLDER="workspace/"
 chat_router = APIRouter(prefix="/chat", tags=["Chat对话"])
-
+workspace_router=APIRouter(prefix="/workspace", tags=["文件下载"])
 # 
 @chat_router.post('/completions',summary="对话接口")
 def completions(
@@ -135,12 +135,12 @@ def code():
     return JSONResponse(content=results, status_code=200)
 
     
-@chat_router.get('/knowledge/{knowledge}/content/{file}',summary="知识库ID下的文件")
+@workspace_router.get('/knowledge/{knowledge}/content/{file}',summary="知识库ID下的文件")
 def download_knowledge(knowledge,file):
     file_path = os.path.join(env_models_instance.abs_workspace,knowledge,"content",file)
     return FileResponse(file_path)
 
-@chat_router.get('/download',summary="生成的文件下载")
+@workspace_router.get('/download',summary="生成的文件下载")
 def download_code(file):
     file_path = os.path.join(env_models_instance.abs_workspace, "code",file)
     return FileResponse(file_path)
