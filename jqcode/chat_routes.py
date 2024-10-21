@@ -23,7 +23,10 @@ index_meta_dict_default = index_meta[0]["_source"]
 # We know this Flask app is for local use. So we can disable the verbose Werkzeug logger
 log = logging.getLogger('werkzeug')
 log.setLevel(logging.ERROR)
-UPLOAD_FOLDER=str(os.environ.get("workspace","/data/projects/JqChatV2/workspace"))
+
+# UPLOAD_FOLDER=str(os.environ.get("workspace","/data/projects/JqChatV2/workspace"))
+UPLOAD_FOLDER=os.path.join(os.path.dirname(os.getcwd()), "workspace")
+
 chat_router = APIRouter(prefix="/chat", tags=["Chat对话"])
 workspace_router=APIRouter(prefix="/workspace", tags=["文件下载"])
 # 
@@ -105,12 +108,14 @@ async def upload_file(
             return ({'error': '请选择文件'}), 400
         if file and allowed_file(file.filename):
             new_filename=uuid.uuid1().hex + "." + file.filename.rsplit(".",1)[1]
+            
             # 如果纳入知识库，则放到知识库的文件夹
-            if is_knowledge:
-                file_target=os.path.join(UPLOAD_FOLDER,"knowledge",knowledge_id,"content",new_filename)
+            if knowledge_id:
+                file_target = os.path.join(UPLOAD_FOLDER,"knowledge_base",knowledge_id,"content",new_filename)
             # 没有的话放到临时目录
             else:
                file_target = os.path.join(UPLOAD_FOLDER,"temp", new_filename)
+            
             file_content = await file.read()
             with open(file_target, "wb") as f:  
                  f.write(file_content)  
