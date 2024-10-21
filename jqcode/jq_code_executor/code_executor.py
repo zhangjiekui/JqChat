@@ -257,7 +257,7 @@ class CodeExecutorTool():
         bytes_io = io.BytesIO(png_bytes)
         PIL.Image.open(bytes_io).save(local_image_file, 'png')
         print(os.getenv('workspace_url'))
-        image_server_url = os.getenv('workspace_url', 'http://localhost:7861/workspace')
+        image_server_url = os.getenv('workspace_url', 'http://localhost:7861/workspace/images')
         if image_server_url:
             return f'{image_server_url}/{image_file}'
         return local_image_file
