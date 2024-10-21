@@ -1,18 +1,14 @@
 
-import asyncio
 from typing import List
 import uuid
 from fastapi import APIRouter, Body, File, Form,  UploadFile
 import os
 from fastapi.responses import JSONResponse,FileResponse
-import asyncio
 import logging
 
 import requests
 from jqcode.chat_prompt import *
-from jqcode.jq_knowledge_manegement.chatchat.server.db.repository.knowledge_base_repository import get_kb_detail
 from langchain_core.messages import ToolMessage
-from jqcode.jq_agent.c0_init_env_models import env_models_instance
 from jqcode.langgraph_in_class import GraphAgent,display_code, display_text
 from jqcode.jq_docstores.backend_docstore_utils.jq_es_metastores import JqElasticsearchUniMetaStore
 
@@ -27,7 +23,7 @@ index_meta_dict_default = index_meta[0]["_source"]
 # We know this Flask app is for local use. So we can disable the verbose Werkzeug logger
 log = logging.getLogger('werkzeug')
 log.setLevel(logging.ERROR)
-UPLOAD_FOLDER="workspace/"
+UPLOAD_FOLDER=str(os.environ.get("workspace","/data/projects/JqChatV2/workspace"))
 chat_router = APIRouter(prefix="/chat", tags=["Chat对话"])
 workspace_router=APIRouter(prefix="/workspace", tags=["文件下载"])
 # 
@@ -101,6 +97,7 @@ async def upload_file(
      files: List[UploadFile] = File(..., description="上传文件，支持多文件"),
      knowledge_id: str = Body(None, description="知识库ID"),
      uid: str = Body(None, description="用户ID"),
+     is_knowledge:bool=Body(False,description="是否纳入知识库")
     ):
     ids=[]
     for file in files:
@@ -108,16 +105,21 @@ async def upload_file(
             return ({'error': '请选择文件'}), 400
         if file and allowed_file(file.filename):
             new_filename=uuid.uuid1().hex + "." + file.filename.rsplit(".",1)[1]
-            file_target = os.path.join(UPLOAD_FOLDER, new_filename)
+            # 如果纳入知识库，则放到知识库的文件夹
+            if is_knowledge:
+                file_target=os.path.join(UPLOAD_FOLDER,"knowledge",knowledge_id,"content",new_filename)
+            # 没有的话放到临时目录
+            else:
+               file_target = os.path.join(UPLOAD_FOLDER,"temp", new_filename)
             file_content = await file.read()
             with open(file_target, "wb") as f:  
                  f.write(file_content)  
                  if knowledge_id :
                     #  TODO:
-                     print('需要纳入知识库，待处理',knowledge_id)
+                    print('需要纳入知识库，待处理',knowledge_id)
                  ids.append(new_filename)
             # file_info = inspect_file(file_target)
-            os.environ["HAS_DATA_FILE_UPLOADED"] = 'True'
+            # os.environ["HAS_DATA_FILE_UPLOADED"] = 'True'
             # message_buffer.append(f"已上传保存的文件名为{file.filename},请在分析过程中使用这个数据文件\n{file_info}'}" + "\n\n")
         else:
             return JSONResponse(content={'message': '存在不被允许的文件类型'}, status_code=400)
@@ -137,10 +139,15 @@ def code():
     
 @workspace_router.get('/knowledge/{knowledge}/content/{file}',summary="知识库ID下的文件")
 def download_knowledge(knowledge,file):
-    file_path = os.path.join(env_models_instance.abs_workspace,knowledge,"content",file)
+    file_path = os.path.join(UPLOAD_FOLDER,knowledge,"content",file)
     return FileResponse(file_path)
 
 @workspace_router.get('/download',summary="生成的文件下载")
 def download_code(file):
-    file_path = os.path.join(env_models_instance.abs_workspace, "code",file)
+    file_path = os.path.join(UPLOAD_FOLDER, "code",file)
+    return FileResponse(file_path)
+
+@workspace_router.get('/images/{image}',summary="显示生成的图片")
+def download_code(image):
+    file_path = os.path.join(UPLOAD_FOLDER, "code",image)
     return FileResponse(file_path)
