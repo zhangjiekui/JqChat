@@ -1,4 +1,5 @@
 import time
+import base64
 import subprocess,os
 from pathlib import Path
 from concurrent.futures import ProcessPoolExecutor as Pool
@@ -21,7 +22,8 @@ logger = jqkj_logger(__file__).get_logger()
 emf = EMF() #处理emf图片需要的
 
 def treenode_img_to_text(img_src_and_data_tuple_list:tuple,delete_emf_wmf_png_file=True):
-    ocr = env_models_instance.get_ocr()   
+    ocr = env_models_instance.get_ocr()
+    ocr_mode = env_models_instance.ocr_mode   
     result = ''
     #分隔符最好选用jqcode/jq_splitters/backend_splitter_utils/jq_chinese_recursive_text_splitter.py的第98行定义的
     _separator = ' '
@@ -59,12 +61,20 @@ def treenode_img_to_text(img_src_and_data_tuple_list:tuple,delete_emf_wmf_png_fi
                     ])
                     if convert_result == 0: #代表转换成功
                         png_file = temp_working_dir + Path(emf_wmf_file).stem + ".png"
-                        ocr_result,_ = ocr(png_file) 
-                        if ocr_result:
-                            ocr_texts = [line[1].strip() for line in ocr_result if line[1].strip()]
-                            #分隔符最好选用jqcode/jq_splitters/backend_splitter_utils/jq_chinese_recursive_text_splitter.py的第98行定义的
-                            result = _separator.join(ocr_texts) 
-                            logger.debug(f"$$图片[{img_src}]中的OCR文本:\n{result}")
+                        if ocr_mode == "API":
+                            # # 读取图片并转换为base64
+                            with open(png_file, 'rb') as f:
+                                image_binary = f.read()
+                            image_base64 = base64.b64encode(image_binary)
+                            result = ocr(image_base64)
+                            logger.debug(f"$$图片[{img_src}]中的OCR文本:\n{result}") 
+                        else:
+                            ocr_result,_ = ocr(png_file) 
+                            if ocr_result:
+                                ocr_texts = [line[1].strip() for line in ocr_result if line[1].strip()]
+                                #分隔符最好选用jqcode/jq_splitters/backend_splitter_utils/jq_chinese_recursive_text_splitter.py的第98行定义的
+                                result = _separator.join(ocr_texts) 
+                                logger.debug(f"$$图片[{img_src}]中的OCR文本:\n{result}")
                     else:
                         logger.error(f"尝试转换成.png文件失败!")
                 except:
@@ -84,13 +94,17 @@ def treenode_img_to_text(img_src_and_data_tuple_list:tuple,delete_emf_wmf_png_fi
                             os.remove(emf_wmf_file)
                         if os.path.exists(png_file):
                             os.remove(png_file)
-        else: 
-            ocr_result,_ = ocr(img_data) 
-            if ocr_result:
-                ocr_texts = [line[1].strip() for line in ocr_result if line[1].strip()]
-                #分隔符最好选用jqcode/jq_splitters/backend_splitter_utils/jq_chinese_recursive_text_splitter.py的第98行定义的
-                result = _separator.join(ocr_texts) 
+        else:
+            if ocr_mode == "API":
+                result= ocr(img_data)
                 logger.debug(f"$$图片[{img_src}]中的OCR文本:\n{result}")
+            else: 
+                ocr_result,_ = ocr(img_data) 
+                if ocr_result:
+                    ocr_texts = [line[1].strip() for line in ocr_result if line[1].strip()]
+                    #分隔符最好选用jqcode/jq_splitters/backend_splitter_utils/jq_chinese_recursive_text_splitter.py的第98行定义的
+                    result = _separator.join(ocr_texts) 
+                    logger.debug(f"$$图片[{img_src}]中的OCR文本:\n{result}")
     except Exception as e:
         logger.warning(f'获取图片[{img_src}]中的文本失败,详细信息为{e}')
     result = f"【{img_src}的OCR文本】"+ result
