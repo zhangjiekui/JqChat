@@ -250,7 +250,7 @@ class CodeExecutorTool():
         import PIL.Image
 
         image_file = f'{uuid.uuid4()}.png'
-        local_image_file = os.path.join(self.work_dir, image_file)
+        local_image_file = os.path.join(self.work_dir,"code", image_file)
 
         png_bytes = base64.b64decode(image_base64)
         assert isinstance(png_bytes, bytes)
