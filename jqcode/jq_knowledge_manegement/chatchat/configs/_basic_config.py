@@ -79,8 +79,7 @@ class ConfigBasicFactory(core_config.ConfigFactory[ConfigBasic]):
             # self.DATA_PATH = self._DATA_PATH
 
             # 知识库路径修改(lyq)
-            self.DATA_PATH = os.path.join(os.path.dirname(os.getcwd()), "UPLOAD_DOCS")
-
+            self.DATA_PATH =  os.path.join(os.path.dirname(os.getcwd()), "workspace")
             # os.system(f"cp -r {self._DATA_PATH}/* {self.DATA_PATH}")
 
         self._init_data_dir()

@@ -367,7 +367,7 @@ class ApiRequest:
         **kwargs,
     ):
         """
-        对应chat_routes upload接口
+         对应chat_routes upload_file
         """
         
         def convert_file(file, filename=None):
