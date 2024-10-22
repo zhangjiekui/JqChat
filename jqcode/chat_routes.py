@@ -111,10 +111,21 @@ async def upload_file(
             
             # 如果纳入知识库，则放到知识库的文件夹
             if knowledge_id:
-                file_target = os.path.join(UPLOAD_FOLDER,"knowledge_base",knowledge_id,"content",new_filename)
+                file_path =os.path.join(UPLOAD_FOLDER,"knowledge_base",knowledge_id,"content")
+
+                if not os.path.exists(file_path):
+                    os.makedirs(file_path, exist_ok=True)
+
+                file_target = os.path.join(file_path,new_filename)
             # 没有的话放到临时目录
-            else:
-               file_target = os.path.join(UPLOAD_FOLDER,"temp", new_filename)
+            else: 
+               file_path = os.path.join(UPLOAD_FOLDER,"temp")
+
+               if not os.path.exists(file_path):
+                    os.makedirs(file_path, exist_ok=True)
+
+
+               file_target = os.path.join(file_path, new_filename)
             
             file_content = await file.read()
             with open(file_target, "wb") as f:  

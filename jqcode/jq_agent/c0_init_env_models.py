@@ -648,7 +648,7 @@ class InitEnvModels:
         mode = mode or self.ocr_mode
         if mode == "API":
             ocr = Ocr_API()
-            logger.debug(f"将使用多线程GPU Ocr_API")
+            logger.debug(f"将使用多线程GPU Paddle Ocr_API")
         
         elif mode == "rapidocr":
             try:
