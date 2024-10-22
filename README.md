@@ -36,9 +36,16 @@ https://docs.vllm.ai/en/stable/serving/openai_compatible_server.html#extra-param
 
 ### Context Length: Full 131,072 tokens and generation 8192 tokens
 #### Qwen2.5-32B-Instruct-AWQ
+2gpu
 ```
 workon xinfer
-VLLM_USE_MODELSCOPE=True CUDA_VISIBLE_DEVICES=2,3 VLLM_ALLOW_ENGINE_USE_RAY=1 nohup vllm serve /data/xinference/modelscope/hub/qwen/Qwen2.5-32B-Instruct-AWQ --served-model-name qwen25b70 --enable-auto-tool-choice --tool-call-parser hermes --host 0.0.0.0 --port 9997 --max-model-len 32000 --tensor-parallel-size 2 --distributed-executor-backend ray --use_v2_block_manager --gpu-memory-utilization 0.90 >> /data/xinference/vllm.log 2>&1 &
+VLLM_USE_MODELSCOPE=True CUDA_VISIBLE_DEVICES=2,3 VLLM_ALLOW_ENGINE_USE_RAY=1 nohup vllm serve /data/xinference/modelscope/hub/qwen/Qwen2.5-32B-Instruct-AWQ --served-model-name qwen25b70 --enable-auto-tool-choice --tool-call-parser hermes --host 0.0.0.0 --port 9997 --max-model-len 32000 --tensor-parallel-size 2 --distributed-executor-backend ray --use_v2_block_manager --gpu-memory-utilization 0.90  --max-num-seqs 32 >> /data/xinference/vllm.log 2>&1 &
+tail -f /data/xinference/vllm.log
+```
+4gpu
+```
+workon xinfer
+VLLM_USE_MODELSCOPE=True CUDA_VISIBLE_DEVICES=0,1,2,3 VLLM_ALLOW_ENGINE_USE_RAY=1 nohup vllm serve /data/xinference/modelscope/hub/qwen/Qwen2.5-32B-Instruct-AWQ --served-model-name qwen25b70 --enable-auto-tool-choice --tool-call-parser hermes --host 0.0.0.0 --port 9997 --max-model-len 32000 --tensor-parallel-size 4 --distributed-executor-backend ray --use_v2_block_manager --gpu-memory-utilization 0.90 --max-num-seqs 16 >> /data/xinference/vllm.log 2>&1 &
 tail -f /data/xinference/vllm.log
 ```
 

@@ -8,7 +8,8 @@ from jqcode.jq_agent.c0_init_env_models import env_models_instance
 from jqcode.jq_docstores.backend_docstore_utils.jq_es_metastores import JqElasticsearchUniMetaStore, md5_id_from_text
 from jqcode.jq_docstores.backend_docstore_utils.jq_es_docstores import JqElasticsearchDocumentStore
 from jqcode.jq_docstores.backend_docstore_utils.jq_es_indexstores import JqElasticsearchIndexStore
-from jqcode.jq_readers.jqkj_readers import JqkjSimpleDirectoryReader, filetype_reader_dict    
+from jqcode.jq_readers.jqkj_readers import JqkjSimpleDirectoryReader, filetype_reader_dict
+from jqcode.graph_rag_networkx import JqGraphRag    
 from jqcode.jq_utils.logger import jqkj_logger
 
 logger = jqkj_logger(__file__).get_logger()
@@ -242,6 +243,9 @@ class JqEsClient():
         print(f"从{len(lm_documents)}个文件中，生成的切片数为:{len(lc_splitted_documents)}")
     # 5、将文件切片写入知识库    
         vectorstore = env_models_instance.get_es_searchstore_index_documents(documents=lc_splitted_documents, embedding=embed_model,index_name=index_name,source_id_key='source',clear_before_add_index=False)        
+        # graph_rag = JqGraphRag(documents=lc_splitted_documents,index_name=index_name)
+        # gml_path = graph_rag.graph_indexing()
+        # logger.warning(f"已写入图索引：{gml_path}")
         es_index_doc_ids,es_index_doc_filepaths = index_store.get_all_unique_fileids_filepaths()
         for i in range(len(es_index_doc_ids)):
             print(f"序号：{i+1},Id:{es_index_doc_ids[i]},Path:{es_index_doc_filepaths[i]}")
@@ -274,12 +278,16 @@ if __name__ == "__main__":
     
     # input_dir = "/media/program/UPLOAD_DOCS/knowledge_base/liyuanqin/content"
     input_dir = fr'/data/projects/JqChatV2/JqChat/jqcode/jq_readers/.test_files/.testinputdocs'
-    # input_files = "/media/program/UPLOAD_DOCS/knowledge_base/liyuanqin/content/OCR接口性能报告.docx"
+    input_files =["/data/projects/JqChatV2/JqChat/jqcode/jq_readers/.test_files/.testinputdocs/AAMIS_项目总体计划_120925.doc"]
     # input_files = "/media/program/UPLOAD_DOCS/knowledge_base/liyuanqin/content/Agent调试跟踪1.txt"
     # input_files = ["/media/project/JqChat/发票识别接口文档.docx"]
-    vectorstore = jq_es_client.chunks_indexing_from_input_dir_or_files(current_user='',index_name='table_test',
-                                                                    description="JqConverter跳过文件转换: /data/projects/JqChatV2/JqChat/jqcode/jq_readers/.test_files/.testinputdocs/A方案.txt",
+    vectorstore = jq_es_client.chunks_indexing_from_input_dir_or_files(current_user='',index_name='graphrag_test',
+                                                                    description="graphrag_test: 转换/data/projects/JqChatV2/JqChat/jqcode/jq_readers/.test_files/.testinputdocs目录下的文件，测试速度",
                                                                     input_dir = input_dir,
                                                                     input_files=None)
+    # vectorstore = jq_es_client.chunks_indexing_from_input_dir_or_files(current_user='',index_name='table_test',
+    #                                                             description="JqConverter跳过文件转换: /data/projects/JqChatV2/JqChat/jqcode/jq_readers/.test_files/.testinputdocs/A方案.txt",
+    #                                                             input_dir = None,
+    #                                                             input_files=input_files)
     pass
     

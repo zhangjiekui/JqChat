@@ -393,9 +393,9 @@ class InitEnvModels:
         self.abs_workspace = abs_workspace
         self.workspace_url = workspace_url   
 
-        _pool_size = 8
+        _pool_size = 4
         self.ocr_pool = ProcessPoolExecutor(_pool_size)
-        self.gpu_idxs = [0]
+        self.gpu_idxs = [0,1,2,3]
 
         self.chat_model = None
         self.get_langchain_chat_model()

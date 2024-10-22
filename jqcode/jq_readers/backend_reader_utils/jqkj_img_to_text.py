@@ -43,7 +43,7 @@ def treenode_img_to_text(img_src_and_data_tuple_list:tuple,delete_emf_wmf_png_fi
                 try:
                     temp_working_dir = env_models_instance.abs_workspace+fr"/temp/temp_emf_wmf_files/"
                     if not os.path.exists(temp_working_dir):
-                        os.mkdir(temp_working_dir)
+                        os.makedirs(temp_working_dir, exist_ok=True)
 
                     emf_wmf_file= temp_working_dir+img_src
                     with open(emf_wmf_file,'wb') as f:#保存图片
