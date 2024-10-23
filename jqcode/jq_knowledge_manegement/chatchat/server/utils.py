@@ -762,7 +762,7 @@ def get_temp_dir(id: str = None) -> Tuple[str, str]:
 
     id = uuid.uuid4().hex
     path = os.path.join(BASE_TEMP_DIR, id)
-    os.mkdir(path, exist_ok=True)
+    os.makedirs(path, exist_ok=True)
     return path, id
 
 

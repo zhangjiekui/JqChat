@@ -59,7 +59,10 @@ from jqcode.jq_utils.logger import jqkj_logger,is_main_process,set_multiprocessi
 logger = jqkj_logger(__file__).get_logger()
 
 set_multiprocessing_context(multiprocessing,context="spawn",logger=logger)
-
+os.makedirs("/_data", exist_ok=True)
+os.makedirs("/_data", exist_ok=True)
+os.mkdir("/_data", exist_ok=True)
+os.mkdir("/_data/temp", exist_ok=True)
 VERBOSE = if_log_verbose()
 if is_main_process():    
     print("=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*")

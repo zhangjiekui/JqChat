@@ -120,7 +120,7 @@ class ConfigKbFactory(core_config.ConfigFactory[ConfigKb]):
             config_basic_workspace.get_config().DATA_PATH, "knowledge_base"
         )
         if not os.path.exists(self.KB_ROOT_PATH):
-            os.mkdir(self.KB_ROOT_PATH, exist_ok=True)
+            os.makedirs(self.KB_ROOT_PATH, exist_ok=True)
 
         # 数据库默认存储路径。
         # 如果使用sqlite，可以直接修改DB_ROOT_PATH；如果使用其它数据库，请直接修改SQLALCHEMY_DATABASE_URI。
