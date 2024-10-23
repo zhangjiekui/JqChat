@@ -51,19 +51,21 @@ def completions(
     print(f'====上传的文件信息：{files if files else "没有上传的文件"}==========================')
     print(f'====启用会话记忆：{allow_conversation_memory}==========================')
     print(f'====启用问题重写：{allow_question_rewrite}==========================')
-    print('============================================================')
+    
     # samples是示例知识库，不在数据库中，存在本地文件中，所以查不到
     try:
         index_meta = metastore.search_docs_by_text(top_k=1,user_query_text=es_index_name,query_on_fileds=['index_name'],filter_by_status=['true'])
         index_meta_dict = index_meta[0]["_source"]
+        print(f"====从metastore中获取到用户所选知识库的详细信息为：{index_meta_dict}====")
     except:
         index_meta_dict = index_meta_dict_default
+        print(f"====从metastore中获取到用户所选知识库失败，使用默认知识库。详细信息为：{index_meta_dict}====")       
+    print('============================================================')
     # 是否有文件
-    print(index_meta_dict)
     add_docs_list_to_kb = False
     chat_on_docs_list=[]
     if len(files)>0:
-        add_docs_list_to_kb=True
+        add_docs_list_to_kb=True #todo 这里应该是用户的选择
         for file in files:
             file=os.path.join(UPLOAD_FOLDER, file)
             chat_on_docs_list.append(file)
@@ -120,13 +122,9 @@ async def upload_file(
             # 没有的话放到临时目录
             else: 
                file_path = os.path.join(UPLOAD_FOLDER,"temp")
-
                if not os.path.exists(file_path):
                     os.makedirs(file_path, exist_ok=True)
-
-
-               file_target = os.path.join(file_path, new_filename)
-            
+               file_target = os.path.join(file_path, new_filename)            
             file_content = await file.read()
             with open(file_target, "wb") as f:  
                  f.write(file_content)  

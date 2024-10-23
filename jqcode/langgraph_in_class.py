@@ -523,8 +523,6 @@ class GraphAgent:
         self.index_name = self.kb_base_dict.get("index_name",None)
         self.discription = self.kb_base_dict.get("description",None)
         self.chat_on_docs_list = chat_on_docs_list
-        # todo 测试
-        self.chat_on_docs_list = ["/data/projects/JqChatV2/JqChat/jqcode/jq_readers/.test_files/.testinputdocs/AAMIS_项目总体计划_120925.doc"] 
         self.add_docs_list_to_kb = add_docs_list_to_kb
         self.allow_conversation_memory=allow_conversation_memory
         self.allow_question_rewrite = allow_question_rewrite
