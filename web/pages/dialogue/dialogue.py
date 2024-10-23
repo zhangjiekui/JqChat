@@ -197,7 +197,8 @@ def dialogue_page(
         doc=str(selected_kb)
         code_message=ctx.get('code_message')
         files=ctx.get('files')
-        is_knowledge=st.session_state["is_knowledge"]
+        # @swm 这里有问题
+        is_knowledge=st.session_state.get("is_knowledge",False)
         print(is_knowledge)
         msg=chat(code_message=code_message,query=prompt,user=user,doc=doc,files=files,is_memory=is_memory,is_rewrite=is_rewrite,is_knowledge=is_knowledge,_api=api)
         chat_box.update_msg(msg["text"],streaming=False) 
