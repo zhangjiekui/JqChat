@@ -24,8 +24,8 @@ index_meta_dict_default = index_meta[0]["_source"]
 log = logging.getLogger('werkzeug')
 log.setLevel(logging.ERROR)
 
-# UPLOAD_FOLDER=str(os.environ.get("workspace","/data/projects/JqChatV2/workspace"))
-UPLOAD_FOLDER=os.path.join(os.path.dirname(os.getcwd()), "workspace")
+UPLOAD_FOLDER=str(os.environ.get("workspace","/data/projects/JqChatV2/workspace"))
+# UPLOAD_FOLDER=os.path.join(os.path.dirname(os.getcwd()), "workspace")
 
 chat_router = APIRouter(prefix="/chat", tags=["Chat对话"])
 workspace_router=APIRouter(prefix="/workspace", tags=["文件下载"])
