@@ -64,7 +64,7 @@ class ESKBService(KBService):
         else:
             try:
                 # 首先尝试通过db_init创建索引(如果index_name不存在就创建)
-                self.db._create_index_if_not_exists(
+                self.db.create_index_if_not_exists(
                     index_name=self.index_name, dims_length=self.dims_length
                 )
             except Exception as e:

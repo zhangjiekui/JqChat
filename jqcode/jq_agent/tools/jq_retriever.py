@@ -7,13 +7,13 @@ from langchain_elasticsearch import ElasticsearchStore
 from elasticsearch.helpers.vectorstore import DenseVectorStrategy,BM25Strategy
 from langchain.retrievers import EnsembleRetriever,ContextualCompressionRetriever
 from langchain_community.retrievers import ElasticSearchBM25Retriever
+
 from llama_index.core.readers.file.base import default_file_metadata_func
 from jqcode.jq_readers.jqkj_readers import JqkjSimpleDirectoryReader,JqkjDocxReader
 from jqcode.jq_readers.backend_reader_utils.jqkj_doc_tree_utils import jieba_pre_process
 from jqcode.jq_agent.c0_init_env_models import env_models_instance,JqVectorStoreRetrieverWithScore
 from jqcode.jq_utils.logger import jqkj_logger
 logger = jqkj_logger(__file__).get_logger()
-
 
 
 def get_retriever(vectorstore:ElasticsearchStore=None,index_name:str=None,chat_on_docs_list:List[str]=None,add_docs_list_to_kb=True,default_temp_index_name:str="temp_index_for_upload_files",
@@ -39,6 +39,7 @@ def get_retriever(vectorstore:ElasticsearchStore=None,index_name:str=None,chat_o
         doc_paths_exists = [item for item in chat_on_docs_list if Path.exists(item)]
         doc_paths_not_exists = [item for item in chat_on_docs_list if not Path.exists(item)]
         RESERVED_FILTER_BY_FILES = []
+        default_vectorstore = None
 
         if len(doc_paths_exists)==0:
             logger.warning(f"'{chat_on_docs_list=}'中不存在的任何有效文件路径，请检查确认！")
@@ -165,21 +166,12 @@ def get_retriever(vectorstore:ElasticsearchStore=None,index_name:str=None,chat_o
         # endregion 在知识库中查询是否已经存在拟上传的文件
 
             # 3、读取和处理还不存在的文件
-            if existed_files_maybe_need_indexing:                
-                simple_reader = JqkjSimpleDirectoryReader(input_files=existed_files_maybe_need_indexing,overwrite_existing_converted_files=False,required_exts=required_exts)
-                documents = simple_reader.load_data()
-                doc_tree_spiltter = env_models_instance.doc_tree_spiltter
-                nodes = doc_tree_spiltter.get_nodes_from_documents(documents)
-                lc_documents = [schema.Document(page_content=node.text,metadata=node.metadata) for node in nodes]
-                if not lc_documents:
-                    logger.warning(f"存在需要index的文件{existed_files_maybe_need_indexing=},但却意外的没有得到真正的文档（切片）")
-
-        # 4、上传已经读取和处理的文件（这些文件知识库中还不存在），目标index为前面已经判断处理过的index_destination
-        if lc_documents:
-            default_vectorstore = env_models_instance.get_es_searchstore_index_documents(documents=lc_documents, embedding=embed_model,index_name=index_destination,
-                                                                                 es_connection=es_connection,clear_before_add_index=True,source_id_key=source_id_key)
-        else:
-            default_vectorstore = env_models_instance.get_es_searchstore(es_connection=es_connection,embedding=embed_model,index_name=index_destination)   
+            if existed_files_maybe_need_indexing:
+                from jqcode.jq_docstores.jq_es_client import JqEsClient
+                jq_es_client = JqEsClient()
+                default_vectorstore = jq_es_client.chunks_indexing_from_input_dir_or_files(current_user='',index_name=index_destination,input_files=existed_files_maybe_need_indexing)
+            else:
+                default_vectorstore = env_models_instance.get_es_searchstore(es_connection=es_connection,embedding=embed_model,index_name=index_destination) 
     
         if default_vectorstore and RESERVED_FILTER_BY_FILES:
                 filters = {"terms":{f"metadata.{source_id_key}.keyword": RESERVED_FILTER_BY_FILES}} 
@@ -248,6 +240,14 @@ def get_retriever(vectorstore:ElasticsearchStore=None,index_name:str=None,chat_o
     compression_retriever = ContextualCompressionRetriever(base_compressor=reranker, base_retriever=ensemble_retriever)
     if not compression_retriever:
         logger.warning(f"未能获取到有效的Retriever：'{compression_retriever=}")
+    else:
+        retrievers=compression_retriever.base_retriever.retrievers
+        message = ""
+        for i,retriever in enumerate(retrievers):
+            message += f" 检索器[{i+1}]{retriever.name}，检索的目标知识库为{retriever.vectorstore._store.index} "
+        logger.warning(f"get_retriever方法，返回的集成检索器为：{message}")
+
+        
     return compression_retriever
 
 if __name__ == "__main__":

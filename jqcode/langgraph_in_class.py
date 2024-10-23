@@ -680,6 +680,11 @@ class GraphAgent:
         question = state["question"]
 
         # Retrieval
+        retrievers=self.retriever.base_retriever.retrievers
+        message = ""
+        for i,retriever in enumerate(retrievers):
+            message += f" 检索器[{i+1}]{retriever.name}，检索的目标知识库为{retriever.vectorstore._store.index} "
+        logger.warning(f"vectorstore方法，执行实际文档检索的集成检索器为：{message}")
         documents = self.retriever.invoke(question,config=invoke_llm_config)
         
         # from jqcode.graph_rag_networkx import JqGraphRag
@@ -739,7 +744,7 @@ class GraphAgent:
             chunks_relevant = docs 
         referens = []
         if chunks_relevant:
-            _sources =[d.metadata.get("source",None) for d in chunks_relevant]
+            _sources =[d.metadata.get("source_kb",None) or d.metadata.get("source",None) for d in chunks_relevant]
             referens = set([s for s in _sources if s])
 
         if referens:
@@ -1061,7 +1066,7 @@ class GraphAgent:
 
         # RAG generation
         referens = []
-        _sources =[d.metadata.get("source",d.metadata.get("source",None)) for d in documents]
+        _sources =[d.metadata.get("source_kb",d.metadata.get("source",None)) for d in documents]
         sources = set([s for s in _sources if s])
         referens = list(sources)
         

@@ -50,6 +50,9 @@ def completions(
     print(f'====用户的ID是：{user_id}===================================')
     print(f'====执行代码的信息：{code_message if code_message else "没有要执行的代码"}==========================')
     print(f'====上传的文件信息：{files if files else "没有上传的文件"}==========================')
+    if not files:
+        is_knowledge = False
+    print(f'====上传的文件是否存入知识库：{is_knowledge}==========================')
     print(f'====启用会话记忆：{allow_conversation_memory}==========================')
     print(f'====启用问题重写：{allow_question_rewrite}==========================')
     
@@ -67,12 +70,12 @@ def completions(
     chat_on_docs_list=[]
     if len(files)>0:
         # 如果存在上传的文件，在用户问题前加上提示词，以更大概率返回vectorstore
-        user_prompt = f"[请调用知识库工具(vectorstore/knowledge base)，检索知识库，然后回答用户问题]{user_prompt}" 
+        user_prompt = f"[请调用知识库工具(VECTORSTORE)，检索知识库，然后回答用户问题]{user_prompt}" 
         UPLOAD_FOLDER_TEMP = UPLOAD_FOLDER+'/temp'
-        _FOLDER = UPLOAD_FOLDER if add_docs_list_to_kb else UPLOAD_FOLDER_TEMP
         for file in files:
-            file=os.path.join(_FOLDER, file)
-            chat_on_docs_list.append(file)
+            file=os.path.join(UPLOAD_FOLDER_TEMP, file)
+            if os.path.isfile(file):
+                chat_on_docs_list.append(file)
     print(f"{chat_on_docs_list=}")
     chat_bot = GraphAgent(memory_thread_id=user_id, kb_base_dict=index_meta_dict,chat_on_docs_list=chat_on_docs_list,add_docs_list_to_kb=add_docs_list_to_kb,
                           allow_conversation_memory=allow_conversation_memory,allow_question_rewrite=allow_question_rewrite)
