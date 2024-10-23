@@ -113,27 +113,15 @@ async def upload_file(
         if file.filename == '':
             return ({'error': '请选择文件'}), 400
         if file and allowed_file(file.filename):
-            new_filename=uuid.uuid1().hex + "." + file.filename.rsplit(".",1)[1]
-            
-            # 如果纳入知识库，则放到知识库的文件夹
-            if is_knowledge:
-                file_path =os.path.join(UPLOAD_FOLDER,"knowledge_base",knowledge_id,"content")
-                if not os.path.exists(file_path):
-                    os.makedirs(file_path, exist_ok=True)
-                file_target = os.path.join(file_path,new_filename)
-            # 没有的话放到临时目录
-            else: 
-               file_path = os.path.join(UPLOAD_FOLDER,"temp")
-               if not os.path.exists(file_path):
-                    os.makedirs(file_path, exist_ok=True)
-               file_target = os.path.join(file_path, new_filename)
+            # new_filename=uuid.uuid1().hex + "." + file.filename.rsplit(".",1)[1]
+            file_path = os.path.join(UPLOAD_FOLDER,"temp")
+            if not os.path.exists(file_path):
+                os.makedirs(file_path, exist_ok=True)
+            file_target = os.path.join(file_path, file.filename)
             file_content = await file.read()
             with open(file_target, "wb") as f:  
                  f.write(file_content)  
-                 if knowledge_id :
-                    #  TODO:
-                    print('需要纳入知识库，待处理',knowledge_id)
-                 ids.append(new_filename)
+                 ids.append(file.filename)
             # file_info = inspect_file(file_target)
             # os.environ["HAS_DATA_FILE_UPLOADED"] = 'True'
             # message_buffer.append(f"已上传保存的文件名为{file.filename},请在分析过程中使用这个数据文件\n{file_info}'}" + "\n\n")
