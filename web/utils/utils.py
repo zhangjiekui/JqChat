@@ -364,14 +364,15 @@ class ApiRequest:
     def upload_docs(
         self,
         files: List[Union[str, Path, bytes]],
-        knowledge_id: str = None,
-        uid : str=None,
+        knowledge_id: str ,
+        uid : str,
+        is_knowledge,
         **kwargs,
     ):
         """
          对应chat_routes upload_file
         """
-        
+        print(is_knowledge,uid)
         def convert_file(file, filename=None):
             if isinstance(file, bytes):  # raw bytes
                 file = BytesIO(file)
@@ -386,9 +387,10 @@ class ApiRequest:
         data = {
             "knowledge_id": knowledge_id,
             "uid":uid,
+            "is_knowledge":is_knowledge
 
         }
-
+        print(is_knowledge)
         response = self.post(
             "/chat/upload",
             data=data,

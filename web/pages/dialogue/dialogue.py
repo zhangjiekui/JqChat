@@ -49,12 +49,13 @@ def rerun():
 
 
 @st.cache_data
-def upload_docs(user,knowledge_id,files, _api: ApiRequest) -> str:
+def upload_docs(user,knowledge_id,files,is_knowledge, _api: ApiRequest) -> str:
     """
     将文件上传到临时目录，用于文件对话
     返回临时向量库ID
     """
-    return _api.upload_docs(uid=user,knowledge_id=knowledge_id,files=files)
+    print(is_knowledge)
+    return _api.upload_docs(uid=user,knowledge_id=knowledge_id,is_knowledge=is_knowledge,files=files)
 #聊天
 def chat(code_message,query,user,doc:str,files,is_memory,is_rewrite,is_knowledge,_api:ApiRequest)  :
     response=_api.chat_chat(code_message=code_message,query=query,user=user,doc=doc,is_memory=is_memory,is_rewrite=is_rewrite,is_knowledge=is_knowledge,files=files)
@@ -87,7 +88,8 @@ def get_execute_result(api:ApiRequest):
                     chat_box.ai_say(pic)
             return
         time.sleep(1)
-
+# 初始化session中的是否纳入知识库选项 
+st.session_state["is_knowledge"]=False
 def dialogue_page(
     api: ApiRequest,
     is_lite: bool = False,
@@ -108,20 +110,24 @@ def dialogue_page(
 
     # # st.write(chat_box.cur_chat_name)
     # # st.write(st.session_state)
-    choose_knowbase=False
+    # ss[is_knowledge]=False
+    
+   
     @st.dialog("上传文件", width="large")
     def file_upload():
         files = st.file_uploader("上传分析文件",
             [i for ls in LOADER_DICT.values() for i in ls],
             accept_multiple_files=True,
             )
-        choose_knowbase = st.checkbox(f"是否纳入知识库({selected_kb})？")
+        is_knowledge = st.checkbox(f"是否纳入知识库({selected_kb})？")
         if st.button("开始上传", disabled = len(files) == 0 ):
             user=ctx.get("uid")
             knowledge_id=None
-            if choose_knowbase:
+            st.session_state["is_knowledge"]= is_knowledge
+            if is_knowledge:
                 knowledge_id=selected_kb
-            response=upload_docs(user=user,knowledge_id=knowledge_id,files=files,_api=api)
+                # 
+            response=upload_docs(user=user,knowledge_id=knowledge_id,is_knowledge=is_knowledge,files=files,_api=api)
             print(response)
             st.info(f"{response['message']}")
             chat_box.context['files']=response['files']
@@ -156,10 +162,10 @@ def dialogue_page(
             format_func=format_selected_kb,
                 index=selected_kb_index,
         )
-        # files = st.file_uploader("上传知识文件：",
-        #         [i for ls in LOADER_DICT.values() for i in ls],
-        #         accept_multiple_files=True,
-        #         )
+        files = st.file_uploader("上传知识文件：",
+                [i for ls in LOADER_DICT.values() for i in ls],
+                accept_multiple_files=True,
+                )
         # if st.button("开始上传", disabled=len(files) == 0):
         #     st.session_state["file_chat_id"] = upload_temp_docs(files, api)
 
@@ -191,7 +197,9 @@ def dialogue_page(
         doc=str(selected_kb)
         code_message=ctx.get('code_message')
         files=ctx.get('files')
-        msg=chat(code_message=code_message,query=prompt,user=user,doc=doc,files=files,is_memory=is_memory,is_rewrite=is_rewrite,is_knowledge=choose_knowbase,_api=api)
+        is_knowledge=st.session_state["is_knowledge"]
+        print(is_knowledge)
+        msg=chat(code_message=code_message,query=prompt,user=user,doc=doc,files=files,is_memory=is_memory,is_rewrite=is_rewrite,is_knowledge=is_knowledge,_api=api)
         chat_box.update_msg(msg["text"],streaming=False) 
         #清空code执行回复信息和文件
         ctx['files']=[]
