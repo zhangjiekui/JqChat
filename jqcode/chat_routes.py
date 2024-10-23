@@ -38,6 +38,7 @@ def completions(
     files: List[str]=Body(alias="files",description="文档ID",default=None),
     is_rewrite: bool =Body(default=True,description="是否启用问题改写"),
     is_memory:bool=Body(default=True,description="是否启用记忆"),
+    is_knowledge=Body(default=True,description="是否是知识库的文档"),
     code_message:str=Body(alias="code_message",default= None, description="执行code的信息"),
     ):
     allow_conversation_memory=is_memory
@@ -68,6 +69,7 @@ def completions(
             file=os.path.join(UPLOAD_FOLDER, file)
             chat_on_docs_list.append(file)
     print(chat_on_docs_list)
+    # is_knowledge是否是知识库中的文件，如果不是，从/workspace/temp中去取
     chat_bot = GraphAgent(memory_thread_id=user_id, kb_base_dict=index_meta_dict,chat_on_docs_list=chat_on_docs_list,add_docs_list_to_kb=add_docs_list_to_kb,
                           allow_conversation_memory=allow_conversation_memory,allow_question_rewrite=allow_question_rewrite)
     print(f"{chat_bot.user_id=}")
@@ -110,23 +112,18 @@ async def upload_file(
             new_filename=uuid.uuid1().hex + "." + file.filename.rsplit(".",1)[1]
             
             # 如果纳入知识库，则放到知识库的文件夹
-            if knowledge_id:
+            if is_knowledge:
                 file_path =os.path.join(UPLOAD_FOLDER,"knowledge_base",knowledge_id,"content")
 
                 if not os.path.exists(file_path):
                     os.makedirs(file_path, exist_ok=True)
-
                 file_target = os.path.join(file_path,new_filename)
             # 没有的话放到临时目录
             else: 
                file_path = os.path.join(UPLOAD_FOLDER,"temp")
-
                if not os.path.exists(file_path):
                     os.makedirs(file_path, exist_ok=True)
-
-
                file_target = os.path.join(file_path, new_filename)
-            
             file_content = await file.read()
             with open(file_target, "wb") as f:  
                  f.write(file_content)  
