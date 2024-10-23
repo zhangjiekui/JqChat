@@ -19,7 +19,6 @@ logger = jqkj_logger(__file__).get_logger()
 def get_retriever(vectorstore:ElasticsearchStore=None,index_name:str=None,chat_on_docs_list:List[str]=None,add_docs_list_to_kb=True,default_temp_index_name:str="temp_index_for_upload_files",
                   top_k:int=10,score_threshold:float=0.1,source_id_key='source',required_exts=['.doc','.docx','.pdf','.md']):
     
-    llm = env_models_instance.chat_model
     embed_model = env_models_instance.embed_model
     reranker = env_models_instance.reranker
     es_connection = env_models_instance.get_es_connection()
@@ -36,6 +35,7 @@ def get_retriever(vectorstore:ElasticsearchStore=None,index_name:str=None,chat_o
     elif chat_on_docs_list:
         assert index_name, f"'index_name'参数不得为空，连接Elasticsearch检索时需要！"
         chat_on_docs_list = [Path(item) for item in chat_on_docs_list]
+        Path.exists(chat_on_docs_list[0])
         doc_paths_exists = [item for item in chat_on_docs_list if Path.exists(item)]
         doc_paths_not_exists = [item for item in chat_on_docs_list if not Path.exists(item)]
         RESERVED_FILTER_BY_FILES = []

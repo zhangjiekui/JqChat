@@ -313,6 +313,7 @@ class ApiRequest:
         doc: str,
         is_memory,
         is_rewrite,
+        is_knowledge,
         **kwargs,
     ):
         """
@@ -325,7 +326,8 @@ class ApiRequest:
             "code_message":code_message,
             "files":files,
             "is_memory":is_memory,
-            "is_rewrite":is_rewrite
+            "is_rewrite":is_rewrite,
+            "is_knowledge":is_knowledge
         }
         response = self.post("/chat/completions", json=data, stream=False, **kwargs)
         return  self._get_response_value(response, as_json=True)

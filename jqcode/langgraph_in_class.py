@@ -862,8 +862,7 @@ class GraphAgent:
         print("xxxxxxxxxxxxxxxxxxxxxxxxxxxx")
         print(f'{result.tool_calls=};{result.content=}')
         print("xxxxxxxxxxxxxxxxxxxxxxxxxxxx")
-        finish_reason = "No Finish Reason"
-        
+        finish_reason = "No Finish Reason"                    
         try:
             returned_tool_calling_nums = len(result.tool_calls)
             finish_reason = result.response_metadata["finish_reason"]
@@ -892,7 +891,7 @@ class GraphAgent:
                             parameters = tool_call[arg_name]
                             if not isinstance(parameters,dict):
                                 parameters = json_repair.loads(parameters)
-                            tool_calls.append({"name":tool_name,"args":parameters,"id":f'call_{str(uuid.uuid4())}'})
+                            tool_calls.append({"name":tool_name,"args":parameters,"id":f'call_{str(uuid.uuid4())}'})                
                 result.tool_calls = tool_calls
                 returned_tool_calling_nums = len(result.tool_calls)
             except:
@@ -904,12 +903,23 @@ class GraphAgent:
             if returned_tool_calling_nums>1:
                 logger.info(f'!!! 惊喜: Multitple({returned_tool_calling_nums=}) tool_calls !!!')
             
+            # 确保如果存在chat_on_docs_list，则应去检索知识库    
+            if self.chat_on_docs_list:
+                for toolcall in result.tool_calls:
+                    if toolcall['name'].lower()!='vectorstore':
+                        result.tool_calls.remove(toolcall)  #用于删除列表中第一次出现的指定值。如果该值不存在于列表中，会抛出 ValueError
+            
+                # 如果大模型没有返回vectorstore，则生造一个 
+                if len(result.tool_calls)==0:
+                    vectorstore_toolcall = [{"name":"VECTORSTORE","args":self.question_rewrited,"id":f'call_{str(uuid.uuid4())}'}]
+                    result.tool_calls = vectorstore_toolcall                
+            
             tool_call_1 = result.tool_calls[0]
             tool_call_1_name = tool_call_1['name']
             if tool_call_1_name in self.routing_tool_names:
                 logger.info(f"Returned first ToolName is '{tool_call_1_name}', So routing to '{tool_call_1_name}' Node......")
-                # 如果是WEB_SEARCH，要将搜索query保存到state中，方便在web_search时使用
-                if tool_call_1_name in ["WEB_SEARCH"]:
+                # 如果是WEB_SEARCH或VECTORSTORE，要将搜索query保存到state中，方便在web_search时使用
+                if tool_call_1_name.lower() in ["web_search","vectorstore"]:
                     try:
                         search_query = tool_call_1['args']['query']
                         user_variables_statedict = {self.user_id:{"rag_args":search_query,"reference":""}}
@@ -1070,7 +1080,8 @@ class GraphAgent:
                         referens_str += f"    [{i+1}] <a href='http://10.1.150.105:7861/chat/knowledge/{paths}'>{filename}</a>  \n"
                         #referens_str += f"    {i+1}. [{filename}](http//10.1.150.105:7861/chat/knowledge/{paths})  \n"                        
                     except:
-                        referens_str += filename + f'  [{r}]'
+                        # referens_str += filename + f'  [{r}]'
+                        referens_str = '\n'
                     
 
             _user_variables_statedict = {self.user_id:{"rag_args":'',"reference":referens_str}}
@@ -1359,6 +1370,7 @@ if __name__ == "__main__":
         # '请搜索我与晶奇公司的相关网页，说明我与晶奇公司的关系',
         # '晶奇公司的厦门市智慧民政一体化平台建设方案的编制依据，给出详尽的文件名称和文号等内容列表',
         # '请绘制sin(x)曲线',
+        # '我公司是什么时候与西南石油大学建立校企合作关系的？',
         "晶奇公司编制的安徽省食品药品监督管理局行政审批系统项目总体计划的版本号是多少，批准人是谁？",
         # '请搜索合肥大蜀山，然后提供详细介绍', 
         # '请查询明天从合肥到上海的航班,以及南昌到北京的航班',

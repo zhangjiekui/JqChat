@@ -1,7 +1,5 @@
-from threading import Timer
 import time
 import uuid
-from typing import Dict, List
 
 # from audio_recorder_streamlit import audio_recorder
 import streamlit as st
@@ -58,8 +56,8 @@ def upload_docs(user,knowledge_id,files, _api: ApiRequest) -> str:
     """
     return _api.upload_docs(uid=user,knowledge_id=knowledge_id,files=files)
 #聊天
-def chat(code_message,query,user,doc:str,files,is_memory,is_rewrite,_api:ApiRequest)  :
-    response=_api.chat_chat(code_message=code_message,query=query,user=user,doc=doc,is_memory=is_memory,is_rewrite=is_rewrite,files=files)
+def chat(code_message,query,user,doc:str,files,is_memory,is_rewrite,is_knowledge,_api:ApiRequest)  :
+    response=_api.chat_chat(code_message=code_message,query=query,user=user,doc=doc,is_memory=is_memory,is_rewrite=is_rewrite,is_knowledge=is_knowledge,files=files)
     return response
 
 #执行code
@@ -110,14 +108,14 @@ def dialogue_page(
 
     # # st.write(chat_box.cur_chat_name)
     # # st.write(st.session_state)
-
+    choose_knowbase=False
     @st.dialog("上传文件", width="large")
     def file_upload():
         files = st.file_uploader("上传分析文件",
             [i for ls in LOADER_DICT.values() for i in ls],
             accept_multiple_files=True,
             )
-        choose_knowbase= st.checkbox(f"是否纳入知识库({selected_kb})？")
+        choose_knowbase = st.checkbox(f"是否纳入知识库({selected_kb})？")
         if st.button("开始上传", disabled = len(files) == 0 ):
             user=ctx.get("uid")
             knowledge_id=None
@@ -193,7 +191,7 @@ def dialogue_page(
         doc=str(selected_kb)
         code_message=ctx.get('code_message')
         files=ctx.get('files')
-        msg=chat(code_message=code_message,query=prompt,user=user,doc=doc,files=files,is_memory=is_memory,is_rewrite=is_rewrite,_api=api)
+        msg=chat(code_message=code_message,query=prompt,user=user,doc=doc,files=files,is_memory=is_memory,is_rewrite=is_rewrite,is_knowledge=choose_knowbase,_api=api)
         chat_box.update_msg(msg["text"],streaming=False) 
         #清空code执行回复信息和文件
         ctx['files']=[]

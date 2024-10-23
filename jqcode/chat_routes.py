@@ -38,6 +38,7 @@ def completions(
     files: List[str]=Body(alias="files",description="文档ID",default=None),
     is_rewrite: bool =Body(default=True,description="是否启用问题改写"),
     is_memory:bool=Body(default=True,description="是否启用记忆"),
+    is_knowledge=Body(default=True,description="是否是知识库的文档"),
     code_message:str=Body(alias="code_message",default= None, description="执行code的信息"),
     ):
     allow_conversation_memory=is_memory
@@ -62,14 +63,17 @@ def completions(
         print(f"====从metastore中获取到用户所选知识库失败，使用默认知识库。详细信息为：{index_meta_dict}====")       
     print('============================================================')
     # 是否有文件
-    add_docs_list_to_kb = False
+    add_docs_list_to_kb = is_knowledge
     chat_on_docs_list=[]
     if len(files)>0:
-        add_docs_list_to_kb=True #todo 这里应该是用户的选择
+        # 如果存在上传的文件，在用户问题前加上提示词，以更大概率返回vectorstore
+        user_prompt = f"[请调用知识库工具(vectorstore/knowledge base)，检索知识库，然后回答用户问题]{user_prompt}" 
+        UPLOAD_FOLDER_TEMP = UPLOAD_FOLDER+'/temp'
+        _FOLDER = UPLOAD_FOLDER if add_docs_list_to_kb else UPLOAD_FOLDER_TEMP
         for file in files:
-            file=os.path.join(UPLOAD_FOLDER, file)
+            file=os.path.join(_FOLDER, file)
             chat_on_docs_list.append(file)
-    print(chat_on_docs_list)
+    print(f"{chat_on_docs_list=}")
     chat_bot = GraphAgent(memory_thread_id=user_id, kb_base_dict=index_meta_dict,chat_on_docs_list=chat_on_docs_list,add_docs_list_to_kb=add_docs_list_to_kb,
                           allow_conversation_memory=allow_conversation_memory,allow_question_rewrite=allow_question_rewrite)
     print(f"{chat_bot.user_id=}")
@@ -112,19 +116,17 @@ async def upload_file(
             new_filename=uuid.uuid1().hex + "." + file.filename.rsplit(".",1)[1]
             
             # 如果纳入知识库，则放到知识库的文件夹
-            if knowledge_id:
+            if is_knowledge:
                 file_path =os.path.join(UPLOAD_FOLDER,"knowledge_base",knowledge_id,"content")
-
                 if not os.path.exists(file_path):
                     os.makedirs(file_path, exist_ok=True)
-
                 file_target = os.path.join(file_path,new_filename)
             # 没有的话放到临时目录
             else: 
                file_path = os.path.join(UPLOAD_FOLDER,"temp")
                if not os.path.exists(file_path):
                     os.makedirs(file_path, exist_ok=True)
-               file_target = os.path.join(file_path, new_filename)            
+               file_target = os.path.join(file_path, new_filename)
             file_content = await file.read()
             with open(file_target, "wb") as f:  
                  f.write(file_content)  
