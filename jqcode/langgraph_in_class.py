@@ -22,6 +22,8 @@ import asyncio
 from jqcode.jq_agent.tools.jq_web_search_engine_async import get_web_search_documents,is_query_chinese,get_tavily_search_result_documents
 import os
 import re
+import shutil
+from base64 import b64encode,b64decode
 from pathlib import Path
 from jqcode.jq_code_executor.code_executor import CodeExecutorTool
 import json_repair
@@ -684,8 +686,9 @@ class GraphAgent:
         message = ""
         for i,retriever in enumerate(retrievers):
             message += f" 检索器[{i+1}]{retriever.name}，检索的目标知识库为{retriever.vectorstore._store.index} "
-        logger.warning(f"vectorstore方法，执行实际文档检索的集成检索器为：{message}")
+        logger.warning(f"     vectorstore方法，执行实际文档检索的集成检索器为：{message}")
         documents = self.retriever.invoke(question,config=invoke_llm_config)
+        logger.warning(f"     vectorstore检索到的相关文档数:{len(documents)=}")
         
         # from jqcode.graph_rag_networkx import JqGraphRag
         # inputs = {"query":question,"context":documents}        
@@ -754,6 +757,8 @@ class GraphAgent:
             _user_variables_statedict = {self.user_id:{"rag_args":'',"reference":referens_str}}
             state["user_variables"].update(_user_variables_statedict)    
             logger.debug(f'{referens_str=}')
+            
+        logger.warning(f"     web_search搜索到的相关文本块数:{len(chunks_relevant)=}")
         return {"documents": chunks_relevant, "question_searched":{question:True}}     
     # endregion 类内方法  
     
@@ -1058,39 +1063,176 @@ class GraphAgent:
         question = state["question"]
         documents = state["documents"]
         messages = state["question_related_messages"]
-        if not isinstance(documents, list):
-            documents = [documents]
-            # print("documents的内容：")
-            # for d in documents:
-            #     print(d.page_content)
-
-        # RAG generation
-        referens = []
-        _sources =[d.metadata.get("source_kb",d.metadata.get("source",None)) for d in documents]
-        sources = set([s for s in _sources if s])
-        referens = list(sources)
+        if not documents:
+            logger.warning(f"generate时提供的可参考文档为空:{documents}")
         
-        if referens:
-            referens_str = "参考'type_placeholder':  \n"        
-            for i,r in enumerate(referens):                
-                if r.startswith("http"):
-                    referens_str += f"    [{i+1}] [{r}]({r})  \n"
-                    referens_str = referens_str.replace("'type_placeholder'","网页")                
-                else:
-                    referens_str = referens_str.replace("'type_placeholder'","文档")
-                    filename = ''
-                    try:
+        else:
+            if not isinstance(documents, list):
+                documents = [documents]
+                # print("documents的内容：")
+                # for d in documents:
+                #     print(d.page_content)
+                
+            # RAG generation
+            referens = []
+            referens_dict_list = []
+            
+            # 在知识库下面创建temp_index_for_upload_files目录
+            temp_index_for_upload_dir = f"{env_models_instance.abs_workspace}/knowledge_base/temp_index_for_upload_files/content"
+            if not os.path.exists(temp_index_for_upload_dir):
+                os.makedirs(temp_index_for_upload_dir,exist_ok=True)
+            
+            source_related_keys = ['source_kb','source','file_path','original_source_jq','original_source_converted_jq','filename']
+            for doc in documents:
+                filename = ''
+                d_added = False
+                to_be_copyed_file_path = ''
+                d_metadata = doc.metadata
+                for key in source_related_keys:
+                    _fp = d_metadata.get(key,'')
+                    if _fp:
+                        if _fp.startswith("http"):
+                            # if _fp not in referens:
+                            if True:
+                                referens.append(_fp)
+                                # referens_dict_list.append({_fp:{'content':doc.page_content,"downlable":True}})
+                                referens_dict_list.append({"filename":_fp,'content':doc.page_content,"downlable":True})
+                                d_added = True
+                                break
+                            
+                        elif os.path.isfile(_fp):
+                            if "knowledge_base" in _fp:                       
+                                # if _fp not in referens:
+                                if True:
+                                    referens.append(_fp)
+                                    referens_dict_list.append({"filename":_fp,'content':doc.page_content,"downlable":True})
+                                d_added = True
+                                break
+                            else:
+                                to_be_copyed_file_path = _fp
+                                break
+                        
+                if not d_added:
+                    if to_be_copyed_file_path:
+                        filename=Path(to_be_copyed_file_path).name
+                        kb_filepath = f"{temp_index_for_upload_dir}/{filename}"
+                        if not os.path.isfile(kb_filepath):
+                            shutil.copy2(to_be_copyed_file_path, kb_filepath)
+                            logger.warning(f"  ==已将文件拷贝到知识库：{to_be_copyed_file_path}=>{kb_filepath}")
+                        # if kb_filepath not in referens:
+                        if True:
+                            referens.append(kb_filepath)
+                            # referens_dict_list.append({kb_filepath:{'content':doc.page_content,"downlable":True}})
+                            referens_dict_list.append({"filename":kb_filepath,'content':doc.page_content,"downlable":True})
+                        d_added = True                        
+                    else:
+                        es_index_doc_id = d_metadata.get('es_index_doc_id',"")
+                        es_index_name = d_metadata.get('es_index_name','docstore')
+                        if es_index_doc_id:
+                            try:
+                                download_result = env_models_instance.es_connection.get(index=es_index_name, id=es_index_doc_id)
+                                file_b64 = download_result.body['_source']['file_blob'].encode('utf-8') #file_blob
+                                filename = download_result.body['_source']['file_name']
+                                kb_filepath = f"{temp_index_for_upload_dir}/{filename}"
+                                with open(kb_filepath, "wb") as fp:
+                                        fp.write(b64decode(file_b64))
+                                if os.path.isfile(kb_filepath):
+                                    logger.warning(f"  ==已将文件下载到知识库：ES=>{kb_filepath}")
+                                    # if kb_filepath not in referens:
+                                    if True:
+                                        referens.append(kb_filepath)
+                                        referens_dict_list.append({"filename":kb_filepath,'content':doc.page_content,"downlable":True})
+                                    d_added = True
+                                else:
+                                    logger.error(f"  ==文件下载到知识库失败：ES=>{kb_filepath}")
+                                    # if kb_filepath not in referens:
+                                    if True:
+                                        referens.append(kb_filepath)
+                                        referens_dict_list.append({"filename":kb_filepath,'content':doc.page_content,"downlable":False})
+                                    d_added = True
+                                    
+                            except Exception as e:
+                                filename = d_metadata.get('file_name',filename)
+                                logger.warning(f"从ES获取文件({es_index_doc_id=},{filename=})失败:{e}")
+                                # _file_not_available = f"{filename}[无法提供下载]"
+                                # if filename not in referens:
+                                if True:
+                                    referens.append(filename) 
+                                    referens_dict_list.append({"filename":filename,'content':doc.page_content,"downlable":False})                           
+                                d_added = True
+                                
+                # assert d_added
+                try:
+                    print(_fp,d_added)
+                except:
+                    pass
+                
+            if referens_dict_list:
+                referens_str = "参考'type_placeholder':  \n"
+                url = env_models_instance.workspace_url
+                for i,referens in enumerate(referens_dict_list):
+                    r = referens.get('filename','')
+                    content = referens.get('content','')
+                    downlable = referens.get('downlable',False)
+                    if downlable:
+                        if r.startswith("http"):
+                            referens_str += f"    [{i+1}] [{r}]({r})  \n  {content}  \n"
+                            referens_str = referens_str.replace("'type_placeholder'","网页")                
+                        else:
+                            filename=Path(r).name 
+                            referens_str = referens_str.replace("'type_placeholder'","文档")
+                            paths =r[r.index("knowledge_base")+15:]
+                            referens_str += f"    [{i+1}] <a href='{url}/knowledge/{paths}'>{filename}</a>  \n  {content}  \n"
+                    else:
                         filename=Path(r).name
-                        paths =r[r.index("knowledge_base")+15:]
-                        url = env_models_instance.workspace_url                        
-                        referens_str += f"    [{i+1}] <a href='{url}/knowledge/{paths}'>{filename}</a>  \n"              
-                    except:
-                        referens_str += f"    [{i+1}] {r}  \n"
+                        referens_str += f"    [{i+1}] {filename}:{content}  \n"
+                        
+# region
+                                
+    
+        
+        # _sources =[d.metadata.get("source_kb",d.metadata.get("source",None)) for d in documents]
+        # sources = set([s for s in _sources if s])
+        # referens = list(sources)
+        
+        # if referens:
+        #     referens_str = "参考'type_placeholder':  \n"        
+        #     for i,r in enumerate(referens):                
+        #         if r.startswith("http"):
+        #             referens_str += f"    [{i+1}] [{r}]({r})  \n"
+        #             referens_str = referens_str.replace("'type_placeholder'","网页")                
+        #         else:
+        #             referens_str = referens_str.replace("'type_placeholder'","文档")
+        #             filename = ''
+        #             try:
+        #                 filename=Path(r).name
+        #                 if os.path.isfile(r):                                                       
+        #                     if "knowledge_base" not in r:
+        #                         # 在知识库下面创建temp_index_for_upload_files目录
+        #                         temp_index_for_upload_dir = f"{env_models_instance.abs_workspace}/knowledge_base/temp_index_for_upload_files/content"
+        #                         if not os.path.exists(temp_index_for_upload_dir):
+        #                             os.makedirs(temp_index_for_upload_dir,exist_ok=True)
+        #                         kb_filepath = f"{temp_index_for_upload_dir}/{filename}"
+        #                         if not os.path.isfile(kb_filepath):
+        #                             shutil.copy2(r, kb_filepath)
+        #                             logger.warning(f"  ==已将文件拷贝到知识库：{r}=>{kb_filepath}")
+        #                             r = kb_filepath
+                            
+        #                         paths =r[r.index("knowledge_base")+15:]
+        #                         url = env_models_instance.workspace_url                        
+        #                         referens_str += f"    [{i+1}] <a href='{url}/knowledge/{paths}'>{filename}</a>  \n"
+        #                 else:
+        #                     result = es_connection.get(index=files_index, id=index_id)
+        #                     raise Exception(f"原始文件{r}不存在！")                                         
+        #             except Exception as e:
+        #                 filename_or_path = filename if filename else r
+        #                 referens_str += f"    [{i+1}] {filename_or_path}  \n"
+        #                 logger.warning(f"无法提供参考文档{filename_or_path}的下载，原因为{e}")
                     
-
-            _user_variables_statedict = {self.user_id:{"rag_args":'',"reference":referens_str}}
-            state["user_variables"].update(_user_variables_statedict)  
-            logger.debug(f'{referens_str=}')
+# endregion
+                _user_variables_statedict = {self.user_id:{"rag_args":'',"reference":referens_str}}
+                state["user_variables"].update(_user_variables_statedict)  
+                logger.debug(f'{referens_str=}')
         generation = rag_node.invoke({"documents": documents, "question": question, "messages":messages},config=invoke_llm_config)
         logger.debug(f"{generation=}")
         last_message = state["messages"][-1]

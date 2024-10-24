@@ -16,7 +16,7 @@ from jqcode.jq_utils.logger import jqkj_logger
 logger = jqkj_logger(__file__).get_logger()
 
 
-def get_retriever(vectorstore:ElasticsearchStore=None,index_name:str=None,chat_on_docs_list:List[str]=None,add_docs_list_to_kb=True,default_temp_index_name:str="temp_index_for_upload_files",
+def get_retriever(vectorstore:ElasticsearchStore=None,index_name:str='',index_description:str='',chat_on_docs_list:List[str]=[],add_docs_list_to_kb=True,default_temp_index_name:str="temp_index_for_upload_files",
                   top_k:int=10,score_threshold:float=0.1,source_id_key='source',required_exts=['.doc','.docx','.pdf','.md']):
     
     embed_model = env_models_instance.embed_model
@@ -35,11 +35,12 @@ def get_retriever(vectorstore:ElasticsearchStore=None,index_name:str=None,chat_o
     elif chat_on_docs_list:
         assert index_name, f"'index_name'参数不得为空，连接Elasticsearch检索时需要！"
         chat_on_docs_list = [Path(item) for item in chat_on_docs_list]
-        Path.exists(chat_on_docs_list[0])
+        # Path.exists(chat_on_docs_list[0])
         doc_paths_exists = [item for item in chat_on_docs_list if Path.exists(item)]
         doc_paths_not_exists = [item for item in chat_on_docs_list if not Path.exists(item)]
         RESERVED_FILTER_BY_FILES = []
         default_vectorstore = None
+        
 
         if len(doc_paths_exists)==0:
             logger.warning(f"'{chat_on_docs_list=}'中不存在的任何有效文件路径，请检查确认！")
@@ -56,6 +57,8 @@ def get_retriever(vectorstore:ElasticsearchStore=None,index_name:str=None,chat_o
             else:
                 index_destination = default_temp_index_name
                 logger.warning(f"您还没有选择将文件上传到知识库'{index_name=}'，将使用默认的临时知识库{default_temp_index_name=}来处理。")
+                index_description = "临时使用的知识库，用来临时性分析处理和检索：（1）用户上传的文档分析（但不存入知识库）；（2）从用户历史会话中检索出与当前会话的相关消息记录"
+                
             
             _RESERVED_FILTER_BY_FILES = []
             for doc in doc_paths_exists:
@@ -115,12 +118,14 @@ def get_retriever(vectorstore:ElasticsearchStore=None,index_name:str=None,chat_o
                     if 'vector' in _source.keys():
                         metadata = _source["metadata"]
                         file_key = ''
-                        if "source" in metadata.keys():
+                        if "source_kb" in metadata.keys():
+                            file_key = "source_kb"
+                        elif "source" in metadata.keys():
                             file_key = "source"
                         elif "original_source_jq" in metadata.keys():
                             file_key = "original_source_jq"
                         else:
-                            raise Exception('Langchain Document的metadata不存在key:"source"或"original_source_jq"')
+                            raise Exception('Langchain Document的metadata不存在key:"source_kb"、"source"或"original_source_jq"')
                         file_path = metadata[file_key]
                         if file_path not in has_processed_file_path:
                             has_processed_file_path.add(file_path)
@@ -169,7 +174,7 @@ def get_retriever(vectorstore:ElasticsearchStore=None,index_name:str=None,chat_o
             if existed_files_maybe_need_indexing:
                 from jqcode.jq_docstores.jq_es_client import JqEsClient
                 jq_es_client = JqEsClient()
-                default_vectorstore = jq_es_client.chunks_indexing_from_input_dir_or_files(current_user='',index_name=index_destination,input_files=existed_files_maybe_need_indexing)
+                default_vectorstore = jq_es_client.chunks_indexing_from_input_dir_or_files(current_user='',index_name=index_destination,description=index_description,input_files=existed_files_maybe_need_indexing)
             else:
                 default_vectorstore = env_models_instance.get_es_searchstore(es_connection=es_connection,embedding=embed_model,index_name=index_destination) 
     
