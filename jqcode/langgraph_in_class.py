@@ -353,22 +353,24 @@ def decide_to_generate(state:GraphAgentState):
 prompt_rag_part1 = "You are an assistant for question-answering tasks. Use the following retrieved documents to answer the question, each starting with a reference number like [x], where x is a number:"
 
 prompt_rag_part2 = """
-First, starting with "引用片段:"  \n  , find the quotes from the documents that are most relevant to answering the question, and then print them in numbered order. Each quote should be a relatively short summary sentence of the quoted document,and print in a seperated paragraph,by adding "  \n  ". 
+以下内容将以Markdown的方式来渲染呈现，请务必符合Markdown的语法规范，并尽量美观，去除无意义的字符
+
+First, starting with "#### 引用片段:"  \n  , find the quotes from the documents that are most relevant to answering the question, and then print them in numbered order. Each quote should be a relatively short summary sentence of the quoted document,and print in a seperated paragraph,by adding "  \n  ". 
 
 If there are no relevant quotes, write “No relevant quotes” instead.
 
-Then, answer the question, starting with "最终回答:"  \n  . Do not include or reference quoted content verbatim in the answer. Don’t say “According to Quote [1]” when answering. Instead make references to quotes relevant to each section of the answer solely by adding their bracketed reference numbers at the end of relevant quotes, If a section of the answer comes from multiple quotes, please list all applicable citations, like [1,2].
+Then, answer the question, starting with "#### 最终回答:"  \n  . Do not include or reference quoted content verbatim in the answer. Don’t say “According to Quote [1]” when answering. Instead make references to quotes relevant to each section of the answer solely by adding their bracketed reference numbers at the end of relevant quotes, If a section of the answer comes from multiple quotes, please list all applicable citations, like [1,2].
 
-Thus, the format of your overall response should look like what’s shown between the tags. Make sure to strictly follow the formatting and spacing exactly.
+Thus, the format of your overall response should look like what’s shown between the tags. Make sure to strictly follow the formatting (such as <p class="referens_content">...</p>,'...' is the generated text content) and spacing exactly.
 
-引用片段:   \n  
+#### 引用片段: 
 
-    [1] Company X reported revenue of $12 million in 2021.   \n  
-    [2] Almost 90% of revenue came from widget sales, with gadget sales making up the remaining 10%.   \n  
+<p class="referens_content">[1] Company X reported revenue of $12 million in 2021.</p>  
+<p class="referens_content">[2] Almost 90% of revenue came from widget sales, with gadget sales making up the remaining 10%.</p>  
 
-最终回答:   \n  
+#### 最终回答:
 
-Company X earned $12 million[1].  Almost 90% of it was from widget sales[1,2]. 
+<p class="referens_content">Company X earned $12 million[1].  Almost 90% of it was from widget sales[1,2]. </p>
 
 
 If the question cannot be answered by the document, say so.
@@ -377,6 +379,7 @@ And you MUST answer the question, NEVER care about the year/time or tools/intern
 
 Other than code and specific names and citations, your answer must be written in Simplified Chinese.
 
+以上内容将以Markdown的方式来渲染呈现，请务必符合Markdown的语法规范，并尽量美观，去除无意义的字符
 """
 
 def _gen_prompt_string(docs:List[Document]):
@@ -751,7 +754,7 @@ class GraphAgent:
             referens = set([s for s in _sources if s])
 
         if referens:
-            referens_str = "   参考网页:  \n"
+            referens_str = "##参考网页:  \n"
             for i,r in enumerate(referens):
                 referens_str += f"    {i+1}. [{r}]({r})  \n"
             _user_variables_statedict = {self.user_id:{"rag_args":'',"reference":referens_str}}
@@ -1168,7 +1171,7 @@ class GraphAgent:
                     pass
                 
             if referens_dict_list:
-                referens_str = "参考'type_placeholder':  \n"
+                referens_str = "### 参考'type_placeholder': \n"
                 url = env_models_instance.workspace_url
                 for i,referens in enumerate(referens_dict_list):
                     r = referens.get('filename','')
@@ -1176,16 +1179,16 @@ class GraphAgent:
                     downlable = referens.get('downlable',False)
                     if downlable:
                         if r.startswith("http"):
-                            referens_str += f"    [{i+1}] [{r}]({r})  \n  {content}  \n"
+                            referens_str += f"[{i+1}] [{r}]({r})  \n  <p class='referens_content'>{content}<p>  \n"
                             referens_str = referens_str.replace("'type_placeholder'","网页")                
                         else:
                             filename=Path(r).name 
                             referens_str = referens_str.replace("'type_placeholder'","文档")
                             paths =r[r.index("knowledge_base")+15:]
-                            referens_str += f"    [{i+1}] <a href='{url}/knowledge/{paths}'>{filename}</a>  \n  {content}  \n"
+                            referens_str += f"[{i+1}] <a href='{url}/knowledge/{paths}'>{filename}</a>  \n  <p class='referens_content'>{content}<p>  \n"
                     else:
                         filename=Path(r).name
-                        referens_str += f"    [{i+1}] {filename}:{content}  \n"
+                        referens_str += f"[{i+1}] {filename}  \n  <p class='referens_content'>{content}<p>  \n"
                         
 # region
                                 
