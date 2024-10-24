@@ -1081,12 +1081,11 @@ class GraphAgent:
                     filename = ''
                     try:
                         filename=Path(r).name
-                        paths =r[r.index("knowledge_base")+15:]                        
-                        referens_str += f"    [{i+1}] <a href='http://10.1.150.105:7861/chat/knowledge/{paths}'>{filename}</a>  \n"
-                        #referens_str += f"    {i+1}. [{filename}](http//10.1.150.105:7861/chat/knowledge/{paths})  \n"                        
+                        paths =r[r.index("knowledge_base")+15:]
+                        url = env_models_instance.workspace_url                        
+                        referens_str += f"    [{i+1}] <a href='{url}/knowledge/{paths}'>{filename}</a>  \n"              
                     except:
-                        # referens_str += filename + f'  [{r}]'
-                        referens_str = '\n'
+                        referens_str += f"    [{i+1}] {r}  \n"
                     
 
             _user_variables_statedict = {self.user_id:{"rag_args":'',"reference":referens_str}}

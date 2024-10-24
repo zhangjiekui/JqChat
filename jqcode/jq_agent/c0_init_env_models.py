@@ -115,7 +115,7 @@ class Ocr_API:
             result = result_json.get('data')[0].get('text','')
         
             # 返回结果
-            logger.warning("识别结果"+result)
+            logger.debug("识别结果:"+result)
             return result
             
         except requests.exceptions.RequestException as e:

@@ -146,7 +146,7 @@ def code():
     
 @workspace_router.get('/knowledge/{knowledge}/content/{file}',summary="知识库ID下的文件")
 def download_knowledge(knowledge,file):
-    file_path = os.path.join(UPLOAD_FOLDER,knowledge,"content",file)
+    file_path = os.path.join(UPLOAD_FOLDER,"knowledge_base",knowledge,"content",file)
     return FileResponse(file_path)
 
 @workspace_router.get('/download',summary="生成的文件下载")

@@ -220,11 +220,11 @@ class JqEsClient():
         """
     # 1、可选。创建知识库，并在metastore中写入该知识库的元数据（如名称、描述、创建者)
         if index_name not in self.metastores.index_names or not self.client.indices.exists(index=index_name):
-            print(f"创建知识库{index_name},并在metastore中写入该知识库的元数据(如名称、描述、创建者)")       
+            logger.info(f"创建知识库{index_name},并在metastore中写入该知识库的元数据(如名称、描述、创建者)")       
             index_store = self.create_doc_index(index_name=index_name,description=description,index_creator=current_user)
-            print(f"应已创建知识库{index_name}，并在{self.metastores.index_name}中有该知识库({index_name})的描述等元信息")
+            logger.info(f"应已创建知识库{index_name}，并在{self.metastores.index_name}中有该知识库({index_name})的描述等元信息")
         else:
-            print(f"知识库{index_name}已存在,并在metastore中存在{self.metastores.index_names}") 
+            logger.info(f"知识库{index_name}已存在,并在metastore中存在{self.metastores.index_names}") 
             index_store = JqElasticsearchIndexStore(index_name=index_name)
     # 2、读取文件
         simple_reader = JqkjSimpleDirectoryReader(input_dir=input_dir,input_files=input_files, 
@@ -232,12 +232,12 @@ class JqEsClient():
                                                   required_exts=required_exts,
                                                   exclude_hidden=exclude_hidden)
         lm_documents = asyncio.run(simple_reader.aload_data())
-        print(f"读取到的文件数量:{len(lm_documents)=}")
+        logger.warning(f"读取到的文件数量:{len(lm_documents)=}")
     # 3.1、上传到文件库(docstore)，并在lm_documents元数据中加入存储库(docstore)及文件对应ID等信息
         status,lm_documents_with_added_index_info_metadata,es_index_doc_id_list = self.docstores.add_or_update_index_metadata_if_id_exists(lm_documents=lm_documents,file_upload_user=current_user)
-        print(f"上传的文件数量：{len(lm_documents_with_added_index_info_metadata)=}")
-        print(f"上传的文件查看：应可在{self.docstores.index_name}中存在{es_index_doc_id_list}等{len(es_index_doc_id_list)}文件记录！")
-        print(f"lm_documents_with_added_index_info_metadata中应以包含:存储库(docstore)及文件存储ID({es_index_doc_id_list})的信息,请核实！")
+        logger.warning(f"上传到ES的文件数量：{len(lm_documents_with_added_index_info_metadata)=}")
+        logger.info(f"上传的文件查看：{self.docstores.index_name}中存在{es_index_doc_id_list}等{len(es_index_doc_id_list)}文件记录！")
+        logger.info(f"lm_documents_with_added_index_info_metadata中应以包含:存储库(docstore)及文件存储ID({es_index_doc_id_list})的信息,请核实！")
     # 3.2、如果是上传到/temp目录下的文件，复制到知识库目录下，并更新元数据
         tmp_dir = env_models_instance.abs_workspace + f"/temp"
         for doc in lm_documents:
@@ -251,6 +251,7 @@ class JqEsClient():
             kb_filepath = f"{kb_dir}/{file_name}"
             if not os.path.isfile(kb_filepath):
                 shutil.copy2(src_filepath, kb_filepath)
+                logger.warning(f"  ==已将文件拷贝到知识库：{src_filepath}=>{kb_filepath}")
                 
             if src_filepath.startswith(tmp_dir):
                 doc.metadata.update({"source_kb":kb_filepath})
@@ -258,19 +259,21 @@ class JqEsClient():
     # 4、切分文件
         lm_splitted_documents = doc_tree_spiltter.get_nodes_from_documents(lm_documents) #llamaindex格式
         lc_splitted_documents = [LcDocument(page_content=doc.text,metadata=doc.metadata) for doc in lm_splitted_documents] #转换为langchain格式
-        print(f"从{len(lm_documents)}个文件中，生成的切片数为:{len(lc_splitted_documents)}")
+        logger.warning(f"从{len(lm_documents)}个文件中，生成的切片数为:{len(lc_splitted_documents)}")
     # 5、将文件切片写入知识库
         if len(lm_documents)>0:    
             vectorstore = env_models_instance.get_es_searchstore_index_documents(documents=lc_splitted_documents, embedding=embed_model,index_name=index_name,source_id_key='source',clear_before_add_index=False)        
+            logger.warning(f"已将{len(lm_documents)=}个文件切片写入ES知识库，并返回vectorstore对象")
             # graph_rag = JqGraphRag(documents=lc_splitted_documents,index_name=index_name)
             # gml_path = graph_rag.graph_indexing()
             # logger.warning(f"已写入图索引：{gml_path}")
         else:
+            logger.warning(f"{len(lm_documents)=}，无需写入ES知识库，直接返回vectorstore对象")
             vectorstore = env_models_instance.get_es_searchstore(es_connection=self.client,embedding=embed_model,index_name=index_name)
         es_index_doc_ids,es_index_doc_filepaths = index_store.get_all_unique_fileids_filepaths()
         for i in range(len(es_index_doc_ids)):
-            print(f"序号：{i+1},Id:{es_index_doc_ids[i]},Path:{es_index_doc_filepaths[i]}")
-        print(f"知识库{index_store.index_name}中的记录数为:{index_store.count}")
+            logger.debug(f"序号：{i+1},Id:{es_index_doc_ids[i]},Path:{es_index_doc_filepaths[i]}")
+        logger.debug(f"知识库{index_store.index_name}中的记录数为:{index_store.count}")
         return vectorstore
     
     
