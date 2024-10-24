@@ -754,7 +754,7 @@ class GraphAgent:
             referens = set([s for s in _sources if s])
 
         if referens:
-            referens_str = "##参考网页:  \n"
+            referens_str = "#### 参考网页:  \n"
             for i,r in enumerate(referens):
                 referens_str += f"    {i+1}. [{r}]({r})  \n"
             _user_variables_statedict = {self.user_id:{"rag_args":'',"reference":referens_str}}
@@ -1171,7 +1171,7 @@ class GraphAgent:
                     pass
                 
             if referens_dict_list:
-                referens_str = "### 参考'type_placeholder': \n"
+                referens_str = "#### 参考'type_placeholder': \n"
                 url = env_models_instance.workspace_url
                 for i,referens in enumerate(referens_dict_list):
                     r = referens.get('filename','')
@@ -1179,7 +1179,7 @@ class GraphAgent:
                     downlable = referens.get('downlable',False)
                     if downlable:
                         if r.startswith("http"):
-                            referens_str += f"[{i+1}] [{r}]({r})  \n  <p class='referens_content'>{content}<p>  \n"
+                            referens_str += f"  [{i+1}]   [{r}]({r})  \n  <p class='referens_content'>{content}<p>  \n"
                             referens_str = referens_str.replace("'type_placeholder'","网页")                
                         else:
                             filename=Path(r).name 
