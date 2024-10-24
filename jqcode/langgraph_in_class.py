@@ -1179,7 +1179,8 @@ class GraphAgent:
                     downlable = referens.get('downlable',False)
                     if downlable:
                         if r.startswith("http"):
-                            referens_str += f"  [{i+1}]   [{r}]({r})  \n  <p class='referens_content'>{content}<p>  \n"
+                            # referens_str += f"  [{i+1}]   [{r}]({r})  \n  <p class='referens_content'>{content}<p>  \n"
+                            referens_str += f"[{i+1}] <a href='{r}'>{r}</a>  \n  <p class='referens_content'>{content}<p>  \n"
                             referens_str = referens_str.replace("'type_placeholder'","网页")                
                         else:
                             filename=Path(r).name 
