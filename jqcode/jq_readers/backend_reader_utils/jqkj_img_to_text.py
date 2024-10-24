@@ -62,11 +62,7 @@ def treenode_img_to_text(img_src_and_data_tuple_list:tuple,delete_emf_wmf_png_fi
                     if convert_result == 0: #代表转换成功
                         png_file = temp_working_dir + Path(emf_wmf_file).stem + ".png"
                         if ocr_mode == "API":
-                            # # 读取图片并转换为base64
-                            with open(png_file, 'rb') as f:
-                                image_binary = f.read()
-                            image_base64 = base64.b64encode(image_binary)
-                            result = ocr(image_base64)
+                            result = ocr(png_file)
                             logger.debug(f"$$图片[{img_src}]中的OCR文本:\n{result}") 
                         else:
                             ocr_result,_ = ocr(png_file) 

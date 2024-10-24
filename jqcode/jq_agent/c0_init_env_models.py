@@ -82,10 +82,12 @@ class Ocr_API:
     def __init__(self,server_url:str = "http://10.1.150.106:5566/api/ocr"):
         self.server_url = server_url
     
-    def __call__(self,image_base64):
-        # 构造请求数据
-        
-        encoded_data = base64.b64encode(image_base64)
+    def __call__(self,image_path_or_base64):
+        ## 如果是图片地址，读取图片并转换为base64
+        if isinstance(image_path_or_base64,str) and os.path.isfile(image_path_or_base64):
+            with open(image_path_or_base64, 'rb') as f:
+                image_path_or_base64 = f.read()              
+        encoded_data = base64.b64encode(image_path_or_base64)
         encoded_data_str = encoded_data.decode('utf-8')
         payload = {
             "imgString": encoded_data_str,
@@ -98,24 +100,23 @@ class Ocr_API:
                 self.server_url,
                 data=json.dumps(payload),
                 headers=headers,
-                timeout=30  # 设置超时时间
-            )
-            
+                timeout=60  # 设置超时时间
+            )            
             # 检查响应状态
-            response.raise_for_status()
-            
+            response.raise_for_status()            
             result_json = response.json()
             result = result_json.get('data')[0].get('text','')
         
             # 返回结果
+            logger.warning("识别结果"+result)
             return result
             
         except requests.exceptions.RequestException as e:
-            print(f"请求错误: {str(e)}")
-            return None
+            logger.error(f"请求错误: {str(e)}")
+            return ''
         except Exception as e:
-            print(f"其他错误: {str(e)}")
-            return None
+            logger.error(f"其他错误: {str(e)}")
+            return ''
         
 class JqVectorStoreRetrieverWithScore(VectorStoreRetriever):
     # See https://github.com/langchain-ai/langchain/blob/61dd92f8215daef3d9cf1734b0d1f8c70c1571c3/libs/langchain/langchain/vectorstores/base.py#L500
@@ -435,7 +436,7 @@ class InitEnvModels:
         self.workspace_url = workspace_url   
 
         self.ocr_mode = 'API'
-        _pool_size = 4
+        _pool_size = 32 if  self.ocr_mode == 'API' else 8
         _Executor = ThreadPoolExecutor if  self.ocr_mode == 'API' else ProcessPoolExecutor     
         self.ocr_pool = _Executor(_pool_size)
         self.gpu_idxs = [0,1,2,3]
