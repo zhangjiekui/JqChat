@@ -84,9 +84,16 @@ class Ocr_API:
     
     def __call__(self,image_path_or_base64):
         ## 如果是图片地址，读取图片并转换为base64
-        if isinstance(image_path_or_base64,str) and os.path.isfile(image_path_or_base64):
-            with open(image_path_or_base64, 'rb') as f:
-                image_path_or_base64 = f.read()              
+        if isinstance(image_path_or_base64,str): 
+            if os.path.isfile(image_path_or_base64):
+                with open(image_path_or_base64, 'rb') as f:
+                    image_path_or_base64 = f.read()
+            else:
+                raise Exception(f"{image_path_or_base64}文件不存在！")
+        elif isinstance(image_path_or_base64, bytes):
+            pass
+        else:
+            raise Exception(f"目前只接受str或bytes类型的参数，不支持：{type(image_path_or_base64)=}")               
         encoded_data = base64.b64encode(image_path_or_base64)
         encoded_data_str = encoded_data.decode('utf-8')
         payload = {
