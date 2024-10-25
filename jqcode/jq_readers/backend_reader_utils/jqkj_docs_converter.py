@@ -242,7 +242,7 @@ def convert_doc_pdf2docx_on_win_and_linux(input_filepaths:Union[str,list],overwr
 
     return input_filepaths,original_valid_input_filepaths
 
-
+# 需改成批量（多线程或多进程），有些大pdf转换需要好几分钟
 def convert_file_to_docx(input_filepaths: Union[str, list], overwrite=False, destination_dir=None):
     """
     将 Markdown、PDF 或 DOC 文件转换为 DOCX 格式。
