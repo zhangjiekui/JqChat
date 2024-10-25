@@ -455,6 +455,7 @@ def download_doc(
 
 def recreate_vector_store(
     knowledge_base_name: str = Body(..., examples=["samples"]),
+    kb_info: str = Body(..., description="知识库介绍", examples=["这是一个知识库"]),
     allow_empty_kb: bool = Body(True),
     # vs_type: str = Body(DEFAULT_VS_TYPE),
     vs_type: str = 'es',
@@ -472,7 +473,7 @@ def recreate_vector_store(
     """
 
     def output():
-        kb = KBServiceFactory.get_service(knowledge_base_name, vs_type, embed_model)
+        kb = KBServiceFactory.get_service(knowledge_base_name, vs_type, embed_model, kb_info=kb_info )
         if not kb.exists() and not allow_empty_kb:
             yield {"code": 404, "msg": f"未找到知识库 ‘{knowledge_base_name}’"}
         else:
@@ -491,7 +492,7 @@ def recreate_vector_store(
                 result_vs = jq_es_client.chunks_indexing_from_input_dir_or_files(
                                 current_user = "",
                                 index_name =knowledge_base_name,
-                                description = None,                                
+                                description = kb_info,                                
                                 input_dir=None,
                                 input_files=file_paths, 
                                 overwrite_existing_converted_files=False,

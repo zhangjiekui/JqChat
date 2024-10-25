@@ -171,6 +171,13 @@ def knowledge_base_page(api: ApiRequest, is_lite: bool = None):
             [i for ls in LOADER_DICT.values() for i in ls],
             accept_multiple_files=True,
         )
+
+        if files and files[0].name:  # 确保files不为空且有文件名
+            new_filename = files[0].name.replace(" ", "")
+            files[0].name = new_filename
+
+
+
         kb_info = st.text_area(
             "请输入知识库介绍:",
             value=st.session_state["selected_kb_info"],
@@ -355,6 +362,7 @@ def knowledge_base_page(api: ApiRequest, is_lite: bool = None):
                 empty.progress(0.0, "")
                 for d in api.recreate_vector_store(
                     kb,
+                    kb_info=kb_info,
                     chunk_size=chunk_size,
                     chunk_overlap=chunk_overlap,
                     zh_title_enhance=True,

@@ -652,6 +652,7 @@ class ApiRequest:
     def recreate_vector_store(
         self,
         knowledge_base_name: str,
+        kb_info: str,
         allow_empty_kb: bool = True,
         vs_type: str = DEFAULT_VS_TYPE,
         embed_model: str = DEFAULT_EMBEDDING_MODEL,
@@ -664,6 +665,7 @@ class ApiRequest:
         """
         data = {
             "knowledge_base_name": knowledge_base_name,
+            "kb_info": kb_info,
             "allow_empty_kb": allow_empty_kb,
             "vs_type": vs_type,
             "embed_model": embed_model,
