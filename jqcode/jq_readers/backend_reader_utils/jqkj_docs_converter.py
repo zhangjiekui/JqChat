@@ -7,7 +7,7 @@ import sys
 # project_root = '/media/temp/JqChat806'
 # sys.path.insert(0, project_root)
 
-from jqcode.jq_readers.backend_reader_utils.jqkj_doc_pdf2docx_on_linux import convert_pdf_to_docx,convert_doc_to_docx
+from jqcode.jq_readers.backend_reader_utils.jqkj_doc_pdf2docx_on_linux import convert_doc_or_pdf_to_docx
 from jqcode.jq_utils.logger import jqkj_logger
 logger = jqkj_logger(__file__).get_logger()
 
@@ -224,14 +224,10 @@ def convert_doc_pdf2docx_on_win_and_linux(input_filepaths:Union[str,list],overwr
                     pdfdoc.Close()
                     word.Quit()
                 elif os_name=='Linux':
-                    if pdf_doc_filepath.suffix == ".pdf":
-                        convert_pdf_to_docx(pdf_doc_filepath,docx_filepath)                    
-                    if pdf_doc_filepath.suffix == ".doc":
-                        convert_doc_to_docx(pdf_doc_filepath,docx_filepath)
+                    if pdf_doc_filepath.suffix in [".pdf",".doc"]:
+                        convert_doc_or_pdf_to_docx(pdf_doc_filepath,docx_filepath)
                 else:
                     raise Exception(f'暂不支持 {os_name} 操作系统,建议在Windows或Linux环境下运行')
-
-
                 converted_makeup_filepaths.append(str(docx_filepath))
                 index = input_filepaths.index(pdf_doc_filepath)
                 input_filepaths.insert(index, docx_filepath)  

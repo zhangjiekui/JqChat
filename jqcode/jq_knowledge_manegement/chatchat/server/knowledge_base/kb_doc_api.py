@@ -304,21 +304,36 @@ def update_docs(
     """
     更新知识库文档
     """
-    for filename in file_names:
-        file_path = get_file_path(knowledge_base_name=knowledge_base_name, doc_name=filename)
+    file_paths = [get_file_path(knowledge_base_name=knowledge_base_name, doc_name=filename) for filename in file_names]
+    result = jq_es_client.chunks_indexing_from_input_dir_or_files(
+        current_user = "",
+        index_name =knowledge_base_name,
+        description = None,
+        
+        input_dir=None,
+        input_files=file_paths, 
+        overwrite_existing_converted_files=False,
+        required_exts=['.pdf', '.doc', '.docx', '.md', '.html', '.htm', '.py', '.txt'],
+        exclude_hidden=False
+    )
+    print(result)
     
-        result = jq_es_client.chunks_indexing_from_input_dir_or_files(
-                current_user = "",
-                index_name =knowledge_base_name,
-                description = None,
+    
+    for filename in file_names:
+        # file_path = get_file_path(knowledge_base_name=knowledge_base_name, doc_name=filename)
+    
+        # result = jq_es_client.chunks_indexing_from_input_dir_or_files(
+        #         current_user = "",
+        #         index_name =knowledge_base_name,
+        #         description = None,
                 
-                input_dir=None,
-                input_files=file_path, 
-                overwrite_existing_converted_files=False,
-                required_exts=['.pdf', '.doc', '.docx', '.md', '.html', '.htm', '.py', '.txt'],
-                exclude_hidden=False
+        #         input_dir=None,
+        #         input_files=file_path, 
+        #         overwrite_existing_converted_files=False,
+        #         required_exts=['.pdf', '.doc', '.docx', '.md', '.html', '.htm', '.py', '.txt'],
+        #         exclude_hidden=False
             
-            )
+        #     )
     
         if not validate_kb_name(knowledge_base_name):
             return BaseResponse(code=403, msg="Don't attack me")
@@ -472,24 +487,35 @@ def recreate_vector_store(
                 kb.create_kb()
                 files = list_files_from_folder(knowledge_base_name)
                 kb_files = [(file, knowledge_base_name) for file in files]
+                file_paths =[get_file_path(knowledge_base_name=knowledge_base_name, doc_name=file_name) for file_name in files]
+                result_vs = jq_es_client.chunks_indexing_from_input_dir_or_files(
+                                current_user = "",
+                                index_name =knowledge_base_name,
+                                description = None,                                
+                                input_dir=None,
+                                input_files=file_paths, 
+                                overwrite_existing_converted_files=False,
+                                required_exts=['.pdf', '.doc', '.docx', '.md', '.html', '.htm', '.py', '.txt'],
+                                exclude_hidden=False                            
+                            )
                 
                 i = 0
                 for file_name in files:
-                    file_path = get_file_path(knowledge_base_name=knowledge_base_name, doc_name=file_name)
+                    # file_path = get_file_path(knowledge_base_name=knowledge_base_name, doc_name=file_name)
                     
                     try:
-                        result = jq_es_client.chunks_indexing_from_input_dir_or_files(
-                                current_user = "",
-                                index_name =knowledge_base_name,
-                                description = None,
+                    #     result = jq_es_client.chunks_indexing_from_input_dir_or_files(
+                    #             current_user = "",
+                    #             index_name =knowledge_base_name,
+                    #             description = None,
                                 
-                                input_dir=None,
-                                input_files=file_path, 
-                                overwrite_existing_converted_files=False,
-                                required_exts=['.pdf', '.doc', '.docx', '.md', '.html', '.htm', '.py', '.txt'],
-                                exclude_hidden=False
+                    #             input_dir=None,
+                    #             input_files=file_path, 
+                    #             overwrite_existing_converted_files=False,
+                    #             required_exts=['.pdf', '.doc', '.docx', '.md', '.html', '.htm', '.py', '.txt'],
+                    #             exclude_hidden=False
                             
-                            )
+                    #         )
                         i += 1
                         yield json.dumps(
                                 {

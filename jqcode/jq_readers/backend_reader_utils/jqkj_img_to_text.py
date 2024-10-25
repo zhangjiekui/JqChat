@@ -23,7 +23,8 @@ emf = EMF() #处理emf图片需要的
 
 def treenode_img_to_text(img_src_and_data_tuple_list:tuple,delete_emf_wmf_png_file=True):
     ocr = env_models_instance.get_ocr()
-    ocr_mode = env_models_instance.ocr_mode   
+    ocr_mode = env_models_instance.ocr_mode
+    png_file = ''   
     result = ''
     #分隔符最好选用jqcode/jq_splitters/backend_splitter_utils/jq_chinese_recursive_text_splitter.py的第98行定义的
     _separator = ' '
@@ -88,6 +89,7 @@ def treenode_img_to_text(img_src_and_data_tuple_list:tuple,delete_emf_wmf_png_fi
                     if delete_emf_wmf_png_file:
                         if os.path.exists(emf_wmf_file):
                             os.remove(emf_wmf_file)
+                        
                         if os.path.exists(png_file):
                             os.remove(png_file)
         else:

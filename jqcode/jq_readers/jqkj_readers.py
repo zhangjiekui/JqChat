@@ -246,21 +246,22 @@ class JqkjDocxReader(BaseReader):
             # 表格节点
             if isinstance(block,Table):
                 df,vf_string = self.read_docx_table(block)
-                column_names = vf_string.split('\r\n')[0]
-                df_table_list.append(df)
-                current_depth = parent_node.depth+1
-                level = current_depth
-                num_siblings = len(parent_node.children)
-                node_numbering = f"{parent_node.numbering}.{num_siblings+1}" 
-                node = Node(f'[表格{node_numbering}]{column_names}',type=TreeNodeType.TABLE,parent=parent_node, numbering=node_numbering,level=level,text=vf_string)
-                # 如何解析df_table_jq = vf_string
-                # vf =  StringIO()
-                # vf.write(vf_string)
-                # vf.seek(0)
-                # df = pd.read_csv(vf)                
-                
-                pre_node = node # 前一个节点也固定为该表格节点，因为下面只会生成给表格的图片子节点
-                table_as_parent_node = node #表格节点本身固定为表格中所有图片的父节点，另使用一个变量名来存储，避免影响之前的父节点
+                if vf_string:                   
+                    column_names = vf_string.split('\r\n')[0]
+                    df_table_list.append(df)
+                    current_depth = parent_node.depth+1
+                    level = current_depth
+                    num_siblings = len(parent_node.children)
+                    node_numbering = f"{parent_node.numbering}.{num_siblings+1}" 
+                    node = Node(f'[表格{node_numbering}]{column_names}',type=TreeNodeType.TABLE,parent=parent_node, numbering=node_numbering,level=level,text=vf_string)
+                    # 如何解析df_table_jq = vf_string
+                    # vf =  StringIO()
+                    # vf.write(vf_string)
+                    # vf.seek(0)
+                    # df = pd.read_csv(vf)                
+                    
+                    pre_node = node # 前一个节点也固定为该表格节点，因为下面只会生成给表格的图片子节点
+                    table_as_parent_node = node #表格节点本身固定为表格中所有图片的父节点，另使用一个变量名来存储，避免影响之前的父节点
 
                 # 下面处理表格中可能存在的图片
                 paras_in_table_generator = get_paras_in_table(block)
@@ -469,7 +470,13 @@ class JqkjDocxReader(BaseReader):
                 pass
         vf.seek(0)
         vf_string = vf.getvalue()
-        return pd.read_csv(vf, **kwargs),vf_string
+        if vf_string:
+            try:            
+                df = pd.read_csv(vf, **kwargs)
+            except Exception as e:
+                logger.error(f"从{vf_string[0:100]=}读取到df失败:{e}，返回None")
+                df = None
+        return df,vf_string
 
 # 为JqkjSimpleDirectoryReader做的变量准备
 filetype_jqreader_dict = {}
