@@ -40,7 +40,7 @@ def convert_doc_or_pdf_to_docx(src_doc_file_path:Union[str,Path],saved_doc_file_
     if message.returncode!=0 or "Error" in str(message.stderr):
         raise Exception(f"使用libreoffice转换{ext}文件{src_doc_file_path}失败！详细信息为：{message.stderr}")
     else:
-        logger.info(f"使用libreoffice成功将{src_doc_file_path}转换为{saved_doc_file_path}")
+        logger.warning(f"使用libreoffice成功将{src_doc_file_path}转换为{saved_doc_file_path}")
 
 
 # 以下是使用spire.doc进行转换的代码
@@ -73,8 +73,8 @@ if __name__ == "__main__":
     pdf_filepaths = [fr"/data/projects/JqChatV2/workspace/knowledge_base/jqtech_kb/content/基于网络消费者信息需求模型的网站导航问题研究批准书.pdf",
                      fr"/data/projects/JqChatV2/workspace/knowledge_base/jqtech_kb/content/基于网络消费者信息需求模型的网站导航问题研究 批准书.pdf",
                      fr"/data/projects/JqChatV2/workspace/knowledge_base/jqtech_kb/content/基于主动协作关系的网络用户建模及模型优化方法研究 批准书.pdf",
-                    fr"/data/projects/JqChatV2/workspace/knowledge_base/jqtech_kb/content/安徽低收入文件.pdf",
-                    fr"/data/projects/JqChatV2/workspace/knowledge_base/jqtech_kb/content/基于数字孪生的居家养老和虚拟诊所建设方案.doc"
+                     fr"/data/projects/JqChatV2/workspace/knowledge_base/jqtech_kb/content/安徽低收入文件.pdf",
+                     fr"/data/projects/JqChatV2/workspace/knowledge_base/jqtech_kb/content/基于数字孪生的居家养老和虚拟诊所建设方案.doc"
                     ]
     for file in pdf_filepaths:
         convert_doc_or_pdf_to_docx(file)

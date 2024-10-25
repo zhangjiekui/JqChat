@@ -207,7 +207,7 @@ def convert_doc_pdf2docx_on_win_and_linux(input_filepaths:Union[str,list],overwr
             pdf_doc_filepaths.remove(pdf_doc_filepath)
     
     if len(pdf_doc_filepaths) > 0:
-        logger.warning('  因存在须转换的doc/pdf文件，建议最好在ms windows下运行，且安装有ms word程序！')
+        logger.debug('  因存在须转换的doc/pdf文件，建议最好在ms windows下运行，且安装有ms word程序！')
         for pdf_doc_filepath in pdf_doc_filepaths:
             docx_filepath = pdf_doc_filepath.with_suffix(".docx")
             if destination_dir:
@@ -282,7 +282,7 @@ def convert_file_to_docx(input_filepaths: Union[str, list], overwrite=False, des
             continue
 
         # 根据文件扩展名进行转换
-        logger.info(f'==*=={filepath}')
+        logger.warning(f'==*==转换文件{filepath}')
         if Path(filepath).suffix == '.md':
             convert_md_to_docx(filepath, output_filepath, destination_dir=destination_dir)
             input_filepaths_exist_and_replaced_by_docx_if_converted.append(output_filepath)

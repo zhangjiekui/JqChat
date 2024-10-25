@@ -12,6 +12,8 @@ from docx.text.paragraph import Paragraph, Run
 from docx.parts.image import ImagePart
 from docx.table import _Cell, Table
 from docx.opc.constants import RELATIONSHIP_TYPE as RT
+from docx.opc.pkgreader import _SerializedRelationships, _SerializedRelationship
+from docx.opc.oxml import parse_xml
 import pandas as pd
 from xml.etree import ElementTree
 from io import StringIO
@@ -43,6 +45,26 @@ logger = jqkj_logger(__file__).get_logger()
 temp_lock = Lock()
 
 file_type_processed_by_jqreader = [".pdf",".doc",".docx",".md",".html",".htm"]
+
+
+# KeyError: "There is no item named 'word/NULL' in the archive"
+# 原因：有两张引用的图像不存在！在 Word 里直接把这两个坏引用删除掉，保存后再用脚本解析就没问题了！
+# https://github.com/python-openxml/python-docx/issues/1105#issuecomment-1298075246
+def load_from_xml_v2(baseURI, rels_item_xml):
+    """
+    Return |_SerializedRelationships| instance loaded with the
+    relationships contained in *rels_item_xml*. Returns an empty
+    collection if *rels_item_xml* is |None|.
+    """
+    srels = _SerializedRelationships()
+    if rels_item_xml is not None:
+        rels_elm = parse_xml(rels_item_xml)
+        for rel_elm in rels_elm.Relationship_lst:
+            if rel_elm.target_ref in ('../NULL', 'NULL'):
+                continue
+            srels._srels.append(_SerializedRelationship(baseURI, rel_elm))
+    return srels
+_SerializedRelationships.load_from_xml = load_from_xml_v2
 
 class JqkjDocxReader(BaseReader):
     """Docx parser."""
@@ -246,22 +268,27 @@ class JqkjDocxReader(BaseReader):
             # 表格节点
             if isinstance(block,Table):
                 df,vf_string = self.read_docx_table(block)
-                if vf_string:                   
+                
+                if vf_string: # vf_string可能不存在                  
                     column_names = vf_string.split('\r\n')[0]
                     df_table_list.append(df)
-                    current_depth = parent_node.depth+1
-                    level = current_depth
-                    num_siblings = len(parent_node.children)
-                    node_numbering = f"{parent_node.numbering}.{num_siblings+1}" 
-                    node = Node(f'[表格{node_numbering}]{column_names}',type=TreeNodeType.TABLE,parent=parent_node, numbering=node_numbering,level=level,text=vf_string)
-                    # 如何解析df_table_jq = vf_string
-                    # vf =  StringIO()
-                    # vf.write(vf_string)
-                    # vf.seek(0)
-                    # df = pd.read_csv(vf)                
-                    
-                    pre_node = node # 前一个节点也固定为该表格节点，因为下面只会生成给表格的图片子节点
-                    table_as_parent_node = node #表格节点本身固定为表格中所有图片的父节点，另使用一个变量名来存储，避免影响之前的父节点
+                else:
+                    vf_string = ''
+                    column_names = ''
+                
+                current_depth = parent_node.depth+1
+                level = current_depth
+                num_siblings = len(parent_node.children)
+                node_numbering = f"{parent_node.numbering}.{num_siblings+1}" 
+                node = Node(f'[表格{node_numbering}]{column_names}',type=TreeNodeType.TABLE,parent=parent_node, numbering=node_numbering,level=level,text=vf_string)
+                # 如何解析df_table_jq = vf_string
+                # vf =  StringIO()
+                # vf.write(vf_string)
+                # vf.seek(0)
+                # df = pd.read_csv(vf)                
+                
+                pre_node = node # 前一个节点也固定为该表格节点，因为下面只会生成给表格的图片子节点
+                table_as_parent_node = node #表格节点本身固定为表格中所有图片的父节点，另使用一个变量名来存储，避免影响之前的父节点
 
                 # 下面处理表格中可能存在的图片
                 paras_in_table_generator = get_paras_in_table(block)
@@ -392,16 +419,20 @@ class JqkjDocxReader(BaseReader):
             w_pict_images.extend(w_object_images)
             if len(w_pict_images)>0:
                 for image in w_pict_images:
-                    img_id=image.attrib.get("{http://schemas.openxmlformats.org/officeDocument/2006/relationships}id")                                             
-                    part = docx_document.part.related_parts[img_id]
-                    img_metadata.update(xml_type='w:pict')
-                    img_metadata = self.image_part_post_process(part,file,img_metadata)
-                    img_metadatas_list.append(img_metadata)
+                    try:
+                        img_id=image.attrib.get("{http://schemas.openxmlformats.org/officeDocument/2006/relationships}id")
+                        # 碰到过  img_id 为 None，导致下面出错的情况
+                        part = docx_document.part.related_parts[img_id]
+                        img_metadata.update(xml_type='w:pict')
+                        img_metadata = self.image_part_post_process(part,file,img_metadata)
+                        img_metadatas_list.append(img_metadata)
 
-                    imgid_list.append(img_id)
-                    w_pict_images_list_id.append(img_id)
-                    w_pict_images_list_fn.append(part.partname)
-                    image_list.append(img_metadata)
+                        imgid_list.append(img_id)
+                        w_pict_images_list_id.append(img_id)
+                        w_pict_images_list_fn.append(part.partname)
+                        image_list.append(img_metadata)
+                    except:
+                        pass
 
         if 'pic:pic' in xmlstr:
             pic_pic_images = block._element.findall('.//pic:pic', my_namespaces)
@@ -470,12 +501,13 @@ class JqkjDocxReader(BaseReader):
                 pass
         vf.seek(0)
         vf_string = vf.getvalue()
+        
+        df = None
         if vf_string:
             try:            
                 df = pd.read_csv(vf, **kwargs)
             except Exception as e:
-                logger.error(f"从{vf_string[0:100]=}读取到df失败:{e}，返回None")
-                df = None
+                logger.error(f"从{vf_string[0:100]=}读取到df失败:{e}，返回None")                
         return df,vf_string
 
 # 为JqkjSimpleDirectoryReader做的变量准备
@@ -592,6 +624,28 @@ def _test_JqkjDocxReader(file_paths=[fr"/media/temp/发票识别接口文档.md"
     
     return documents,trees,df_tables
 
+'''
+# There is no item named 'NULL' in the archive 错误已解决：通过load_from_xml_v2
+Failed to load file /data/projects/JqChatV2/workspace/knowledge_base/jqtech_kb/content/关于安徽晶奇网络科技股份有限公司首次公开发行股票并在创业板上市申请文件的审核问询函.docx with error: "There is no item named 'NULL' in the archive". Skipping...
+Failed to load file /data/projects/JqChatV2/workspace/knowledge_base/jqtech_kb/content/青海省社会救助一门受理协同办理项目可研方案【提交版】v6.docx with error: None. Skipping...
+Failed to load
+Failed to load file /data/projects/JqChatV2/workspace/knowledge_base/jqtech_kb/content/公司规章制度 v1.1 (4)2019.3.19.docx with error: None. Skipping...
+Failed to load file /data/projects/JqChatV2/workspace/knowledge_base/jqtech_kb/content/关于青海省低保项目存在信息泄露风险的情况说明(更新).docx with error: local variable 'table_as_parent_node' referenced before assignment. Skipping...
+'''
+
+def _test_error_files_JqkjSimpleDirectoryReader():
+    convert_file_paths=[fr'/data/projects/JqChatV2/workspace/knowledge_base/jqtech_kb/content/关于安徽晶奇网络科技股份有限公司首次公开发行股票并在创业板上市申请文件的审核问询函.docx',
+                        fr'/data/projects/JqChatV2/workspace/knowledge_base/jqtech_kb/content/青海省社会救助一门受理协同办理项目可研方案【提交版】v6.docx',
+                        fr'/data/projects/JqChatV2/workspace/knowledge_base/jqtech_kb/content/公司规章制度 v1.1 (4)2019.3.19.docx',
+                        fr"/data/projects/JqChatV2/workspace/knowledge_base/jqtech_kb/content/关于青海省低保项目存在信息泄露风险的情况说明(更新).docx"
+                        ]
+    
+    
+    start_time = time.time()
+    simple_reader = JqkjSimpleDirectoryReader(input_files = convert_file_paths,output_dir_for_converted_files=fr"/data/projects/JqChatV2/JqChat/jqcode/jq_readers/.test_files/.outputdocs")
+    documents1 = simple_reader.load_data()
+    print(f"{len(documents1)=}")
+
 def _test_JqkjSimpleDirectoryReader():
     convert_file_paths=[fr'/data/projects/JqChatV2/JqChat/jqcode/jq_readers/.test_files/.testinputdocs/厦门市智慧民政一体化平台项目建设方案 V3.6.docx',
                         fr'/data/projects/JqChatV2/JqChat/jqcode/jq_readers/.test_files/.testinputdocs/test_zh.pdf',
@@ -636,6 +690,9 @@ def _test_get_retriever():
 if __name__ == "__main__":
 
     # documents,trees,df_tables = _test_JqkjDocxReader()
-    _test_JqkjSimpleDirectoryReader()
-    _test_get_retriever()
+    # _test_JqkjSimpleDirectoryReader()
+    # _test_get_retriever()
+    _test_error_files_JqkjSimpleDirectoryReader()
+    
+    # 
 
