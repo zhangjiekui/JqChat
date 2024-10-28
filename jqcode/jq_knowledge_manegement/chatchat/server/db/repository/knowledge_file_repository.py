@@ -364,9 +364,11 @@ def file_exists_in_es(kb_name: str, filename: str) -> dict:
         print(f"Error searching Elasticsearch: {str(e)}")
         return False
 
-
+# @lyq 这里转换后的文件存在问题
+# No document found with filename '厦门市智慧民政一体化平台项目建设方案V1.4【晶奇】.doc' in index 'fileconvert'
 def get_file_detail(kb_name: str, filename: str) -> dict:
     es = env_models_instance.get_es_connection()
+    filename =str(filename)
 
     query = {
         "query": {

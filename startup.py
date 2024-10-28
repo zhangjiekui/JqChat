@@ -346,8 +346,8 @@ async def start_main_server():
                 started_event=api_started,
                 run_mode=run_mode,
             ),
-            daemon=False,
-            # daemon=True,
+            # daemon=False,
+            daemon=True,
         )    
         processes["api"] = process
     
