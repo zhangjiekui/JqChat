@@ -266,6 +266,7 @@ def convert_file_to_docx(input_filepaths: Union[str, list], overwrite=False, des
     if destination_dir is None:
         destination_dir = os.getcwd()
 
+    files_to_be_converted = []
     for filepath in input_filepaths:
         if not Path(filepath).exists():
             logger.info(f"File {filepath} does not exist. Skipping.")

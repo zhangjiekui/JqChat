@@ -1,3 +1,13 @@
+## 还存在的问题
+
+$$$$$$$正在执行文件[盛争（民政及社会救助材料）.docx]中的图片文字识别，共有5张图片$$$$$$$  [WARNING:jqlogger( jqkj_readers.py 第395行)]
+其他错误: list index out of range  [ERROR:jqlogger( c0_init_env_models.py 第125行)]
+
+FileNotFoundError: [Errno 2] No such file or directory: '/data/projects/JqChatV2/JqChat/基于网络消费者信息需求模型的网站导航问题研究 批准书.docx'
+
+文件转换要改成多线程/进程
+
+
 ## Git同步
 ### 本地
 ```sh

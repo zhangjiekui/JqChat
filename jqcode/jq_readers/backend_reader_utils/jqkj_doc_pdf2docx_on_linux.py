@@ -36,11 +36,14 @@ def convert_doc_or_pdf_to_docx(src_doc_file_path:Union[str,Path],saved_doc_file_
         command = f"libreoffice --infilter='writer_pdf_import' --headless --convert-to docx {src_doc_file_path} --outdir {outdir}"
     if ext=='.doc':
         command = f"libreoffice --headless --convert-to docx {src_doc_file_path} --outdir {outdir}"
-    message = subprocess.run(command, shell=True, check=True,capture_output=True)
-    if message.returncode!=0 or "Error" in str(message.stderr):
-        raise Exception(f"使用libreoffice转换{ext}文件{src_doc_file_path}失败！详细信息为：{message.stderr}")
-    else:
-        logger.warning(f"使用libreoffice成功将{src_doc_file_path}转换为{saved_doc_file_path}")
+    try:
+        message = subprocess.run(command, shell=True, check=True,capture_output=True)
+        if message.returncode!=0 or "Error" in str(message.stderr):
+            raise Exception(f"使用libreoffice转换{ext}文件{src_doc_file_path}失败！详细信息为：{message.stderr}")
+        else:
+            logger.warning(f"使用libreoffice成功将{src_doc_file_path}转换为{saved_doc_file_path}")
+    except Exception as e:
+        logger.warning(f"将{src_doc_file_path}转换为{saved_doc_file_path}出错：{e=}，{e.output=}")
 
 
 # 以下是使用spire.doc进行转换的代码
