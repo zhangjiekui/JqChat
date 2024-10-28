@@ -694,19 +694,23 @@ class InitEnvModels:
 
     def get_es_searchstore_index_documents(self,documents,embedding,index_name,es_connection=None,cleanup=None,clear_before_add_index=False,strategy=None,source_id_key="source",force_update=True):
         assert index_name, "参数index_name（ES的索引名称）不得为空！"
-        assert documents,  "参数documents（待索引的文档）不得为空！"
         if not es_connection:
             es_connection=self.get_es_connection()
+        embedding = embedding if embedding else self.get_emb_8k_rerank_model()[0]
+        self.create_es_index_if_not_existes_with_default_chinese_analyzer(es_connection=es_connection,index_name=index_name)
+        strategy = strategy if strategy else self.strategy
+        es_searchstore = ElasticsearchStore(es_connection=es_connection, index_name=index_name, embedding=embedding,strategy=strategy)
+        if len(documents)==0:
+            return es_searchstore
+                    
+
         
         # 检查source_id_key是否存在，如果不存在就使用'page_content'
         for document in documents:
             if source_id_key not in document.metadata.keys():
                 document.metadata.update({'source':document.page_content})
         
-        embedding = embedding if embedding else self.get_emb_8k_rerank_model()[0]
-        self.create_es_index_if_not_existes_with_default_chinese_analyzer(es_connection=es_connection,index_name=index_name)
-        strategy = strategy if strategy else self.strategy
-        es_searchstore = ElasticsearchStore(es_connection=es_connection, index_name=index_name, embedding=embedding,strategy=strategy)
+
         
         namespace = f"elasticsearch/{index_name}"
         record_manager = SQLRecordManager(namespace, db_url="sqlite:///record_manager_cache.sqlite")

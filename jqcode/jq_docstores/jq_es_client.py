@@ -271,9 +271,10 @@ class JqEsClient():
             logger.warning(f"{len(lm_documents)=}，无需写入ES知识库，直接返回vectorstore对象")
             vectorstore = env_models_instance.get_es_searchstore(es_connection=self.client,embedding=embed_model,index_name=index_name)
         es_index_doc_ids,es_index_doc_filepaths = index_store.get_all_unique_fileids_filepaths()
-        for i in range(len(es_index_doc_ids)):
-            logger.debug(f"序号：{i+1},Id:{es_index_doc_ids[i]},Path:{es_index_doc_filepaths[i]}")
-        logger.debug(f"知识库{index_store.index_name}中的记录数为:{index_store.count}")
+        # if es_index_doc_ids:
+        #     for i in range(len(es_index_doc_ids)):
+        #         logger.debug(f"序号：{i+1},Id:{es_index_doc_ids[i]},Path:{es_index_doc_filepaths[i]}")
+        #     logger.debug(f"知识库{index_store.index_name}中的记录数为:{index_store.count}")
         return vectorstore
     
     

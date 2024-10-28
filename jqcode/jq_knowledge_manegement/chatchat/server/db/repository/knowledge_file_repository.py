@@ -72,6 +72,8 @@ def list_docs_from_es(
     """
     es = env_models_instance.get_es_connection()
     
+    file_name = str(file_name)
+    
     # 构建一个更精确的查询
     query = {
         "bool": {

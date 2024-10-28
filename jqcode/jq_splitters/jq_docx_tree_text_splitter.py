@@ -176,15 +176,25 @@ def _get_pre_title_nodes_text(pre_title_nodes,normal_text:bool=False):
         text_cached = ''
     return text_cached
 
-def get_pre_title_nodes_text(cur_node,cur_title_node,pre_title_node,cur_ancestors_text_placeholder,pre_ancestors_text_placeholder):
-    if cur_node.is_leaf and cur_node.parent.type in [TreeNodeType.TEXT,TreeNodeType.DOCUMENT]:
-        cur_title_node = cur_node.parent
-        if cur_ancestors_text_placeholder == '': # 只有第一次会取值
-            cur_ancestors_text_placeholder = _get_pre_title_nodes_text(cur_node.ancestors[1:]) #[1:] 去除文件名根节点                 
-        if cur_node == cur_title_node.children[0] or cur_title_node != pre_title_node :     # 然后就只有在第一个叶子文本节点，或是父节点发生变化时再取值
-            pre_title_node = cur_title_node
-            cur_ancestors_text_placeholder = _get_pre_title_nodes_text(cur_node.ancestors[1:]) #[1:] 去除文件名根节点
-    return cur_title_node,pre_title_node,cur_ancestors_text_placeholder,pre_ancestors_text_placeholder
+def get_pre_title_nodes_text(cur_node,cur_title_node,pre_title_node,cur_ancestors_text_placeholder='',pre_ancestors_text_placeholder=''):
+    try:
+        if cur_node.is_leaf:
+            if cur_node.is_root:
+                cur_title_node = cur_node
+            else:
+                if cur_node.parent.type in [TreeNodeType.TEXT,TreeNodeType.DOCUMENT]:
+                    cur_title_node = cur_node.parent
+                if cur_ancestors_text_placeholder == '': # 只有第一次会取值
+                    cur_ancestors_text_placeholder = _get_pre_title_nodes_text(cur_node.ancestors[1:]) #[1:] 去除文件名根节点                 
+                if cur_node == cur_title_node.children[0] or cur_title_node != pre_title_node :     # 然后就只有在第一个叶子文本节点，或是父节点发生变化时再取值
+                    pre_title_node = cur_title_node
+                    cur_ancestors_text_placeholder = _get_pre_title_nodes_text(cur_node.ancestors[1:]) #[1:] 去除文件名根节点
+        return cur_node,pre_title_node,cur_ancestors_text_placeholder,pre_ancestors_text_placeholder
+
+            
+    except Exception as e:
+        logger.error(f"get_pre_title_nodes_text出错：{e}")
+        return cur_node,cur_node,'',pre_ancestors_text_placeholder
 
 class JqkjDocTreeTokenTextSplitter(MetadataAwareTextSplitter):  
     _default_normal_tokens_chunk_size = DEFAULT_CHUNK_SIZE - DEFAULT_MODEL_RESERVED_TOKENS_SIZE - DEFAULT_METADATA_FORMAT_LEN
