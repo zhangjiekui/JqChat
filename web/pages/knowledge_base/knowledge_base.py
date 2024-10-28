@@ -173,7 +173,7 @@ def knowledge_base_page(api: ApiRequest, is_lite: bool = None):
         )
 
         if files and files[0].name:  # 确保files不为空且有文件名
-            new_filename = files[0].name.replace(" ", "")
+            new_filename = files[0].name.replace(" ", "").replace("(", "").replace(")", "").replace("（", "").replace("）", "")
             files[0].name = new_filename
 
 
