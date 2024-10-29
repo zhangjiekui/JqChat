@@ -315,8 +315,16 @@ def batch_convert_files_to_docxs(input_filepaths: Union[str, list], overwrite=Fa
     if batch_params:
         with semaphore:
             pool.map(_convert_file_to_docx,batch_params)
+    
+    final_input_filepaths_exist=[]
+    final_input_filepaths_exist_and_replaced_by_docx_if_converted=[]
+    for i,destination_file in enumerate(input_filepaths_exist_and_replaced_by_docx_if_converted):
+        if Path(destination_file).exists:
+            final_input_filepaths_exist.append(input_filepaths_exist[i])
+            final_input_filepaths_exist_and_replaced_by_docx_if_converted.append(destination_file)
             
-    return input_filepaths_exist,input_filepaths_exist_and_replaced_by_docx_if_converted
+            
+    return final_input_filepaths_exist,final_input_filepaths_exist_and_replaced_by_docx_if_converted
 
 
 
