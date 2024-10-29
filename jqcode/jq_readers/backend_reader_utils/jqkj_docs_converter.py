@@ -136,9 +136,9 @@ def convert_md_to_docx(input_filepaths:Union[str,list],overwrite=True,destinatio
             with lock:
                 message = subprocess.run(pandoc_command, shell=True, check=True)
                 if message.returncode!=0 or "Error" in str(message.stderr):
-                    raise Exception(f"使用libreoffice转换{ext}文件{md_filepath}失败！详细信息为：{message.stderr}")
+                    raise Exception(f"使用Pandoc转换{ext}文件{md_filepath}失败！详细信息为：{message.stderr}")
                 else:
-                    logger.warning(f"使用libreoffice成功将{md_filepath}转换为{docx_filepath}")
+                    logger.warning(f"使用Pandoc成功将{md_filepath}转换为{docx_filepath}")
         except subprocess.CalledProcessError as e:
             stderr = '无'
             try:
@@ -264,18 +264,15 @@ def convert_doc_pdf2docx_on_win_and_linux(input_filepaths:Union[str,list],overwr
 # 需改成批量（多线程或多进程），有些大pdf转换需要好几分钟
 # def _convert_file_to_docx(filepath: str, output_filepath:str,overwrite=False, destination_dir=None):
 def _convert_file_to_docx(args):
-    filepath, output_filepath,overwrite, destination_dir=args
+    filepath, overwrite, destination_dir=args
     # 根据文件扩展名进行转换
     logger.warning(f'==*==转换文件{filepath}')
     if Path(filepath).suffix in ['.md','.htm','html']:
         convert_md_to_docx(filepath, overwrite=overwrite, destination_dir=destination_dir)
-        return output_filepath
     elif Path(filepath).suffix in ['.pdf', '.doc']:
         convert_doc_pdf2docx_on_win_and_linux(filepath,overwrite=overwrite, destination_dir=destination_dir)
-        return output_filepath
     else:
         logger.warning(f"    JqConverter跳过文件转换: {filepath}")
-        return output_filepath
 
 def batch_convert_files_to_docxs(input_filepaths: Union[str, list], overwrite=False, destination_dir=None):
     """
@@ -305,29 +302,20 @@ def batch_convert_files_to_docxs(input_filepaths: Union[str, list], overwrite=Fa
     for filepath in input_filepaths:
         if not Path(filepath).exists():
             logger.info(f"File {filepath} does not exist. Skipping.")
-            continue
-
-        # 定义输出的docx文件路径
-        base_name = Path(filepath).stem
-        output_filepath = Path(destination_dir) / f"{base_name}.docx"
-
-        # 检查文件是否存在
-        if output_filepath.exists() and not overwrite:
-            logger.info(f"File {output_filepath} already exists. Skipping conversion.")
+        else:
+            # 定义输出的docx文件路径
+            base_name = Path(filepath).stem
+            output_filepath = Path(destination_dir) / f"{base_name}.docx"
+            # 检查文件是否存在
             input_filepaths_exist_and_replaced_by_docx_if_converted.append(output_filepath)
-            continue
-        
-        batch_params.append((filepath,output_filepath,overwrite,destination_dir))
-    results = []    
-    with semaphore:
-        results = pool.map(_convert_file_to_docx,batch_params)
-        results = list(results)
-        
-    input_filepaths_exist_and_replaced_by_docx_if_converted = input_filepaths_exist_and_replaced_by_docx_if_converted + results
-        
-
-
-
+            if output_filepath.exists() and not overwrite:
+                logger.info(f"File {output_filepath} already exists. Skipping conversion.")
+            else:            
+                batch_params.append((filepath,overwrite,destination_dir))
+    if batch_params:
+        with semaphore:
+            pool.map(_convert_file_to_docx,batch_params)
+            
     return input_filepaths_exist,input_filepaths_exist_and_replaced_by_docx_if_converted
 
 
