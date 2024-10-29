@@ -31,7 +31,7 @@ from fsspec.implementations.local import AbstractFileSystem
 
 from jqcode.jq_readers.backend_reader_utils.jqkj_mp_simpledirectoryreader_async import SimpleDirectoryReader,default_file_metadata_func,_try_loading_included_file_formats
 from jqcode.jq_readers.backend_reader_utils.jqkj_img_to_text import treenodes_img_to_text_in_batch
-from jqcode.jq_readers.backend_reader_utils.jqkj_docs_converter import convert_file_to_docx
+from jqcode.jq_readers.backend_reader_utils.jqkj_docs_converter import batch_convert_files_to_docxs as convert_file_to_docx
 from jqcode.jq_readers.backend_reader_utils.jqkj_doc_tree_utils import find_nearest_parent_but_not_TableOrImageNode,TreeNodeType
 from anytree import PreOrderIter
 from jqcode.jq_readers.backend_reader_utils.jqkj_doc_tree_utils import compare_with_zip_docx2img,get_paras_in_table
@@ -160,8 +160,9 @@ class JqkjDocxReader(BaseReader):
                 if 'file_size' not in metadata.keys():
                     # 调用/root/.virtualenvs/test/lib/python3.10/site-packages/llama_index/legacy/readers/file/base.py
                     # default_file_metadata_func方法，来获取文件default_file_metadata
-                    default_file_metadata = default_file_metadata_func(doc_original)
-                    metadata.update(default_file_metadata)
+                    if Path(doc_original).exists():
+                        default_file_metadata = default_file_metadata_func(doc_original)
+                        metadata.update(default_file_metadata)
 
                 _keys = list(metadata.keys())
                 # 保留元数据中的文件名可以用做分析
@@ -588,9 +589,12 @@ class JqkjSimpleDirectoryReader(SimpleDirectoryReader):
     SimpleDirectoryReader.supported_suffix_fn = JQKJ_DEFAULT_FILE_READER_CLS
     
     def JQKJ_DEFAULT_FILE_META_DATA_FUNC(self,file_path: str) -> Dict:
-        meta = default_file_metadata_func(file_path)
-        meta.update(self.input_files_original_metadata[file_path])
-        return meta
+        if Path(file_path).exists():
+            meta = default_file_metadata_func(file_path)
+            meta.update(self.input_files_original_metadata[file_path])
+            return meta
+        else:
+            return {}
 
 
 def _test_JqkjDocxReader(file_paths=[fr"/media/temp/发票识别接口文档.md",'/data/projects/JqChatV2/JqChat/jqcode/jq_readers/.test_files/.testinputdocs/test_zh.pdf']):
@@ -689,8 +693,8 @@ def _test_get_retriever():
     print(type(compression_retriever))
 if __name__ == "__main__":
 
-    # documents,trees,df_tables = _test_JqkjDocxReader()
-    # _test_JqkjSimpleDirectoryReader()
+    documents,trees,df_tables = _test_JqkjDocxReader()
+    _test_JqkjSimpleDirectoryReader()
     # _test_get_retriever()
     _test_error_files_JqkjSimpleDirectoryReader()
     

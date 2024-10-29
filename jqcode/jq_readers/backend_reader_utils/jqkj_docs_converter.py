@@ -1,9 +1,17 @@
-import os, sys
+import os
 import platform
 import subprocess
 from typing import Union
 from pathlib import Path
-import sys
+from concurrent.futures import ProcessPoolExecutor,ThreadPoolExecutor
+# import multiprocessing
+# lock = multiprocessing.Lock()
+
+import threading
+from threading import BoundedSemaphore
+lock = threading.Lock()
+pool = ThreadPoolExecutor(40)
+semaphore = BoundedSemaphore(10) 
 # project_root = '/media/temp/JqChat806'
 # sys.path.insert(0, project_root)
 
@@ -112,6 +120,8 @@ def convert_md_to_docx(input_filepaths:Union[str,list],overwrite=True,destinatio
         base_name = os.path.splitext(os.path.basename(md_filepath))[0]
         # 定义输出的docx文件路径
         docx_filepath = os.path.join(destination_dir, f"{base_name}.docx")
+        # 文件类型扩展名
+        ext = Path(md_filepath).suffix
 
         # 检查输出文件是否存在
         if os.path.exists(docx_filepath) and not overwrite:
@@ -123,10 +133,19 @@ def convert_md_to_docx(input_filepaths:Union[str,list],overwrite=True,destinatio
 
         # 执行pandoc文件转换命令
         try:
-            subprocess.run(pandoc_command, shell=True, check=True)
-            # logger.info(f"Converted {md_filepath} to {docx_filepath}")
+            with lock:
+                message = subprocess.run(pandoc_command, shell=True, check=True)
+                if message.returncode!=0 or "Error" in str(message.stderr):
+                    raise Exception(f"使用libreoffice转换{ext}文件{md_filepath}失败！详细信息为：{message.stderr}")
+                else:
+                    logger.warning(f"使用libreoffice成功将{md_filepath}转换为{docx_filepath}")
         except subprocess.CalledProcessError as e:
-            logger.info(f"An error occurred while converting {md_filepath}: {e}")
+            stderr = '无'
+            try:
+                stderr = e.stderr
+            except:
+                pass
+            logger.warning(f"将{md_filepath}转换为{docx_filepath}出错：{e=}，e.stderr={stderr}")
 
         converted_makeup_filepaths.append(str(docx_filepath))
         index = input_filepaths.index(makeup_filepath)
@@ -243,7 +262,22 @@ def convert_doc_pdf2docx_on_win_and_linux(input_filepaths:Union[str,list],overwr
     return input_filepaths,original_valid_input_filepaths
 
 # 需改成批量（多线程或多进程），有些大pdf转换需要好几分钟
-def convert_file_to_docx(input_filepaths: Union[str, list], overwrite=False, destination_dir=None):
+# def _convert_file_to_docx(filepath: str, output_filepath:str,overwrite=False, destination_dir=None):
+def _convert_file_to_docx(args):
+    filepath, output_filepath,overwrite, destination_dir=args
+    # 根据文件扩展名进行转换
+    logger.warning(f'==*==转换文件{filepath}')
+    if Path(filepath).suffix in ['.md','.htm','html']:
+        convert_md_to_docx(filepath, overwrite=overwrite, destination_dir=destination_dir)
+        return output_filepath
+    elif Path(filepath).suffix in ['.pdf', '.doc']:
+        convert_doc_pdf2docx_on_win_and_linux(filepath,overwrite=overwrite, destination_dir=destination_dir)
+        return output_filepath
+    else:
+        logger.warning(f"    JqConverter跳过文件转换: {filepath}")
+        return output_filepath
+
+def batch_convert_files_to_docxs(input_filepaths: Union[str, list], overwrite=False, destination_dir=None):
     """
     将 Markdown、PDF 或 DOC 文件转换为 DOCX 格式。
 
@@ -253,20 +287,21 @@ def convert_file_to_docx(input_filepaths: Union[str, list], overwrite=False, des
     :param destination_dir: 将保存 DOCX 文件的目录
                             如果为 None, 则使用当前目录
     """
+    
+    
     # 确保输入是个列表
     if isinstance(input_filepaths, (str, Path)):
         input_filepaths = [input_filepaths]
-
-        
-    input_filepaths = [Path(filepath) for filepath in input_filepaths]
-    input_filepaths_exist = [filepath for filepath in input_filepaths if filepath.exists()]
-    input_filepaths_exist_and_replaced_by_docx_if_converted = []
-
+    
     # 如果destination_dir没有指定,则目标目录为当前目录
     if destination_dir is None:
         destination_dir = os.getcwd()
-
-    files_to_be_converted = []
+        
+    input_filepaths = [Path(filepath) for filepath in input_filepaths]
+    input_filepaths_exist = [filepath for filepath in input_filepaths if filepath.exists()]
+    
+    input_filepaths_exist_and_replaced_by_docx_if_converted = []
+    batch_params = []
     for filepath in input_filepaths:
         if not Path(filepath).exists():
             logger.info(f"File {filepath} does not exist. Skipping.")
@@ -281,18 +316,17 @@ def convert_file_to_docx(input_filepaths: Union[str, list], overwrite=False, des
             logger.info(f"File {output_filepath} already exists. Skipping conversion.")
             input_filepaths_exist_and_replaced_by_docx_if_converted.append(output_filepath)
             continue
+        
+        batch_params.append((filepath,output_filepath,overwrite,destination_dir))
+    results = []    
+    with semaphore:
+        results = pool.map(_convert_file_to_docx,batch_params)
+        results = list(results)
+        
+    input_filepaths_exist_and_replaced_by_docx_if_converted = input_filepaths_exist_and_replaced_by_docx_if_converted + results
+        
 
-        # 根据文件扩展名进行转换
-        logger.warning(f'==*==转换文件{filepath}')
-        if Path(filepath).suffix == '.md':
-            convert_md_to_docx(filepath, output_filepath, destination_dir=destination_dir)
-            input_filepaths_exist_and_replaced_by_docx_if_converted.append(output_filepath)
-        elif Path(filepath).suffix in ['.pdf', '.doc']:
-            convert_doc_pdf2docx_on_win_and_linux(filepath, output_filepath, destination_dir=destination_dir)
-            input_filepaths_exist_and_replaced_by_docx_if_converted.append(output_filepath)
-        else:
-            logger.warning(f"JqConverter跳过文件转换: {filepath}")
-            input_filepaths_exist_and_replaced_by_docx_if_converted.append(filepath)
+
 
     return input_filepaths_exist,input_filepaths_exist_and_replaced_by_docx_if_converted
 
@@ -304,7 +338,7 @@ if __name__ == "__main__":
              "/media/temp/发票识别接口文档.md",
              "/media/temp/OCR接口性能报告.doc"]
 
-    convert_file_to_docx(files, overwrite=True, destination_dir='/media/temp/docxfiles/')
+    batch_convert_files_to_docxs(files, overwrite=True, destination_dir='/media/temp/docxfiles/')
 
 
 

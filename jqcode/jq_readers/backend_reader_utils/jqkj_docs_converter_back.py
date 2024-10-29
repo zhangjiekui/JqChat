@@ -1,9 +1,13 @@
-import os, sys
+import os
 import platform
 import subprocess
 from typing import Union
 from pathlib import Path
-import sys
+# import multiprocessing
+# lock = multiprocessing.Lock()
+
+import threading
+lock = threading.Lock()
 # project_root = '/media/temp/JqChat806'
 # sys.path.insert(0, project_root)
 
@@ -112,6 +116,8 @@ def convert_md_to_docx(input_filepaths:Union[str,list],overwrite=True,destinatio
         base_name = os.path.splitext(os.path.basename(md_filepath))[0]
         # 定义输出的docx文件路径
         docx_filepath = os.path.join(destination_dir, f"{base_name}.docx")
+        # 文件类型扩展名
+        ext = Path(md_filepath).suffix
 
         # 检查输出文件是否存在
         if os.path.exists(docx_filepath) and not overwrite:
@@ -123,10 +129,19 @@ def convert_md_to_docx(input_filepaths:Union[str,list],overwrite=True,destinatio
 
         # 执行pandoc文件转换命令
         try:
-            subprocess.run(pandoc_command, shell=True, check=True)
-            # logger.info(f"Converted {md_filepath} to {docx_filepath}")
+            with lock:
+                message = subprocess.run(pandoc_command, shell=True, check=True)
+                if message.returncode!=0 or "Error" in str(message.stderr):
+                    raise Exception(f"使用libreoffice转换{ext}文件{md_filepath}失败！详细信息为：{message.stderr}")
+                else:
+                    logger.warning(f"使用libreoffice成功将{md_filepath}转换为{docx_filepath}")
         except subprocess.CalledProcessError as e:
-            logger.info(f"An error occurred while converting {md_filepath}: {e}")
+            stderr = '无'
+            try:
+                stderr = e.stderr
+            except:
+                pass
+            logger.warning(f"将{md_filepath}转换为{docx_filepath}出错：{e=}，e.stderr={stderr}")
 
         converted_makeup_filepaths.append(str(docx_filepath))
         index = input_filepaths.index(makeup_filepath)
@@ -283,14 +298,14 @@ def convert_file_to_docx(input_filepaths: Union[str, list], overwrite=False, des
 
         # 根据文件扩展名进行转换
         logger.warning(f'==*==转换文件{filepath}')
-        if Path(filepath).suffix == '.md':
+        if Path(filepath).suffix == ['.md','.htm','html']:
             convert_md_to_docx(filepath, output_filepath, destination_dir=destination_dir)
             input_filepaths_exist_and_replaced_by_docx_if_converted.append(output_filepath)
         elif Path(filepath).suffix in ['.pdf', '.doc']:
             convert_doc_pdf2docx_on_win_and_linux(filepath, output_filepath, destination_dir=destination_dir)
             input_filepaths_exist_and_replaced_by_docx_if_converted.append(output_filepath)
         else:
-            logger.warning(f"JqConverter跳过文件转换: {filepath}")
+            logger.warning(f"    JqConverter跳过文件转换: {filepath}")
             input_filepaths_exist_and_replaced_by_docx_if_converted.append(filepath)
 
     return input_filepaths_exist,input_filepaths_exist_and_replaced_by_docx_if_converted

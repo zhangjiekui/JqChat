@@ -522,8 +522,7 @@ class SimpleDirectoryReader(BaseReader, ResourcesReaderMixin, FileSystemReaderMi
         metadata: Optional[dict] = None
         documents: List[Document] = []
 
-        if file_metadata is not None:
-            metadata = file_metadata(str(input_file))
+
 
         file_suffix = input_file.suffix.lower()
         if file_suffix in default_file_reader_suffix or file_suffix in file_extractor:
@@ -536,6 +535,8 @@ class SimpleDirectoryReader(BaseReader, ResourcesReaderMixin, FileSystemReaderMi
 
             # load data -- catch all errors except for ImportError
             try:
+                if file_metadata is not None:
+                    metadata = file_metadata(str(input_file))
                 kwargs = {"extra_info": metadata}
                 if fs and not is_default_fs(fs):
                     kwargs["fs"] = fs                

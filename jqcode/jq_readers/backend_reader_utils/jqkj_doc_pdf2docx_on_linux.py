@@ -1,13 +1,13 @@
+import os
 from typing import Union
 from pathlib import Path
 from pdf2docx import Converter
 import subprocess
 import multiprocessing
-import threading
-import os
-
-lock = threading.Lock()
 # lock = multiprocessing.Lock()
+import threading
+lock = threading.Lock()
+
 
 
 from jqcode.jq_utils.logger import jqkj_logger
