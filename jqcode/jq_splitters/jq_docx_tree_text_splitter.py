@@ -185,10 +185,12 @@ def get_pre_title_nodes_text(cur_node,cur_title_node,pre_title_node,cur_ancestor
                 if cur_node.parent.type in [TreeNodeType.TEXT,TreeNodeType.DOCUMENT]:
                     cur_title_node = cur_node.parent
                 if cur_ancestors_text_placeholder == '': # 只有第一次会取值
-                    cur_ancestors_text_placeholder = _get_pre_title_nodes_text(cur_node.ancestors[1:]) #[1:] 去除文件名根节点                 
-                if cur_node == cur_title_node.children[0] or cur_title_node != pre_title_node :     # 然后就只有在第一个叶子文本节点，或是父节点发生变化时再取值
-                    pre_title_node = cur_title_node
                     cur_ancestors_text_placeholder = _get_pre_title_nodes_text(cur_node.ancestors[1:]) #[1:] 去除文件名根节点
+                    
+                if len(cur_title_node.children)>0:                 
+                    if cur_node == cur_title_node.children[0] or cur_title_node != pre_title_node :     # 然后就只有在第一个叶子文本节点，或是父节点发生变化时再取值
+                        pre_title_node = cur_title_node
+                        cur_ancestors_text_placeholder = _get_pre_title_nodes_text(cur_node.ancestors[1:]) #[1:] 去除文件名根节点
         return cur_node,pre_title_node,cur_ancestors_text_placeholder,pre_ancestors_text_placeholder
 
             

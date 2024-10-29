@@ -406,7 +406,7 @@ def get_file_detail(kb_name: str, filename: str) -> dict:
             print(f"No document found with filename '{filename}' in index '{kb_name}'")
             return {}
     except Exception as e:
-        print(f"An error occurred: {str(e)}")
+        print(f"An error occurred: {e};{metadata=}")
         return {}
 
 # kb_name = 'create1'
