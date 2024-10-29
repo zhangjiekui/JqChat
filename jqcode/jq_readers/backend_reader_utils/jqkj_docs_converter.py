@@ -322,6 +322,8 @@ def batch_convert_files_to_docxs(input_filepaths: Union[str, list], overwrite=Fa
         if Path(destination_file).exists:
             final_input_filepaths_exist.append(input_filepaths_exist[i])
             final_input_filepaths_exist_and_replaced_by_docx_if_converted.append(destination_file)
+        else:
+            logger.warning(f'期望的转换后的文件{destination_file}不存在，可能是转换失败了，跳过！')
             
             
     return final_input_filepaths_exist,final_input_filepaths_exist_and_replaced_by_docx_if_converted
