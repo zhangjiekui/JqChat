@@ -1,9 +1,7 @@
 import os
 import time
 from typing import Dict, Literal, Tuple
-import sys
-# project_root = '/media/yqli/JqChat'
-# sys.path.insert(0, project_root)
+
 import pandas as pd
 import streamlit as st
 import streamlit_antd_components as sac
@@ -11,13 +9,8 @@ from st_aggrid import AgGrid, JsCode
 from st_aggrid.grid_options_builder import GridOptionsBuilder
 from streamlit_antd_components.utils import ParseItems
 
-from jqcode.jq_knowledge_manegement.chatchat.configs import (
-    CHUNK_SIZE,
-    DEFAULT_VS_TYPE,
-    OVERLAP_SIZE,
-    ZH_TITLE_ENHANCE,
-    kbs_config,
-)
+from jqcode.jq_knowledge_manegement.chatchat.configs import DEFAULT_VS_TYPE, kbs_config
+
 from jqcode.jq_knowledge_manegement.chatchat.server.knowledge_base.kb_service.base import (
     get_kb_details,
     get_kb_file_details,
@@ -29,7 +22,7 @@ from jqcode.jq_agent.c0_init_env_models import env_models_instance
 
 from web.utils.utils import *
 
-# SENTENCE_SIZE = 100
+
 
 cell_renderer = JsCode(
     """function(params) {if(params.value==true){return '✓'}else{return '×'}}"""
@@ -172,9 +165,23 @@ def knowledge_base_page(api: ApiRequest, is_lite: bool = None):
             accept_multiple_files=True,
         )
 
-        if files and files[0].name:  # 确保files不为空且有文件名
-            new_filename = files[0].name.replace(" ", "").replace("(", "").replace(")", "").replace("（", "").replace("）", "")
-            files[0].name = new_filename
+        chars_to_replace = [
+                            " ",    # 空格
+                            "(", ")",  # 英文括号
+                            "（", "）",  # 中文括号
+                            "[", "]",   # 方括号
+                            "【", "】",  # 中文方括号
+                            "{", "}",   # 花括号
+                        ]
+        
+        if files:  # 确保files不为空
+            for file in files:  # 遍历所有文件
+                if file.name:  # 确保文件名不为空
+                    new_filename = file.name
+                    for char in chars_to_replace:
+                        new_filename = new_filename.replace(char, "")
+                    file.name = new_filename
+
 
 
 
@@ -261,12 +268,9 @@ def knowledge_base_page(api: ApiRequest, is_lite: bool = None):
                 {
                     ("No", "序号"): {},
                     ("file_name", "文档名称"): {},
-                    # ("file_ext", "文档类型"): {},
-                    # ("file_version", "文档版本"): {},
                     ("document_loader", "文档加载器"): {},
                     ("docs_count", "文档数量"): {},
                     ("text_splitter", "分词器"): {},
-                    # ("create_time", "创建时间"): {},
                     ("in_folder", "源文件"): {},
                     ("in_es", "向量库"): {},
                 },
@@ -325,6 +329,7 @@ def knowledge_base_page(api: ApiRequest, is_lite: bool = None):
                     chunk_size=chunk_size,
                     chunk_overlap=chunk_overlap,
                     zh_title_enhance=True,
+                    batch_size=5
                 )
                 st.rerun()
 
