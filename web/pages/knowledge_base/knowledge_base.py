@@ -169,9 +169,9 @@ def knowledge_base_page(api: ApiRequest, is_lite: bool = None):
                             " ",    # 空格
                             "(", ")",  # 英文括号
                             "（", "）",  # 中文括号
-                            "[", "]",   # 方括号
-                            "【", "】",  # 中文方括号
-                            "{", "}",   # 花括号
+                            # "[", "]",   # 方括号
+                            # "【", "】",  # 中文方括号
+                            # "{", "}",   # 花括号
                         ]
         
         if files:  # 确保files不为空
@@ -330,7 +330,6 @@ def knowledge_base_page(api: ApiRequest, is_lite: bool = None):
                     chunk_size=chunk_size,
                     chunk_overlap=chunk_overlap,
                     zh_title_enhance=True,
-                    # batch_size=5
                 )
                 st.rerun()
 
