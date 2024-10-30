@@ -212,13 +212,27 @@ def list_files_from_es(kb_name: str, search_text: str = None) -> list:
     try: 
         result = es.search(index=kb_name, body=query)
         print(f"Total hits: {result['hits']['total']['value']}")
-        docs = [hit["_source"]["metadata"]["file_name"] for hit in result["hits"]["hits"]]
-        # print(f"Extracted file names: {docs}")
+
+        docs = []
+        for hit in result["hits"]["hits"]:
+            source = hit.get("_source", {})
+            if source and isinstance(source.get("metadata"), dict):
+                file_name = source["metadata"].get("file_name")
+                if file_name:
+                    docs.append(file_name)
+            if not source:
+                pass
+                # print(f"Warning: Empty _source found in document: {hit}")
+                
+        print(f"Successfully extracted {len(docs)} file names")
+        return docs
+    
+        # docs = [hit["_source"]["metadata"]["file_name"] for hit in result["hits"]["hits"]]
+       
     except Exception as e:
         print(f"An error occurred: {e}")
-        docs = []
     
-    return docs
+        return []
 
 # 使用示例：
 # 列出所有文件
