@@ -62,31 +62,23 @@ class ESKBService(KBService):
         
        
         else:
-            try:
-                # 首先尝试通过db_init创建索引(如果index_name不存在就创建)
-                self.db.create_index_if_not_exists(
-                    index_name=self.index_name, dims_length=self.dims_length
-                )
-            except Exception as e:
-                logger.error("创建索引失败...")
-                logger.error(e)
 
-                # 如果错误，再尝试通过es_client_python创建        
-                try:                
-                    mappings = {
-                        "properties": {
-                            "dense_vector": {
-                                "type": "dense_vector",
-                                "dims": self.dims_length,
-                                "index": True,
-                            }
+            # 如果错误，再尝试通过es_client_python创建        
+            try:                
+                mappings = {
+                    "properties": {
+                        "dense_vector": {
+                            "type": "dense_vector",
+                            "dims": self.dims_length,
+                            "index": True,
                         }
                     }
-                    self.es_client_python.indices.create(
-                        index=self.index_name, mappings=mappings
-                    )
-                except BadRequestError as e:
-                    logger.error(e)
+                }
+                self.es_client_python.indices.create(
+                    index=self.index_name, mappings=mappings
+                )
+            except BadRequestError as e:
+                logger.error(e)
 
     @staticmethod
     def get_kb_path(knowledge_base_name: str):
