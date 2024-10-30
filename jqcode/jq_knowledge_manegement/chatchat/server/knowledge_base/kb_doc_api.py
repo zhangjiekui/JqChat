@@ -168,6 +168,7 @@ def upload_docs(
     zh_title_enhance: bool = Form(ZH_TITLE_ENHANCE, description="是否开启中文标题加强"),
     docs: str = Form("", description="自定义的docs,需要转为json字符串"),
     not_refresh_vs_cache: bool = Form(False, description="暂不保存向量库(用于FAISS)"),
+    batch_size: int = Form(5, description="批处理文件数量"),
 ) -> BaseResponse:
     """
     API接口:上传文件并/或向量化
