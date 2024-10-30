@@ -263,7 +263,7 @@ class JqEsClient():
     # 5、将文件切片写入知识库
         if len(lm_documents)>0:    
             vectorstore = env_models_instance.get_es_searchstore_index_documents(documents=lc_splitted_documents, embedding=embed_model,index_name=index_name,source_id_key='source',clear_before_add_index=False)        
-            logger.warning(f"已将{len(lm_documents)=}个文件切片写入ES知识库，并返回vectorstore对象")
+            logger.warning(f"已将{len(lc_splitted_documents)=}个文件切片写入ES知识库，并返回vectorstore对象")
             # graph_rag = JqGraphRag(documents=lc_splitted_documents,index_name=index_name)
             # gml_path = graph_rag.graph_indexing()
             # logger.warning(f"已写入图索引：{gml_path}")

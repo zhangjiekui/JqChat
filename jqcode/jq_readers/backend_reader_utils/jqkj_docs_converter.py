@@ -39,7 +39,7 @@ os_name = get_os()
 # 3)chatchat的类型设置要与此处的联动起来
 
 docpdf_list = [".doc",".pdf"]
-pandoc_list =  [".md",".html"]
+pandoc_list =  [".md",".html",".htm"]
 jq_reader_list =pandoc_list+docpdf_list
 
 # dict: {".doc":ReadClass}
@@ -267,9 +267,9 @@ def _convert_file_to_docx(args):
     filepath, overwrite, destination_dir=args
     # 根据文件扩展名进行转换
     logger.warning(f'==*==转换文件{filepath}')
-    if Path(filepath).suffix in ['.md','.htm','html']:
+    if Path(filepath).suffix in pandoc_list:
         convert_md_to_docx(filepath, overwrite=overwrite, destination_dir=destination_dir)
-    elif Path(filepath).suffix in ['.pdf', '.doc']:
+    elif Path(filepath).suffix in docpdf_list:
         convert_doc_pdf2docx_on_win_and_linux(filepath,overwrite=overwrite, destination_dir=destination_dir)
     else:
         logger.warning(f"    JqConverter跳过文件转换: {filepath}")
@@ -305,13 +305,17 @@ def batch_convert_files_to_docxs(input_filepaths: Union[str, list], overwrite=Fa
         else:
             # 定义输出的docx文件路径
             base_name = Path(filepath).stem
-            output_filepath = Path(destination_dir) / f"{base_name}.docx"
-            # 检查文件是否存在
-            input_filepaths_exist_and_replaced_by_docx_if_converted.append(output_filepath)
-            if output_filepath.exists() and not overwrite:
-                logger.info(f"File {output_filepath} already exists. Skipping conversion.")
-            else:            
-                batch_params.append((filepath,overwrite,destination_dir))
+            ext = Path(filepath).suffix
+            if ext in jq_reader_list:
+                output_filepath = Path(destination_dir) / f"{base_name}.docx"
+                # 检查文件是否存在
+                input_filepaths_exist_and_replaced_by_docx_if_converted.append(output_filepath)
+                if output_filepath.exists() and not overwrite:
+                    logger.info(f"File {output_filepath} already exists. Skipping conversion.")
+                else:            
+                    batch_params.append((filepath,overwrite,destination_dir))
+            else:
+                input_filepaths_exist_and_replaced_by_docx_if_converted.append(filepath)
     if batch_params:
         with semaphore:
             pool.map(_convert_file_to_docx,batch_params)
