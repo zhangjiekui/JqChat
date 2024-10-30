@@ -539,7 +539,7 @@ class ApiRequest:
         zh_title_enhance=ZH_TITLE_ENHANCE,
         docs: Dict = {},
         not_refresh_vs_cache: bool = False,
-        batch_size=5,
+        batch_size=3,
     ):
         """
         对应api.py/knowledge_base/upload_docs接口,JqChat/jqcode/jq_knowledge_manegement/chatchat/server/knowledge_base/kb_doc_api.py  upload_docs方法

@@ -18,7 +18,7 @@ from jqcode.jq_knowledge_manegement.chatchat.configs import (
     VECTOR_SEARCH_TOP_K,
     ZH_TITLE_ENHANCE,
     log_verbose,
-    logger,
+    # logger,
 )
 from jqcode.jq_knowledge_manegement.chatchat.server.db.repository.knowledge_file_repository import get_file_detail
 from jqcode.jq_knowledge_manegement.chatchat.server.knowledge_base.kb_service.base import (
@@ -40,6 +40,8 @@ from jqcode.jq_knowledge_manegement.chatchat.server.utils import (
     run_in_thread_pool,
 )
 
+from jqcode.jq_utils.logger import jqkj_logger
+logger = jqkj_logger(__file__).get_logger()
 from jqcode.jq_docstores.jq_es_client import JqEsClient
 jq_es_client = JqEsClient()
 
@@ -231,7 +233,7 @@ def upload_docs(
     zh_title_enhance: bool = Form(ZH_TITLE_ENHANCE, description="是否开启中文标题加强"),
     docs: str = Form("", description="自定义的docs,需要转为json字符串"),
     not_refresh_vs_cache: bool = Form(False, description="暂不保存向量库(用于FAISS)"),
-    batch_size: int = Form(5, description="批处理文件数量"),
+    batch_size: int = Form(3, description="批处理文件数量"),
 ) -> BaseResponse:
     """
     API接口:上传文件并/或向量化
@@ -250,6 +252,8 @@ def upload_docs(
     # 将文件列表分批
     total_files = len(files)
     num_batches = math.ceil(total_files / batch_size)
+    
+    logger.warning(f"......共有{total_files=}个文件，将每次上传{batch_size=}个文件，共需{num_batches=}个批次进行处理......")
     
     # 分批处理文件
     for batch_idx in range(num_batches):
