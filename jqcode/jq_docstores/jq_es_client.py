@@ -173,7 +173,7 @@ class JqEsClient():
             search_result = self.client.search(index=kb_name, body={
                 "query": {
                     "match": {
-                        "metadata.file_name": filename
+                        "metadata.file_name.keyword": filename
                     }
                 },
                 "size":10000,# 注意设置size，默认返回10个。
@@ -285,7 +285,7 @@ if __name__ == "__main__":
     # current_user='elastic'
 
     jq_es_client = JqEsClient()
-    # status = jq_es_client.delete_file_from_es_kb('liyuanqin', 'OCR接口性能报告.docx')
+    status = jq_es_client.delete_file_from_es_kb('liyuanqin', 'OCR接口性能报告.docx')
     # status = jq_es_client.delete_file_from_es_kb('liyuanqin', '测试文本.txt')
     # # status = jq_es_client.create_doc_index(index_name='tempuse',
     # #                                        description="创建一个测试知识库知识库,该知识库主要用测试获取基本信息功能")
