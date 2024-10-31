@@ -399,7 +399,8 @@ def get_file_detail(kb_name: str, filename: str) -> dict:
 
         if result['hits']['total']['value'] > 0:
             source = result['hits']['hits'][0]['_source']
-            docs_count = len(result['hits']['hits'])
+            # 使用 total 值替代 len(hits)
+            docs_count = result['hits']['total']['value']
             metadata = source.get('metadata', {})
             return {
                 "kb_name": kb_name,
@@ -425,6 +426,6 @@ def get_file_detail(kb_name: str, filename: str) -> dict:
         return {}
 
 # kb_name = 'create1'
-# filename = '测试文本.txt'
+# filename = '报出稿深圳智慧民政项目-发改委汇报20200324.docx'
 # result = get_file_detail(kb_name, filename)
 # print(f"Final result: {result}")
