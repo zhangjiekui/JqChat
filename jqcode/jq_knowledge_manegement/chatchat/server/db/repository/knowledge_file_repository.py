@@ -1,5 +1,5 @@
 from typing import Dict, List
-
+from pathlib import Path
 from jqcode.jq_knowledge_manegement.chatchat.server.db.models.knowledge_base_model import KnowledgeBaseModel
 from jqcode.jq_knowledge_manegement.chatchat.server.db.models.knowledge_file_model import (
     FileDocModel,
@@ -352,6 +352,7 @@ def file_exists_in_db(session, kb_file: KnowledgeFile):
 
 def file_exists_in_es(kb_name: str, filename: str) -> dict:
     es = env_models_instance.get_es_connection()
+    filename =Path(filename).name 
     # 构建搜索查询
     query = {
         "query": {
@@ -367,7 +368,7 @@ def file_exists_in_es(kb_name: str, filename: str) -> dict:
     
     # 执行搜索
     try:
-        result = es.search(index="your_index_name", body=query)
+        result = es.search(index=kb_name, body=query)
         
         # 检查是否有匹配的文档
         if result['hits']['total']['value'] > 0:
@@ -382,7 +383,7 @@ def file_exists_in_es(kb_name: str, filename: str) -> dict:
 # No document found with filename '厦门市智慧民政一体化平台项目建设方案V1.4【晶奇】.doc' in index 'fileconvert'
 def get_file_detail(kb_name: str, filename: str) -> dict:
     es = env_models_instance.get_es_connection()
-    filename =str(filename)
+    filename =Path(filename).name    
 
     query = {
         "query": {

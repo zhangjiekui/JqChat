@@ -175,7 +175,8 @@ class JqEsClient():
                     "match": {
                         "metadata.file_name": filename
                     }
-                }
+                },
+                "size":10000,# 注意设置size，默认返回10个。
             })
 
             # 如果找到文档，删除所有匹配的文档
