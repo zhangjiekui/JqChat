@@ -113,7 +113,8 @@ def knowledge_base_page(api: ApiRequest, is_lite: bool = None):
 
             col0, _ = st.columns([3, 1])
 
-            vs_types = list(kbs_config.keys())
+            # vs_types = list(kbs_config.keys())
+            vs_types = ['es']
             vs_type = col0.selectbox(
                 "向量库类型",
                 vs_types,

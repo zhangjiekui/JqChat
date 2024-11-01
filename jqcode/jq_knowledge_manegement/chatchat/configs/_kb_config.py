@@ -73,7 +73,7 @@ class ConfigKbFactory(core_config.ConfigFactory[ConfigKb]):
         self.DEFAULT_KNOWLEDGE_BASE = "samples"
 
         # 默认向量库/全文检索引擎类型。可选：faiss, milvus(离线) & zilliz(在线), pgvector,全文检索引擎es,relyt
-        self.DEFAULT_VS_TYPE = "faiss"
+        self.DEFAULT_VS_TYPE = "es"
 
         # 缓存向量库数量（针对FAISS）
         self.CACHED_VS_NUM = 1
