@@ -17,9 +17,9 @@ from jqcode.jq_knowledge_manegement.chatchat.configs import (
 from jqcode.jq_knowledge_manegement.chatchat.server.db.base import Base, engine
 from jqcode.jq_knowledge_manegement.chatchat.server.db.models.conversation_model import ConversationModel
 from jqcode.jq_knowledge_manegement.chatchat.server.db.models.message_model import MessageModel
-from jqcode.jq_knowledge_manegement.chatchat.server.db.repository.knowledge_file_repository import (
-    add_file_to_db,
-)
+# from jqcode.jq_knowledge_manegement.chatchat.server.db.repository.knowledge_file_repository import (
+#     add_file_to_db,
+# )
 
 # ensure Models are imported
 from jqcode.jq_knowledge_manegement.chatchat.server.db.repository.knowledge_metadata_repository import (
