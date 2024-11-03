@@ -11,14 +11,25 @@ from jqcode.chat_prompt import *
 from langchain_core.messages import ToolMessage
 from jqcode.langgraph_in_class import GraphAgent,display_code, display_text
 from jqcode.jq_docstores.backend_docstore_utils.jq_es_metastores import JqElasticsearchUniMetaStore
+from jqcode.jq_docstores.jq_es_client import JqEsClient
 
 from jqcode.jq_utils.logger import jqkj_logger
 logger = jqkj_logger(__file__).get_logger()
 metastore = JqElasticsearchUniMetaStore()
+jq_es_client = JqEsClient()
 
-es_index_name = "zjk_jqesclient_test"
-index_meta = metastore.search_docs_by_text(top_k=1,user_query_text=es_index_name,query_on_fileds=['index_name'],filter_by_status=['true'])
-index_meta_dict_default = index_meta[0]["_source"]
+es_index_name = "default"
+index_creator='manager'
+default_index_description = "向量库/知识库工具(vectorstore/knowledge base)：关于安徽晶奇网络科技股份有限公司（简称晶奇公司）、医疗卫生、医疗健康、医疗服务、医疗政策、信息化产品方案、技术文档等等方面的文档知识库. 凡是安徽晶奇网络科技股份有限公司及医疗健康相关的问题，都必须使用该vectorstore工具。"
+if not jq_es_client.client.indices.exists(index=es_index_name):
+    jq_es_client.create_doc_index(index_name=es_index_name,description=default_index_description,index_creator=index_creator)
+    
+
+try:    
+    index_meta = metastore.search_docs_by_text(top_k=1,user_query_text=es_index_name,query_on_fileds=['index_name'],filter_by_status=['true'])
+    index_meta_dict_default = index_meta[0]["_source"]
+except:    
+    index_meta_dict_default = {"index_name": es_index_name, "description":default_index_description}
 
 # We know this Flask app is for local use. So we can disable the verbose Werkzeug logger
 log = logging.getLogger('werkzeug')
