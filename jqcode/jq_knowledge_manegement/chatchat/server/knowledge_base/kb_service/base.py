@@ -26,14 +26,14 @@ from jqcode.jq_knowledge_manegement.chatchat.server.db.repository.knowledge_base
     load_kb_from_es
 )
 from jqcode.jq_knowledge_manegement.chatchat.server.db.repository.knowledge_file_repository import (
-    add_file_to_db,
-    count_files_from_db,
-    delete_file_from_db,
-    delete_files_from_db,
-    file_exists_in_db,
+    # add_file_to_db,
+    # count_files_from_db,
+    # delete_file_from_db,
+    # delete_files_from_db,
+    # file_exists_in_db,
     file_exists_in_es,
     get_file_detail,
-    list_docs_from_db,
+    # list_docs_from_db,
     list_docs_from_es,
     
     # list_files_from_db,
@@ -215,8 +215,8 @@ class KBService(ABC):
     def list_files(self):
         return list_files_from_es(self.kb_name)
 
-    def count_files(self):
-        return count_files_from_db(self.kb_name)
+    # def count_files(self):
+    #     return count_files_from_db(self.kb_name)
 
     def search_docs(
         self,

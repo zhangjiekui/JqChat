@@ -6,7 +6,7 @@ from multiprocessing import Process,Event
 import os, sys
 
 from fastapi.staticfiles import StaticFiles
-from jqcode.jq_knowledge_manegement.chatchat.server.knowledge_base.migrate import create_tables
+# from jqcode.jq_knowledge_manegement.chatchat.server.knowledge_base.migrate import create_tables
 from contextlib import asynccontextmanager
 import pathlib
 from kernel_program.main import cleanup_kernel_program,main as kernel_program_main,APP_PORT
@@ -428,7 +428,7 @@ def main():
     mp.freeze_support()
     print("=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*")      
     
-    create_tables()
+    # create_tables()
     asyncio.run(start_main_server())
 
 
