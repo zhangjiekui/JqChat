@@ -254,8 +254,9 @@ class JqEsClient():
                 shutil.copy2(src_filepath, kb_filepath)
                 logger.warning(f"  ==已将文件拷贝到知识库：{src_filepath}=>{kb_filepath}")
                 
-            if src_filepath.startswith(tmp_dir):
-                doc.metadata.update({"source_kb":kb_filepath})
+            # if src_filepath.startswith(tmp_dir):
+            #     doc.metadata.update({"source_kb":kb_filepath})
+            doc.metadata.update({"source_kb":kb_filepath})
             
     # 4、切分文件
         lm_splitted_documents = doc_tree_spiltter.get_nodes_from_documents(lm_documents) #llamaindex格式

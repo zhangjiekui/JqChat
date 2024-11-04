@@ -497,11 +497,13 @@ def grade_generation_v_documents_and_question(state:GraphAgentState):
                 print("---BUT WE HAVE WEB SEARCHED THE QUESTION, SO DIRECTLY ROUTE TO 'END' NODE---")
                 return "useful"
             else:
+                print(f"not useful: {generation=}")
                 return "not useful"
     else:
         # pprint.pprint("---DECISION: GENERATION IS NOT GROUNDED IN DOCUMENTS, RE-TRY---")
         # return "not supported"
         print("---DECISION: GENERATION IS NOT GROUNDED IN DOCUMENTS, BUT WE DO NOT RE-TRY (RE-GENERATION), JUST DIRECTLY TO 'END' NODE---")
+        print(f"not supported: {generation=}")
         return "not supported" # todo
 
 

@@ -18,7 +18,7 @@ from elasticsearch.helpers import bulk
 
 from jqcode.jq_agent.c0_init_env_models import env_models_instance
 from jqcode.jq_docstores.backend_docstore_utils.jq_base_docstores import JqBaseDocumentStore
-
+import shortuuid
 from jqcode.jq_utils.logger import jqkj_logger
 logger = jqkj_logger(__file__).get_logger()
 
@@ -109,6 +109,7 @@ class JqElasticsearchDocumentStore(JqBaseDocumentStore):
         lm_documents: Union[LmDocument, List[LmDocument]],
         ids: Optional[Union[List[str], str]] = None,
         default_id_func:Callable = md5_file_value,
+        if_include_src:bool = False,
         file_upload_user:str = "manager",        
         refresh_indices: bool = True,
         **kwargs,
@@ -127,23 +128,24 @@ class JqElasticsearchDocumentStore(JqBaseDocumentStore):
         
         actions_list = []
         es_index_doc_id_list = []
+        if not if_include_src:
+            logger.warning("由于性能问题，现在改为默认不上传原始文件、doc_tree（file_yaml）到ES！")
         for document in lm_documents:
             file_name = document.metadata.get('file_name',None) or document.metadata.get('file_name_jq',None)
             file_text = document.text
             file_path = document.metadata['source']            
             file_extention = Path(file_path).suffix            
 
-            file_blob_b64 = None
-            file_data = None
-            with open(file_path, 'rb') as file: 
-                file_data = file.read()
-                
-            file_blob_b64_encoded = b64encode(file_data)
-            es_index_doc_id = default_id_func(file_blob_b64_encoded)
-
-            file_blob_b64=file_blob_b64_encoded.decode('utf-8')
-           
-            
+            file_blob_b64 = None            
+            es_index_doc_id = ''
+            if if_include_src:
+                with open(file_path, 'rb') as file: 
+                    file_data = file.read()                    
+                file_blob_b64_encoded = b64encode(file_data)
+                es_index_doc_id = default_id_func(file_blob_b64_encoded)
+                file_blob_b64=file_blob_b64_encoded.decode('utf-8')
+            else:                
+                es_index_doc_id = shortuuid.uuid()            
 
             added_metadata = {"file_extension":file_extention,'es_index_name':self.index_name,"es_index_doc_id":es_index_doc_id}
             document.metadata.update(added_metadata)
@@ -154,8 +156,9 @@ class JqElasticsearchDocumentStore(JqBaseDocumentStore):
             doc_tree = file_metadata.pop('file_doc_tree_jq',None)
 
             file_yaml = ''
-            if doc_tree:
-                doc_tree_dict = anytree_dict_exporter.export(doc_tree)
+            if if_include_src:
+                if doc_tree:
+                    doc_tree_dict = anytree_dict_exporter.export(doc_tree)
                 file_yaml = yaml.dump(doc_tree_dict, default_flow_style=False)
             
             dt = datetime.now()
