@@ -104,7 +104,7 @@ def knowledge_base_page(api: ApiRequest, is_lite: bool = None):
                 "新建知识库名称",
                 placeholder="新知识库名称，不支持中文命名",
                 key="kb_name",
-            )
+            ).lower()
             kb_info = st.text_input(
                 "知识库简介",
                 placeholder="知识库简介,方便Agent查找",
