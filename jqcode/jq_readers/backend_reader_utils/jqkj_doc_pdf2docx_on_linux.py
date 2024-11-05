@@ -13,6 +13,9 @@ lock = threading.Lock()
 from jqcode.jq_utils.logger import jqkj_logger
 logger = jqkj_logger(__file__).get_logger()
 
+
+# region
+
 ## 安装libreoffice
 #1 sudo apt install libreoffice
 #2 看看本机是否装有java，运行java --version 如果有正常输出就可以，以下是输出信息
@@ -82,7 +85,7 @@ def _convert_pdf_to_docx(src_pdf_file_path:Union[str,Path],saved_doc_file_path:U
     # print(f"{saved_doc_file_path=}")
     cv.close()
 
-
+# endregion
 ####################################################################################################
 # lyq
 import subprocess
@@ -90,9 +93,9 @@ import os
 from pathlib import Path
 from typing import Union
 import requests
-import logging
+from jqcode.jq_utils.logger import jqkj_logger
+logger = jqkj_logger(__file__).get_logger()
 
-logger = logging.getLogger(__name__)
 
 def convert_doc_or_pdf_to_docx(src_doc_file_path: Union[str, Path], saved_doc_file_path: Union[str, Path] = None):
     src_doc_file_path = str(src_doc_file_path)
@@ -110,7 +113,7 @@ def convert_doc_or_pdf_to_docx(src_doc_file_path: Union[str, Path], saved_doc_fi
 
     # 调用FastAPI服务进行转换
     try:
-        url = "http://10.1.150.105:8888/pdf_parse"  # 调整为你的服务地址
+        url = os.getenv("pdf_parse_url", "http://10.1.150.105:8888/pdf_parse")  # 调整为你的服务地址
         with open(src_doc_file_path, 'rb') as f:
             files = {'pdf_file': (os.path.basename(src_doc_file_path), f)}
             response = requests.post(url, files=files, data={
@@ -121,18 +124,19 @@ def convert_doc_or_pdf_to_docx(src_doc_file_path: Union[str, Path], saved_doc_fi
             # logger.info(f"FastAPI返回的响应内容: {response.json()}")
 
         if response.status_code != 200:
-            raise Exception(f"调用FastAPI服务失败: {response.json().get('error', '未知错误')}")
+            raise Exception(f"调用pdf_parse FastAPI服务失败: {response.json().get('error', '未知错误')}")
 
         # 获取生成的md文件路径
         md_file_path = Path(outdir) / f"{src_doc_file_path.stem}.md"
         with open(md_file_path, 'w', encoding='utf-8') as md_file:
             md_file.write(response.json()['md_content'])
-            logger.info(f"Markdown 文件已写入: {md_file_path}")
+            logger.warning(f"pdf_parse转换(pdf=>md {src_doc_file_path} 到 {md_file_path})成功！")
 
         # 使用pandoc将md文件转换为docx
         saved_doc_file_path = saved_doc_file_path 
-        logger.info(f"开始转换 {md_file_path} 到 {saved_doc_file_path}")
+        
         if md_file_path.exists():
+            logger.warning(f"开始转换 {md_file_path} 到 {saved_doc_file_path}")
             command = f"pandoc {md_file_path} -o {saved_doc_file_path}"
             try:
                 message = subprocess.run(command, shell=True, check=True, capture_output=True)
@@ -147,6 +151,8 @@ def convert_doc_or_pdf_to_docx(src_doc_file_path: Union[str, Path], saved_doc_fi
 
             except subprocess.CalledProcessError as e:
                 logger.error(f"转换失败: {e.stderr}")
+        else:
+            logger.warning(f"pdf_parse转换(pdf=>md {src_doc_file_path} 到 {md_file_path})失败！")
 
     except Exception as e:
         logger.error(f"转换过程中出现错误: {e}")
@@ -179,5 +185,5 @@ if __name__ == "__main__":
 
     out = '/media/program/pdffiles/temp'
     for file in pdf_filepaths:
-        convert_doc_or_pdf_to_docx_lyq(Path(file), Path(out))
+        convert_doc_or_pdf_to_docx(Path(file), Path(out))
         # convert_doc_or_pdf_to_docx(Path(file))
