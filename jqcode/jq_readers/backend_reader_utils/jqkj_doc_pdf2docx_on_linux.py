@@ -24,37 +24,38 @@ logger = jqkj_logger(__file__).get_logger()
 #3 sudo apt install libreoffice-java-commo
 #4 测试是否成功：libreoffice --headless --convert-to docx /data/projects/JqChat/test_zh.doc --outdir /data/projects/JqChat/ 
 
-def convert_doc_or_pdf_to_docx(src_doc_file_path:Union[str,Path],saved_doc_file_path:Union[str,Path]=None):
-    src_doc_file_path = str(src_doc_file_path)
-    src_doc_file_path_copyed = src_doc_file_path.replace(" ",'')
-    if src_doc_file_path_copyed != src_doc_file_path:
-        if os.path.isfile(src_doc_file_path) and not os.path.exists(src_doc_file_path_copyed):
-            os.rename(src_doc_file_path,src_doc_file_path_copyed)
+# 原始代码
+# def convert_doc_or_pdf_to_docx(src_doc_file_path:Union[str,Path],saved_doc_file_path:Union[str,Path]=None):
+#     src_doc_file_path = str(src_doc_file_path)
+#     src_doc_file_path_copyed = src_doc_file_path.replace(" ",'')
+#     if src_doc_file_path_copyed != src_doc_file_path:
+#         if os.path.isfile(src_doc_file_path) and not os.path.exists(src_doc_file_path_copyed):
+#             os.rename(src_doc_file_path,src_doc_file_path_copyed)
         
         
-    src_doc_file_path = Path(src_doc_file_path_copyed)
-    ext = src_doc_file_path.suffix
-    if not saved_doc_file_path:
-        saved_doc_file_path = src_doc_file_path.with_suffix(".docx")
-    outdir = saved_doc_file_path.parent
-    if ext=='.pdf':
-        command = f"libreoffice --infilter='writer_pdf_import' --headless --convert-to docx {src_doc_file_path} --outdir {outdir}"
-    if ext=='.doc':
-        command = f"libreoffice --headless --convert-to docx {src_doc_file_path} --outdir {outdir}"
-    try:
-        with lock:
-            message = subprocess.run(command, shell=True, check=True,capture_output=True)
-            if message.returncode!=0 or "Error" in str(message.stderr):
-                raise Exception(f"使用libreoffice转换{ext}文件{src_doc_file_path}失败！详细信息为：{message.stderr}")
-            else:
-                logger.warning(f"使用libreoffice成功将{src_doc_file_path}转换为{saved_doc_file_path}")
-    except Exception as e:
-        stderr = '无'
-        try:
-            stderr = e.stderr
-        except:
-            pass
-        logger.warning(f"将{src_doc_file_path}转换为{saved_doc_file_path}出错：{e=}，e.stderr={stderr}")
+#     src_doc_file_path = Path(src_doc_file_path_copyed)
+#     ext = src_doc_file_path.suffix
+#     if not saved_doc_file_path:
+#         saved_doc_file_path = src_doc_file_path.with_suffix(".docx")
+#     outdir = saved_doc_file_path.parent
+#     if ext=='.pdf':
+#         command = f"libreoffice --infilter='writer_pdf_import' --headless --convert-to docx {src_doc_file_path} --outdir {outdir}"
+#     if ext=='.doc':
+#         command = f"libreoffice --headless --convert-to docx {src_doc_file_path} --outdir {outdir}"
+#     try:
+#         with lock:
+#             message = subprocess.run(command, shell=True, check=True,capture_output=True)
+#             if message.returncode!=0 or "Error" in str(message.stderr):
+#                 raise Exception(f"使用libreoffice转换{ext}文件{src_doc_file_path}失败！详细信息为：{message.stderr}")
+#             else:
+#                 logger.warning(f"使用libreoffice成功将{src_doc_file_path}转换为{saved_doc_file_path}")
+#     except Exception as e:
+#         stderr = '无'
+#         try:
+#             stderr = e.stderr
+#         except:
+#             pass
+#         logger.warning(f"将{src_doc_file_path}转换为{saved_doc_file_path}出错：{e=}，e.stderr={stderr}")
 
 
 # 以下是使用spire.doc进行转换的代码
@@ -81,18 +82,102 @@ def _convert_pdf_to_docx(src_pdf_file_path:Union[str,Path],saved_doc_file_path:U
     # print(f"{saved_doc_file_path=}")
     cv.close()
 
+
+####################################################################################################
+# lyq
+import subprocess
+import os
+from pathlib import Path
+from typing import Union
+import requests
+import logging
+
+logger = logging.getLogger(__name__)
+
+def convert_doc_or_pdf_to_docx(src_doc_file_path: Union[str, Path], saved_doc_file_path: Union[str, Path] = None):
+    src_doc_file_path = str(src_doc_file_path)
+    src_doc_file_path_copyed = src_doc_file_path.replace(" ", '')
+    if src_doc_file_path_copyed != src_doc_file_path:
+        if os.path.isfile(src_doc_file_path) and not os.path.exists(src_doc_file_path_copyed):
+            os.rename(src_doc_file_path, src_doc_file_path_copyed)
+
+    src_doc_file_path = Path(src_doc_file_path_copyed)
+    ext = src_doc_file_path.suffix
+    if not saved_doc_file_path:
+        saved_doc_file_path = src_doc_file_path.with_suffix(".docx")
+    
+    outdir = saved_doc_file_path.parent
+
+    # 调用FastAPI服务进行转换
+    try:
+        url = "http://10.1.150.105:8888/pdf_parse"  # 调整为你的服务地址
+        with open(src_doc_file_path, 'rb') as f:
+            files = {'pdf_file': (os.path.basename(src_doc_file_path), f)}
+            response = requests.post(url, files=files, data={
+                'parse_method': 'auto',
+                'output_dir': outdir
+            })
+
+            # logger.info(f"FastAPI返回的响应内容: {response.json()}")
+
+        if response.status_code != 200:
+            raise Exception(f"调用FastAPI服务失败: {response.json().get('error', '未知错误')}")
+
+        # 获取生成的md文件路径
+        md_file_path = Path(outdir) / f"{src_doc_file_path.stem}.md"
+        with open(md_file_path, 'w', encoding='utf-8') as md_file:
+            md_file.write(response.json()['md_content'])
+            logger.info(f"Markdown 文件已写入: {md_file_path}")
+
+        # 使用pandoc将md文件转换为docx
+        saved_doc_file_path = saved_doc_file_path 
+        logger.info(f"开始转换 {md_file_path} 到 {saved_doc_file_path}")
+        if md_file_path.exists():
+            command = f"pandoc {md_file_path} -o {saved_doc_file_path}"
+            try:
+                message = subprocess.run(command, shell=True, check=True, capture_output=True)
+                logger.info(f"转换成功: {saved_doc_file_path}")
+
+                # 删除中间生成的 md 文件
+                try:
+                    os.remove(md_file_path)
+                    logger.info(f"已删除中间文件: {md_file_path}")
+                except Exception as e:
+                    logger.warning(f"删除中间文件失败: {e}")
+
+            except subprocess.CalledProcessError as e:
+                logger.error(f"转换失败: {e.stderr}")
+
+    except Exception as e:
+        logger.error(f"转换过程中出现错误: {e}")
+
+        # 如果转换过程出错，也尝试清理中间文件
+        try:
+            if 'md_file_path' in locals() and md_file_path.exists():
+                os.remove(md_file_path)
+                logger.info(f"已删除中间文件: {md_file_path}")
+        except Exception as cleanup_error:
+            logger.warning(f"清理中间文件失败: {cleanup_error}")
+
+        raise
+
+
+
 if __name__ == "__main__":
     # doc_filepath = fr"/data/projects/JqChat/test_zh.doc"
     # convert_doc_or_pdf_to_docx(doc_filepath)
-    pdf_filepaths = [fr"/data/projects/JqChatV2/workspace/knowledge_base/jqtech_kb/content/基于网络消费者信息需求模型的网站导航问题研究批准书.pdf",
-                     fr"/data/projects/JqChatV2/workspace/knowledge_base/jqtech_kb/content/基于网络消费者信息需求模型的网站导航问题研究 批准书.pdf",
-                     fr"/data/projects/JqChatV2/workspace/knowledge_base/jqtech_kb/content/基于主动协作关系的网络用户建模及模型优化方法研究 批准书.pdf",
-                     fr"/data/projects/JqChatV2/workspace/knowledge_base/fileconvert/content/安徽低收入文件.pdf",
-                     fr"/data/projects/JqChatV2/workspace/knowledge_base/jqtech_kb/content/基于数字孪生的居家养老和虚拟诊所建设方案.doc",
-                     fr'/data/projects/JqChatV2/workspace/knowledge_base/fileconvert/content/“主动健康和老龄化科技应对”重点专项(2).pdf'
-                    ]
-    for file in pdf_filepaths:
-        convert_doc_or_pdf_to_docx(file)
-        convert_doc_or_pdf_to_docx(Path(file))
+    pdf_filepaths = [
+    # fr"/data/projects/JqChatV2/workspace/knowledge_base/jqtech_kb/content/基于网络消费者信息需求模型的网站导航问题研究批准书.pdf",
+    # fr"/data/projects/JqChatV2/workspace/knowledge_base/jqtech_kb/content/基于网络消费者信息需求模型的网站导航问题研究 批准书.pdf",
+    # fr"/data/projects/JqChatV2/workspace/knowledge_base/jqtech_kb/content/基于主动协作关系的网络用户建模及模型优化方法研究 批准书.pdf",
+    # fr"/data/projects/JqChatV2/workspace/knowledge_base/fileconvert/content/安徽低收入文件.pdf",
+    # fr"/data/projects/JqChatV2/workspace/knowledge_base/jqtech_kb/content/基于数字孪生的居家养老和虚拟诊所建设方案.doc",
+    fr'/media/program/pdffiles/创业软件.pdf'
+    # fr'/media/program/pdffiles/test.pdf'
+    # fr'/media/program/pdffiles/“主动健康和老龄化科技应对”重点专项2.pdf'
+    ]
 
-    
+    out = '/media/program/pdffiles/temp'
+    for file in pdf_filepaths:
+        convert_doc_or_pdf_to_docx_lyq(Path(file), Path(out))
+        # convert_doc_or_pdf_to_docx(Path(file))
