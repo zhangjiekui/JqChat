@@ -136,9 +136,9 @@ def _save_files_in_thread(
                 docx_filename = Path(file_path).with_suffix(".docx")
                 docx_file_path = get_file_path(knowledge_base_name=knowledge_base_name, doc_name=docx_filename)
                 input_filepaths,original_valid_input_filepaths = convert_doc_pdf2docx_on_win_and_linux(file_path,overwrite=override)
-                if os.path.isfile(docx_file_path):
-                    if os.path.isfile(file_path):
-                        os.remove(file_path)
+                # if os.path.isfile(docx_file_path):
+                #     if os.path.isfile(file_path):
+                #         os.remove(file_path)
                 data = {"knowledge_base_name": knowledge_base_name, "file_name": docx_filename}
                 return dict(code=200, msg=f"成功上传文件 {filename},并且转换成了{docx_filename}", data=data)
 
