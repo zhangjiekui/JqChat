@@ -109,7 +109,7 @@ class JqElasticsearchDocumentStore(JqBaseDocumentStore):
         lm_documents: Union[LmDocument, List[LmDocument]],
         ids: Optional[Union[List[str], str]] = None,
         default_id_func:Callable = md5_file_value,
-        if_include_src:bool = False,
+        if_uploade_src_file:bool = False,
         file_upload_user:str = "manager",        
         refresh_indices: bool = True,
         **kwargs,
@@ -128,7 +128,7 @@ class JqElasticsearchDocumentStore(JqBaseDocumentStore):
         
         actions_list = []
         es_index_doc_id_list = []
-        if not if_include_src:
+        if not if_uploade_src_file:
             logger.warning("由于性能问题，现在改为默认不上传原始文件、doc_tree（file_yaml）到ES！")
         for document in lm_documents:
             file_name = document.metadata.get('file_name',None) or document.metadata.get('file_name_jq',None)
@@ -138,7 +138,7 @@ class JqElasticsearchDocumentStore(JqBaseDocumentStore):
 
             file_blob_b64 = None            
             es_index_doc_id = ''
-            if if_include_src:
+            if if_uploade_src_file:
                 with open(file_path, 'rb') as file: 
                     file_data = file.read()                    
                 file_blob_b64_encoded = b64encode(file_data)
@@ -156,7 +156,7 @@ class JqElasticsearchDocumentStore(JqBaseDocumentStore):
             doc_tree = file_metadata.pop('file_doc_tree_jq',None)
 
             file_yaml = ''
-            if if_include_src:
+            if if_uploade_src_file:
                 if doc_tree:
                     doc_tree_dict = anytree_dict_exporter.export(doc_tree)
                 file_yaml = yaml.dump(doc_tree_dict, default_flow_style=False)
