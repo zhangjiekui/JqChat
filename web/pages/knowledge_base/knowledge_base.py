@@ -259,6 +259,29 @@ def knowledge_base_page(api: ApiRequest, is_lite: bool = None):
                     "in_es",
                 ]
             ] 
+     
+            # lyq 添加文件类型排序
+            def get_file_type_order(filename):
+                """定义文件类型排序优先级"""
+                filename = filename.lower()
+                priority = {
+                    '.docx': 0,
+                    '.doc': 1,
+                    '.pdf': 2
+                }
+                ext = '.' + filename.split('.')[-1] if '.' in filename else ''
+                return priority.get(ext, 999)
+            
+            # lyq 排序后重置索引，确保No列正确
+            doc_details = doc_details.assign(
+                type_order=doc_details['file_name'].apply(get_file_type_order)
+            ).sort_values(
+                ['type_order', 'file_name']
+            ).drop('type_order', axis=1).reset_index(drop=True)
+
+            # lyq No列重新编号
+            doc_details['No'] = range(1, len(doc_details) + 1)
+
             doc_details["in_folder"] = (
                 doc_details["in_folder"].replace(True, "✓").replace(False, "×")
             )
