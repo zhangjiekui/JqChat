@@ -100,9 +100,14 @@ logger = jqkj_logger(__file__).get_logger()
 def convert_doc_or_pdf_to_docx(src_doc_file_path: Union[str, Path], saved_doc_file_path: Union[str, Path] = None):
     src_doc_file_path = str(src_doc_file_path)
     src_doc_file_path_copyed = src_doc_file_path.replace(" ", '')
+    
+    # 如果原文件名包含空格，创建一个无空格的副本
     if src_doc_file_path_copyed != src_doc_file_path:
         if os.path.isfile(src_doc_file_path) and not os.path.exists(src_doc_file_path_copyed):
             os.rename(src_doc_file_path, src_doc_file_path_copyed)
+            logger.info(f"原PDF文件已重命名: {src_doc_file_path} -> {src_doc_file_path_copyed}")
+
+
 
     src_doc_file_path = Path(src_doc_file_path_copyed)
     ext = src_doc_file_path.suffix
@@ -111,9 +116,13 @@ def convert_doc_or_pdf_to_docx(src_doc_file_path: Union[str, Path], saved_doc_fi
     
     outdir = saved_doc_file_path.parent
 
+    # 记录文件状态
+    logger.info(f"原PDF文件位置: {src_doc_file_path}")
+    logger.info(f"将生成DOCX文件位置: {saved_doc_file_path}")
+
     # 调用FastAPI服务进行转换
     try:
-        url = os.getenv("pdf_parse_url", "http://10.1.150.105:8888/pdf_parse")  # 调整为你的服务地址
+        url = "http://10.1.150.105:8888/pdf_parse"  # 调整为你的服务地址
         with open(src_doc_file_path, 'rb') as f:
             files = {'pdf_file': (os.path.basename(src_doc_file_path), f)}
             response = requests.post(url, files=files, data={
@@ -121,22 +130,25 @@ def convert_doc_or_pdf_to_docx(src_doc_file_path: Union[str, Path], saved_doc_fi
                 'output_dir': outdir
             })
 
-            # logger.info(f"FastAPI返回的响应内容: {response.json()}")
+        # 转换完成后确认文件状态
+        logger.info(f"转换完成。文件状态:")
+        logger.info(f"- 原PDF文件 ({src_doc_file_path}): {'存在' if src_doc_file_path.exists() else '不存在'}")
+        logger.info(f"- 生成的DOCX文件 ({saved_doc_file_path}): {'存在' if saved_doc_file_path.exists() else '不存在'}")
+
 
         if response.status_code != 200:
-            raise Exception(f"调用pdf_parse FastAPI服务失败: {response.json().get('error', '未知错误')}")
+            raise Exception(f"调用FastAPI服务失败: {response.json().get('error', '未知错误')}")
 
         # 获取生成的md文件路径
         md_file_path = Path(outdir) / f"{src_doc_file_path.stem}.md"
         with open(md_file_path, 'w', encoding='utf-8') as md_file:
             md_file.write(response.json()['md_content'])
-            logger.warning(f"pdf_parse转换(pdf=>md {src_doc_file_path} 到 {md_file_path})成功！")
+            logger.info(f"Markdown 文件已写入: {md_file_path}")
 
         # 使用pandoc将md文件转换为docx
         saved_doc_file_path = saved_doc_file_path 
-        
+        logger.info(f"开始转换 {md_file_path} 到 {saved_doc_file_path}")
         if md_file_path.exists():
-            logger.warning(f"开始转换 {md_file_path} 到 {saved_doc_file_path}")
             command = f"pandoc {md_file_path} -o {saved_doc_file_path}"
             try:
                 message = subprocess.run(command, shell=True, check=True, capture_output=True)
@@ -151,8 +163,6 @@ def convert_doc_or_pdf_to_docx(src_doc_file_path: Union[str, Path], saved_doc_fi
 
             except subprocess.CalledProcessError as e:
                 logger.error(f"转换失败: {e.stderr}")
-        else:
-            logger.warning(f"pdf_parse转换(pdf=>md {src_doc_file_path} 到 {md_file_path})失败！")
 
     except Exception as e:
         logger.error(f"转换过程中出现错误: {e}")
