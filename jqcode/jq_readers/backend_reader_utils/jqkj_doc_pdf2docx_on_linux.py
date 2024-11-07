@@ -153,51 +153,61 @@ def do_parse_paralyzed(pdf_file_paths:list):
      
         
 def convert_doc_or_pdf_to_docx(src_doc_file_path: Union[str, Path], saved_doc_file_path: Union[str, Path] = None):
-    src_doc_file_path = Path(src_doc_file_path)
-    saved_doc_file_path = Path(saved_doc_file_path)
-    if not saved_doc_file_path or not saved_doc_file_path.suffix == '.docx':
+    src_doc_file_path = str(src_doc_file_path)
+    src_doc_file_path_copyed = src_doc_file_path.replace(" ", '')
+    
+    # 如果原文件名包含空格，创建一个无空格的副本
+    if src_doc_file_path_copyed != src_doc_file_path:
+        if os.path.isfile(src_doc_file_path) and not os.path.exists(src_doc_file_path_copyed):
+            os.rename(src_doc_file_path, src_doc_file_path_copyed)
+            logger.info(f"原PDF文件已重命名: {src_doc_file_path} -> {src_doc_file_path_copyed}")
+
+
+
+    src_doc_file_path = Path(src_doc_file_path_copyed)
+    ext = src_doc_file_path.suffix
+    if not saved_doc_file_path:
         saved_doc_file_path = src_doc_file_path.with_suffix(".docx")
+    
+    outdir = saved_doc_file_path.parent
+
+    # 记录文件状态
+    logger.info(f"原PDF文件位置: {src_doc_file_path}")
+    logger.info(f"将生成DOCX文件位置: {saved_doc_file_path}")
 
     # 调用FastAPI服务进行转换
     try:
-        # url = os.getenv("pdf_parse_url", "http://10.1.150.105:8888/pdf_parse")  # 调整为你的服务地址
-        # with open(src_doc_file_path, 'rb') as f:
-        #     files = {'pdf_file': (os.path.basename(src_doc_file_path), f)}
-        #     response = requests.post(url, files=files, data={
-        #         'parse_method': 'auto',
-        #         'output_dir': outdir
-        #     })
+        url = "http://10.1.150.105:8888/pdf_parse"  # 调整为你的服务地址
+        with open(src_doc_file_path, 'rb') as f:
+            files = {'pdf_file': (os.path.basename(src_doc_file_path), f)}
+            response = requests.post(url, files=files, data={
+                'parse_method': 'auto',
+                'output_dir': outdir
+            })
 
-        #     # logger.info(f"FastAPI返回的响应内容: {response.json()}")
+        # 转换完成后确认文件状态
+        logger.info(f"转换完成。文件状态:")
+        logger.info(f"- 原PDF文件 ({src_doc_file_path}): {'存在' if src_doc_file_path.exists() else '不存在'}")
+        logger.info(f"- 生成的DOCX文件 ({saved_doc_file_path}): {'存在' if saved_doc_file_path.exists() else '不存在'}")
 
-        # if response.status_code != 200:
-        #     raise Exception(f"调用pdf_parse FastAPI服务失败: {response.json().get('error', '未知错误')}")
+
+        if response.status_code != 200:
+            raise Exception(f"调用FastAPI服务失败: {response.json().get('error', '未知错误')}")
 
         # 获取生成的md文件路径
-        # md_file_path = Path(outdir) / f"{src_doc_file_path.stem}.md"
-        # with open(md_file_path, 'w', encoding='utf-8') as md_file:
-        #     md_file.write(response.json()['md_content'])
-        #     logger.warning(f"pdf_parse转换(pdf=>md {src_doc_file_path} 到 {md_file_path})成功！")
-        
-        
+        md_file_path = Path(outdir) / f"{src_doc_file_path.stem}.md"
+        with open(md_file_path, 'w', encoding='utf-8') as md_file:
+            md_file.write(response.json()['md_content'])
+            logger.info(f"Markdown 文件已写入: {md_file_path}")
 
         # 使用pandoc将md文件转换为docx
         saved_doc_file_path = saved_doc_file_path 
-        # output = do_parse(src_doc_file_path,outdir=outdir)
-        results = do_parse_paralyzed(src_doc_file_path)
-        for result in results:
-            output_dir = result['output_dir']
-            abs_dir = f'/tmp/mineru/{output_dir}'
-            md_file_name = f'{output_dir}.md'
-            md_file_path = find_file_in_directory(abs_dir,md_file_name)
-            md_file_path = Path(md_file_path)
-            
-            if md_file_path.exists():
-                logger.warning(f"开始转换 {md_file_path} 到 {saved_doc_file_path}")
-                command = f"pandoc {md_file_path} -o {saved_doc_file_path}"
-                try:
-                    message = subprocess.run(command, shell=True, check=True, capture_output=True)
-                    logger.warning(f"转换成功: {saved_doc_file_path}")
+        logger.info(f"开始转换 {md_file_path} 到 {saved_doc_file_path}")
+        if md_file_path.exists():
+            command = f"pandoc {md_file_path} -o {saved_doc_file_path}"
+            try:
+                message = subprocess.run(command, shell=True, check=True, capture_output=True)
+                logger.info(f"转换成功: {saved_doc_file_path}")
 
                     # 删除中间生成的 md 文件
                     try:
