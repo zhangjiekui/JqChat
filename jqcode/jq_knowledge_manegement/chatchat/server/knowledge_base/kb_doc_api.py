@@ -119,7 +119,7 @@ def _save_files_in_thread(
                 and os.path.getsize(file_path) == len(file_content)
             ):
                 file_status = f"文件 {filename} 已存在。"
-                logger.warn(file_status)
+                logger.warning(file_status)
 
 
                 if not filename.endswith(('.doc','pdf')):
@@ -260,6 +260,8 @@ def upload_docs(
         start_idx = batch_idx * batch_size
         end_idx = min((batch_idx + 1) * batch_size, total_files)
         current_batch = files[start_idx:end_idx]
+        logger.warning(f"......当前正在批处理上传的文件列表{current_batch=}")
+        
 
         try:
             # 处理当前批次的文件

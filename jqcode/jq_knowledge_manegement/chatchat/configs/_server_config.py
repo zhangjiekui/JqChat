@@ -42,7 +42,7 @@ class ConfigServerFactory(core_config.ConfigFactory[ConfigServer]):
 
     def __init__(self):
         # httpx 请求默认超时时间（秒）。如果加载模型或对话较慢，出现超时错误，可以适当加大该值。
-        self.HTTPX_DEFAULT_TIMEOUT = 300.0
+        self.HTTPX_DEFAULT_TIMEOUT = 600.0
 
         # API 是否开启跨域，默认为False，如果需要开启，请设置为True
         # is open cross domain
@@ -68,7 +68,7 @@ class ConfigServerFactory(core_config.ConfigFactory[ConfigServer]):
             "port": 7861,
         }
 
-    def httpx_default_timeout(self, timeout: float):
+    def httpx_default_timeout(self, timeout: float=600):
         self.HTTPX_DEFAULT_TIMEOUT = timeout
 
     def open_cross_domain(self, open_cross_domain: bool):

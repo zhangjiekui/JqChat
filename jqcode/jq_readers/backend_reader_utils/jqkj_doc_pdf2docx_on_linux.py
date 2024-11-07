@@ -1,4 +1,9 @@
 import os
+import base64
+import requests
+import numpy as np
+from loguru import logger
+from joblib import Parallel, delayed
 from typing import Union
 from pathlib import Path
 from pdf2docx import Converter
@@ -96,63 +101,115 @@ import requests
 from jqcode.jq_utils.logger import jqkj_logger
 logger = jqkj_logger(__file__).get_logger()
 
-
-def convert_doc_or_pdf_to_docx(src_doc_file_path: Union[str, Path], saved_doc_file_path: Union[str, Path] = None):
-    src_doc_file_path = str(src_doc_file_path)
-    src_doc_file_path_copyed = src_doc_file_path.replace(" ", '')
-    if src_doc_file_path_copyed != src_doc_file_path:
-        if os.path.isfile(src_doc_file_path) and not os.path.exists(src_doc_file_path_copyed):
-            os.rename(src_doc_file_path, src_doc_file_path_copyed)
-
-    src_doc_file_path = Path(src_doc_file_path_copyed)
-    ext = src_doc_file_path.suffix
-    if not saved_doc_file_path:
-        saved_doc_file_path = src_doc_file_path.with_suffix(".docx")
+def to_b64(file_path):
+    try:
+        with open(file_path, 'rb') as f:
+            return base64.b64encode(f.read()).decode('utf-8')
+    except Exception as e:
+        raise Exception(f'File: {file_path} - Info: {e}')
     
-    outdir = saved_doc_file_path.parent
+def find_file_in_directory(directory, target_filename):
+    for root, dirs, files in os.walk(directory):
+        for file in files:
+            if file == target_filename:
+                file_path = os.path.join(root, file)
+                print(f"File found: {file_path}")
+                return file_path
+    return ''
+
+def predict(file_path,**kwargs):
+    url = os.getenv("pdf_parse_url", "http://10.1.150.105:8888/predict") 
+    url = "http://10.1.150.105:8888/predict" 
+    url = "http://localhost:8888/predict"
+    file_path = str(file_path)
+    print(url)
+    print(str(file_path))
+    # file64=to_b64(str(file_path))
+    kwargs.update({"parse_method":'auto'})
+    try:
+        response = requests.post(url, json={
+            # 'file':file64,
+            'file':file_path,
+            'kwargs': kwargs
+        })
+
+        if response.status_code == 200:
+            output = response.json()
+            output['src_pdf_filepath'] = file_path
+            return output
+        else:
+            raise Exception(response.text)
+    except Exception as e:
+        logger.error(f'File: {file_path} - Info: {e}')
+        
+def do_parse_paralyzed(pdf_file_paths:list):
+    if not isinstance(pdf_file_paths,list):
+       pdf_file_paths = [pdf_file_paths] 
+    n_jobs = np.clip(len(pdf_file_paths),1, 8)
+    results = Parallel(n_jobs, prefer='threads', verbose=10)(
+        delayed(predict)(p) for p in pdf_file_paths
+    )
+    return results
+     
+        
+def convert_doc_or_pdf_to_docx(src_doc_file_path: Union[str, Path], saved_doc_file_path: Union[str, Path] = None):
+    src_doc_file_path = Path(src_doc_file_path)
+    saved_doc_file_path = Path(saved_doc_file_path)
+    if not saved_doc_file_path or not saved_doc_file_path.suffix == '.docx':
+        saved_doc_file_path = src_doc_file_path.with_suffix(".docx")
 
     # 调用FastAPI服务进行转换
     try:
-        url = os.getenv("pdf_parse_url", "http://10.1.150.105:8888/pdf_parse")  # 调整为你的服务地址
-        with open(src_doc_file_path, 'rb') as f:
-            files = {'pdf_file': (os.path.basename(src_doc_file_path), f)}
-            response = requests.post(url, files=files, data={
-                'parse_method': 'auto',
-                'output_dir': outdir
-            })
+        # url = os.getenv("pdf_parse_url", "http://10.1.150.105:8888/pdf_parse")  # 调整为你的服务地址
+        # with open(src_doc_file_path, 'rb') as f:
+        #     files = {'pdf_file': (os.path.basename(src_doc_file_path), f)}
+        #     response = requests.post(url, files=files, data={
+        #         'parse_method': 'auto',
+        #         'output_dir': outdir
+        #     })
 
-            # logger.info(f"FastAPI返回的响应内容: {response.json()}")
+        #     # logger.info(f"FastAPI返回的响应内容: {response.json()}")
 
-        if response.status_code != 200:
-            raise Exception(f"调用pdf_parse FastAPI服务失败: {response.json().get('error', '未知错误')}")
+        # if response.status_code != 200:
+        #     raise Exception(f"调用pdf_parse FastAPI服务失败: {response.json().get('error', '未知错误')}")
 
         # 获取生成的md文件路径
-        md_file_path = Path(outdir) / f"{src_doc_file_path.stem}.md"
-        with open(md_file_path, 'w', encoding='utf-8') as md_file:
-            md_file.write(response.json()['md_content'])
-            logger.warning(f"pdf_parse转换(pdf=>md {src_doc_file_path} 到 {md_file_path})成功！")
+        # md_file_path = Path(outdir) / f"{src_doc_file_path.stem}.md"
+        # with open(md_file_path, 'w', encoding='utf-8') as md_file:
+        #     md_file.write(response.json()['md_content'])
+        #     logger.warning(f"pdf_parse转换(pdf=>md {src_doc_file_path} 到 {md_file_path})成功！")
+        
+        
 
         # 使用pandoc将md文件转换为docx
         saved_doc_file_path = saved_doc_file_path 
-        
-        if md_file_path.exists():
-            logger.warning(f"开始转换 {md_file_path} 到 {saved_doc_file_path}")
-            command = f"pandoc {md_file_path} -o {saved_doc_file_path}"
-            try:
-                message = subprocess.run(command, shell=True, check=True, capture_output=True)
-                logger.info(f"转换成功: {saved_doc_file_path}")
-
-                # 删除中间生成的 md 文件
+        # output = do_parse(src_doc_file_path,outdir=outdir)
+        results = do_parse_paralyzed(src_doc_file_path)
+        for result in results:
+            output_dir = result['output_dir']
+            abs_dir = f'/tmp/mineru/{output_dir}'
+            md_file_name = f'{output_dir}.md'
+            md_file_path = find_file_in_directory(abs_dir,md_file_name)
+            md_file_path = Path(md_file_path)
+            
+            if md_file_path.exists():
+                logger.warning(f"开始转换 {md_file_path} 到 {saved_doc_file_path}")
+                command = f"pandoc {md_file_path} -o {saved_doc_file_path}"
                 try:
-                    os.remove(md_file_path)
-                    logger.info(f"已删除中间文件: {md_file_path}")
-                except Exception as e:
-                    logger.warning(f"删除中间文件失败: {e}")
+                    message = subprocess.run(command, shell=True, check=True, capture_output=True)
+                    logger.warning(f"转换成功: {saved_doc_file_path}")
 
-            except subprocess.CalledProcessError as e:
-                logger.error(f"转换失败: {e.stderr}")
-        else:
-            logger.warning(f"pdf_parse转换(pdf=>md {src_doc_file_path} 到 {md_file_path})失败！")
+                    # 删除中间生成的 md 文件
+                    try:
+                        os.remove(md_file_path)
+                        logger.info(f"已删除中间文件: {md_file_path}")
+                    except Exception as e:
+                        logger.warning(f"删除中间文件失败: {e}")
+
+                except subprocess.CalledProcessError as e:
+                    logger.error(f"转换失败: {e.stderr}")
+            else:
+                logger.warning(f"pdf_parse转换(pdf=>md {src_doc_file_path} 到 {md_file_path})失败！")
 
     except Exception as e:
         logger.error(f"转换过程中出现错误: {e}")
@@ -178,12 +235,17 @@ if __name__ == "__main__":
     # fr"/data/projects/JqChatV2/workspace/knowledge_base/jqtech_kb/content/基于主动协作关系的网络用户建模及模型优化方法研究 批准书.pdf",
     # fr"/data/projects/JqChatV2/workspace/knowledge_base/fileconvert/content/安徽低收入文件.pdf",
     # fr"/data/projects/JqChatV2/workspace/knowledge_base/jqtech_kb/content/基于数字孪生的居家养老和虚拟诊所建设方案.doc",
-    fr'/media/program/pdffiles/创业软件.pdf'
+    # fr'/media/program/pdffiles/创业软件.pdf'
     # fr'/media/program/pdffiles/test.pdf'
     # fr'/media/program/pdffiles/“主动健康和老龄化科技应对”重点专项2.pdf'
+    fr"/data/projects/JqChatV2/workspace/knowledge_base/test_pdf/content/创业软件.pdf",
+    fr"/data/projects/JqChatV2/workspace/knowledge_base/test_pdf/content/安徽低收入文件.pdf"
     ]
+    
+    results = do_parse_paralyzed(pdf_filepaths)
+    
 
-    out = '/media/program/pdffiles/temp'
-    for file in pdf_filepaths:
-        convert_doc_or_pdf_to_docx(Path(file), Path(out))
-        # convert_doc_or_pdf_to_docx(Path(file))
+    out = '/data/projects/JqChatV2/workspace/temp'
+    # for file in pdf_filepaths:
+    #     convert_doc_or_pdf_to_docx(Path(file), Path(out))
+    #     # convert_doc_or_pdf_to_docx(Path(file))

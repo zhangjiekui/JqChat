@@ -36,14 +36,14 @@ class ApiRequest:
     """
     api.py调用的封装（同步模式）,简化api调用方式
     """
-
     def __init__(
         self,
         base_url: str = api_address(),
         timeout: float = HTTPX_DEFAULT_TIMEOUT,
     ):
         self.base_url = base_url
-        self.timeout = timeout
+        _timeout = max(timeout,600)
+        self.timeout = _timeout
         self._use_async = False
         self._client = None
 

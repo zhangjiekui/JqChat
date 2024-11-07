@@ -18,10 +18,10 @@ from jqcode.api_server.kb_routes import kb_router
 # from jqcode.jq_knowledge_manegement.chatchat.server.api_server.tool_routes import tool_router
 from jqcode.jq_knowledge_manegement.chatchat.server.chat.completion import completion
 from jqcode.jq_knowledge_manegement.chatchat.server.utils import MakeFastAPIOffline
-
+from datetime import timedelta
 
 def create_app(run_mode: str = None):
-    app = FastAPI(title="Langchain-Chatchat API Server", version=VERSION)
+    app = FastAPI(title="JqChat API Server", version=VERSION)
     MakeFastAPIOffline(app)
     # Add CORS middleware to allow all origins
     # 在config.py中设置OPEN_DOMAIN=True，允许跨域
