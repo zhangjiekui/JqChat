@@ -1,4 +1,5 @@
-import io, logging, asyncio, zipfile
+import os, io, logging, asyncio, zipfile,tempfile,shutil
+from io import BytesIO
 from pathlib import Path
 from typing import Dict, Any,List
 from joblib import Parallel, delayed
@@ -6,7 +7,10 @@ from datetime import datetime
 from typing import List
 from fastapi import FastAPI, UploadFile, File, HTTPException,Form
 from fastapi.responses import FileResponse, StreamingResponse
-from utils import process_single_file
+
+from utils import process_single_file, convert_pdf_to_docx,check_pdf_type
+
+from concurrent.futures import ThreadPoolExecutor
 
 # 配置日志
 logging.basicConfig(
@@ -17,56 +21,118 @@ logger = logging.getLogger(__name__)
 
 app = FastAPI(title="PDF转DOCX服务")
 
+MAX_WORKERS = 4
 
 @app.post("/convert/batch/")
 async def convert_pdfs(files: List[UploadFile] = File(...)):
-    """
-    批量上传PDF文件并转换为DOCX格式
-    """
+    """批量上传PDF文件并转换为DOCX格式"""
     if not files:
         raise HTTPException(status_code=400, detail="请上传至少一个文件")
 
-    async def process_file(file: UploadFile) -> Dict[str, Any]:
+    # 准备文件数据
+    files_data = []
+    invalid_files = []
+    
+    for file in files:
+        if not file.filename.lower().endswith('.pdf'):
+            invalid_files.append({
+                "filename": file.filename,
+                "reason": "非PDF格式文件"
+            })
+            continue
+        
         try:
-            if not file.filename.lower().endswith('.pdf'):
-                return {
-                    "filename": file.filename,
-                    "success": False,
-                    "message": "不是PDF格式文件",
-                    "docx_path": None
-                }
-            
-            # 读取文件内容
             pdf_bytes = await file.read()
-            pdf_filename = Path(file.filename)
+            # 检查PDF类型
+            try:
+                pdf_type = check_pdf_type(pdf_bytes)
+                files_data.append((pdf_bytes, Path(file.filename), pdf_type))
+            except Exception as e:
+                invalid_files.append({
+                    "filename": file.filename,
+                    "reason": f"PDF类型检查失败: {str(e)}"
+                })
+                logger.error(f"检查文件 {file.filename} 类型时发生错误: {str(e)}")
+                
+        except Exception as e:
+            invalid_files.append({
+                "filename": file.filename,
+                "reason": f"文件读取失败: {str(e)}"
+            })
+            logger.error(f"读取文件 {file.filename} 时发生错误: {str(e)}")
+
+    if not files_data:
+        raise HTTPException(
+            status_code=400, 
+            detail={
+                "message": "没有有效的PDF文件可以处理",
+                "invalid_files": invalid_files
+            }
+        )
+
+    def process_file_parallel(pdf_bytes: bytes, filename: Path, pdf_type: str) -> Dict[str, Any]:
+        """并行处理单个文件的函数"""
+        try:
+            # 创建outputs目录（如果不存在）
+            output_dir = Path("outputs")
+            output_dir.mkdir(exist_ok=True)
             
-            # 使用已有的process_single_file处理
-            result = await process_single_file(pdf_bytes, pdf_filename)
-            result["filename"] = file.filename  # 添加原始文件名到结果中
+            # 使用process_single_file处理文件
+            loop = asyncio.new_event_loop()
+            asyncio.set_event_loop(loop)
+            try:
+                result = loop.run_until_complete(
+                    process_single_file(pdf_bytes, filename)
+                )
+            finally:
+                loop.close()
             
+            result["filename"] = str(filename)
+            result["pdf_type"] = pdf_type
             return result
             
         except Exception as e:
-            logger.error(f"处理文件 {file.filename} 时发生错误: {str(e)}")
+            error_msg = f"处理文件 {filename} 时发生错误: {str(e)}"
+            logger.error(error_msg)
             return {
-                "filename": file.filename,
+                "filename": str(filename),
                 "success": False,
-                "message": f"处理失败: {str(e)}",
-                "docx_path": None
+                "message": error_msg,
+                "pdf_type": pdf_type
             }
 
-    # 并行处理所有文件
-    tasks = [process_file(file) for file in files]
-    results = await asyncio.gather(*tasks)
+    # 使用joblib进行并行处理
+    results = Parallel(n_jobs=MAX_WORKERS, prefer='threads')(
+        delayed(process_file_parallel)(pdf_bytes, filename, pdf_type)
+        for pdf_bytes, filename, pdf_type in files_data
+    )
     
     # 统计成功和失败数量
     success_count = sum(1 for r in results if r["success"])
     fail_count = len(results) - success_count
     
+    # 按PDF类型分类统计
+    type_stats = {}
+    for result in results:
+        pdf_type = result.get("pdf_type", "unknown")
+        if pdf_type not in type_stats:
+            type_stats[pdf_type] = {
+                "total": 0,
+                "success": 0,
+                "failed": 0
+            }
+        type_stats[pdf_type]["total"] += 1
+        if result["success"]:
+            type_stats[pdf_type]["success"] += 1
+        else:
+            type_stats[pdf_type]["failed"] += 1
+    
     return {
         "total": len(results),
         "success_count": success_count,
         "fail_count": fail_count,
+        "invalid_files": invalid_files,
+        "type_statistics": type_stats,
         "results": results
     }
 
@@ -134,49 +200,77 @@ async def download_file(file_path: str):
         raise HTTPException(status_code=500, detail=f"下载文件时发生错误: {str(e)}")
     
 
-
+##########################################################################
 @app.post("/download/batch/")
-async def download_batch(file_paths: List[str]):
+async def download_batch(files: List[str]):
     """
-    批量下载多个DOCX文件，将文件打包成zip返回
+    批量下载文件，返回一个ZIP文件
+    
+    Args:
+        files: 文件路径列表，例如 ["F:/winserver/outputs/file1.docx", "F:/winserver/outputs/file2.docx"]
     """
     try:
-        # 创建内存中的zip文件
-        zip_buffer = io.BytesIO()
-        with zipfile.ZipFile(zip_buffer, 'w', zipfile.ZIP_DEFLATED) as zip_file:
-            for file_path in file_paths:
-                full_path = Path(file_path)
-                
-                # 验证文件
-                if not full_path.exists():
-                    continue
-                if not str(full_path).lower().endswith('.docx'):
-                    continue
-                
-                # 将文件添加到zip
-                zip_file.write(full_path, full_path.name)
+        zip_buffer = BytesIO()
+        failed_files = []
         
-        # 将zip_buffer的指针移到开始
+        with zipfile.ZipFile(zip_buffer, "w", zipfile.ZIP_DEFLATED) as zip_file:
+            for file_path in files:
+                try:
+                    # 转换路径格式并创建Path对象
+                    file_path = file_path.replace("\\", "/")
+                    full_path = Path(file_path)
+                    
+                    # 检查文件是否存在
+                    if not full_path.exists():
+                        failed_files.append({
+                            "filename": full_path.name,
+                            "reason": "文件不存在"
+                        })
+                        continue
+                    
+                    # 确保是DOCX文件
+                    if not str(full_path).lower().endswith('.docx'):
+                        failed_files.append({
+                            "filename": full_path.name,
+                            "reason": "非DOCX格式文件"
+                        })
+                        continue
+                    
+                    # 只使用文件名作为zip中的名称，避免包含完整路径
+                    zip_file.write(full_path, arcname=full_path.name)
+                    
+                except Exception as e:
+                    failed_files.append({
+                        "filename": Path(file_path).name,
+                        "reason": f"打包文件时发生错误: {str(e)}"
+                    })
+        
+        if len(failed_files) == len(files):
+            raise HTTPException(
+                status_code=400,
+                detail={
+                    "message": "所有文件处理失败",
+                    "failed_files": failed_files
+                }
+            )
+        
         zip_buffer.seek(0)
-        
-        # 生成下载文件名
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-        zip_filename = f"converted_docs_{timestamp}.zip"
         
-        # 返回zip文件
         return StreamingResponse(
-            io.BytesIO(zip_buffer.getvalue()),
+            zip_buffer,
             media_type="application/zip",
             headers={
-                "Content-Disposition": f"attachment; filename={zip_filename}"
+                "Content-Disposition": f"attachment; filename=converted_files_{timestamp}.zip"
             }
         )
-        
-    except Exception as e:
-        logger.error(f"创建批量下载zip文件时发生错误: {str(e)}")
-        raise HTTPException(status_code=500, detail=f"批量下载文件时发生错误: {str(e)}")
-
     
+    except Exception as e:
+        logger.error(f"批量下载文件时发生错误: {str(e)}")
+        if isinstance(e, HTTPException):
+            raise e
+        raise HTTPException(status_code=500, detail=str(e))
+
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run(app, host="0.0.0.0", port=8000)
