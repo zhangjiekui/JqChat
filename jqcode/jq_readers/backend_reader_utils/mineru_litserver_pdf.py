@@ -28,7 +28,11 @@ def to_b64(file_path):
     except Exception as e:
         raise Exception(f'File: {file_path} - Info: {e}')
   
-# from magic_pdf.tools.common import do_parse    
+# from magic_pdf.tools.common import do_parse
+# 修改的目的:
+#   1、返回md_file_path
+#   2、debug_able为True时，产生/保留所有中间处理结果,否则全部跳过
+#   3、修改f_make_md_mode=MakeMode.NLP_MD（原来是MakeMode.MM_MD）
 def do_parse(
     output_dir,
     pdf_file_name,
@@ -36,14 +40,14 @@ def do_parse(
     model_list,
     parse_method,
     debug_able,
-    f_draw_span_bbox=True,
-    f_draw_layout_bbox=True,
-    f_dump_md=True,
-    f_dump_middle_json=True,
-    f_dump_model_json=True,
-    f_dump_orig_pdf=True,
-    f_dump_content_list=True,
-    f_make_md_mode=MakeMode.MM_MD,
+    f_draw_span_bbox=False,
+    f_draw_layout_bbox=False,
+    f_dump_md=True, #只有这个设置为True
+    f_dump_middle_json=False,
+    f_dump_model_json=False,
+    f_dump_orig_pdf=False,
+    f_dump_content_list=False,
+    f_make_md_mode=MakeMode.NLP_MD,
     f_draw_model_bbox=False,
     f_draw_line_sort_bbox=False,
     start_page_id=0,
@@ -53,10 +57,17 @@ def do_parse(
     formula_enable=None,
     table_enable=None,
 ):
-    if debug_able:
+    if debug_able:#如果debug_able=True，都会设为True
         logger.warning('debug mode is on')
         f_draw_model_bbox = True
         f_draw_line_sort_bbox = True
+        f_draw_span_bbox=True,
+        f_draw_layout_bbox=True,
+        f_dump_md=True,
+        f_dump_middle_json=True,
+        f_dump_model_json=True,
+        f_dump_orig_pdf=True,
+        f_dump_content_list=True,
 
     orig_model_list = copy.deepcopy(model_list)
     local_image_dir, local_md_dir = prepare_env(output_dir, pdf_file_name, parse_method)
@@ -232,11 +243,11 @@ if __name__ == '__main__':
         # devices='auto',
         devices=[0,1],
         # devices=[0],
-        workers_per_device=4,
+        workers_per_device=1,
         callbacks=[PredictionTimeLogger()],
         track_requests=True,
         max_batch_size=1,
         batch_timeout=1,
         timeout=False
     )
-    server.run(port=8888,log_level='debug')
+    server.run(port=8889,log_level='debug')

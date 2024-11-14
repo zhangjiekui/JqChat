@@ -120,7 +120,7 @@ def find_file_in_directory(directory, target_filename):
 def predict(file_path,**kwargs):
     url = os.getenv("pdf_parse_url", "http://10.1.150.105:8888/predict") 
     url = "http://10.1.150.105:8888/predict" 
-    url = "http://localhost:8888/predict"
+    url = "http://localhost:8889/predict"
     file_path = str(file_path)
     print(url)
     print(str(file_path))

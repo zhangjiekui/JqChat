@@ -146,6 +146,7 @@ def do_parse_paralyzed(pdf_file_paths:list):
     if not isinstance(pdf_file_paths,list):
        pdf_file_paths = [pdf_file_paths] 
     n_jobs = np.clip(len(pdf_file_paths),1, 8)
+    # https://www.jb51.net/python/2961491y0.htm  对Parallel和delayed的理解和示例都很棒
     results = Parallel(n_jobs, prefer='threads', verbose=10)(
         delayed(predict)(p) for p in pdf_file_paths
     )
@@ -209,17 +210,17 @@ def convert_doc_or_pdf_to_docx(src_doc_file_path: Union[str, Path], saved_doc_fi
                 message = subprocess.run(command, shell=True, check=True, capture_output=True)
                 logger.info(f"转换成功: {saved_doc_file_path}")
 
-                    # 删除中间生成的 md 文件
-                    try:
-                        os.remove(md_file_path)
-                        logger.info(f"已删除中间文件: {md_file_path}")
-                    except Exception as e:
-                        logger.warning(f"删除中间文件失败: {e}")
+                # 删除中间生成的 md 文件
+                try:
+                    os.remove(md_file_path)
+                    logger.info(f"已删除中间文件: {md_file_path}")
+                except Exception as e:
+                    logger.warning(f"删除中间文件失败: {e}")
 
-                except subprocess.CalledProcessError as e:
-                    logger.error(f"转换失败: {e.stderr}")
-            else:
-                logger.warning(f"pdf_parse转换(pdf=>md {src_doc_file_path} 到 {md_file_path})失败！")
+            except subprocess.CalledProcessError as e:
+                logger.error(f"转换失败: {e.stderr}")
+        else:
+            logger.warning(f"pdf_parse转换(pdf=>md {src_doc_file_path} 到 {md_file_path})失败！")
 
     except Exception as e:
         logger.error(f"转换过程中出现错误: {e}")
