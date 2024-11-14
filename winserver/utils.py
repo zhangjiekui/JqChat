@@ -12,6 +12,13 @@ from magic_pdf.pipe.AbsPipe import AbsPipe
 OUTPUT_DIR = Path("outputs")
 OUTPUT_DIR.mkdir(exist_ok=True)
 
+import pythoncom
+from threading import Lock
+# 创建全局锁
+word_app_lock = Lock()
+MAX_WORKERS = 4 
+
+
 # 远程服务配置
 REMOTE_OCR_SERVICE = "http://10.1.150.106:8888/pdf_parse"
 
@@ -68,7 +75,7 @@ async def process_single_file(pdf_bytes: bytes, pdf_filename: str) -> Dict[str, 
                         "message": "OCR处理并转换成功",
                         "pdf_type": pdf_type,
                         "docx_path": str(docx_file_path),
-                        "ocr_result": ocr_result
+                        # "ocr_result": ocr_result
                     }
                 else:
                     return {
@@ -152,12 +159,7 @@ def convert_md_to_docx(md_path: Path, output_path: Path) -> bool:
         output = pypandoc.convert_file(str(md_path), 'docx', outputfile=str(output_path),
                                        extra_args=['--extract-media', ''])
         return True
-        # if output:
-        #     logger.info(f"MD文件转换成功: {output_path}")
-        #     return True
-        # else:
-        #     logger.error(f"Pandoc转换失败: {output}")
-        #     return False
+
     except subprocess.CalledProcessError as e:
         logger.error(f"Pandoc转换失败: {str(e)}")
         return False
@@ -175,34 +177,57 @@ def check_pdf_type(pdf_bytes: bytes) -> str:
         raise HTTPException(status_code=500, detail="PDF类型检测失败")
     
 
-def convert_pdf_to_docx(pdf_path: Path, output_path: Path) -> bool:
+def convert_pdf_to_docx(pdf_path: Path, output_path: Path) -> Dict[str, Any]:
     """将PDF文件转换为DOCX格式"""
-    try:
-        # 启动Word应用程序
-        word = win32com.client.Dispatch("Word.Application")
-        word.Visible = False
-        
-        try:
-            # 打开PDF文件
-            pdfdoc = word.Documents.Open(str(pdf_path.absolute()))
-            
-            # 保存为DOCX格式 (wdFormatXMLDocument = 12)
-            pdfdoc.SaveAs(str(output_path.absolute()), 12)
-            
-            # 关闭文档
-            pdfdoc.Close()
-            logger.info(f"转换成功: {output_path}")
-            return True
-            
-        except Exception as e:
-            logger.error(f"转换过程中出错: {str(e)}")
-            return False
-            
-        finally:
-            # 确保Word应用程序被关闭
-            word.Quit()
-            
-    except Exception as e:
-        logger.error(f"转换失败: {str(e)}")
-        return False
+    # COM组件初始化
+    pythoncom.CoInitialize()
     
+    try:
+        with word_app_lock:  # 使用锁保护Word应用程序的创建和使用
+            word = win32com.client.Dispatch("Word.Application")
+            word.Visible = False
+            
+            try:
+                # 打开PDF文件
+                pdfdoc = word.Documents.Open(str(pdf_path.absolute()))
+                
+                # 保存为DOCX格式 (wdFormatXMLDocument = 12)
+                pdfdoc.SaveAs(str(output_path.absolute()), 12)
+                
+                # 关闭文档
+                pdfdoc.Close()
+                logger.info(f"转换成功: {output_path}")
+                result = {
+                    "success": True,
+                    "message": "转换成功",
+                    "docx_path": str(output_path)
+                }
+                
+            except Exception as e:
+                error_msg = f"转换过程中出错: {str(e)}"
+                logger.error(error_msg)
+                result = {
+                    "success": False,
+                    "message": error_msg,
+                    "docx_path": None
+                }
+                
+            finally:
+                # 确保Word应用程序被关闭
+                word.Quit()
+                
+        return result
+                
+    except Exception as e:
+        error_msg = f"转换失败: {str(e)}"
+        logger.error(error_msg)
+        return {
+            "success": False,
+            "message": error_msg,
+            "docx_path": None
+        }
+        
+    finally:
+        # 清理COM组件
+        pythoncom.CoUninitialize()
+
