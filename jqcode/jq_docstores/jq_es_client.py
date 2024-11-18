@@ -286,7 +286,7 @@ if __name__ == "__main__":
     # current_user='elastic'
 
     jq_es_client = JqEsClient()
-    status = jq_es_client.delete_file_from_es_kb('liyuanqin', 'OCR接口性能报告.docx')
+    # status = jq_es_client.delete_file_from_es_kb('liyuanqin', 'OCR接口性能报告.docx')
     # status = jq_es_client.delete_file_from_es_kb('liyuanqin', '测试文本.txt')
     # # status = jq_es_client.create_doc_index(index_name='tempuse',
     # #                                        description="创建一个测试知识库知识库,该知识库主要用测试获取基本信息功能")
@@ -304,17 +304,17 @@ if __name__ == "__main__":
     # status = jq_es_client.drop_doc_index(index_name=index_name)
     
     # input_dir = "/media/program/UPLOAD_DOCS/knowledge_base/liyuanqin/content"
-    input_dir = fr'/data/projects/JqChatV2/JqChat/jqcode/jq_readers/.test_files/.testinputdocs'
-    input_files =["/data/projects/JqChatV2/JqChat/jqcode/jq_readers/.test_files/.testinputdocs/AAMIS_项目总体计划_120925.doc"]
+    # input_dir = fr'/data/projects/JqChatV2/JqChat/jqcode/jq_readers/.test_files/.testinputdocs'
+    # input_files =["/data/projects/JqChatV2/JqChat/jqcode/jq_readers/.test_files/.testinputdocs/AAMIS_项目总体计划_120925.doc"]
     # input_files = "/media/program/UPLOAD_DOCS/knowledge_base/liyuanqin/content/Agent调试跟踪1.txt"
-    # input_files = ["/media/project/JqChat/发票识别接口文档.docx"]
-    vectorstore = jq_es_client.chunks_indexing_from_input_dir_or_files(current_user='',index_name='graphrag_test',
-                                                                    description="graphrag_test: 转换/data/projects/JqChatV2/JqChat/jqcode/jq_readers/.test_files/.testinputdocs目录下的文件，测试速度",
-                                                                    input_dir = input_dir,
-                                                                    input_files=None)
-    # vectorstore = jq_es_client.chunks_indexing_from_input_dir_or_files(current_user='',index_name='table_test',
-    #                                                             description="JqConverter跳过文件转换: /data/projects/JqChatV2/JqChat/jqcode/jq_readers/.test_files/.testinputdocs/A方案.txt",
-    #                                                             input_dir = None,
-    #                                                             input_files=input_files)
+    input_files = ['/media/program/workspace/knowledge_base/create2/content/“主动健康和老龄化科技应对”重点专项2.docx']
+    # vectorstore = jq_es_client.chunks_indexing_from_input_dir_or_files(current_user='',index_name='graphrag_test',
+    #                                                                 description="graphrag_test: 转换/data/projects/JqChatV2/JqChat/jqcode/jq_readers/.test_files/.testinputdocs目录下的文件，测试速度",
+    #                                                                 input_dir = input_dir,
+    #                                                                 input_files=None)
+    vectorstore = jq_es_client.chunks_indexing_from_input_dir_or_files(current_user='',index_name='create2',
+                                                                description="JqConverter跳过文件转换: /data/projects/JqChatV2/JqChat/jqcode/jq_readers/.test_files/.testinputdocs/A方案.txt",
+                                                                input_dir = None,
+                                                                input_files=input_files)
     pass
     
