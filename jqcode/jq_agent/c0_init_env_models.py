@@ -177,9 +177,14 @@ class JqXinferenceReranker(BaseDocumentCompressor):
         max_chunks_per_doc: Optional[int]=None,
         return_documents: Optional[bool]=True,
         return_len: Optional[bool]=True,
+        normalize: Optional[bool]=True,
         **kwargs,
     ):
         top_n = top_n or self.top_n
+        if not kwargs:
+            kwargs = {"normalize":normalize}
+        else:
+            kwargs.update({"normalize":normalize})
         return self._model.rerank(documents,query,top_n,max_chunks_per_doc,return_documents,return_len,**kwargs)
     
     def compress_documents(
@@ -187,6 +192,9 @@ class JqXinferenceReranker(BaseDocumentCompressor):
         documents: Union[Sequence[Document],Sequence[str]],
         query: str,        
         callbacks: Optional[Callbacks] = None,
+        normalize: Optional[bool]=True,
+        **kwargs
+        
     ) -> Sequence[Document]:
         """
         Compress documents using `Xinference Rerank Model API`.
@@ -212,7 +220,7 @@ class JqXinferenceReranker(BaseDocumentCompressor):
                 passages.append(passage.replace('\n', ' '))
                 valid_doc_list.append(d)
        
-        rerank_result = self._model.rerank(passages,query,top_n=self.top_n,return_documents=False,return_len=True)
+        rerank_result = self._model.rerank(passages,query,top_n=self.top_n,return_documents=False,return_len=True,normalize=normalize,**kwargs)
         rerank_result_list = rerank_result["results"]
         final_results = []
         for result in rerank_result_list:
@@ -566,12 +574,12 @@ class InitEnvModels:
             # xinference.client: model.rerank(corpus, query) https://inference.readthedocs.io/zh-cn/latest/index.html
             # https://github.com/xorbitsai/inference/blob/7d83300a7694a0262b634007ea4164ea753e466f/xinference/model/rerank/core.py
             reranker = JqXinferenceReranker(top_n=6,model=xinfer_reranker)
-            # query = "A man is eating pasta."
-            # corpus = ["A man is eating food.","A woman is playing violin."]
-            # r = reranker.rerank(corpus, query)
-            # logger.debug(r)
-            # c = reranker.compress_documents(corpus, query)
-            # logger.debug(c)
+            query = "A man is eating pasta."
+            corpus = ["A man is eating food.","A woman is playing violin."]
+            r = reranker.rerank(corpus, query)
+            logger.debug(r)
+            c = reranker.compress_documents(corpus, query,**{"normalize":True})
+            logger.debug(c)
         except Exception as e:
             reranker = None
             logger.warning(f"{self.rerank_model_name}在线模型无法获取: {e}")

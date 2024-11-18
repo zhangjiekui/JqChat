@@ -178,7 +178,7 @@ def convert_doc_or_pdf_to_docx(src_doc_file_path: Union[str, Path], saved_doc_fi
 
     # 调用FastAPI服务进行转换
     try:
-        url = "http://10.1.150.105:8888/pdf_parse"  # 调整为你的服务地址
+        url = "http://10.1.150.106:8888/pdf_parse"  # 调整为你的服务地址
         with open(src_doc_file_path, 'rb') as f:
             files = {'pdf_file': (os.path.basename(src_doc_file_path), f)}
             response = requests.post(url, files=files, data={

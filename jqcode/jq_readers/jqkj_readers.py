@@ -628,15 +628,6 @@ def _test_JqkjDocxReader(file_paths=[fr"/media/temp/发票识别接口文档.md"
     
     return documents,trees,df_tables
 
-'''
-# There is no item named 'NULL' in the archive 错误已解决：通过load_from_xml_v2
-Failed to load file /data/projects/JqChatV2/workspace/knowledge_base/jqtech_kb/content/关于安徽晶奇网络科技股份有限公司首次公开发行股票并在创业板上市申请文件的审核问询函.docx with error: "There is no item named 'NULL' in the archive". Skipping...
-Failed to load file /data/projects/JqChatV2/workspace/knowledge_base/jqtech_kb/content/青海省社会救助一门受理协同办理项目可研方案【提交版】v6.docx with error: None. Skipping...
-Failed to load
-Failed to load file /data/projects/JqChatV2/workspace/knowledge_base/jqtech_kb/content/公司规章制度 v1.1 (4)2019.3.19.docx with error: None. Skipping...
-Failed to load file /data/projects/JqChatV2/workspace/knowledge_base/jqtech_kb/content/关于青海省低保项目存在信息泄露风险的情况说明(更新).docx with error: local variable 'table_as_parent_node' referenced before assignment. Skipping...
-'''
-
 def _test_error_files_JqkjSimpleDirectoryReader():
     convert_file_paths=[fr'/data/projects/JqChatV2/workspace/knowledge_base/jqtech_kb/content/关于安徽晶奇网络科技股份有限公司首次公开发行股票并在创业板上市申请文件的审核问询函.docx',
                         fr'/data/projects/JqChatV2/workspace/knowledge_base/jqtech_kb/content/青海省社会救助一门受理协同办理项目可研方案【提交版】v6.docx',
