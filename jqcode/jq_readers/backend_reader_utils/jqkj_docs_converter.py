@@ -6,22 +6,22 @@ from typing import Union
 from pathlib import Path
 from typing import Union
 from pathlib import Path
-from concurrent.futures import ProcessPoolExecutor,ThreadPoolExecutor
-# import multiprocessing
-# lock = multiprocessing.Lock()
-
+from concurrent.futures import ThreadPoolExecutor
 import threading
 from threading import BoundedSemaphore
 lock = threading.Lock()
 pool = ThreadPoolExecutor(40)
 semaphore = BoundedSemaphore(10) 
-# project_root = '/media/temp/JqChat806'
-# sys.path.insert(0, project_root)
 
-from jqcode.jq_readers.backend_reader_utils.jqkj_doc_pdf2docx_on_linux import convert_doc_or_pdf_to_docx
+from jqcode.jq_splitters.jq_docx_tree_text_splitter import load_project_env
+
 from jqcode.jq_utils.logger import jqkj_logger
 logger = jqkj_logger(__file__).get_logger()
 
+env_loaded = load_project_env()
+
+winserver_convert_url = os.environ.get('winserver_convert_url','http://192.168.44.180:8000/convert/batch/')
+winserver_download_url = os.environ.get('winserver_download_url','http://192.168.44.180:8000/download/batch/')
 
 def get_os():
     if os.name == 'nt':
@@ -342,7 +342,7 @@ def batch_convert_files_to_docxs(input_filepaths: Union[str, list], overwrite=Fa
 import zipfile
 from typing import Dict, Any,List
 
-def download_converted_files(file_paths: List[str], output_dir: Path) -> Dict[str, Any]:
+def download_converted_files(file_paths: List[str], output_dir: Path, api_url = winserver_download_url) -> Dict[str, Any]:
     """
     调用API的下载接口获取转换后的文件
     
@@ -359,7 +359,7 @@ def download_converted_files(file_paths: List[str], output_dir: Path) -> Dict[st
         
         # 调用下载API
         response = requests.post(
-            'http://192.168.44.180:8000/download/batch/',
+            api_url,
             json=file_paths,
             stream=True  # 使用流式下载
         )
@@ -411,7 +411,7 @@ def download_converted_files(file_paths: List[str], output_dir: Path) -> Dict[st
         }
 
 
-def convert_doc_pdf2docx_on_win_and_linux(input_filepaths:Union[str,list],overwrite=True,destination_dir=None): 
+def convert_doc_pdf2docx_on_win_and_linux(input_filepaths:Union[str,list],overwrite=True,destination_dir=None,api_url=winserver_convert_url): 
     not_exist_filepaths = []
     passed_makeup_filepaths = []
     existed_docx_filepath = []
@@ -476,7 +476,7 @@ def convert_doc_pdf2docx_on_win_and_linux(input_filepaths:Union[str,list],overwr
             try:
                 with open(pdf_doc_filepath, 'rb') as f:
                     files = {'files': (pdf_doc_filepath.name, f)}
-                    response = requests.post('http://192.168.44.180:8000/convert/batch/', files=files)
+                    response = requests.post(api_url, files=files)
                     
                     if response.status_code == 200:
                         result = response.json()
@@ -490,7 +490,7 @@ def convert_doc_pdf2docx_on_win_and_linux(input_filepaths:Union[str,list],overwr
                         else:
                             logger.warning(f"转换失败: {result.get('message', '未知错误')}")
                     else:
-                        logger.warning(f"API调用失败，状态码: {response.status_code}")
+                        logger.warning(f"API调用失败，状态码: {response.status_code=},{response.text=}")
                         
             except Exception as e:
                 logger.warning(f"转换失败，详细错误信息为: {str(e)}")
