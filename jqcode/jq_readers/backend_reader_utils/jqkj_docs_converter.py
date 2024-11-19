@@ -484,7 +484,7 @@ def convert_doc_pdf2docx_on_win_and_linux(input_filepaths:Union[str,list],overwr
                             # Save the converted file
                             docx_path = result['results'][0].get('docx_path', '')  # Assuming API returns base64 or binary content
                             if docx_path:
-                                download_converted_files([docx_path], '/media/program/workspace/knowledge_base/create2/content')
+                                download_converted_files([docx_path], docx_filepath.parent)
 
         
                         else:
