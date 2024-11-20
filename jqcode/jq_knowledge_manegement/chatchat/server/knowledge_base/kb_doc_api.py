@@ -157,72 +157,6 @@ def _save_files_in_thread(
         yield result
 
 
-# def upload_docs(
-#     files: List[UploadFile] = File(..., description="上传文件，支持多文件"),
-#     # file_path: str = '',
-#     knowledge_base_name: str = Form(
-#         ..., description="知识库名称", examples=["samples"]
-#     ),
-#     override: bool = Form(False, description="覆盖已有文件"),
-#     to_vector_store: bool = Form(True, description="上传文件后是否进行向量化"),
-#     chunk_size: int = Form(CHUNK_SIZE, description="知识库中单段文本最大长度"),
-#     chunk_overlap: int = Form(OVERLAP_SIZE, description="知识库中相邻文本重合长度"),
-#     zh_title_enhance: bool = Form(ZH_TITLE_ENHANCE, description="是否开启中文标题加强"),
-#     docs: str = Form("", description="自定义的docs,需要转为json字符串"),
-#     not_refresh_vs_cache: bool = Form(False, description="暂不保存向量库(用于FAISS)"),
-#     batch_size: int = Form(5, description="批处理文件数量"),
-# ) -> BaseResponse:
-#     """
-#     API接口:上传文件并/或向量化
-#     """
-#     if not validate_kb_name(knowledge_base_name):
-#         return BaseResponse(code=403, msg="Don't attack me")
-
-#     kb = KBServiceFactory.get_service_by_name(knowledge_base_name)
-#     if kb is None:
-#         return BaseResponse(code=404, msg=f"未找到知识库 {knowledge_base_name}")
-
-#     docs = json.loads(docs) if docs else {}
-#     failed_files = {}
-#     file_names = list(docs.keys())
-
-#     # 先将上传的文件保存到磁盘
-#     for result in _save_files_in_thread(
-#         files, knowledge_base_name=knowledge_base_name, override=override
-#     ):
-#         filename = result["data"]["file_name"]
-#         if result["code"] != 200:
-#             failed_files[filename] = result["msg"]
-
-#         if filename not in file_names:
-#             file_names.append(filename)
-
-#     # from jqcode.jq_docstores.jq_es_client import JqEsClient
-#     # jq_es_client = JqEsClient()
-#     # 对保存的文件进行向量化
-#     if to_vector_store:
-
-#         file_path = get_file_path(knowledge_base_name=knowledge_base_name, doc_name=filename)
-#         result = update_docs(
-#             knowledge_base_name=knowledge_base_name,
-#             file_names=file_names,
-#             file_path = file_path,
-#             override_custom_docs=True,
-#             chunk_size=chunk_size,
-#             chunk_overlap=chunk_overlap,
-#             zh_title_enhance=zh_title_enhance,
-#             docs=docs,
-#             not_refresh_vs_cache=True,
-#         )
-#         failed_files.update(result.data["failed_files"])
-#         # if not not_refresh_vs_cache:
-#         #     kb.save_vector_store()
-
-#     return BaseResponse(
-#         code=200, msg="文件上传与向量化完成", data={"failed_files": failed_files}
-#     )
-
-
 def upload_docs(
     files: List[UploadFile] = File(..., description="上传文件，支持多文件"),
     knowledge_base_name: str = Form(..., description="知识库名称", examples=["samples"]),
@@ -262,7 +196,6 @@ def upload_docs(
         current_batch = files[start_idx:end_idx]
         logger.warning(f"......当前正在批处理上传的文件列表{current_batch=}")
         
-
         try:
             # 处理当前批次的文件
             for result in _save_files_in_thread(
@@ -279,26 +212,38 @@ def upload_docs(
 
             # 对当前批次的文件进行向量化
             if to_vector_store:
-                for filename in file_names[start_idx:end_idx]:
-                    try:
-                        file_path = get_file_path(
-                            knowledge_base_name=knowledge_base_name, 
+                try:
+                    # 获取当前批次所有文件的路径
+                    batch_file_paths = [
+                        get_file_path(
+                            knowledge_base_name=knowledge_base_name,
                             doc_name=filename
                         )
-                        result = update_docs(
-                            knowledge_base_name=knowledge_base_name,
-                            file_names=[filename],  # 每次只处理一个文件
-                            file_path=file_path,
-                            override_custom_docs=True,
-                            chunk_size=chunk_size,
-                            chunk_overlap=chunk_overlap,
-                            zh_title_enhance=zh_title_enhance,
-                            docs={k: docs[k] for k in [filename] if k in docs},
-                            not_refresh_vs_cache=True,
-                        )
-                        if result.data and "failed_files" in result.data:
-                            failed_files.update(result.data["failed_files"])
-                    except Exception as e:
+                        for filename in file_names[start_idx:end_idx]
+                    ]
+                    
+                    # 准备当前批次的自定义文档
+                    batch_docs = {
+                        k: docs[k] 
+                        for k in file_names[start_idx:end_idx] 
+                        if k in docs
+                    }
+                    
+                    # 批量处理向量化
+                    result = update_docs(
+                        knowledge_base_name=knowledge_base_name,
+                        file_names=file_names[start_idx:end_idx],  # 传入当前批次的所有文件名
+                        override_custom_docs=True,
+                        docs=batch_docs,
+
+                    )
+                    
+                    if result.data and "failed_files" in result.data:
+                        failed_files.update(result.data["failed_files"])
+                        
+                except Exception as e:
+                    # 如果批处理失败，将该批次所有文件标记为失败
+                    for filename in file_names[start_idx:end_idx]:
                         failed_files[filename] = str(e)
 
         except Exception as e:
@@ -326,6 +271,8 @@ def upload_docs(
             "failed_count": len(failed_files)
         }
     )
+
+
 
 def delete_docs(
     knowledge_base_name: str = Body(..., examples=["samples"]),
@@ -383,11 +330,9 @@ def update_info(
     return BaseResponse(code=200, msg=f"知识库介绍修改完成", data={"kb_info": kb_info})
 
 
-
 # # 使用示例
 # result = update_info("yqli", "这个版本会在遇到问题时给出提示，而不是直接报错终止程序。同时，它仍然会尽可能地继续处理其他文件和目录。")
 # print(f"Knowledge base added or updated: {result}")
-
 
 
 def update_docs(
@@ -397,14 +342,8 @@ def update_docs(
     file_names: List[str] = Body(
         ..., description="文件名称，支持多文件", examples=[["file_name1", "text.txt"]]
     ),
-    file_path: str = Body(
-        ..., description="文件路径", examples=[""]),
-    chunk_size: int = Body(CHUNK_SIZE, description="知识库中单段文本最大长度"),
-    chunk_overlap: int = Body(OVERLAP_SIZE, description="知识库中相邻文本重合长度"),
-    zh_title_enhance: bool = Body(ZH_TITLE_ENHANCE, description="是否开启中文标题加强"),
     override_custom_docs: bool = Body(False, description="是否覆盖之前自定义的docs"),
     docs: str = Body("", description="自定义的docs,需要转为json字符串"),
-    not_refresh_vs_cache: bool = Body(False, description="暂不保存向量库用于FAISS"),
 ) -> BaseResponse:
     """
     更新知识库文档
