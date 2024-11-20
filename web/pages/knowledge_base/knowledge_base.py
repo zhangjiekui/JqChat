@@ -229,7 +229,7 @@ def knowledge_base_page(api: ApiRequest, is_lite: bool = None):
                 chunk_size=chunk_size,
                 chunk_overlap=chunk_overlap,
                 zh_title_enhance=True,
-                batch_size=1,
+                batch_size=10,
             )
             if msg := check_success_msg(ret):
                 st.toast(msg, icon="✔")

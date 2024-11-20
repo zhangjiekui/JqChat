@@ -233,7 +233,7 @@ def upload_docs(
     zh_title_enhance: bool = Form(ZH_TITLE_ENHANCE, description="是否开启中文标题加强"),
     docs: str = Form("", description="自定义的docs,需要转为json字符串"),
     not_refresh_vs_cache: bool = Form(False, description="暂不保存向量库(用于FAISS)"),
-    batch_size: int = Form(3, description="批处理文件数量"),
+    batch_size: int = Form(10, description="批处理文件数量"),
 ) -> BaseResponse:
     """
     API接口:上传文件并/或向量化
@@ -260,7 +260,7 @@ def upload_docs(
         start_idx = batch_idx * batch_size
         end_idx = min((batch_idx + 1) * batch_size, total_files)
         current_batch = files[start_idx:end_idx]
-        logger.warning(f"......当前正在批处理上传的文件列表{current_batch=}")
+        logger.debug(f"......当前正在批处理上传的文件列表{current_batch=}")
         
 
         try:
