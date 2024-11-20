@@ -42,8 +42,10 @@ class ApiRequest:
         timeout: float = HTTPX_DEFAULT_TIMEOUT,
     ):
         self.base_url = base_url
-        _timeout = max(timeout,600)
+        _timeout = max(timeout,6000)
+        
         self.timeout = _timeout
+        logger.warning(f"ApiRequest中的{self.timeout=}")
         self._use_async = False
         self._client = None
 
@@ -59,16 +61,16 @@ class ApiRequest:
         self,
         url: str,
         params: Union[Dict, List[Tuple], bytes] = None,
-        retry: int = 3,
+        retry: int = 1,
         stream: bool = False,
         **kwargs: Any,
     ) -> Union[httpx.Response, Iterator[httpx.Response], None]:
         while retry > 0:
             try:
                 if stream:
-                    return self.client.stream("GET", url, params=params, **kwargs)
+                    return self.client.stream("GET", url, params=params,timeout=self.timeout, **kwargs)
                 else:
-                    return self.client.get(url, params=params, **kwargs)
+                    return self.client.get(url, params=params,timeout=self.timeout,  **kwargs)
             except Exception as e:
                 msg = f"error when get {url}: {e}"
                 logger.error(
@@ -82,7 +84,7 @@ class ApiRequest:
         url: str,
         data: Dict = None,
         json: Dict = None,
-        retry: int = 3,
+        retry: int = 1,
         stream: bool = False,
         **kwargs: Any,
     ) -> Union[httpx.Response, Iterator[httpx.Response], None]:
@@ -91,10 +93,10 @@ class ApiRequest:
                 # print(kwargs)
                 if stream:
                     return self.client.stream(
-                        "POST", url, data=data, json=json, **kwargs
+                        "POST", url, data=data, json=json,timeout=self.timeout, **kwargs
                     )
                 else:
-                    return self.client.post(url, data=data, json=json, **kwargs)
+                    return self.client.post(url, data=data, json=json,timeout=self.timeout,  **kwargs)
             except Exception as e:
                 msg = f"error when post {url}: {e}"
                 logger.error(
@@ -108,7 +110,7 @@ class ApiRequest:
         url: str,
         data: Dict = None,
         json: Dict = None,
-        retry: int = 3,
+        retry: int = 1,
         stream: bool = False,
         **kwargs: Any,
     ) -> Union[httpx.Response, Iterator[httpx.Response], None]:
@@ -287,7 +289,7 @@ class ApiRequest:
 
     # 服务器信息
     def get_server_configs(self, **kwargs) -> Dict:
-        response = self.post("/server/configs", **kwargs)
+        response = self.post("/server/configs",**kwargs)
         return self._get_response_value(response, as_json=True)
 
     def get_prompt_template(
@@ -430,7 +432,7 @@ class ApiRequest:
         response = self.post(
             "/chat/file_chat",
             json=data,
-            stream=True,
+            stream=True            
         )
         return self._httpx_stream2generator(response, as_json=True)
 
@@ -467,7 +469,7 @@ class ApiRequest:
 
         response = self.post(
             "/knowledge_base/create_knowledge_base",
-            json=data,
+            json=data           
         )
         return self._get_response_value(response, as_json=True)
 
@@ -482,7 +484,7 @@ class ApiRequest:
         """
         response = self.post(
             "/knowledge_base/delete_knowledge_base",
-            json=f"{knowledge_base_name}",
+            json=f"{knowledge_base_name}"
         )
         return self._get_response_value(response, as_json=True)
 
@@ -524,7 +526,7 @@ class ApiRequest:
 
         response = self.post(
             "/knowledge_base/search_docs",
-            json=data,
+            json=data
         )
         return self._get_response_value(response, as_json=True)
 
@@ -572,7 +574,7 @@ class ApiRequest:
             data["docs"] = json.dumps(data["docs"], ensure_ascii=False)
         response = self.post(
             "/knowledge_base/upload_docs",
-            data=data,
+            data=data,            
             files=[("files", (filename, file)) for filename, file in files],
         )
         return self._get_response_value(response, as_json=True)
@@ -596,8 +598,8 @@ class ApiRequest:
 
         response = self.post(
             "/knowledge_base/delete_docs",
-            json=data,
-        )
+            json=data
+            )
         return self._get_response_value(response, as_json=True)
 
     def update_kb_info(self, knowledge_base_name, kb_info):
@@ -611,7 +613,7 @@ class ApiRequest:
 
         response = self.post(
             "/knowledge_base/update_info",
-            json=data,
+            json=data
         )
         return self._get_response_value(response, as_json=True)
 
@@ -647,7 +649,7 @@ class ApiRequest:
 
         response = self.post(
             "/knowledge_base/update_docs",
-            json=data,
+            json=data
         )
         return self._get_response_value(response, as_json=True)
 
@@ -680,7 +682,6 @@ class ApiRequest:
             "/knowledge_base/recreate_vector_store",
             json=data,
             stream=True,
-            timeout=None,
         )
         return self._httpx_stream2generator(response, as_json=True)
 
@@ -700,7 +701,7 @@ class ApiRequest:
         }
         resp = self.post(
             "/other/embed_texts",
-            json=data,
+            json=data
         )
         return self._get_response_value(
             resp, as_json=True, value_func=lambda r: r.get("data")
@@ -755,6 +756,7 @@ class AsyncApiRequest(ApiRequest):
         self, base_url: str = api_address(), timeout: float = HTTPX_DEFAULT_TIMEOUT
     ):
         super().__init__(base_url, timeout)
+        logger.warning(f"AsyncApiRequest中的{timeout=}")
         self._use_async = True
 
 

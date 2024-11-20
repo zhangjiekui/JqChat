@@ -210,6 +210,7 @@ class JqEsClient():
             input_files:list=None, 
             overwrite_existing_converted_files=False,
             required_exts=required_exts_in_reader,
+            if_uploade_src_file = False,
             exclude_hidden=False
         ):
         """
@@ -235,10 +236,13 @@ class JqEsClient():
         lm_documents = asyncio.run(simple_reader.aload_data())
         logger.warning(f"读取到的文件数量:{len(lm_documents)=}")
     # 3.1、上传到文件库(docstore)，并在lm_documents元数据中加入存储库(docstore)及文件对应ID等信息
-        status,lm_documents_with_added_index_info_metadata,es_index_doc_id_list = self.docstores.add_or_update_index_metadata_if_id_exists(lm_documents=lm_documents,file_upload_user=current_user)
-        logger.warning(f"上传到ES的文件数量：{len(lm_documents_with_added_index_info_metadata)=}")
-        logger.info(f"上传的文件查看：{self.docstores.index_name}中存在{es_index_doc_id_list}等{len(es_index_doc_id_list)}文件记录！")
-        logger.info(f"lm_documents_with_added_index_info_metadata中应以包含:存储库(docstore)及文件存储ID({es_index_doc_id_list})的信息,请核实！")
+        status,lm_documents_with_added_index_info_metadata,es_index_doc_id_list = self.docstores.add_or_update_index_metadata_if_id_exists(lm_documents=lm_documents,file_upload_user=current_user,if_uploade_src_file=if_uploade_src_file)
+        if if_uploade_src_file:
+            logger.warning(f"上传到ES的文件数量：{len(lm_documents_with_added_index_info_metadata)=}")
+            logger.info(f"上传的文件查看：{self.docstores.index_name}中存在{es_index_doc_id_list}等{len(es_index_doc_id_list)}文件记录！")
+            logger.info(f"lm_documents_with_added_index_info_metadata中应以包含:存储库(docstore)及文件存储ID({es_index_doc_id_list})的信息,请核实！")
+        else:
+            logger.warning(f"选择不上传文件到ES：{if_uploade_src_file=}")
     # 3.2、如果是上传到/temp目录下的文件，复制到知识库目录下，并更新元数据
         tmp_dir = env_models_instance.abs_workspace + f"/temp"
         for doc in lm_documents:

@@ -130,16 +130,19 @@ def _save_files_in_thread(
                 with open(file_path, "wb") as f:
                     f.write(file_content)
                 if not filename.endswith(('.doc','pdf')):
+                    logger.warning(f"    ......成功上传文件 {filename}......")
                     return dict(code=200, msg=f"成功上传文件 {filename}", data=data)
 
             if filename.endswith(('.doc','pdf')):
                 docx_filename = Path(file_path).with_suffix(".docx")
                 docx_file_path = get_file_path(knowledge_base_name=knowledge_base_name, doc_name=docx_filename)
                 input_filepaths,original_valid_input_filepaths = convert_doc_pdf2docx_on_win_and_linux(file_path,overwrite=override)
+                # logger.warning(f"    ......已将文件{filename}转换成{docx_filename}......")
                 # if os.path.isfile(docx_file_path):
                 #     if os.path.isfile(file_path):
                 #         os.remove(file_path)
                 data = {"knowledge_base_name": knowledge_base_name, "file_name": docx_filename}
+                logger.warning(f"    ......成功上传文件 {filename},并且转换成了{docx_filename}......")
                 return dict(code=200, msg=f"成功上传文件 {filename},并且转换成了{docx_filename}", data=data)
 
         except Exception as e:
@@ -162,9 +165,6 @@ def upload_docs(
     knowledge_base_name: str = Form(..., description="知识库名称", examples=["samples"]),
     override: bool = Form(False, description="覆盖已有文件"),
     to_vector_store: bool = Form(True, description="上传文件后是否进行向量化"),
-    chunk_size: int = Form(CHUNK_SIZE, description="知识库中单段文本最大长度"),
-    chunk_overlap: int = Form(OVERLAP_SIZE, description="知识库中相邻文本重合长度"),
-    zh_title_enhance: bool = Form(ZH_TITLE_ENHANCE, description="是否开启中文标题加强"),
     docs: str = Form("", description="自定义的docs,需要转为json字符串"),
     not_refresh_vs_cache: bool = Form(False, description="暂不保存向量库(用于FAISS)"),
     batch_size: int = Form(10, description="批处理文件数量"),
@@ -194,7 +194,7 @@ def upload_docs(
         start_idx = batch_idx * batch_size
         end_idx = min((batch_idx + 1) * batch_size, total_files)
         current_batch = files[start_idx:end_idx]
-        logger.debug(f"......当前正在批处理上传的文件列表{current_batch=}")
+        logger.warning(f"......共需{num_batches=}个批次进行处理。当前正在批处理的批次为{batch_idx+1},该批次内共有{len(current_batch)}个文件")
         
         try:
             # 处理当前批次的文件
@@ -212,16 +212,7 @@ def upload_docs(
 
             # 对当前批次的文件进行向量化
             if to_vector_store:
-                try:
-                    # 获取当前批次所有文件的路径
-                    batch_file_paths = [
-                        get_file_path(
-                            knowledge_base_name=knowledge_base_name,
-                            doc_name=filename
-                        )
-                        for filename in file_names[start_idx:end_idx]
-                    ]
-                    
+                try:                   
                     # 准备当前批次的自定义文档
                     batch_docs = {
                         k: docs[k] 
@@ -261,7 +252,7 @@ def upload_docs(
                 msg=f"向量存储保存失败: {str(e)}", 
                 data={"failed_files": failed_files}
             )
-
+    logger.warning(f"文件上传与向量化全部完成！total_processed: {total_files},failed_count: {len(failed_files)}")
     return BaseResponse(
         code=200, 
         msg="文件上传与向量化完成", 

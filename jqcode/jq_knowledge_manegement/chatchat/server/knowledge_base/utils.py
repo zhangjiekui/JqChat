@@ -131,7 +131,7 @@ def list_files_from_folder(kb_name: str):
 
 
 LOADER_DICT = {
-     "JqkjSimpleDirectoryReader": jq_reader_list + ['.docx', '.txt'],
+     "JqkjSimpleDirectoryReader": jq_reader_list + ['.docx', '.txt','.py'],
 }
 
 SUPPORTED_EXTS = [ext for sublist in LOADER_DICT.values() for ext in sublist]

@@ -37,7 +37,7 @@ from anytree import PreOrderIter
 from jqcode.jq_readers.backend_reader_utils.jqkj_doc_tree_utils import compare_with_zip_docx2img,get_paras_in_table
 from jqcode.jq_config.general_config import if_log_verbose
 
-from llama_index.readers.file import UnstructuredReader
+from llama_index.readers.file import UnstructuredReader,FlatReader
 import asyncio
 
 from jqcode.jq_utils.logger import jqkj_logger
@@ -514,8 +514,8 @@ class JqkjDocxReader(BaseReader):
 # 为JqkjSimpleDirectoryReader做的变量准备
 filetype_jqreader_dict = {}
 [filetype_jqreader_dict.update({filetype:JqkjDocxReader}) for filetype in file_type_processed_by_jqreader]
-file_type_processed_by_unstructuredreader = {".py":UnstructuredReader,".txt":UnstructuredReader}
-filetype_reader_dict = {**filetype_jqreader_dict, **file_type_processed_by_unstructuredreader}
+file_type_processed_by_other_readers = {".py":UnstructuredReader,".txt":FlatReader}
+filetype_reader_dict = {**filetype_jqreader_dict, **file_type_processed_by_other_readers}
 
 def JQKJ_DEFAULT_FILE_READER_CLS(filetype_reader_dict=filetype_reader_dict):     
     DEFAULT_FILE_READER_CLS = _try_loading_included_file_formats()

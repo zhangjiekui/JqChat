@@ -68,7 +68,7 @@ def knowledge_base_page(api: ApiRequest, is_lite: bool = None):
         kb_list = {x["kb_name"]: x for x in get_kb_details()}
     except Exception as e:
         st.error(
-            "获取知识库信息错误，请检查是否已按照 `README.md` 中 `4 知识库初始化与迁移` 步骤完成初始化或迁移，或是否为数据库连接错误。"
+            f"获取知识库信息错误：{e}"
         )
         st.stop()
     kb_names = list(kb_list.keys())
@@ -102,12 +102,12 @@ def knowledge_base_page(api: ApiRequest, is_lite: bool = None):
         with st.form("新建知识库"):
             kb_name = st.text_input(
                 "新建知识库名称",
-                placeholder="新知识库名称，不支持中文命名，且必须全部是小写字母",
+                placeholder="新知识库名称，不少于3个字符，不支持中文命名，且必须全部是小写字母",
                 key="kb_name",
             ).lower()
             kb_info = st.text_input(
                 "知识库简介",
-                placeholder="知识库简介,方便Agent查找",
+                placeholder="知识库简介，不少于20个字符，方便Agent查找",
                 key="kb_info",
             )
 

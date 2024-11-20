@@ -104,12 +104,12 @@ def knowledge_base_page(api: ApiRequest, is_lite: bool = None):
         with st.form("新建知识库"):
             kb_name = st.text_input(
                 "新建知识库名称",
-                placeholder="新知识库名称，不支持中文命名",
+                placeholder="新知识库名称，不少于3个字符，不支持中文命名，且必须全部是小写字母",
                 key="kb_name",
             )
             kb_info = st.text_input(
                 "知识库简介",
-                placeholder="知识库简介，方便Agent查找",
+                placeholder="知识库简介，不少于20个字符，方便Agent查找",
                 key="kb_info",
             )
 

@@ -21,12 +21,11 @@ logger = jqkj_logger(__file__).get_logger()
 
 
 class ESKBService(KBService):
-    def do_init(self):
-        
+    def do_init(self):        
         self.kb_path = self.get_kb_path(self.kb_name)
         self.index_name = os.path.split(self.kb_path)[-1]
-        print(f"*********************************************ESKBService：do_init({self.index_name})******************************************")
-        logger.info(f"ESKBService：({self.kb_path=})")
+        # print(f"*********************************************ESKBService：do_init({self.index_name})******************************************")
+        # logger.info(f"ESKBService：({self.kb_path=})")
         # 在/data/projects/JqChat/jqcode/jq_knowledge_manegement/chatchat/configs/_kb_config.py中配置的
         self.IP = kbs_config[self.vs_type()]["host"]
         self.PORT = kbs_config[self.vs_type()]["port"]       
