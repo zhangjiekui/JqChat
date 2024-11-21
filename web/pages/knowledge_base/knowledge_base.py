@@ -107,7 +107,7 @@ def knowledge_base_page(api: ApiRequest, is_lite: bool = None):
             ).lower()
             kb_info = st.text_input(
                 "知识库简介",
-                placeholder="知识库简介，不少于20个字符，方便Agent查找",
+                placeholder="新知识库简介，不少于20个字符，以提升Agent智能体的匹配成功率",
                 key="kb_info",
             )
 

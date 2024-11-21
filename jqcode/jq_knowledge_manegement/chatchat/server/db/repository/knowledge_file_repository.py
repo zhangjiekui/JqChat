@@ -211,7 +211,7 @@ def list_files_from_es(kb_name: str, search_text: str = None) -> list:
 
     try: 
         result = es.search(index=kb_name, body=query)
-        print(f"Total hits: {result['hits']['total']['value']}")
+        print(f"Total hits: {result['hits']['total']['value']} chunks")
 
         docs = []
         for hit in result["hits"]["hits"]:
@@ -224,7 +224,7 @@ def list_files_from_es(kb_name: str, search_text: str = None) -> list:
                 pass
                 # print(f"Warning: Empty _source found in document: {hit}")
                 
-        print(f"Successfully extracted {len(docs)} file names")
+        # print(f"Successfully extracted {len(docs)} file names/chunks")
         return docs
     
         # docs = [hit["_source"]["metadata"]["file_name"] for hit in result["hits"]["hits"]]

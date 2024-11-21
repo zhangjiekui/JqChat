@@ -15,7 +15,7 @@ class KnowledgeBaseModel(Base):
     __tablename__ = "knowledge_base"
     id = Column(Integer, primary_key=True, autoincrement=True, comment="知识库ID")
     kb_name = Column(String(50), comment="知识库名称")
-    kb_info = Column(String(200), comment="知识库简介(用于Agent)")
+    kb_info = Column(String(200), comment="知识库简介(用于提升Agent智能体的匹配成功率)")
     vs_type = Column(String(50), comment="向量库类型")
     embed_model = Column(String(50), comment="嵌入模型名称")
     file_count = Column(Integer, default=0, comment="文件数量")
