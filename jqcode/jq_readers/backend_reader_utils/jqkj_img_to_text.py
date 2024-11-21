@@ -109,13 +109,19 @@ def treenode_img_to_text(img_src_and_data_tuple_list:tuple,delete_emf_wmf_png_fi
     return result
 
 def treenodes_img_to_text_in_batch(img_src_and_data_tuple_list, processes=10):
-    img_nums = len(img_src_and_data_tuple_list)
+    # 过滤掉 gif 图片
+    filtered_img_src_and_data_tuple_list = [
+        item for item in img_src_and_data_tuple_list 
+        if not item[0].lower().endswith('.gif')
+    ]
+
+    img_nums = len(filtered_img_src_and_data_tuple_list)
     processes = min(img_nums,processes)      
     
     pool = env_models_instance.get_ocr_pool() 
     semaphore = BoundedSemaphore(processes) 
     with semaphore:
-        results = pool.map(treenode_img_to_text,img_src_and_data_tuple_list)     
+        results = pool.map(treenode_img_to_text,filtered_img_src_and_data_tuple_list)     
     results = list(results)       
     return results
 
