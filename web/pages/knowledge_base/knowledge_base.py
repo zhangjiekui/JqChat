@@ -147,7 +147,7 @@ def knowledge_base_page(api: ApiRequest, is_lite: bool = None):
 
             # lyq 知识库简介验证
             elif not kb_info or len(kb_info.strip()) < 20:
-                st.error(f"知识库简介必须不少于20个字符，方便Agent查找！")
+                st.error(f"知识库简介必须不少于20个字符，方便Agent匹配查找！")
 
             elif kb_name in kb_list:
                 st.error(f"名为 {kb_name} 的知识库已经存在！")

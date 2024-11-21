@@ -80,7 +80,7 @@ def _add_scores_before_page_content(d:Document):
 
 class Ocr_API:
     def __init__(self,server_url:str = "http://10.1.150.106:5566/api/ocr"):
-        self.server_url = server_url
+        self.server_url = server_url       
     
     def __call__(self,image_path_or_base64):
         ## 如果是图片地址，读取图片并转换为base64
@@ -124,7 +124,47 @@ class Ocr_API:
         except Exception as e:
             logger.error(f"其他错误: {str(e)}")
             return ''
-        
+
+
+class Ocr_GOT_API:    
+    def __init__(self,model_uid='GOT-OCR2_0',base_url:str = "http://10.1.150.106:9997",auth_headers={}):
+        from xinference.client.restful.restful_client import RESTfulImageModelHandle
+        self.ocr_got = RESTfulImageModelHandle(model_uid=model_uid,base_url=base_url,auth_headers=auth_headers)      
+    
+    def __call__(self,image_path_or_base64):
+        ## 如果是图片地址，读取图片并转换为base64
+        from diffusers.utils import load_image
+        import io
+        image = load_image(image_path_or_base64)
+        bio = io.BytesIO()
+        image.save(bio, format="JPEG")
+
+        try:    
+            result = self.ocr_got.ocr(bio.getvalue())       
+            # 返回结果
+            logger.debug("识别结果:"+result)
+            return result
+        except requests.exceptions.RequestException as e:
+            logger.error(f"请求错误: {str(e)}")
+            return ''
+        except Exception as e:
+            logger.error(f"其他错误: {str(e)}")
+            return ''
+def test_orc_got(Ocr_GOT_API):
+    ocr_got = Ocr_GOT_API()
+    img1='/data/projects/JqChatV2/JqChat/image.png'  
+    img2="/data/projects/JqChatV2/JqChat/jqcode/jq_knowledge_manegement/chatchat/data/knowledge_base/samples/content/llm/img/大模型推理优化策略-幕布图片-923924-83386.jpg"
+    img3="/data/projects/JqChatV2/JqChat/ocr.png"
+    img4='/data/projects/JqChatV2/JqChat/ocr2.jpg'
+    results = []
+    for img in [img1,img2,img3,img4]:
+        res = ocr_got(img)
+        results.append(res)
+    print(results)
+
+# test_orc_got(Ocr_GOT_API)
+# pass
+
 class JqVectorStoreRetrieverWithScore(VectorStoreRetriever):
     # See https://github.com/langchain-ai/langchain/blob/61dd92f8215daef3d9cf1734b0d1f8c70c1571c3/libs/langchain/langchain/vectorstores/base.py#L500
     def _get_relevant_documents(
@@ -185,7 +225,8 @@ class JqXinferenceReranker(BaseDocumentCompressor):
             kwargs = {"normalize":normalize}
         else:
             kwargs.update({"normalize":normalize})
-        return self._model.rerank(documents,query,top_n,max_chunks_per_doc,return_documents,return_len,**kwargs)
+        # return self._model.rerank(documents,query,top_n,max_chunks_per_doc,return_documents,return_len,**kwargs)
+        return self._model.rerank(documents,query,top_n,max_chunks_per_doc,return_documents,return_len)
     
     def compress_documents(
         self,
@@ -220,7 +261,7 @@ class JqXinferenceReranker(BaseDocumentCompressor):
                 passages.append(passage.replace('\n', ' '))
                 valid_doc_list.append(d)
        
-        rerank_result = self._model.rerank(passages,query,top_n=self.top_n,return_documents=False,return_len=True,normalize=normalize,**kwargs)
+        rerank_result = self._model.rerank(passages,query,top_n=self.top_n,return_documents=False,return_len=True,**kwargs)
         rerank_result_list = rerank_result["results"]
         final_results = []
         for result in rerank_result_list:
@@ -578,7 +619,7 @@ class InitEnvModels:
             corpus = ["A man is eating food.","A woman is playing violin."]
             r = reranker.rerank(corpus, query)
             logger.debug(r)
-            c = reranker.compress_documents(corpus, query,**{"normalize":True})
+            c = reranker.compress_documents(corpus, query)
             logger.debug(c)
         except Exception as e:
             reranker = None
