@@ -137,12 +137,23 @@ def knowledge_base_page(api: ApiRequest, is_lite: bool = None):
             )
 
         if submit_create_kb:
+            # lyq 知识库名称验证
             if not kb_name or not kb_name.strip():
                 st.error(f"知识库名称不能为空！")
+            elif len(kb_name) < 3:
+                st.error(f"知识库名称必须不少于3个字符！")
+            elif not kb_name.isalpha():  # 检查是否全是字母
+                st.error(f"知识库名称不支持中文命名，且必须全部是小写字母！")
+
+            # lyq 知识库简介验证
+            elif not kb_info or len(kb_info.strip()) < 20:
+                st.error(f"知识库简介必须不少于20个字符，方便Agent查找！")
+
             elif kb_name in kb_list:
                 st.error(f"名为 {kb_name} 的知识库已经存在！")
             elif embed_model is None:
                 st.error(f"请选择Embedding模型!")
+
             else:
                 ret = api.create_knowledge_base(
                     knowledge_base_name=kb_name,
@@ -170,9 +181,6 @@ def knowledge_base_page(api: ApiRequest, is_lite: bool = None):
                             " ",    # 空格
                             "(", ")",  # 英文括号
                             "（", "）",  # 中文括号
-                            # "[", "]",   # 方括号
-                            # "【", "】",  # 中文方括号
-                            # "{", "}",   # 花括号
                         ]
         
         if files:  # 确保files不为空
