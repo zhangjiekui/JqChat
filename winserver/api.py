@@ -1,4 +1,4 @@
-import os, io, logging, asyncio, zipfile,tempfile,shutil
+import os, io, logging, asyncio, zipfile,tempfile,shutil,requests
 from io import BytesIO
 from pathlib import Path
 from typing import Dict, Any,List
@@ -8,7 +8,8 @@ from typing import List
 from fastapi import FastAPI, UploadFile, File, HTTPException,Form
 from fastapi.responses import FileResponse, StreamingResponse
 
-from utils import process_single_file, convert_pdf_to_docx,check_pdf_type
+# from utils import process_single_file, convert_pdf_to_docx,check_pdf_type
+from utils import process_single_file,docx_path_to_content
 
 from concurrent.futures import ThreadPoolExecutor
 
@@ -21,7 +22,7 @@ logger = logging.getLogger(__name__)
 
 app = FastAPI(title="PDF转DOCX服务")
 
-MAX_WORKERS = 4
+MAX_WORKERS = 8
 
 @app.post("/convert/batch/")
 async def convert_pdfs(files: List[UploadFile] = File(...)):
@@ -34,25 +35,47 @@ async def convert_pdfs(files: List[UploadFile] = File(...)):
     invalid_files = []
     
     for file in files:
-        if not file.filename.lower().endswith('.pdf'):
+        if not file.filename.lower().endswith(('.pdf', '.doc')):
             invalid_files.append({
                 "filename": file.filename,
-                "reason": "非PDF格式文件"
+                "reason": "非PDF、DOC格式文件"
             })
             continue
         
         try:
             pdf_bytes = await file.read()
             # 检查PDF类型
-            try:
-                pdf_type = check_pdf_type(pdf_bytes)
+            if file.filename.lower().endswith('.doc'):
+                pdf_type = 'txt'
                 files_data.append((pdf_bytes, Path(file.filename), pdf_type))
-            except Exception as e:
-                invalid_files.append({
-                    "filename": file.filename,
-                    "reason": f"PDF类型检查失败: {str(e)}"
-                })
-                logger.error(f"检查文件 {file.filename} 类型时发生错误: {str(e)}")
+                print(f"PDF类型是: {pdf_type}")
+            else:
+            
+                try:
+                    # pdf_type = check_pdf_type(pdf_bytes)
+                    # files_data.append((pdf_bytes, Path(file.filename), pdf_type))
+
+                    # 换接口的方式获取pdf类型
+                    response = requests.post('http://10.1.150.106:8888/get_pdf_type', data=pdf_bytes)
+                    # 检查响应状态码
+                    if response.status_code == 200:
+                        # 解析JSON响应
+                        result = response.json()
+                        # 获取PDF类型
+                        pdf_type = result['pdf_type']
+                        files_data.append((pdf_bytes, Path(file.filename), pdf_type))
+                        print(f"PDF类型是: {pdf_type}")
+                    else:
+                        # 处理错误情况
+                        error_msg = response.json().get('error', '未知错误')
+                        print(f"错误: {error_msg}")
+                    
+                except Exception as e:
+                    invalid_files.append({
+                        "filename": file.filename,
+                        "reason": f"PDF类型检查失败: {str(e)}"
+                    })
+                    logger.error(f"检查文件 {file.filename} 类型时发生错误: {str(e)}")
                 
         except Exception as e:
             invalid_files.append({
@@ -82,13 +105,14 @@ async def convert_pdfs(files: List[UploadFile] = File(...)):
             asyncio.set_event_loop(loop)
             try:
                 result = loop.run_until_complete(
-                    process_single_file(pdf_bytes, filename)
+                    process_single_file(pdf_bytes, pdf_type, filename, output_dir)
                 )
             finally:
                 loop.close()
             
             result["filename"] = str(filename)
             result["pdf_type"] = pdf_type
+
             return result
             
         except Exception as e:
@@ -98,7 +122,8 @@ async def convert_pdfs(files: List[UploadFile] = File(...)):
                 "filename": str(filename),
                 "success": False,
                 "message": error_msg,
-                "pdf_type": pdf_type
+                "pdf_type": pdf_type,
+                "docx_content": ''
             }
 
     # 使用joblib进行并行处理
