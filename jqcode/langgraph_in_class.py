@@ -692,8 +692,13 @@ class GraphAgent:
         for i,retriever in enumerate(retrievers):
             message += f" 检索器[{i+1}]{retriever.name}，检索的目标知识库为{retriever.vectorstore._store.index} "
         logger.warning(f"     vectorstore方法，执行实际文档检索的集成检索器为：{message}")
-        documents = self.retriever.invoke(question,config=invoke_llm_config)
-        logger.warning(f"     vectorstore检索到的相关文档数:{len(documents)=}")
+        try:
+            documents = self.retriever.invoke(question,config=invoke_llm_config)
+            logger.warning(f"     vectorstore检索到的相关文档数:{len(documents)=}")
+        except Exception as e:
+            err_msg = f"从知识库({retriever.vectorstore._store.index})中检索{question=}出现错误：{e}"
+            logger.error(err_msg)
+            documents = [Document(page_content=err_msg)]
         
         # from jqcode.graph_rag_networkx import JqGraphRag
         # inputs = {"query":question,"context":documents}        
