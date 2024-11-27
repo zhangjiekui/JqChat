@@ -48,6 +48,7 @@ class GraphAgentState(TypedDict):
     messages: Annotated[list[BaseMessage], add_messages]
     question : str
     question_related_messages: Annotated[list[BaseMessage], clean_up_list_when_encounter_null_element]
+    # retrieval_history : dict
     question_searched : dict
     generation : str
     documents : List[str]
@@ -438,74 +439,6 @@ answer_prompt = ChatPromptTemplate.from_messages(
 )
 answer_addresses_question_grader = answer_prompt | structured_llm_answer_grader
 
-def grade_generation_v_documents_and_question(state:GraphAgentState):
-    """
-    Determines whether the generation is grounded in the document and answers question.
-
-    Args:
-        state (dict): The current graph state
-
-    Returns:
-        str: Decision for next node to call
-    """
-
-    print("---CHECK HALLUCINATIONS---")
-    question = state["question"]
-    documents = state["documents"]
-    generation = state["generation"]
-     
-    # Check hallucination / answer_is_supported_by_documents    
-    try:
-        documents_contents = [d.page_content for d in documents]
-        documents_contents_str = "\n".join(documents_contents)
-        score = answer_is_supported_by_documents_grader.invoke({"documents": documents_contents_str, "generation": generation},config=invoke_llm_config)
-        grade = score.k
-    except Exception as e:
-        grade = "yes" # 继续按正常往下执行！
-        print(f"---ERROR: 无法获取'answer_is_supported_by_documents_grader'的判别结果，详细错误信息如下:---")
-        print(e)
-        print("---正常往下执行---") 
-
-    
-    if grade == "yes":
-        print("---DECISION: GENERATION IS GROUNDED IN DOCUMENTS---")
-        # Check question-answering
-        print("---GRADE GENERATION vs QUESTION---")       
-        
-        try:
-            score = answer_addresses_question_grader.invoke({"question": question,"generation": generation},config=invoke_llm_config)
-            grade = score.k
-        except Exception as e:
-            grade = "yes" # 继续按正常往下执行！
-            print(f"---ERROR: 无法获取'answer_grader'的判别结果，详细错误信息如下:---")
-            print(e)
-            print("---正常往下执行---") 
-
-        if grade == "yes":
-            print("---DECISION: GENERATION ADDRESSES QUESTION---")
-            return "useful"
-        else:
-            print("---DECISION: GENERATION DOES NOT ADDRESS QUESTION---")
-            # return "not useful"
-            
-            try:
-                question_has_searched = state["question_searched"][question]
-            except:
-                question_has_searched = False
-            
-            if question_has_searched:
-                print("---BUT WE HAVE WEB SEARCHED THE QUESTION, SO DIRECTLY ROUTE TO 'END' NODE---")
-                return "useful"
-            else:
-                print(f"not useful: {generation=}")
-                return "not useful"
-    else:
-        # pprint.pprint("---DECISION: GENERATION IS NOT GROUNDED IN DOCUMENTS, RE-TRY---")
-        # return "not supported"
-        print("---DECISION: GENERATION IS NOT GROUNDED IN DOCUMENTS, BUT WE DO NOT RE-TRY (RE-GENERATION), JUST DIRECTLY TO 'END' NODE---")
-        print(f"not supported: {generation=}")
-        return "not supported" # todo
-
 
 # endregion Rags Related
 
@@ -694,7 +627,12 @@ class GraphAgent:
         logger.warning(f"     vectorstore方法，执行实际文档检索的集成检索器为：{message}")
         try:
             documents = self.retriever.invoke(question,config=invoke_llm_config)
-            logger.warning(f"     vectorstore检索到的相关文档数:{len(documents)=}")
+            if len(documents)==0:
+                msg=f"未从知识库{retriever.vectorstore._store.index}中检索到任何相关文档！"
+                documents = [Document(page_content=msg)]
+                logger.warning(f"     {msg}")
+            else:
+                logger.warning(f"     vectorstore检索到的相关文档数:{len(documents)=}")
         except Exception as e:
             err_msg = f"从知识库({retriever.vectorstore._store.index})中检索{question=}出现错误：{e}"
             logger.error(err_msg)
@@ -714,6 +652,80 @@ class GraphAgent:
         # retrieve_message = ToolMessage(content=retrieve_results,name='retrieve')
         # return {"documents": documents, "question": question,"messages":retrieve_message}
         return {"documents": documents, "question": question}
+
+
+    def grade_generation_v_documents_and_question(self,state:GraphAgentState):
+        """
+        Determines whether the generation is grounded in the document and answers question.
+
+        Args:
+            state (dict): The current graph state
+
+        Returns:
+            str: Decision for next node to call
+        """
+
+        print("---CHECK HALLUCINATIONS---")
+        question = state["question"]
+        documents = state["documents"]
+        generation = state["generation"]
+        
+        # Check hallucination / answer_is_supported_by_documents    
+        try:
+            # documents_contents = [d.page_content for d in documents]
+            # documents_contents_str = "\n".join(documents_contents)
+            # score = answer_is_supported_by_documents_grader.invoke({"documents": documents_contents_str, "generation": generation},config=invoke_llm_config)
+            # grade = score.k
+            grade = "yes" # 跳过上面的检查
+        except Exception as e:
+            grade = "yes" # 继续按正常往下执行！
+            print(f"---ERROR: 无法获取'answer_is_supported_by_documents_grader'的判别结果，详细错误信息如下:---")
+            print(e)
+            print("---正常往下执行---") 
+
+        
+        if grade == "yes":
+            print("---DECISION: GENERATION IS GROUNDED IN DOCUMENTS---")
+            # Check question-answering
+            print("---GRADE GENERATION vs QUESTION---")       
+            
+            try:
+                score = answer_addresses_question_grader.invoke({"question": question,"generation": generation},config=invoke_llm_config)
+                grade = score.k
+            except Exception as e:
+                grade = "yes" # 继续按正常往下执行！
+                print(f"---ERROR: 无法获取'answer_grader'的判别结果，详细错误信息如下:---")
+                print(e)
+                print("---正常往下执行---") 
+
+            if grade == "yes":
+                print("---DECISION: GENERATION ADDRESSES QUESTION---")
+                return "useful"
+            else:
+                print("---DECISION: GENERATION DOES NOT ADDRESS QUESTION---")
+                # return "not useful"
+                
+                try:
+                    question_has_searched = state["question_searched"][question]
+                except:
+                    question_has_searched = False
+                
+                if question_has_searched:
+                    print("---BUT WE HAVE WEB SEARCHED THE QUESTION, SO DIRECTLY ROUTE TO 'END' NODE---")
+                    return "useful"
+                else:
+                    print(f"not useful: {generation=}")
+                    user_variables_statedict = self._get_messages_from_state_by_key("user_variables")        
+                    history_reference_str = user_variables_statedict[self.user_id]['reference']
+                    _user_variables_statedict = {self.user_id:{"reference":"","history_reference":history_reference_str,"history_generation":generation}}
+                    state["user_variables"].update(_user_variables_statedict)
+                    return "not useful"
+        else:
+            # pprint.pprint("---DECISION: GENERATION IS NOT GROUNDED IN DOCUMENTS, RE-TRY---")
+            # return "not supported"
+            print("---DECISION: GENERATION IS NOT GROUNDED IN DOCUMENTS, BUT WE DO NOT RE-TRY (RE-GENERATION), JUST DIRECTLY TO 'END' NODE---")
+            print(f"not supported: {generation=}")
+            return "not supported" # todo
 
     def web_search(self,state:GraphAgentState):
         """
@@ -764,8 +776,9 @@ class GraphAgent:
             referens_str = "#### 参考网页:  \n"
             for i,r in enumerate(referens):
                 referens_str += f"    {i+1}. [{r}]({r})  \n"
-            _user_variables_statedict = {self.user_id:{"rag_args":'',"reference":referens_str}}
-            state["user_variables"].update(_user_variables_statedict)    
+            # _user_variables_statedict = {self.user_id:{"rag_args":'',"reference":referens_str}}
+            _user_variables_statedict = {"rag_args":'',"reference":referens_str}
+            state["user_variables"][self.user_id].update(_user_variables_statedict)    
             logger.debug(f'{referens_str=}')
             
         logger.warning(f"     web_search搜索到的相关文本块数:{len(chunks_relevant)=}")
@@ -813,10 +826,10 @@ class GraphAgent:
         )
         graph.add_conditional_edges(
             "generate",
-            grade_generation_v_documents_and_question,
+            self.grade_generation_v_documents_and_question,
             {
                 # "not supported": "generate", # Hallucinations: re-generate 
-                "not supported": END, # todo
+                "not supported": "web_search", # todo
                 "not useful": "web_search", # Fails to answer question: fall-back to web-search 
                 "useful": END,
             },
@@ -1073,6 +1086,15 @@ class GraphAgent:
         question = state["question"]
         documents = state["documents"]
         messages = state["question_related_messages"]
+        user_variables_statedict = state["user_variables"]
+        try:
+            history_reference_str = user_variables_statedict[self.user_id]['history_reference']
+        except:
+            history_reference_str=''
+        try:
+            history_generation = user_variables_statedict[self.user_id]['history_generation']
+        except:
+            history_generation=''
         if not documents:
             logger.warning(f"generate时提供的可参考文档为空:{documents}")
         
@@ -1246,6 +1268,15 @@ class GraphAgent:
                 logger.debug(f'{referens_str=}')
         generation = rag_node.invoke({"documents": documents, "question": question, "messages":messages},config=invoke_llm_config)
         logger.debug(f"{generation=}")
+        if history_generation:
+            history_generation=history_generation.replace("####","######")
+            if history_reference_str:
+                history_reference_str=history_reference_str.replace("####","######")
+
+            generation = f'{generation}\n\n##### **中间推理步骤（开始） \n尝试通过检索知识库来解答您的问题，得到的结果如下：\n {history_reference_str} \n{history_generation}\n因为根据知识库得到的答案似乎并没有很好解答您的问题，接着又尝试了搜索网络，才得到最终的答案。 \n\n#####  **中间推理步骤（结束） '
+            
+
+        
         last_message = state["messages"][-1]
         # todo 如果tool_call_id!=""
         # 就需要先建立一个AIMessage with tc
@@ -1492,7 +1523,7 @@ class GraphAgent:
         
         #   {"$user_id":{"rag_args":"$rag_args","reference":"$reference"}}        
         user_variables_statedict = {self.user_id:{"rag_args":"","reference":""}}
-        result = self.graph.invoke({"messages": [input_message],"question":self.question_rewrited,"question_related_messages":[],"user_variables":user_variables_statedict},config=self.invoke_graph_config)
+        result = self.graph.invoke({"messages": [input_message],"question":self.question_rewrited,"question_related_messages":[],"generation":'',"user_variables":user_variables_statedict,"question_searched":False},config=self.invoke_graph_config)
         
         logger.debug(f"==USER[id:{self.user_id}]的问题[id:{self.question_id}]，允许问题改写:{allow_question_rewrite}")
         print(f'====问题和答案====')        
