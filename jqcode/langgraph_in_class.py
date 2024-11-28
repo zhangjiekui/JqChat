@@ -356,11 +356,11 @@ prompt_rag_part1 = "You are an assistant for question-answering tasks. Use the f
 prompt_rag_part2 = """
 以下内容将以Markdown的方式来渲染呈现，请务必符合Markdown的语法规范，并尽量美观，去除无意义的字符
 
-First, starting with "#### 引用片段:"  \n  , find the quotes from the documents that are most relevant to answering the question, and then print them in numbered order. Each quote should be a relatively short summary sentence of the quoted document,and print in a seperated paragraph,by adding "  \n  ". 
+First, starting with "#### 引用片段:"  \n  , find the quotes from the documents that are most relevant to answering the question, and then print them in numbered order. Each quote should be a relatively short summary sentence of the quoted document, such as '<p class="referens_content">[1] Company X reported revenue of $12 million in 2021'. And print in a seperated paragraph,by adding "  \n  ". 
 
-If there are no relevant quotes, write “No relevant quotes” instead.
+If there are no relevant quotes, write “没有发现相关的引用内容” instead.
 
-Then, answer the question, starting with "#### 最终回答:"  \n  . Do not include or reference quoted content verbatim in the answer. Don’t say “According to Quote [1]” when answering. Instead make references to quotes relevant to each section of the answer solely by adding their bracketed reference numbers at the end of relevant quotes, If a section of the answer comes from multiple quotes, please list all applicable citations, like [1,2].
+Then, answer the question, starting with "#### 最终回答:"  \n  . Do include or reference quoted content verbatim in the answer if possible.But Don’t say “According to Quote [1]” when answering. Instead make references to quotes relevant to each section of the answer solely by adding their bracketed reference numbers at the end of relevant quotes, If a section of the answer comes from multiple quotes, please list all applicable citations, like <sup><font color="red">[1]</font></sup><sup><font color="red">[2]</font></sup>, and place the citation(s) before punctuation marks.
 
 Thus, the format of your overall response should look like what’s shown between the tags. Make sure to strictly follow the formatting (such as <p class="referens_content">...</p>,'...' is the generated text content) and spacing exactly.
 
@@ -371,7 +371,7 @@ Thus, the format of your overall response should look like what’s shown betwee
 
 #### 最终回答:
 
-<p class="referens_content">Company X earned $12 million[1].  Almost 90% of it was from widget sales[1,2]. </p>
+<p class="referens_content">Company X earned $12 million <sup><font color="red">[1]</font></sup>.  Almost 90% of it was from widget sales <sup><font color="red">[1]</font></sup><sup><font color="red">[2]</font></sup>. </p>
 
 
 If the question cannot be answered by the document, say so.
@@ -759,7 +759,7 @@ class GraphAgent:
 
 
         # Web search
-        docs = asyncio.run(get_web_search_documents(question,query_generated,max_doc_nums=4))
+        docs = asyncio.run(get_web_search_documents(question,query_generated,max_doc_nums=6))
         if not docs:
             return {"documents": [], "question_searched":{question:False}}
         
@@ -1273,7 +1273,7 @@ class GraphAgent:
             if history_reference_str:
                 history_reference_str=history_reference_str.replace("####","######")
 
-            generation = f'{generation}\n\n##### **中间推理步骤（开始） \n尝试通过检索知识库来解答您的问题，得到的结果如下：\n {history_reference_str} \n{history_generation}\n因为根据知识库得到的答案似乎并没有很好解答您的问题，接着又尝试了搜索网络，才得到最终的答案。 \n\n#####  **中间推理步骤（结束） '
+            generation = f'{generation}\n\n##### **中间推理步骤（开始） \n尝试通过检索知识库({self.index_name})来解答您的问题，得到的结果如下：\n {history_reference_str} \n{history_generation}\n因为根据知识库得到的答案似乎并没有很好解答您的问题，接着又尝试了搜索网络，才得到最终的答案。 \n\n#####  **中间推理步骤（结束） '
             
 
         

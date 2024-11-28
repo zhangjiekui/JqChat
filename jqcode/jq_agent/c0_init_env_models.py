@@ -796,7 +796,7 @@ class InitEnvModels:
 
     
     def split_and_get_chunks_relevant_from_documents(self,query:str, docs_list:List[Document]=None,text_splitter=None,embed_model=None,reranker=None,
-                                                    if_reranking:bool=True,retriever_docs_num=10,final_docs_num=4,score_threshold=0.3,only_use_reranker:bool=False):
+                                                    if_reranking:bool=True,retriever_docs_num=10,final_docs_num=6,score_threshold=0.3,only_use_reranker:bool=False):
         
         docs_list_cleaned = []
         for doc in docs_list:
