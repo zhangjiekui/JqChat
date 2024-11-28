@@ -360,7 +360,9 @@ First, starting with "#### 引用片段:"  \n  , find the quotes from the docume
 
 If there are no relevant quotes, write “没有发现相关的引用内容” instead.
 
-Then, answer the question, starting with "#### 最终回答:"  \n  . Do include or reference quoted content verbatim in the answer if possible.But Don’t say “According to Quote [1]” when answering. Instead make references to quotes relevant to each section of the answer solely by adding their bracketed reference numbers at the end of relevant quotes, If a section of the answer comes from multiple quotes, please list all applicable citations, like <sup><font color="red">[1]</font></sup><sup><font color="red">[2]</font></sup>, and place the citation(s) before punctuation marks.
+Then, answer the question, starting with "#### 最终回答:"  \n  . Do include or reference quoted content verbatim in the answer if possible.But Don’t say “According to Quote [1]” when answering. Instead make references to quotes relevant to each section of the answer solely by adding their bracketed reference numbers at the end of relevant quotes, If a section of the answer comes from multiple quotes, please list all applicable citations, like <sup><font color="red">[1]</font></sup><sup><font color="red">[2]</font></sup>, and MUST place the citation(s) between text content punctuation marks, 例如：
+正确格式为：'文字内容<sup><font color="red">[1]</font></sup>  。'
+错误格式为：'文字内容。<sup><font color="red">[1]</font></sup>  ' 错误原因为：将引用'<sup><font color="red">[1]</font></sup>  '错误地放到了标点符号'。'之前
 
 Thus, the format of your overall response should look like what’s shown between the tags. Make sure to strictly follow the formatting (such as <p class="referens_content">...</p>,'...' is the generated text content) and spacing exactly.
 
@@ -371,7 +373,7 @@ Thus, the format of your overall response should look like what’s shown betwee
 
 #### 最终回答:
 
-<p class="referens_content">Company X earned $12 million <sup><font color="red">[1]</font></sup>.  Almost 90% of it was from widget sales <sup><font color="red">[1]</font></sup><sup><font color="red">[2]</font></sup>. </p>
+<p class="referens_content">Company X earned $12 million<sup><font color="red">[1]</font></sup>  .  Almost 90% of it was from widget sales<sup><font color="red">[1]</font></sup><sup><font color="red">[2]</font></sup>  . </p>
 
 
 If the question cannot be answered by the document, say so.
