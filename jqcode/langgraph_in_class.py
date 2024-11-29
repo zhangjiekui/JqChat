@@ -1547,7 +1547,7 @@ class GraphAgent:
 
 
 
-tavily_search_tool = TavilySearchResults(max_results=4) #increased number of results
+tavily_search_tool = TavilySearchResults(max_results=6) #increased number of results
 
 # 
 

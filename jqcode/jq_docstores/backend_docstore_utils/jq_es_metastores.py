@@ -129,8 +129,10 @@ class JqElasticsearchUniMetaStore():
                     index_create_date = r['index_create_date']
                     
                 if not isinstance(description,str) or len(description) < min_length_of_index_description:
-                    logger.warning(f"{description=}必须是有效的字符串,且长度必须至少为{min_length_of_index_description}！忽略此次操作。")
-                    return False,''                
+                    logger.warning(f"{description=}必须是有效的字符串,且长度必须至少为{min_length_of_index_description}！将使用默认的知识库描述。")
+                    from jqcode.langgraph_in_class import default_index_description
+                    description = default_index_description
+                    # return False,''                
                 
                 if not index_create_date:
                     dt = datetime.now()

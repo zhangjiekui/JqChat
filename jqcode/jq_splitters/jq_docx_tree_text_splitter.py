@@ -185,12 +185,14 @@ def get_pre_title_nodes_text(cur_node,cur_title_node,pre_title_node,cur_ancestor
                 if cur_node.parent.type in [TreeNodeType.TEXT,TreeNodeType.DOCUMENT]:
                     cur_title_node = cur_node.parent
                 if cur_ancestors_text_placeholder == '': # 只有第一次会取值
-                    cur_ancestors_text_placeholder = _get_pre_title_nodes_text(cur_node.ancestors[1:]) #[1:] 去除文件名根节点
+                    # cur_ancestors_text_placeholder = _get_pre_title_nodes_text(cur_node.ancestors[1:]) #[1:] 去除文件名根节点
+                    cur_ancestors_text_placeholder = _get_pre_title_nodes_text(cur_node.ancestors) #[1:] 包括文件名根节点
                     
                 if len(cur_title_node.children)>0:                 
                     if cur_node == cur_title_node.children[0] or cur_title_node != pre_title_node :     # 然后就只有在第一个叶子文本节点，或是父节点发生变化时再取值
                         pre_title_node = cur_title_node
-                        cur_ancestors_text_placeholder = _get_pre_title_nodes_text(cur_node.ancestors[1:]) #[1:] 去除文件名根节点
+                        # cur_ancestors_text_placeholder = _get_pre_title_nodes_text(cur_node.ancestors[1:]) #[1:] 去除文件名根节点
+                        cur_ancestors_text_placeholder = _get_pre_title_nodes_text(cur_node.ancestors) #[1:] 包括文件名根节点
         return cur_node,pre_title_node,cur_ancestors_text_placeholder,pre_ancestors_text_placeholder
 
             
@@ -332,8 +334,11 @@ class JqkjDocTreeTokenTextSplitter(MetadataAwareTextSplitter):
                 f.write(f'{s}\n\n')
         logger.info(f'......切分结果已保存到{save_path_txt}')
 
-    def add_text(self,text_cached:str='',cur_text:str='',cur_node=None,chunks_saved:list=[]):
+    def add_text(self,text_cached:str='',cur_text:str='',cur_node=None,chunks_saved:list=[],title_prefix=''):
         merge_status = True
+        # if title_prefix:
+        #     if title_prefix not in text_cached:
+        #         text_cached = title_prefix + text_cached
         text_cached_tokens = self.tokens_len_func(text_cached)
         text_to_be_added_tokens = self.tokens_len_func(cur_text)
 
@@ -346,14 +351,22 @@ class JqkjDocTreeTokenTextSplitter(MetadataAwareTextSplitter):
             cur_text = ''
 
             if text_cached_tokens >= TOKEN_THRESHOLD*0.8:
+                # if title_prefix:
+                #     assert title_prefix in text_cached, f"title_prefix:{title_prefix}不在待保存的切分{text_cached=}中！"
                 chunks_saved.append(text_cached.strip('\n'))
                 if cur_node:
                     text_cached =  get_possible_zh_title_for_previous_sibling(cur_node)
+                if title_prefix:
+                    if title_prefix not in text_cached:
+                        text_cached += title_prefix
         else:
             # logger.warning(f"{total_tokens=}，超出了上限{TOKEN_THRESHOLD=}")
             # logger.warning(f"{text_cached_tokens=}，又没有达到{TOKEN_THRESHOLD*0.8=}的切分标准")
             # logger.warning(f"{text_tobe_added_tokens=}，建议先对text_to_be_added进行切分！")
             merge_status = False
+        # if title_prefix:
+        #     if title_prefix not in text_cached:
+        #         text_cached = title_prefix + text_cached
         return text_cached,cur_text,chunks_saved,merge_status
 
 
@@ -430,7 +443,7 @@ class JqkjDocTreeTokenTextSplitter(MetadataAwareTextSplitter):
                 ancestors_text_placeholder = '' if pre_ancestors_text_placeholder==cur_ancestors_text_placeholder else cur_ancestors_text_placeholder
 
                 if len(ancestors_text_placeholder) == 0 and len(text_cached) == 0: #保证每个split开头都有 标题目录 信息
-                    text_cached = _get_pre_title_nodes_text(cur_node.ancestors[1:]) 
+                    text_cached = _get_pre_title_nodes_text(cur_node.ancestors) 
 
                 if ancestors_text_placeholder not in text_cached:
                     cur_text = ancestors_text_placeholder + node_text + '\n'
@@ -440,7 +453,7 @@ class JqkjDocTreeTokenTextSplitter(MetadataAwareTextSplitter):
                 pre_ancestors_text_placeholder=cur_ancestors_text_placeholder                
                 tokens_ancestors = self.tokens_len_func(text=ancestors_text_placeholder)
                 
-                text_cached,cur_text,chunks_saved,merge_status = self.add_text(text_cached=text_cached,cur_text=cur_text,cur_node=cur_node,chunks_saved=chunks_saved)
+                text_cached,cur_text,chunks_saved,merge_status = self.add_text(text_cached=text_cached,cur_text=cur_text,cur_node=cur_node,chunks_saved=chunks_saved,title_prefix=ancestors_text_placeholder)
                 
                 if not merge_status: # 当前文本的tokens数已超出了tokens_cutoff剩余限额                    
                     #======  先处理text_cached，
@@ -454,7 +467,7 @@ class JqkjDocTreeTokenTextSplitter(MetadataAwareTextSplitter):
                     # 要特别注意chunk_size的控制，详见_split_text方法中对chunk_size和hunk_overlap的处理
                     chunks = self._split_text(node_text,chunk_size=max_chunk_size - tokens_cached - tokens_ancestors)
                     cur_text = ancestors_text_placeholder + chunks[0]
-                    text_cached,cur_text,chunks_saved,merge_status = self.add_text(text_cached=text_cached,cur_text=cur_text,cur_node=cur_node,chunks_saved=chunks_saved)
+                    text_cached,cur_text,chunks_saved,merge_status = self.add_text(text_cached=text_cached,cur_text=cur_text,cur_node=cur_node,chunks_saved=chunks_saved,title_prefix=ancestors_text_placeholder)
                     # ====== text_cached已经处理完毕
                         
                     #################################################
@@ -467,7 +480,7 @@ class JqkjDocTreeTokenTextSplitter(MetadataAwareTextSplitter):
                     tokens_node_text = self.tokens_len_func(text=node_text)
       
                     # 因为是要对当前文本进行分割，所以前面必须要有cur_ancestors_text_placeholder部分
-                    cur_ancestors_text_placeholder = _get_pre_title_nodes_text(cur_node.ancestors[1:])
+                    cur_ancestors_text_placeholder = _get_pre_title_nodes_text(cur_node.ancestors)
                     # 因为要比较是否相等，所以同步加上
                     if pre_ancestors_text_placeholder == cur_ancestors_text_placeholder:
                         if pre_ancestors_text_placeholder not in text_cached:
@@ -515,7 +528,7 @@ class JqkjDocTreeTokenTextSplitter(MetadataAwareTextSplitter):
                 # 保险起见，先处理text_cached
                 tokens_cached = self.tokens_len_func(text=text_cached)
                 tokens_bound = self.normal_tokens_chunk_size
-                cur_ancestors_text_placeholder = _get_pre_title_nodes_text(cur_node.ancestors[1:])
+                cur_ancestors_text_placeholder = _get_pre_title_nodes_text(cur_node.ancestors)
                 if cur_ancestors_text_placeholder not in text_cached:
                     if self.tokens_len_func(text=text_cached) + self.tokens_len_func(text=cur_ancestors_text_placeholder) <= tokens_bound: 
                         text_cached += cur_ancestors_text_placeholder
@@ -536,6 +549,8 @@ class JqkjDocTreeTokenTextSplitter(MetadataAwareTextSplitter):
 
                 table_tokens = self.tokens_len_func(text=vf_string)
                 _table_tokens_prefix = self.tokens_len_func(text=_vf_string_with_prefix)
+                if cur_ancestors_text_placeholder not in text_cached:
+                    text_cached = cur_ancestors_text_placeholder + text_cached
                 tokens_cached = self.tokens_len_func(text=text_cached)
                 if tokens_cached + table_tokens <= tokens_bound:
                     if tokens_cached + _table_tokens_prefix <= tokens_bound:
@@ -547,7 +562,8 @@ class JqkjDocTreeTokenTextSplitter(MetadataAwareTextSplitter):
                         assert self.tokens_len_func(text_cached)<=tokens_bound
                     else:
                         if self.tokens_len_func(text=text_cached) >= max_chunk_size*cutoff_ratio_as_chunk:
-                            assert self.tokens_len_func(text=text_cached) <= DEFAULT_CHUNK_SIZE,f"{self.tokens_len_func(text=text_cached)},\n{text_cached}"   
+                            assert self.tokens_len_func(text=text_cached) <= DEFAULT_CHUNK_SIZE,f"{self.tokens_len_func(text=text_cached)},\n{text_cached}" 
+                            assert cur_ancestors_text_placeholder in text_cached, f"表格切分中未包括章节标题:{cur_ancestors_text_placeholder}"  
                             chunks_saved.append(text_cached.strip('\n'))
                             text_cached = '' 
 
@@ -563,14 +579,23 @@ class JqkjDocTreeTokenTextSplitter(MetadataAwareTextSplitter):
                     rows = splits_on_row[1:]
                     
                     if tokens_cached + column_names_tokens > tokens_bound:
-                        assert self.tokens_len_func(text=text_cached) <= DEFAULT_CHUNK_SIZE,f"{self.tokens_len_func(text=text_cached)},\n{text_cached}"   
+                        assert self.tokens_len_func(text=text_cached) <= DEFAULT_CHUNK_SIZE,f"{self.tokens_len_func(text=text_cached)},\n{text_cached}" 
+                        assert cur_ancestors_text_placeholder in text_cached, f"表格切分中未包括章节标题:{cur_ancestors_text_placeholder}"   
                         chunks_saved.append(text_cached.strip('\n'))
                         text_cached = cur_ancestors_text_placeholder + column_names
                     else:
                         text_cached += column_names
+                        if cur_ancestors_text_placeholder not in text_cached:
+                            text_cached = cur_ancestors_text_placeholder + text_cached
                         assert self.tokens_len_func(text_cached)<=tokens_bound
+                    
+                    if cur_ancestors_text_placeholder not in text_cached:
+                        text_cached = cur_ancestors_text_placeholder + text_cached
+                    prefix = cur_ancestors_text_placeholder + column_names
                     for row in rows:
-                        text_cached,row,chunks_saved,merge_status = self.add_text(text_cached=text_cached,cur_text=row,cur_node=cur_node,chunks_saved=chunks_saved)
+                        text_cached,row,chunks_saved,merge_status = self.add_text(text_cached=text_cached,cur_text=row,cur_node=cur_node,chunks_saved=chunks_saved,title_prefix=prefix)
+                        if cur_ancestors_text_placeholder not in text_cached:
+                            text_cached = cur_ancestors_text_placeholder + text_cached
                         if not merge_status:
                             assert self.tokens_len_func(text=text_cached) <= DEFAULT_CHUNK_SIZE,f"{self.tokens_len_func(text=text_cached)},\n{text_cached}"   
                             tokens_cached = self.tokens_len_func(text=text_cached)
@@ -584,12 +609,24 @@ class JqkjDocTreeTokenTextSplitter(MetadataAwareTextSplitter):
                             # ====== text_cached已经处理完毕和当前行处理完毕                            
                             text_cached = cur_ancestors_text_placeholder + column_names
                     if text_cached:
+                        if cur_ancestors_text_placeholder not in text_cached:
+                            text_cached = cur_ancestors_text_placeholder + text_cached
+                        assert self.tokens_len_func(text=text_cached) <= DEFAULT_CHUNK_SIZE,f"{self.tokens_len_func(text=text_cached)},\n{text_cached}" 
                         chunks_saved.append(text_cached.strip('\n'))
                         text_cached = ''
                                 
                                 
             # 如果循环已经结束，需保证最后的text_cached也要读入
             if cur_node == last_nodes:
+                # 因为是要对当前文本进行分割，所以前面必须要有cur_ancestors_text_placeholder部分
+                cur_ancestors_text_placeholder = _get_pre_title_nodes_text(cur_node.ancestors)
+                # 因为要比较是否相等，所以同步加上
+                if pre_ancestors_text_placeholder == cur_ancestors_text_placeholder:
+                    if pre_ancestors_text_placeholder not in text_cached:
+                        pre_ancestors_text_placeholder += text_cached                    
+                if cur_ancestors_text_placeholder not in text_cached:
+                    text_cached += cur_ancestors_text_placeholder 
+
                 if len(text_cached.strip('\n'))>0:
                     # 先看看text_cached能否合并到最后的一个chunks_saved中
                     if chunks_saved:#可能有些短文件，一个只有一个块
@@ -607,7 +644,12 @@ class JqkjDocTreeTokenTextSplitter(MetadataAwareTextSplitter):
         # 分离文件名和扩展名
         filename, extension = os.path.splitext(full_filename)
         # 重新组合路径和文件名（不包括扩展名）
-        result_path = os.path.join(path, filename)
+        from jqcode.jq_agent.c0_init_env_models import env_models_instance
+        destination_dir = env_models_instance.abs_workspace + '/chunks_preview'
+        if not Path(destination_dir).exists():
+            logger.warning(f"输出目录[{destination_dir}]不存在!将尝试创建该目录。")
+            Path(destination_dir).mkdir(parents=True, exist_ok=True)
+        result_path = os.path.join(destination_dir, filename)
         file_path_docx = result_path
         
         
@@ -617,10 +659,10 @@ class JqkjDocTreeTokenTextSplitter(MetadataAwareTextSplitter):
 
         updated_text = '\n\n'.join(chunks_saved)
         # 切分后的结果保存到文本文件
-        # with open(file_path_txt,'w',encoding='utf-8') as f:
-        #     f.write(updated_text)
+        with open(file_path_txt,'w',encoding='utf-8') as f:
+            f.write(updated_text)
         # 保存供检查、预览的文本文件
-        # self.write_chunkes_to_preview_file(chunks_saved, file_path_txt_preview)
+        self.write_chunkes_to_preview_file(chunks_saved, file_path_txt_preview)
         
         # 更新原document node的信息        
         lm_base_node.text = updated_text
@@ -868,19 +910,18 @@ if __name__ == "__main__":
     from jqcode.jq_agent.tools.jq_retriever import get_retriever
 
     
-    top_n = 4
+    top_n = 6
     input_file_dir = fr'/data/projects/JqChat/jqcode/jq_readers/.testinputdocs_debug'
-    input_file_dir = fr'/data/projects/JqChatV2/JqChat/jqcode/jq_readers/.test_files/.testinputdocs'
-    
+    input_file_dir = fr'/data/projects/JqChatV2/JqChat/jqcode/jq_readers/.test_files/.testinputdocs'    
     input_files = [fr'/data/projects/JqChatV2/JqChat/jqcode/jq_readers/.test_files/.testinputdocs/A方案.docx'] 
-    # input_files += [fr'/data/projects/JqChatV2/JqChat/jqcode/jq_readers/.test_files/.testinputdocs/InstallationGuide.docx']
+    input_files += [fr'/data/projects/JqChatV2/JqChat/jqcode/jq_readers/.test_files/.testinputdocs/InstallationGuide.docx']
     input_files += [fr'/data/projects/JqChatV2/JqChat/jqcode/jq_readers/.test_files/.testinputdocs/PPQA000_质量保证过程.doc'] 
-    # input_files += [fr'/data/projects/JqChatV2/JqChat/jqcode/jq_readers/.test_files/.testinputdocs/厦门市智慧民政一体化平台项目建设方案 V3.6.docx'] 
-    # input_files = [fr'/data/projects/JqChatV2/JqChat/jqcode/jq_readers/.test_files/.testinputdocs/PPQA000_质量保证过程.doc']
-    # input_files = [fr'/data/projects/JqChatV2/JqChat/jqcode/jq_readers/.test_files/.testinputdocs_debug/test_zh.docx']
-
+    input_files += [fr'/data/projects/JqChatV2/JqChat/jqcode/jq_readers/.test_files/.testinputdocs/厦门市智慧民政一体化平台项目建设方案 V3.6.docx'] 
+    input_files += [fr'/data/projects/JqChatV2/JqChat/jqcode/jq_readers/.test_files/.testinputdocs/PPQA000_质量保证过程.doc']
+    input_files += [fr'/data/projects/JqChatV2/JqChat/jqcode/jq_readers/.test_files/.testinputdocs_debug/test_zh.docx']
     # 针对以下文件中的表格提问
-    # input_files += [fr"/data/projects/JqChatV2/JqChat/jqcode/jq_readers/.test_files/.testinputdocs/AAMIS_项目总体计划_120925.doc"]
+    input_files += [fr"/data/projects/JqChatV2/JqChat/jqcode/jq_readers/.test_files/.testinputdocs/AAMIS_项目总体计划_120925.doc"]
+    input_files += ["/data/projects/JqChatV2/workspace/knowledge_base/new8/content/RFB_FWZC-S8A-养老服务功能建设-技术方案1122-批注.docx"]
     q = "安徽省食品药品监督管理局行政审批系统项目总体计划的版本号是多少，批准人是谁？"
     query0 = "晶奇公司的应急技术服务电话？"
     query1 = "晶奇公司在哪一年获得ISO9001国际质量体系认证？"
@@ -892,15 +933,16 @@ if __name__ == "__main__":
     query7 = 'what a user could do With Nsight Systems？'
     query8 = 'How many benchmarks are choosed for testing the overall performance？具体的benchmarks是什么？'
     query9 = '厦门市智慧民政一体化的建设内容包括哪些？'
+    query10 = '养老服务功能建设的系统清单表，请以表格的形式回答,尽可能的详尽，包括提供的上下文中的全部内容，不要遗漏'
 
-    qs = [q,query0,query1,query2,query3,query4,query5,query6,query7,query8,query9]
+    qs = [q,query0,query1,query2,query3,query4,query5,query6,query7,query8,query9,query10]
     # qs = [query7]   
    
 
 
     
     llm = env_models_instance.chat_model
-    index_name='zjk_jqesclient_test'
+    index_name='zjk_jqesclient_test3'
     compression_retriever = get_retriever(index_name=index_name,chat_on_docs_list=input_files,add_docs_list_to_kb=True)
     # compression_retriever = get_retriever(index_name=index_name)
     # chain_type:stuff、refine、map_reduce 和 map_rerank
