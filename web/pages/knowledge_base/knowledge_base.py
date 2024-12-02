@@ -142,8 +142,9 @@ def knowledge_base_page(api: ApiRequest, is_lite: bool = None):
                 st.error(f"知识库名称不能为空！")
             elif len(kb_name) < 3:
                 st.error(f"知识库名称必须不少于3个字符！")
-            elif not kb_name.isalpha():  # 检查是否全是字母
-                st.error(f"知识库名称不支持中文命名，且必须全部是小写字母！")
+
+            elif not kb_name.isalpha() and not any(char.isalpha() for char in kb_name):  # 确保包含字母，不能全是数字
+                st.error(f"知识库名称不支持中文，只能使用英文字母或数字组合，且必须包含字母！")
 
             # lyq 知识库简介验证
             elif not kb_info or len(kb_info.strip()) < 20:
