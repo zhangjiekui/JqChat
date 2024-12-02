@@ -34,7 +34,7 @@ embed_model = env_models_instance.embed_model
 reranker = env_models_instance.reranker
 
 docstore_name = "docstore"
-doc_index_name="health_new"
+doc_index_name="default"
 jq_es_client = JqEsClient()
 
 

@@ -1079,7 +1079,7 @@ if __name__ == '__main__':
 
     from langchain_core.messages import HumanMessage,SystemMessage
     es_connection = env_models_instance.get_es_connection()
-    es_searchstore = env_models_instance.get_es_searchstore(index_name = "health")
+    es_searchstore = env_models_instance.get_es_searchstore(index_name = "default")
 
     knowledge_base_list = env_models_instance.get_all_knowledge_base(es_connection) 
     print(knowledge_base_list)   
