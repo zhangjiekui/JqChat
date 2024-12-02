@@ -510,9 +510,7 @@ class InitEnvModels:
         self.all_indices = None
         self.all_indices = self.get_all_knowledge_base()
         self.strategy = DenseVectorStrategy(hybrid=False,rrf=False,distance=DistanceMetric.COSINE)
-
-        self.default_chinese_analyzer_settings = {"index": {"analysis.analyzer.default.type": "ik_max_word","analysis.search_analyzer.default.type": "ik_smart"}}
-    
+        self.default_chinese_analyzer_settings =self.ES_DEFAULT_CHINESE_SETTINGS
     # region 直接初始化openai接口，暂时用不上
         # loade openai models:暂时用不上
         # self.openai = None

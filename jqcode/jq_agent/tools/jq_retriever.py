@@ -79,10 +79,7 @@ def get_retriever(vectorstore:ElasticsearchStore=None,index_name:str='',index_de
 
         # region 2、在知识库中查询是否已经存在拟上传的文件
             if not es_connection.indices.exists(index=index_destination):
-                settings = {
-                    "index": {"analysis.analyzer.default.type": "ik_max_word","analysis.search_analyzer.default.type": "ik_smart"}
-                    }
-
+                settings = env_models_instance.ES_DEFAULT_CHINESE_SETTINGS
                 es_connection.indices.create(index=index_destination,settings=settings)
 
             if es_connection.indices.exists(index=index_destination): 

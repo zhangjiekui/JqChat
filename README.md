@@ -347,17 +347,63 @@ apt install aria2
 ```
 docker network create elastic
 sysctl -w vm.max_map_count=262144
-docker run --name es105 --net elastic -p 9200:9200 -it -m 2GB docker.elastic.co/elasticsearch/elasticsearch:8.14.0
+docker pull docker.elastic.co/elasticsearch/elasticsearch:8.16.1
+【将/data/elasticsearch/data的权限设为777 chmod -R 777 /data/elasticsearch/data】
+docker run --name es816 --net elastic -p 9200:9200 -it -v /data/elasticsearch/data:/usr/share/elasticsearch/data -m 10240M --memory-swap 20480M docker.elastic.co/elasticsearch/elasticsearch:8.16.1
+
+设置docker es816环境变量：
+export ES_HEAP_SIZE=6g
+或是：
+docker cp /data/projects/JqChatV2/JqChat/jqcode/jq_docstores/backend_docstore_utils/jvm.options es816:/usr/share/elasticsearch/config/jvm.options.d/jvm.options
+
 ```
+"""
+  "上传的文件太大，请参照下面修改\usr\share\elasticsearch\config\elasticsearch.yml，但最大不能超过2G！"
+  http.max_content_length: 2147483647b
+  indices.breaker.total.use_real_memory: True
+  indices.breaker.fielddata.limit: 80%                
+"""
+docker es816输出的结果
+━
+✅ Elasticsearch security features have been automatically configured!
+✅ Authentication is enabled and cluster connections are encrypted.
+
+ℹ️  Password for the elastic user (reset with `bin/elasticsearch-reset-password -u elastic`):
+  B9oa7HEgqzuC2e8bfiN_
+
+ℹ️  HTTP CA certificate SHA-256 fingerprint:
+  44939ff54db780054733cfc07f1bb1d38b19ff24a390acbe87607f8d5ce6ba7e
+
+ℹ️  Configure Kibana to use this cluster:
+• Run Kibana and click the configuration link in the terminal when Kibana starts.
+• Copy the following enrollment token and paste it into Kibana in your browser (valid for the next 30 minutes):
+eyJ2ZXIiOiI4LjE0LjAiLCJhZHIiOlsiMTcyLjE4LjAuMjo5MjAwIl0sImZnciI6IjQ0OTM5ZmY1NGRiNzgwMDU0NzMzY2ZjMDdmMWJiMWQzOGIxOWZmMjRhMzkwYWNiZTg3NjA3ZjhkNWNlNmJhN2UiLCJrZXkiOiJ2MmpraEpNQlZKRHdaZmxHMzBrMTpRcnRsQkpfNVRYQzNTWXNlWFM2bU13In0=
+
+ℹ️ Configure other nodes to join this cluster:
+• Copy the following enrollment token and start new Elasticsearch nodes with `bin/elasticsearch --enrollment-token <token>` (valid for the next 30 minutes):
+  eyJ2ZXIiOiI4LjE0LjAiLCJhZHIiOlsiMTcyLjE4LjAuMjo5MjAwIl0sImZnciI6IjQ0OTM5ZmY1NGRiNzgwMDU0NzMzY2ZjMDdmMWJiMWQzOGIxOWZmMjRhMzkwYWNiZTg3NjA3ZjhkNWNlNmJhN2UiLCJrZXkiOiJ3V2praEpNQlZKRHdaZmxHMzBsRjozUW4zYjg3U1NBV0Zobk1fQ2ZWZ3d3In0=
+
+  If you're running in Docker, copy the enrollment token and run:
+  `docker run -e "ENROLLMENT_TOKEN=<token>" docker.elastic.co/elasticsearch/elasticsearch:8.16.1`
+
+
+
 ### 复制elastic user password and an enrollment token for Kibana.
+
+
 #### elastic user
 elastic
 #### elastic user password ：
-esnNFWQbCIspxTPGwOom
+B9oa7HEgqzuC2e8bfiN_
 #### enrollment token for Kibana：
-eyJ2ZXIiOiI4LjE0LjAiLCJhZHIiOlsiMTcyLjE4LjAuMjo5MjAwIl0sImZnciI6ImQ1N2U2MTk5ZDFhMTE1ZmMzZTBkZjEzNGQ0NzA0Yjk3Y2Q0NzA1NWFkYmQxNjFhNDQxOWQzZTY4MWMwNTBmMzciLCJrZXkiOiIyQUhINjQ4QmQtWTAwMy14bl9wVDp2ZVRzUVhyOVJzQ08tNTlXNDh0OGlRIn0=
+eyJ2ZXIiOiI4LjE0LjAiLCJhZHIiOlsiMTcyLjE4LjAuMjo5MjAwIl0sImZnciI6IjQ0OTM5ZmY1NGRiNzgwMDU0NzMzY2ZjMDdmMWJiMWQzOGIxOWZmMjRhMzkwYWNiZTg3NjA3ZjhkNWNlNmJhN2UiLCJrZXkiOiJ2MmpraEpNQlZKRHdaZmxHMzBrMTpRcnRsQkpfNVRYQzNTWXNlWFM2bU13In0=
 #### HTTP CA certificate SHA-256 fingerprint:
-d57e6199d1a115fc3e0df134d4704b97cd47055adbd161a4419d3e681c050f37
+44939ff54db780054733cfc07f1bb1d38b19ff24a390acbe87607f8d5ce6ba7e
+
+cd ~
+docker cp es816:/usr/share/elasticsearch/config/certs/http_ca.crt .
+
+export ELASTIC_PASSWORD="B9oa7HEgqzuC2e8bfiN_"
 
 docker run -e "ENROLLMENT_TOKEN=<token>" docker.elastic.co/elasticsearch/elasticsearch:8.14.0
 
@@ -367,76 +413,23 @@ docker exec -it es105 /usr/share/elasticsearch/bin/elasticsearch-reset-password 
 docker exec -it es105 /usr/share/elasticsearch/bin/elasticsearch-create-enrollment-token -s kibana
 ```
 ## Kibana https://www.elastic.co/guide/en/kibana/current/docker.html
-docker pull docker.elastic.co/kibana/kibana:8.14.0
-docker run --name kib01 --net elastic -p 5601:5601 docker.elastic.co/kibana/kibana:8.14.0
+docker pull docker.elastic.co/kibana/kibana:8.16.1
+docker run --name kib816 --net elastic -p 5601:5601 docker.elastic.co/kibana/kibana:8.16.1
 
-### 中文分词（以新的8.15.0作为例子）
 
-#### 拉取8.15.0
-```
-docker pull docker.elastic.co/elasticsearch/elasticsearch:8.15.0
-```
-```
-docker pull docker.elastic.co/kibana/kibana:8.15.0
-```
-#### 运行8.15.0
-为避免冲突，修改了--name ， -p 参数（将容器内部的9200端口映射到主机的9201端口）
-```
-docker run --name es815 --net elastic -p 9200:9200 -it -m 1GB docker.elastic.co/elasticsearch/elasticsearch:8.15.0
-```
+### 中文分词（以新的8.16.1作为例子）
 
-```
-docker run --name kib815 --net elastic -p 5601:5601 docker.elastic.co/kibana/kibana:8.15.0 
-```
-运行得到以下消息后：
-i Kibana has not been configured.
-Go to http://0.0.0.0:5601/?code=630962 to get started.
-
-使用浏览器打开以下：
-```
-http://10.1.150.105:5601/?code=630962
-```
-然后
-（1）输入Copy the following enrollment token and paste it into Kibana in your browser
-（2）使用用户： elastic 密码：GbWW=NGDy=EAd32Re-a0 登录
-
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-以下是运行elastic docker后输出的备用信息：
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-✅ Elasticsearch security features have been automatically configured!
-✅ Authentication is enabled and cluster connections are encrypted.
-
-ℹ️  Password for the elastic user (reset with `bin/elasticsearch-reset-password -u elastic`):
-  GbWW=NGDy=EAd32Re-a0
-
-ℹ️  HTTP CA certificate SHA-256 fingerprint:
-  b1cadda04bd4ed785050b720849a8dd180a4a7e29bb7ee76d2eb688a11295b31
-
-ℹ️  Configure Kibana to use this cluster:
-• Run Kibana and click the configuration link in the terminal when Kibana starts.
-• Copy the following enrollment token and paste it into Kibana in your browser (valid for the next 30 minutes):
-  eyJ2ZXIiOiI4LjE0LjAiLCJhZHIiOlsiMTcyLjE4LjAuMjo5MjAwIl0sImZnciI6ImIxY2FkZGEwNGJkNGVkNzg1MDUwYjcyMDg0OWE4ZGQxODBhNGE3ZTI5YmI3ZWU3NmQyZWI2ODhhMTEyOTViMzEiLCJrZXkiOiJmYk9KalpFQkxPZ1dUSDFEQTlXMTp2emRLZVZ0Q1FUS3h5RXEyNEJPdWlBIn0=
-
-ℹ️ Configure other nodes to join this cluster:
-• Copy the following enrollment token and start new Elasticsearch nodes with `bin/elasticsearch --enrollment-token <token>` (valid for the next 30 minutes):
-  eyJ2ZXIiOiI4LjE0LjAiLCJhZHIiOlsiMTcyLjE4LjAuMjo5MjAwIl0sImZnciI6ImIxY2FkZGEwNGJkNGVkNzg1MDUwYjcyMDg0OWE4ZGQxODBhNGE3ZTI5YmI3ZWU3NmQyZWI2ODhhMTEyOTViMzEiLCJrZXkiOiJlN09KalpFQkxPZ1dUSDFEQTlXbjpqc2I4Sy1xX1FaaU5YZWY0ankzQ05BIn0=
-
-  If you're running in Docker, copy the enrollment token and run:
-  `docker run -e "ENROLLMENT_TOKEN=<token>" docker.elastic.co/elasticsearch/elasticsearch:8.15.0`
-
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 ```
 #### 安装插件
-进入运行的8.15.0docker中
+进入运行的8.16.1 docker中
 1、查看已安装的插件
 ```
 bin/elasticsearch-plugin list
 ```
 2、安装
-2.1 安装smartcn 【for Chinese or mixed Chinese-English text https://www.elastic.co/guide/en/elasticsearch/plugins/current/analysis-smartcn.html】  
+2.1 安装smartcn 【for Chinese or mixed Chinese-English text https://www.elastic.co/guide/en/elasticsearch/plugins/current/analysis-smartcn.html 】  
 bin/elasticsearch-plugin install analysis-smartcn 
-bin/elasticsearch-plugin install https://get.infini.cloud/elasticsearch/analysis-ik/8.15.0
+bin/elasticsearch-plugin install https://get.infini.cloud/elasticsearch/analysis-ik/8.16.1
 
 2.2 restart Elasticsearch to activate any plugins installed
 如果直接reatert不行，可以先stop再start
@@ -473,73 +466,7 @@ POST _analyze
   ]
 }
 ```
-4、配置全局生效 [https://wenku.csdn.net/answer/rknu3d60fw] 
-```
-注意：这个设置只适用于新创建的索引。对于已经存在的索引，需要手动更新其分词器设置
-``` 
-要设置Elasticsearch(ES)的默认分词器，你需要修改索引的分析器设置。以下是设置默认分词器的步骤:
-(1).打开 Kibana 控制台或通过命令行访问 ES。
-(2).创建或更新一个索引模板，以便在索引创建时自动应用设置。
-```
-PUT _index_template/default
-{
-    "index_patterns":["^[^.*]"],
-    "template":{
-        "settings":{
-            "index":{
-                "analysis":{
-                    "analyzer":{
-                        "default":{
-                            "type":"smartcn"
-                        }
-                    }
-                }
-            }
-        }
-    }
-}
 
-5、验证全局是否生效
-```
-GET _index_template/default
-```
-注意：这个设置只适用于新创建的索引。对于已经存在的索引，需要手动更新其分词器设置
-```
-6、新建一个索引，如test_doc_tree_reader
-curl -X GET "http://10.1.150.105:9200/test_doc_tree_reader/_mapping?pretty"
-
-<!-- 修改elasticsearch的/config/elasticsearch.yml
-1)复制出来 docker cp es105:/usr/share/elasticsearch/config/elasticsearch.yml elasticsearch.yml
-2）修改
-打开elasticsearch.yml文件
-在最后面添加以下内容：
-``` -->
-#----------------------- begin 中文分词器配置 -------------------------
-index:
-  analysis:
-    analyzer:
-      ik_max_word:
-        type: custom
-        tokenizer: ik_max_word
-      ik_smart:
-        type: custom
-        tokenizer: ik_smart
-
-# {
-#   "mappings": {
-#     "properties": {
-#       "content": {
-#         "type": "text",
-#         "analyzer": "ik_max_word",
-#         "search_analyzer": "ik_max_word"
-#       }
-#     }
-#   }
-# }
-#----------------------- 结束 中文分词器配置 -------------------------
-```
-3）复制回去
-docker cp elasticsearch.yml es105:/usr/share/elasticsearch/config/elasticsearch.yml
 ## 本项目的Installation
 
 ubuntu上推荐下面的安装和运行方法:
