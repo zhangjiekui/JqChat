@@ -467,6 +467,22 @@ POST _analyze
 }
 ```
 
+```
+docker run \
+    --name neo4j_rag \
+    --restart always \
+    -p 7474:7474 -p 7687:7687 \
+    -v "/data/neo4j/data/":/data -v "/data/neo4j/plugins/":/plugins \
+    -e NEO4J_apoc_export_file_enabled=true \
+    -e NEO4J_apoc_import_file_enabled=true \
+    -e NEO4J_apoc_import_file_use__neo4j__config=true \
+    -e NEO4J_PLUGINS='["apoc", "graph-data-science"]' \
+    neo4j:latest
+```
+
+
+
+
 ## 本项目的Installation
 
 ubuntu上推荐下面的安装和运行方法:
