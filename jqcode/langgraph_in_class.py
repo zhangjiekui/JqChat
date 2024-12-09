@@ -629,11 +629,13 @@ class GraphAgent:
         logger.warning(f"     vectorstore方法，执行实际文档检索的集成检索器为：{message}")
         try:
             documents = self.retriever.invoke(question,config=invoke_llm_config)
-            light_rag = env_models_instance.get_lightrag(index_name=retriever.vectorstore._store.index)
+            
             try:
                 from lightrag import QueryParam
+                light_rag = env_models_instance.get_lightrag(index_name=retriever.vectorstore._store.index)                
                 result_strs=light_rag.query(question, param=QueryParam(mode="hybrid",only_need_context=True,top_k=5, max_token_for_text_unit=1500, max_token_for_global_context=2000))
                 if result_strs:
+                    logger.warning(f'LightRag Result String={result_strs}')
                     graph_doc = Document(page_content=result_strs,metadata={'source':"lightgraph"})
                     documents += [graph_doc]                
             

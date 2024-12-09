@@ -588,6 +588,21 @@ Read the [blog post](https://ricklamers.io/posts/gpt-code) to find out more. Thi
 
 ## 相关的项目资源
 
+
+在MSI笔记本电脑上Windows环境下安装的
+### 测试新的模型
+#### UI：open-webui 
+```
+pip install open-webui
+open-webui serve
+```
+This will start the Open WebUI server, which you can access at http://localhost:8080
+
+### 免费的Openai兼容的LLM模型api： https://glhf.chat/
+如："hf:meta-llama/Llama-3.3-70B-Instruct"
+
+
+
 ### File System Crawler for Elasticsearch  
 https://github.com/dadoonet/fscrawler  
 
