@@ -620,6 +620,8 @@ class GraphAgent:
         """
         print("---RETRIEVE---")
         question = state["question"]
+        vector_documents = []
+        graph_documents = []
 
         # Retrieval
         retrievers=self.retriever.base_retriever.retrievers
@@ -628,26 +630,34 @@ class GraphAgent:
             message += f" 检索器[{i+1}]{retriever.name}，检索的目标知识库为{retriever.vectorstore._store.index} "
         logger.warning(f"     vectorstore方法，执行实际文档检索的集成检索器为：{message}")
         try:
-            documents = self.retriever.invoke(question,config=invoke_llm_config)
-            
-            try:
-                from lightrag import QueryParam
-                light_rag = env_models_instance.get_lightrag(index_name=retriever.vectorstore._store.index)                
-                result_strs=light_rag.query(question, param=QueryParam(mode="hybrid",only_need_context=True,top_k=5, max_token_for_text_unit=1500, max_token_for_global_context=2000))
-                if result_strs:
-                    logger.warning(f'LightRag Result String={result_strs}')
-                    graph_doc = Document(page_content=result_strs,metadata={'source':"lightgraph"})
-                    documents += [graph_doc]                
-            
-            except Exception as e:
-                logger.error(f"LightRag检索出现错误：{e}")
-            
-            if len(documents)==0:
+            vector_documents = self.retriever.invoke(question,config=invoke_llm_config)
+            if len(vector_documents)==0:
                 msg=f"未从知识库{retriever.vectorstore._store.index}中检索到任何相关文档！"
-                documents = [Document(page_content=msg)]
                 logger.warning(f"     {msg}")
             else:
-                logger.warning(f"     vectorstore检索到的相关文档数:{len(documents)=}")
+                logger.warning(f"     vectorstore检索到的相关文档数:{len(vector_documents)=}")
+            
+            if env_models_instance.USING_GRAPH_RAG: 
+                    try:
+                        from lightrag import QueryParam
+                        from lightrag.utils import ENCODER
+                        ENCODER = env_models_instance._tokenizer
+                        light_rag = env_models_instance.get_lightrag(index_name=retriever.vectorstore._store.index)                
+                        result_strs=light_rag.query(question, param=QueryParam(mode="hybrid",only_need_context=True,top_k=5, max_token_for_text_unit=1500, max_token_for_global_context=2000))
+                        if result_strs:
+                            logger.warning(f'LightRag Result String={result_strs}')
+                            graph_documents = [Document(page_content=result_strs,metadata={'source':"lightgraph"})] 
+                        else:
+                            msg=f"未从Graph知识库中检索到任何相关实体、关系或文档！"
+                            logger.warning(f"     {msg}")
+                    except Exception as e:
+                        logger.error(f"LightRag检索出现错误：{e}")
+            documents = vector_documents + graph_documents
+            if len(documents)==0:
+                msg=f"未从知识库{retriever.vectorstore._store.index}（Vector/Graph）中检索到任何相关文档！"
+                documents = [Document(page_content=msg)]
+                logger.warning(f"     {msg}")
+
         except Exception as e:
             err_msg = f"从知识库({retriever.vectorstore._store.index})中检索{question=}出现错误：{e}"
             logger.error(err_msg)
@@ -1569,12 +1579,13 @@ tavily_search_tool = TavilySearchResults(max_results=6) #increased number of res
 
 if __name__ == "__main__":
     user_questions = [
+        "晶奇公司质量保证过程中的角色及角色的职责或含义解释，对应的人员（姓名）有哪些?其中的批准人是谁？",
         # '你好，我的名字是张结魁，请记住我的名字',
         # '请搜索我与晶奇公司的相关网页，说明我与晶奇公司的关系',
         # '晶奇公司的厦门市智慧民政一体化平台建设方案的编制依据，给出详尽的文件名称和文号等内容列表',
         # '请绘制sin(x)曲线',
         # '我公司是什么时候与西南石油大学建立校企合作关系的？',
-        "晶奇公司编制的安徽省食品药品监督管理局行政审批系统项目总体计划的版本号是多少，批准人是谁？",
+        # "晶奇公司编制的安徽省食品药品监督管理局行政审批系统项目总体计划的版本号是多少，批准人是谁？",
         # '请搜索合肥大蜀山，然后提供详细介绍', 
         # '请查询明天从合肥到上海的航班,以及南昌到北京的航班',
         # '请直接执行代码：print("Hello World")',

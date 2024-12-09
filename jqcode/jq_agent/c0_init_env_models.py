@@ -73,6 +73,8 @@ if is_main_process():
 os.environ["NEO4J_URI"] = "bolt://10.1.150.105:7687"
 os.environ["NEO4J_USERNAME"] = "neo4j"
 os.environ["NEO4J_PASSWORD"] = "neo4jneo4j"
+
+
 os.environ['LANGCHAIN_TRACING_V2'] = 'true'
 os.environ['LANGCHAIN_ENDPOINT'] = 'https://api.smith.langchain.com'
 # os.environ['LANGCHAIN_API_KEY'] = "ls__fe150087fa0643f28b3eae3a07d57529"
@@ -466,6 +468,7 @@ class InitEnvModels:
         self.embed_model,self.embedding_model_8k,self.reranker = self.get_emb_8k_rerank_model()
         
         self._tokenizer = AutoTokenizer.from_pretrained(self.embedding_model_name_or_path)
+        # r = self._tokenizer.encode("中华人民共和国")
         self.text_splitter = JqChineseRecursiveTextSplitter(self._tokenizer,chunk_size=self.embedding_model_max_tokens,chunk_overlap=0.2)
         self.doc_tree_spiltter = JqkjDocTreeTokenTextSplitter.from_defaults(cr_text_splitter=self.text_splitter)
         # code_splitter = self.text_splitter.from_language(language=Language.PYTHON,tokenizer=self._tokenizer)
@@ -477,6 +480,11 @@ class InitEnvModels:
         self.NEO4J_PASSWORD = os.getenv("NEO4J_PASSWORD","neo4jneo4j")
         self.NEO4J_USERNAME = os.getenv("NEO4J_USERNAME","neo4j")
         self.NEO4J_URI = os.getenv("NEO4J_URI","bolt://10.1.150.105:7687")
+        USING_GRAPH_RAG_STR= os.getenv("USING_GRAPH_RAG","false")
+        if USING_GRAPH_RAG_STR.lower()=='true':
+            self.USING_GRAPH_RAG = True
+        else:
+            self.USING_GRAPH_RAG = False
 
 
         ES_DEFAULT_CHINESE_SETTINGS = os.getenv("ES_DEFAULT_CHINESE_SETTINGS",'') 
@@ -639,6 +647,8 @@ class InitEnvModels:
         from lightrag import LightRAG
         from lightrag.llm import openai_complete_if_cache, openai_embedding
         from lightrag.utils import EmbeddingFunc
+        from lightrag.utils import ENCODER
+        ENCODER = self._tokenizer
         abs_working_dir = f"{self.abs_workspace}/knowledge_base/{index_name}/{working_dir}" 
         if not os.path.exists(abs_working_dir):
             os.makedirs(abs_working_dir,exist_ok=True)

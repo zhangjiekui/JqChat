@@ -471,6 +471,12 @@ POST _analyze
 修改：
 /data/projects/LightRAG/lightrag/prompt.py： PROMPTS["DEFAULT_LANGUAGE"] = "Simplified Chinese"
 /data/projects/LightRAG/lightrag/operate.py L997增加一行: all_text_units = [unit for unit in all_text_units if isinstance(unit.get('data',None),dict)]
+/data/projects/LightRAG/lightrag/utils.py L19-20:
+    from transformers import AutoTokenizer
+    ENCODER = AutoTokenizer.from_pretrained("/data/models/bce-embedding-base_v1")
+/data/projects/LightRAG/lightrag/utils.py L139:
+      tokens = ENCODER.encode(content,max_length=2**32,truncation="do_not_truncate")
+
 ## Neo4j
 
 ### 删除全部数据

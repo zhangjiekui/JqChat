@@ -42,7 +42,7 @@ class ApiRequest:
         timeout: float = HTTPX_DEFAULT_TIMEOUT,
     ):
         self.base_url = base_url
-        _timeout = max(timeout,6000)
+        _timeout = max(timeout,60000)
         
         self.timeout = _timeout
         logger.warning(f"ApiRequest中的{self.timeout=}")
