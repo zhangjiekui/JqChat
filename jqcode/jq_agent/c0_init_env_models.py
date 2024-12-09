@@ -70,6 +70,9 @@ if is_main_process():
     print("=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*")
     print("\n")
 
+os.environ["NEO4J_URI"] = "bolt://10.1.150.105:7687"
+os.environ["NEO4J_USERNAME"] = "neo4j"
+os.environ["NEO4J_PASSWORD"] = "neo4jneo4j"
 os.environ['LANGCHAIN_TRACING_V2'] = 'true'
 os.environ['LANGCHAIN_ENDPOINT'] = 'https://api.smith.langchain.com'
 # os.environ['LANGCHAIN_API_KEY'] = "ls__fe150087fa0643f28b3eae3a07d57529"
@@ -471,6 +474,11 @@ class InitEnvModels:
         self.CERT_FINGERPRINT = os.getenv("CERT_FINGERPRINT")
         self.ES_URL = os.getenv("ES_URL","https://localhost:9200")
 
+        self.NEO4J_PASSWORD = os.getenv("NEO4J_PASSWORD","neo4jneo4j")
+        self.NEO4J_USERNAME = os.getenv("NEO4J_USERNAME","neo4j")
+        self.NEO4J_URI = os.getenv("NEO4J_URI","bolt://10.1.150.105:7687")
+
+
         ES_DEFAULT_CHINESE_SETTINGS = os.getenv("ES_DEFAULT_CHINESE_SETTINGS",'') 
         ES_DEFAULT_CHINESE_SETTINGS = json_repair.loads(ES_DEFAULT_CHINESE_SETTINGS)
         self.ES_DEFAULT_CHINESE_SETTINGS = ES_DEFAULT_CHINESE_SETTINGS if len(ES_DEFAULT_CHINESE_SETTINGS)>0 else {"index": {"analysis.analyzer.default.type": "ik_max_word","analysis.search_analyzer.default.type": "ik_smart"}}
@@ -627,7 +635,47 @@ class InitEnvModels:
             logger.warning(f"{self.rerank_model_name}在线模型无法获取: {e}")
         return embed_model,embedding_model_8k,reranker
 
-
+    def get_lightrag(self,index_name,example_number=2,language="Simplified Chinese",keyword_extraction=False, working_dir = "Neo4jWorkDir",log_level="DEBUG"):
+        from lightrag import LightRAG
+        from lightrag.llm import openai_complete_if_cache, openai_embedding
+        from lightrag.utils import EmbeddingFunc
+        abs_working_dir = f"{self.abs_workspace}/knowledge_base/{index_name}/{working_dir}" 
+        if not os.path.exists(abs_working_dir):
+            os.makedirs(abs_working_dir,exist_ok=True)
+        
+        async def embedding_func(texts: list[str]):
+            return await openai_embedding(
+                texts,
+                model=self.embedding_model_name,
+                api_key=self.api_key,
+                base_url=self.embedding_model_base_url,
+            )
+        async def llm_model_func(
+                prompt, system_prompt=None, history_messages=[], keyword_extraction=keyword_extraction, **kwargs
+            ) -> str:
+                return await openai_complete_if_cache(
+                    self.llm_model_name,
+                    prompt,
+                    system_prompt=system_prompt,
+                    history_messages=history_messages,
+                    api_key=self.llm_model_api_key,
+                    base_url=self.llm_model_base_url,
+                    **kwargs,
+                )
+        
+        addon_params = {"example_number": example_number, "language": language}
+        lightrag = LightRAG(
+                working_dir=abs_working_dir,
+                llm_model_func=llm_model_func,
+                embedding_func=EmbeddingFunc(embedding_dim=self.embedding_model_dimentions, max_token_size=self.embedding_model_max_tokens, func=embedding_func),
+                chunk_token_size = self.embedding_model_max_tokens,
+                addon_params = addon_params,
+                # vector_storage = "Neo4JStorage", 未实现
+                graph_storage="Neo4JStorage", #<-----------override KG default
+                log_level=log_level  #<-----------override log_level default
+            )
+        
+        return lightrag
 
     @lru_cache
     def get_emb_8k_rerank_model(self,embedding_model_name=None, embedding_model_name_8k=None, rerank_model_name=None, device = ['cpu','cpu','cpu'],final_docs_num_reranked=4,api_mode:bool=True):
@@ -698,9 +746,7 @@ class InitEnvModels:
         strategy = strategy if strategy else self.strategy           
         es_searchstore = ElasticsearchStore(es_connection=es_connection, index_name=index_name, embedding=embedding,strategy=strategy)
         return es_searchstore
-    
 
-    
     def _init_ocr_instances(self,mode="API"):
         ocr = None
         mode = mode or self.ocr_mode

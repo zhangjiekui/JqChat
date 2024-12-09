@@ -456,7 +456,7 @@ class GraphAgent:
     def __init__(self,executable_tools:list=executable_tools, routing_tools_wrapped_in_class:list=route_tools, 
                  llm_model:ChatOpenAI=None,chat_on_docs_list:List[str]=None,add_docs_list_to_kb:bool=True, 
                  allow_conversation_memory=False,allow_question_rewrite = False,
-                 kb_base_dict:dict={"index_name": 'zjk_jqesclient_test', "description":default_index_description}, 
+                 kb_base_dict:dict={"index_name": 'default', "description":default_index_description}, 
                  recursion_limit:int=25, memory_thread_id:str=shortuuid.uuid()) -> None:
         
     # region: 初始化
@@ -629,6 +629,17 @@ class GraphAgent:
         logger.warning(f"     vectorstore方法，执行实际文档检索的集成检索器为：{message}")
         try:
             documents = self.retriever.invoke(question,config=invoke_llm_config)
+            light_rag = env_models_instance.get_lightrag(index_name=retriever.vectorstore._store.index)
+            try:
+                from lightrag import QueryParam
+                result_strs=light_rag.query(question, param=QueryParam(mode="hybrid",only_need_context=True,top_k=5, max_token_for_text_unit=1500, max_token_for_global_context=2000))
+                if result_strs:
+                    graph_doc = Document(page_content=result_strs,metadata={'source':"lightgraph"})
+                    documents += [graph_doc]                
+            
+            except Exception as e:
+                logger.error(f"LightRag检索出现错误：{e}")
+            
             if len(documents)==0:
                 msg=f"未从知识库{retriever.vectorstore._store.index}中检索到任何相关文档！"
                 documents = [Document(page_content=msg)]

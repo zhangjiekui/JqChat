@@ -419,7 +419,7 @@ docker run --name kib816 --net elastic -p 5601:5601 docker.elastic.co/kibana/kib
 
 ### 中文分词（以新的8.16.1作为例子）
 
-```
+
 #### 安装插件
 进入运行的8.16.1 docker中
 1、查看已安装的插件
@@ -446,6 +446,7 @@ POST _analyze
 }
 ```
 结果:
+
 ```
 {
   "tokens": [
@@ -466,6 +467,17 @@ POST _analyze
   ]
 }
 ```
+## LightRAG
+修改：
+/data/projects/LightRAG/lightrag/prompt.py： PROMPTS["DEFAULT_LANGUAGE"] = "Simplified Chinese"
+/data/projects/LightRAG/lightrag/operate.py L997增加一行: all_text_units = [unit for unit in all_text_units if isinstance(unit.get('data',None),dict)]
+## Neo4j
+
+### 删除全部数据
+```
+MATCH (n) DETACH DELETE n
+```
+### Neo4j安装运行
 
 ```
 docker run \
@@ -480,7 +492,18 @@ docker run \
     neo4j:latest
 ```
 
-
+### Neo4j创建全文检索之中文分词器
+```
+CREATE FULLTEXT INDEX FTS_Person_Company_fullName 
+FOR (n:Person|Company)
+ON EACH [n.fullName]
+OPTIONS {
+  indexConfig: {
+    `fulltext.analyzer`: "cjk",
+    `fulltext.eventually_consistent`: true
+  }
+}
+```
 
 
 ## 本项目的Installation

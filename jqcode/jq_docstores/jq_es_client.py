@@ -205,6 +205,7 @@ class JqEsClient():
             #create_doc_index方法相关参数：创建知识库，并在metastores中增加所建知识库的相关元数据描述信息
             index_name:str="",
             description:str=None,
+            index_graph_rag = True,
             #JqkjSimpleDirectoryReader实例化相关参数，读取文件 
             input_dir:str=None,
             input_files:list=None, 
@@ -270,6 +271,11 @@ class JqEsClient():
         if len(lm_documents)>0:    
             vectorstore = env_models_instance.get_es_searchstore_index_documents(documents=lc_splitted_documents, embedding=embed_model,index_name=index_name,source_id_key='source',clear_before_add_index=False)        
             logger.warning(f"已将{len(lc_splitted_documents)=}个文件切片写入ES知识库，并返回vectorstore对象")
+            if index_graph_rag:
+                light_rag = env_models_instance.get_lightrag(index_name=index_name)
+                texts = [doc.page_content for doc in lc_splitted_documents]
+                light_rag.insert(texts)
+            
             # graph_rag = JqGraphRag(documents=lc_splitted_documents,index_name=index_name)
             # gml_path = graph_rag.graph_indexing()
             # logger.warning(f"已写入图索引：{gml_path}")
@@ -311,13 +317,13 @@ if __name__ == "__main__":
     # input_dir = fr'/data/projects/JqChatV2/JqChat/jqcode/jq_readers/.test_files/.testinputdocs'
     # input_files =["/data/projects/JqChatV2/JqChat/jqcode/jq_readers/.test_files/.testinputdocs/AAMIS_项目总体计划_120925.doc"]
     # input_files = "/media/program/UPLOAD_DOCS/knowledge_base/liyuanqin/content/Agent调试跟踪1.txt"
-    input_files = ['/media/program/workspace/knowledge_base/create2/content/“主动健康和老龄化科技应对”重点专项2.docx']
+    input_files = ['/data/projects/JqChatV2/JqChat/PPQA000_质量保证过程.docx']
     # vectorstore = jq_es_client.chunks_indexing_from_input_dir_or_files(current_user='',index_name='graphrag_test',
     #                                                                 description="graphrag_test: 转换/data/projects/JqChatV2/JqChat/jqcode/jq_readers/.test_files/.testinputdocs目录下的文件，测试速度",
     #                                                                 input_dir = input_dir,
     #                                                                 input_files=None)
-    vectorstore = jq_es_client.chunks_indexing_from_input_dir_or_files(current_user='',index_name='create2',
-                                                                description="JqConverter跳过文件转换: /data/projects/JqChatV2/JqChat/jqcode/jq_readers/.test_files/.testinputdocs/A方案.txt",
+    vectorstore = jq_es_client.chunks_indexing_from_input_dir_or_files(current_user='',index_name='default',
+                                                                description=None,
                                                                 input_dir = None,
                                                                 input_files=input_files)
     pass

@@ -83,7 +83,7 @@ result = retriever.invoke("安徽晶奇网络科技股份有限公司")
 print(result)
 
 graph.refresh_schema()
-chain = GraphCypherQAChain.from_llm(llm, graph=graph,allow_dangerous_requests=True, verbose=True)
+chain = GraphCypherQAChain.from_llm(llm, graph=graph,allow_dangerous_requests=True,return_intermediate_steps=True,verbose=True)
 # result = chain.run("晶奇网络")
 # print(result)
 
