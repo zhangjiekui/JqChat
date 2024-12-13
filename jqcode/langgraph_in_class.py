@@ -620,6 +620,7 @@ class GraphAgent:
         """
         print("---RETRIEVE---")
         question = state["question"]
+        documents = []
         vector_documents = []
         graph_documents = []
 
@@ -635,6 +636,7 @@ class GraphAgent:
                 msg=f"未从知识库{retriever.vectorstore._store.index}中检索到任何相关文档！"
                 logger.warning(f"     {msg}")
             else:
+                documents = vector_documents
                 logger.warning(f"     vectorstore检索到的相关文档数:{len(vector_documents)=}")
             
             if env_models_instance.USING_GRAPH_RAG: 
@@ -647,7 +649,7 @@ class GraphAgent:
                     if result_strs:
                         logger.warning(f'LightRag Result String={result_strs}')
                         graph_documents = [Document(page_content=result_strs,metadata={'source':"lightgraph"})] 
-                        documents = vector_documents + graph_documents
+                        documents.extend(graph_documents)
                     else:
                         msg=f"未从Graph知识库中检索到任何相关实体、关系或文档！"
                         logger.warning(f"     {msg}")
@@ -1222,6 +1224,7 @@ class GraphAgent:
                                 
                 # assert d_added
                 try:
+                    print("获取参考文件")
                     print(_fp,d_added)
                 except:
                     pass

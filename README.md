@@ -1,12 +1,5 @@
 ## 还存在的问题
 
-$$$$$$$正在执行文件[盛争（民政及社会救助材料）.docx]中的图片文字识别，共有5张图片$$$$$$$  [WARNING:jqlogger( jqkj_readers.py 第395行)]
-其他错误: list index out of range  [ERROR:jqlogger( c0_init_env_models.py 第125行)]
-
-FileNotFoundError: [Errno 2] No such file or directory: '/data/projects/JqChatV2/JqChat/基于网络消费者信息需求模型的网站导航问题研究 批准书.docx'
-
-文件转换要改成多线程/进程
-
 
 ## Git同步
 ### 本地
@@ -453,7 +446,7 @@ bin/elasticsearch-plugin install analysis-smartcn
 bin/elasticsearch-plugin install https://get.infini.cloud/elasticsearch/analysis-ik/8.16.1
 
 2.2 restart Elasticsearch to activate any plugins installed
-如果直接reatert不行，可以先stop再start
+如果直接restart不行，可以先stop再start
 
 3、测试是否生效（运行kibana，找到management下的dev_tools）
 即http://127.0.0.1:5602/app/dev_tools#/console

@@ -28,8 +28,8 @@ class JqEsClient():
         self.docstores = JqElasticsearchDocumentStore()
         self.client = env_models_instance.get_es_connection()
         self.default_index_settings = env_models_instance.ES_DEFAULT_CHINESE_SETTINGS
-
-        self.pg_vector_store,self.pg_graph_store,self.kg_llm_transformer = env_models_instance.get_pg_connection()
+        if env_models_instance.USING_GRAPH_RAG:
+            self.pg_vector_store,self.pg_graph_store,self.kg_llm_transformer = env_models_instance.get_pg_connection()
     
     def get_all_kb(self, current_user=None):
         """
@@ -304,7 +304,8 @@ class JqEsClient():
             (3) 将文件记录ID更新到chunks元数据中
             (4) 将文档chunks文本和向量存储到doc_index
         """
-        self.pg_vector_store,self.pg_graph_store,self.kg_llm_transformer = env_models_instance.get_pg_connection(index_name=index_name) 
+        if env_models_instance.USING_GRAPH_RAG:
+            self.pg_vector_store,self.pg_graph_store,self.kg_llm_transformer = env_models_instance.get_pg_connection(index_name=index_name) 
 
     # 1、可选。创建知识库，并在metastore中写入该知识库的元数据（如名称、描述、创建者)
         if index_name not in self.metastores.index_names or not self.client.indices.exists(index=index_name):
