@@ -28,6 +28,8 @@ class JqEsClient():
         self.docstores = JqElasticsearchDocumentStore()
         self.client = env_models_instance.get_es_connection()
         self.default_index_settings = env_models_instance.ES_DEFAULT_CHINESE_SETTINGS
+
+        self.pg_vector_store,self.pg_graph_store,self.kg_llm_transformer = env_models_instance.get_pg_connection()
     
     def get_all_kb(self, current_user=None):
         """
@@ -205,6 +207,87 @@ class JqEsClient():
             #create_doc_index方法相关参数：创建知识库，并在metastores中增加所建知识库的相关元数据描述信息
             index_name:str="",
             description:str=None,
+            #JqkjSimpleDirectoryReader实例化相关参数，读取文件 
+            input_dir:str=None,
+            input_files:list=None, 
+            overwrite_existing_converted_files=False,
+            required_exts=required_exts_in_reader,
+            if_uploade_src_file = False,
+            exclude_hidden=False
+        ):
+        """
+            将文档chunks文本和向量存储到doc_index
+            (1) 调用执行create_doc_index方法
+            (2) 将文档所属的原始文件及doc_tree存储到docstores中,并在对应记录的file_used_in_indexes中增加该doc_index，并获取文件记录ID
+            (3) 将文件记录ID更新到chunks元数据中
+            (4) 将文档chunks文本和向量存储到doc_index
+        """
+        vectorstore = None
+        
+    # 1、可选。创建知识库，并在metastore中写入该知识库的元数据（如名称、描述、创建者)
+        if index_name not in self.metastores.index_names or not self.client.indices.exists(index=index_name):
+            logger.warning(f"创建知识库{index_name},并在metastore中写入该知识库的元数据(如名称、描述、创建者)")       
+            index_store = self.create_doc_index(index_name=index_name,description=description,index_creator=current_user)
+            logger.warning(f"应已创建知识库{index_name}，并在{self.metastores.index_name}中有该知识库({index_name})的描述等元信息")
+        else:
+            logger.warning(f"知识库{index_name}已存在,并在metastore中存在{self.metastores.index_names}") 
+            index_store = JqElasticsearchIndexStore(index_name=index_name)
+        vectorstore = index_store
+    # 2、读取文件
+        simple_reader = JqkjSimpleDirectoryReader(input_dir=input_dir,input_files=input_files, 
+                                                  overwrite_existing_converted_files=overwrite_existing_converted_files,
+                                                  required_exts=required_exts,
+                                                  exclude_hidden=exclude_hidden)
+        lm_documents = asyncio.run(simple_reader.aload_data())
+        logger.warning(f"读取到的文件数量:{len(lm_documents)=}")
+    # 3.1、上传到文件库(docstore)，并在lm_documents元数据中加入存储库(docstore)及文件对应ID等信息
+        status,lm_documents_with_added_index_info_metadata,es_index_doc_id_list = self.docstores.add_or_update_index_metadata_if_id_exists(lm_documents=lm_documents,file_upload_user=current_user,if_uploade_src_file=if_uploade_src_file)
+        if if_uploade_src_file:
+            logger.warning(f"上传到ES的文件数量：{len(lm_documents_with_added_index_info_metadata)=}")
+            logger.info(f"上传的文件查看：{self.docstores.index_name}中存在{es_index_doc_id_list}等{len(es_index_doc_id_list)}文件记录！")
+            logger.info(f"lm_documents_with_added_index_info_metadata中应以包含:存储库(docstore)及文件存储ID({es_index_doc_id_list})的信息,请核实！")
+        else:
+            logger.warning(f"选择不上传文件到ES：{if_uploade_src_file=}")
+    # 3.2、如果是上传到/temp目录下的文件，复制到知识库目录下，并更新元数据
+        tmp_dir = env_models_instance.abs_workspace + f"/temp"
+        for doc in lm_documents:
+            metadata = doc.metadata            
+            src_filepath = metadata.get('source', metadata.get('original_source_jq',None))
+            file_name = os.path.basename(src_filepath)
+            kb_dir = env_models_instance.abs_workspace + f"/knowledge_base/{index_name}/content"
+            if not os.path.exists(kb_dir):
+                os.makedirs(kb_dir,exist_ok=True)
+                
+            kb_filepath = f"{kb_dir}/{file_name}"
+            if not os.path.isfile(kb_filepath):
+                shutil.copy2(src_filepath, kb_filepath)
+                logger.warning(f"  ==已将文件拷贝到知识库：{src_filepath}=>{kb_filepath}")
+                
+            # if src_filepath.startswith(tmp_dir):
+            #     doc.metadata.update({"source_kb":kb_filepath})
+            doc.metadata.update({"source_kb":kb_filepath})
+            
+    # 4、切分文件
+        lm_splitted_documents = asyncio.run(doc_tree_spiltter.aget_nodes_from_documents(lm_documents)) #llamaindex格式
+        lc_splitted_documents = [LcDocument(page_content=doc.text,metadata=doc.metadata) for doc in lm_splitted_documents] #转换为langchain格式
+        logger.warning(f"从{len(lm_documents)}个文件中，生成的切片数为:{len(lc_splitted_documents)}")
+    # 5、将文件切片写入知识库
+        if len(lm_documents)>0:    
+            vectorstore = env_models_instance.get_es_searchstore_index_documents(documents=lc_splitted_documents, embedding=embed_model,index_name=index_name,source_id_key='source',clear_before_add_index=False)        
+            logger.warning(f"已将{len(lc_splitted_documents)=}个文件切片写入ES向量知识库{index_name}，并返回vectorstore对象")
+        else:
+            logger.warning(f"{len(lm_documents)=}，无需写入ES知识库，直接返回vectorstore对象")
+            vectorstore = env_models_instance.get_es_searchstore(es_connection=self.client,embedding=embed_model,index_name=index_name)
+        return vectorstore
+
+    # def chunks_indexing_from_input_dir_or_files(
+    def chunks_indexing_from_input_dir_or_files_vector_and_graph(
+            self,
+            # 当前用户，将在create_doc_index和add_or_update_index_metadata_if_id_exists方法中使用
+            current_user:str,
+            #create_doc_index方法相关参数：创建知识库，并在metastores中增加所建知识库的相关元数据描述信息
+            index_name:str="",
+            description:str=None,
             index_graph_rag = True,
             #JqkjSimpleDirectoryReader实例化相关参数，读取文件 
             input_dir:str=None,
@@ -221,13 +304,15 @@ class JqEsClient():
             (3) 将文件记录ID更新到chunks元数据中
             (4) 将文档chunks文本和向量存储到doc_index
         """
+        self.pg_vector_store,self.pg_graph_store,self.kg_llm_transformer = env_models_instance.get_pg_connection(index_name=index_name) 
+
     # 1、可选。创建知识库，并在metastore中写入该知识库的元数据（如名称、描述、创建者)
         if index_name not in self.metastores.index_names or not self.client.indices.exists(index=index_name):
-            logger.info(f"创建知识库{index_name},并在metastore中写入该知识库的元数据(如名称、描述、创建者)")       
+            logger.warning(f"创建知识库{index_name},并在metastore中写入该知识库的元数据(如名称、描述、创建者)")       
             index_store = self.create_doc_index(index_name=index_name,description=description,index_creator=current_user)
-            logger.info(f"应已创建知识库{index_name}，并在{self.metastores.index_name}中有该知识库({index_name})的描述等元信息")
+            logger.warning(f"应已创建知识库{index_name}，并在{self.metastores.index_name}中有该知识库({index_name})的描述等元信息")
         else:
-            logger.info(f"知识库{index_name}已存在,并在metastore中存在{self.metastores.index_names}") 
+            logger.warning(f"知识库{index_name}已存在,并在metastore中存在{self.metastores.index_names}") 
             index_store = JqElasticsearchIndexStore(index_name=index_name)
     # 2、读取文件
         simple_reader = JqkjSimpleDirectoryReader(input_dir=input_dir,input_files=input_files, 
@@ -264,31 +349,31 @@ class JqEsClient():
             doc.metadata.update({"source_kb":kb_filepath})
             
     # 4、切分文件
-        lm_splitted_documents = doc_tree_spiltter.get_nodes_from_documents(lm_documents) #llamaindex格式
+        lm_splitted_documents = asyncio.run(doc_tree_spiltter.aget_nodes_from_documents(lm_documents))#llamaindex格式
         lc_splitted_documents = [LcDocument(page_content=doc.text,metadata=doc.metadata) for doc in lm_splitted_documents] #转换为langchain格式
         logger.warning(f"从{len(lm_documents)}个文件中，生成的切片数为:{len(lc_splitted_documents)}")
     # 5、将文件切片写入知识库
         if len(lm_documents)>0:    
-            vectorstore = env_models_instance.get_es_searchstore_index_documents(documents=lc_splitted_documents, embedding=embed_model,index_name=index_name,source_id_key='source',clear_before_add_index=False)        
-            logger.warning(f"已将{len(lc_splitted_documents)=}个文件切片写入ES知识库，并返回vectorstore对象")
+            asyncio.run(self.pg_vector_store.aadd_documents(lc_splitted_documents))
+            logger.warning(f"已将{len(lc_splitted_documents)=}个文件切片写入PG向量知识库{index_name}，并返回vectorstore对象")
             if env_models_instance.USING_GRAPH_RAG:
-                light_rag = env_models_instance.get_lightrag(index_name=index_name)
-                texts = [doc.page_content for doc in lc_splitted_documents]
-                light_rag.insert(texts)
+                # light_rag = env_models_instance.get_lightrag(index_name=index_name)
+                # texts = [doc.page_content for doc in lc_splitted_documents]
+                # light_rag.insert(texts)
+                # logger.warning(f"已将{len(texts)=}个文件切片写入Neo4j图知识库{index_name}")
+                graph_documents = asyncio.run(self.kg_llm_transformer.aconvert_to_graph_documents(lc_splitted_documents))
+                self.pg_graph_store.add_graph_documents(graph_documents,include_source=True)
+                logger.warning(f"已将{len(graph_documents)=}个文件切片写入PG图知识库{index_name}")
+
             
             # graph_rag = JqGraphRag(documents=lc_splitted_documents,index_name=index_name)
             # gml_path = graph_rag.graph_indexing()
             # logger.warning(f"已写入图索引：{gml_path}")
         else:
             logger.warning(f"{len(lm_documents)=}，无需写入ES知识库，直接返回vectorstore对象")
-            vectorstore = env_models_instance.get_es_searchstore(es_connection=self.client,embedding=embed_model,index_name=index_name)
-        # es_index_doc_ids,es_index_doc_filepaths = index_store.get_all_unique_fileids_filepaths()
-        # if es_index_doc_ids:
-        #     for i in range(len(es_index_doc_ids)):
-        #         logger.debug(f"序号：{i+1},Id:{es_index_doc_ids[i]},Path:{es_index_doc_filepaths[i]}")
-        #     logger.debug(f"知识库{index_store.index_name}中的记录数为:{index_store.count}")
-        return vectorstore
-    
+        vectorstore = self.pg_vector_store
+
+        return vectorstore    
     
 if __name__ == "__main__":
     
@@ -317,7 +402,7 @@ if __name__ == "__main__":
     # input_dir = fr'/data/projects/JqChatV2/JqChat/jqcode/jq_readers/.test_files/.testinputdocs'
     # input_files =["/data/projects/JqChatV2/JqChat/jqcode/jq_readers/.test_files/.testinputdocs/AAMIS_项目总体计划_120925.doc"]
     input_files = ["/media/program/UPLOAD_DOCS/knowledge_base/liyuanqin/content/建党100周年.docx"]
-    # input_files = ['/data/projects/JqChatV2/JqChat/PPQA000_质量保证过程.docx']
+    input_files += ['/data/projects/JqChatV2/JqChat/PPQA000_质量保证过程.docx']
     # vectorstore = jq_es_client.chunks_indexing_from_input_dir_or_files(current_user='',index_name='graphrag_test',
     #                                                                 description="graphrag_test: 转换/data/projects/JqChatV2/JqChat/jqcode/jq_readers/.test_files/.testinputdocs目录下的文件，测试速度",
     #                                                                 input_dir = input_dir,

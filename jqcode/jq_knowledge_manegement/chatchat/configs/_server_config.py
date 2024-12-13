@@ -13,7 +13,7 @@ logger = logging.getLogger()
 
 
 class ConfigServer(core_config.Config):
-    HTTPX_DEFAULT_TIMEOUT: Optional[float] = 60000
+    HTTPX_DEFAULT_TIMEOUT: Optional[float] = 360000 #10小时
     """httpx 请求默认超时时间（秒）。如果加载模型或对话较慢，出现超时错误，可以适当加大该值。"""
     OPEN_CROSS_DOMAIN: Optional[bool] = None
     """API 是否开启跨域，默认为False，如果需要开启，请设置为True"""
@@ -42,7 +42,7 @@ class ConfigServerFactory(core_config.ConfigFactory[ConfigServer]):
 
     def __init__(self):
         # httpx 请求默认超时时间（秒）。如果加载模型或对话较慢，出现超时错误，可以适当加大该值。
-        self.HTTPX_DEFAULT_TIMEOUT = 60000.0
+        self.HTTPX_DEFAULT_TIMEOUT = 360000 #10小时
 
         # API 是否开启跨域，默认为False，如果需要开启，请设置为True
         # is open cross domain

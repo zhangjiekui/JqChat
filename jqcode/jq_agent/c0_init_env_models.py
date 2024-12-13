@@ -425,6 +425,7 @@ class InitEnvModels:
         self.llm_model_api_key = self.llm_model_card.get('api_key',_default_api_key)
         self.llm_model_base_url= self.llm_model_card['base_url']
         self.llm_model_name = self.llm_model_card['name']
+        self.llm_model_name = self.llm_model_card['name']
         self.llm_model_max_tokens = self.llm_model_card['max_tokens']
         self.llm_model_max_tokens = self.llm_model_card['max_tokens']
         self.need_custom_tool_call_parse = self.llm_model_card.get('need_custom_tool_call_parse',False)
@@ -664,12 +665,12 @@ class InitEnvModels:
                 prompt, system_prompt=None, history_messages=[], keyword_extraction=keyword_extraction, **kwargs
             ) -> str:
                 return await openai_complete_if_cache(
-                    self.llm_model_name,
+                    "qwen25b14",
                     prompt,
                     system_prompt=system_prompt,
                     history_messages=history_messages,
                     api_key=self.llm_model_api_key,
-                    base_url=self.llm_model_base_url,
+                    base_url="http://10.1.150.105:9999/v1",
                     **kwargs,
                 )
         
@@ -726,6 +727,32 @@ class InitEnvModels:
                 # print('-------Elasticsearch Connection详细信息-------')
                 print('-------可以通过Kibana URL查看:| http://127.0.0.1:5601 | http://10.1.150.105:5601 |-------\n')
         return self.es_connection
+    
+    @lru_cache
+    def get_pg_connection(self,index_name:str='default',
+                          connection_str:str ="postgresql+psycopg://langchain:langchain@localhost:6024/langchain",
+                          connection_conf:dict = {"database": "langchain","user": "langchain","password": "langchain","host": "localhost","port": 6024,}):
+        from langchain_postgres import PGVector
+        from langchain_community.graphs.age_graph import AGEGraph
+        from langchain_experimental.graph_transformers import LLMGraphTransformer
+
+        from sqlalchemy import create_engine
+        from sqlalchemy.orm import Session
+        from sqlalchemy.sql import text
+
+        engine = create_engine(connection_str)
+        with Session(engine) as session:
+            with session.begin():
+                session.execute(text("create extension if not exists age;"))
+                session.execute(text('ALTER DATABASE postgres SET search_path = ag_catalog, "$user", public;'))   
+
+
+        connection_str = "postgresql+psycopg://langchain:langchain@localhost:6024/langchain" 
+        connection_conf = {"database": "langchain","user": "langchain","password": "langchain","host": "localhost","port": 6024,}
+        pg_vector_store = PGVector(async_mode=True,embeddings=self.embed_model,collection_name=index_name,connection=connection_str,use_jsonb=True,)
+        pg_graph_store = AGEGraph(graph_name=index_name, conf=connection_conf)
+        kg_llm_transformer = LLMGraphTransformer(llm=self.chat_model)
+        return pg_vector_store,pg_graph_store,kg_llm_transformer
 
     def create_es_index_if_not_existes_with_default_chinese_analyzer(self, es_connection=None,index_name:str=None):
         assert index_name, "参数index_name（ES的索引名称）不得为空！"

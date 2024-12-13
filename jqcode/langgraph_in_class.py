@@ -481,7 +481,7 @@ class GraphAgent:
         _routing_tool_names = [tool.__name__ for tool in routing_tools_wrapped_in_class]
         _tool_names = _executable_tool_names + _routing_tool_names
         _tool_names_str = ','.join(_tool_names)
-        _system_message_content = f"Solve/Answer user's questions as best as you can in the language the user asked, preferred/default to Simplified Chinese. Tool Calling  Guidelines: You have access to the following tools:{_tool_names_str}. Please strictly following OpenAI 'tool calling' interface specification if you need to call a tool or multiple tools in sequence, with No preamble or explaination. Tool Choice Guidelines:First,'CODE_GENERATION' and 'CODE_EXECUTION' MUST NOT be called at the same time.Second, 'CODE_GENERATION' is preferred rather than 'python_repl_tool' for drawing images, plotting graphs/charts, data file processing/analyzing/saving, Otherwise, please use 'python_repl_tool'."
+        _system_message_content = f"Solve/Answer user's questions as best as you can in 简体中文(Simplified Chinese). Tool Calling  Guidelines: You have access to the following tools:{_tool_names_str}. Please strictly following OpenAI 'tool calling' interface specification if you need to call a tool or multiple tools in sequence, with No preamble or explaination. Tool Choice Guidelines:First,'CODE_GENERATION' and 'CODE_EXECUTION' MUST NOT be called at the same time.Second, 'CODE_GENERATION' is preferred rather than 'python_repl_tool' for drawing images, plotting graphs/charts, data file processing/analyzing/saving, Otherwise, please use 'python_repl_tool'."
         
         self.all_tools = executable_tools + routing_tools_wrapped_in_class
         self.all_tools_names = _tool_names
@@ -638,21 +638,23 @@ class GraphAgent:
                 logger.warning(f"     vectorstore检索到的相关文档数:{len(vector_documents)=}")
             
             if env_models_instance.USING_GRAPH_RAG: 
-                    try:
-                        from lightrag import QueryParam
-                        from lightrag.utils import ENCODER
-                        ENCODER = env_models_instance._tokenizer
-                        light_rag = env_models_instance.get_lightrag(index_name=retriever.vectorstore._store.index)                
-                        result_strs=light_rag.query(question, param=QueryParam(mode="hybrid",only_need_context=True,top_k=5, max_token_for_text_unit=1500, max_token_for_global_context=2000))
-                        if result_strs:
-                            logger.warning(f'LightRag Result String={result_strs}')
-                            graph_documents = [Document(page_content=result_strs,metadata={'source':"lightgraph"})] 
-                        else:
-                            msg=f"未从Graph知识库中检索到任何相关实体、关系或文档！"
-                            logger.warning(f"     {msg}")
-                    except Exception as e:
-                        logger.error(f"LightRag检索出现错误：{e}")
-            documents = vector_documents + graph_documents
+                try:
+                    from lightrag import QueryParam
+                    from lightrag.utils import ENCODER
+                    ENCODER = env_models_instance._tokenizer
+                    light_rag = env_models_instance.get_lightrag(index_name=retriever.vectorstore._store.index)                
+                    result_strs=light_rag.query(question, param=QueryParam(mode="hybrid",only_need_context=True,top_k=5, max_token_for_text_unit=1500, max_token_for_global_context=2000))
+                    if result_strs:
+                        logger.warning(f'LightRag Result String={result_strs}')
+                        graph_documents = [Document(page_content=result_strs,metadata={'source':"lightgraph"})] 
+                        documents = vector_documents + graph_documents
+                    else:
+                        msg=f"未从Graph知识库中检索到任何相关实体、关系或文档！"
+                        logger.warning(f"     {msg}")
+                except Exception as e:
+                    logger.error(f"LightRag检索出现错误：{e}")
+
+                
             if len(documents)==0:
                 msg=f"未从知识库{retriever.vectorstore._store.index}（Vector/Graph）中检索到任何相关文档！"
                 documents = [Document(page_content=msg)]
@@ -1291,6 +1293,9 @@ class GraphAgent:
                 _user_variables_statedict = {self.user_id:{"rag_args":'',"reference":referens_str}}
                 state["user_variables"].update(_user_variables_statedict)  
                 logger.debug(f'{referens_str=}')
+        if history_generation:
+            history_generation_document = Document(page_content=history_generation)
+            documents.append(history_generation_document)
         generation = rag_node.invoke({"documents": documents, "question": question, "messages":messages},config=invoke_llm_config)
         logger.debug(f"{generation=}")
         if history_generation:
