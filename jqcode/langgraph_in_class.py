@@ -10,7 +10,7 @@ from langchain_openai import ChatOpenAI
 from langchain_community.tools.tavily_search import TavilySearchResults
 from langchain_openai import ChatOpenAI
 from langchain.schema import Document
-from langchain_core.output_parsers import StrOutputParser
+from langchain_core.output_parsers import StrOutputParser, JsonOutputParser
 from langchain_core.tools import tool
 import sqlite3
 from langgraph.checkpoint.sqlite import SqliteSaver
@@ -931,7 +931,7 @@ class GraphAgent:
         except:
             returned_tool_calling_nums = 0
 
-        if returned_tool_calling_nums==0 and env_models_instance.need_custom_tool_call_parse:
+        if returned_tool_calling_nums==0 and env_models_instance.need_custom_tool_call_parse: 
             if self.model.model_name.startswith("qwen"):
                 arg_name = "arguments" 
             elif self.model.model_name.startswith("deepseek"):
@@ -1588,25 +1588,25 @@ tavily_search_tool = TavilySearchResults(max_results=6) #increased number of res
 if __name__ == "__main__":
     user_questions = [
         "晶奇公司质量保证过程中的角色及角色的职责或含义解释，对应的人员（姓名）有哪些?其中的批准人是谁？",
-        # '你好，我的名字是张结魁，请记住我的名字',
-        # '请搜索我与晶奇公司的相关网页，说明我与晶奇公司的关系',
-        # '晶奇公司的厦门市智慧民政一体化平台建设方案的编制依据，给出详尽的文件名称和文号等内容列表',
-        # '请绘制sin(x)曲线',
-        # '请使用python实现指数移动平均法，并生成样例数据，并绘制曲线'
-        # '我公司是什么时候与西南石油大学建立校企合作关系的？',
-        # "晶奇公司编制的安徽省食品药品监督管理局行政审批系统项目总体计划的版本号是多少，批准人是谁？",
-        # '请搜索合肥大蜀山，然后提供详细介绍', 
-        # '请查询明天从合肥到上海的航班,以及南昌到北京的航班',
-        # '请直接执行代码：print("Hello World")',
-        # '请使用Python来绘制sin(x)的曲线图',        
-        # '合肥大蜀山',          
-        # '请查询明天从合肥到上海的航班',
-        # '请使用python_repl_tool来计算1到100的和',
-        # '请调用python_repl_tool工具，一个计算1到100的和,另一个计算10的阶乘，并实际执行工具获取计算结果',
-        # "请搜索网络然后回答问题：What is the weather in SF and LA? ",
-        # "Who won the super bowl in 2024? In what state is the winning team headquarters located?What is the GDP of that state? ",
-        # "还记得我的名字吗？",
-        # "请将下面的内容：序号,文件名称,文号 1,《关于研究智慧民政和智慧市政建设工作的纪要》,厦门市人民政府专题会议纪要〔2020〕285号 2,《关于进一步推进儿童福利机构优化提质和创新转型高质量发展的意见》,民发〔2021〕44号 3,《民政部办公厅关于印发〈金民工程一期项目试点工作方案〉的通知》,民办函〔2019〕108号 4,《中共中央关于制定国民经济和社会发展第十四个五年规划和二〇三五年远景目标的建议》, 5,《国务院办公厅关于推进养老服务发展的意见》,国办发〔2019〕5号 6,《民政部关于进一步扩大养老服务供给促进养老服务消费的实施意见》,民发〔2019〕88号 7,《国务院扶贫开发领导小组关于建立防止返贫监测和帮扶机制的指导意见》,国开发〔2020〕6号 8,《国务院关于国家基本公共服务标准（2 0 2 1 年 版 ） 的 批 复 》 , 国 函 〔 2 0 2 1 〕 2 0 号 9,《福建省促进电子证照应用管理暂行办法》,闽政办[2017]74号 10,厦门市人民政府办公厅关于进一步深化“互联网+政务服务”推进政务服务“一网、一门、一次”改革工作的通知,厦府办〔2018〕194号 11,《厦门市“十三五”民政事业发展专项规划（2016-2020）》, 12,厦门市城乡社区服务体系建设规划（2016-2020年）, 13,《关于加强和完善城乡社区治理的实施意见》,厦委发〔2018〕7号 转换为表格，使用python生成csv文件并提供下载地址"
+        '你好，我的名字是张结魁，请记住我的名字',
+        '请搜索我与晶奇公司的相关网页，说明我与晶奇公司的关系',
+        '晶奇公司的厦门市智慧民政一体化平台建设方案的编制依据，给出详尽的文件名称和文号等内容列表',
+        '请绘制sin(x)曲线',
+        '请使用python实现指数移动平均法，并生成样例数据，并绘制曲线',
+        '我公司是什么时候与西南石油大学建立校企合作关系的？',
+        "晶奇公司编制的安徽省食品药品监督管理局行政审批系统项目总体计划的版本号是多少，批准人是谁？",
+        '请搜索合肥大蜀山，然后提供详细介绍', 
+        '请查询明天从合肥到上海的航班,以及南昌到北京的航班',
+        '请直接执行代码：print("Hello World")',
+        '请使用Python来绘制sin(x)的曲线图',        
+        '合肥大蜀山',          
+        '请查询明天从合肥到上海的航班',
+        '请使用python_repl_tool来计算1到100的和',
+        '请调用python_repl_tool工具，一个计算1到100的和,另一个计算10的阶乘，并实际执行工具获取计算结果',
+        "请搜索网络然后回答问题：What is the weather in SF and LA? ",
+        "Who won the super bowl in 2024? In what state is the winning team headquarters located?What is the GDP of that state? ",
+        "还记得我的名字吗？",
+        "请将下面的内容：序号,文件名称,文号 1,《关于研究智慧民政和智慧市政建设工作的纪要》,厦门市人民政府专题会议纪要〔2020〕285号 2,《关于进一步推进儿童福利机构优化提质和创新转型高质量发展的意见》,民发〔2021〕44号 3,《民政部办公厅关于印发〈金民工程一期项目试点工作方案〉的通知》,民办函〔2019〕108号 4,《中共中央关于制定国民经济和社会发展第十四个五年规划和二〇三五年远景目标的建议》, 5,《国务院办公厅关于推进养老服务发展的意见》,国办发〔2019〕5号 6,《民政部关于进一步扩大养老服务供给促进养老服务消费的实施意见》,民发〔2019〕88号 7,《国务院扶贫开发领导小组关于建立防止返贫监测和帮扶机制的指导意见》,国开发〔2020〕6号 8,《国务院关于国家基本公共服务标准（2 0 2 1 年 版 ） 的 批 复 》 , 国 函 〔 2 0 2 1 〕 2 0 号 9,《福建省促进电子证照应用管理暂行办法》,闽政办[2017]74号 10,厦门市人民政府办公厅关于进一步深化“互联网+政务服务”推进政务服务“一网、一门、一次”改革工作的通知,厦府办〔2018〕194号 11,《厦门市“十三五”民政事业发展专项规划（2016-2020）》, 12,厦门市城乡社区服务体系建设规划（2016-2020年）, 13,《关于加强和完善城乡社区治理的实施意见》,厦委发〔2018〕7号 转换为表格，使用python生成csv文件并提供下载地址"
     ]
     my_main_bot = GraphAgent(executable_tools=executable_tools,routing_tools_wrapped_in_class=route_tools)
 

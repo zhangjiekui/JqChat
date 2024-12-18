@@ -23,20 +23,25 @@ Jqkj5350**0
 To form a cluster, you can add GPUStack workers on additional nodes. Install GPUStack with the --server-url flag to specify the server' address and the --token flag for worker authenticate.
 
 ##### MSI笔记本节点
-
+```sh
 $env:INSTALL_PACKAGE_SPEC = "gpustack[all]" 
 Invoke-Expression "& { $((Invoke-WebRequest -Uri "https://get.gpustack.ai" -UseBasicParsing).Content) } --server-url http://10.1.150.105 --token cb8bd495f93687ef59ad8768f5e1b05c"
+```
 
-Invoke-Expression "& { $((Invoke-WebRequest -Uri "https://get.gpustack.ai" -UseBasicParsing).Content) } --server-url http://10.1.150.105/ --token cb8bd495f93687ef59ad8768f5e1b05c"
-获取MSI上的token命令：Get-Content -Path "$env:APPDATA\gpustack\token" -Raw
-
-卸载：Set-ExecutionPolicy Bypass -Scope Process -Force; & "$env:APPDATA\gpustack\uninstall.ps1"
-
-###### Windows上Vllm后端
+获取MSI上的token命令：
+```
+Get-Content -Path "$env:APPDATA\gpustack\token" -Raw
+```
+卸载：
+```
+Set-ExecutionPolicy Bypass -Scope Process -Force; & "$env:APPDATA\gpustack\uninstall.ps1"
+```
+###### Windows上Vllm后端 [放弃吧，Win不支持]
 为了在Windows上Vllm后端运行模型
 切换到D:
+```
 pipx inject gpustack triton-3.0.0-cp311-cp311-win_amd64.whl
-
+```
 模型部署时的设置：
 高级选项卡中=》调度方式：自动；放置策略：Spread =》Worker选择器：键 os 值 windows 后端：vllm
 
@@ -45,14 +50,18 @@ pipx inject gpustack triton-3.0.0-cp311-cp311-win_amd64.whl
 
 ##### 106服务器节点
 ###### 安装
+```
 curl -sfL https://get.gpustack.ai | INSTALL_INDEX_URL=https://pypi.tuna.tsinghua.edu.cn/simple sh -s - --server-url http://10.1.150.105/ --token cb8bd495f93687ef59ad8768f5e1b05c
+```
 ###### 运行
+```
 gpustack start | INSTALL_INDEX_URL=https://pypi.tuna.tsinghua.edu.cn/simple
-
+```
 
 ###### 卸载
+```
 sudo /var/lib/gpustack/uninstall.sh
-
+```
 ## Git同步
 ### 本地
 ```sh
