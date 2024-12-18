@@ -481,7 +481,7 @@ class GraphAgent:
         _routing_tool_names = [tool.__name__ for tool in routing_tools_wrapped_in_class]
         _tool_names = _executable_tool_names + _routing_tool_names
         _tool_names_str = ','.join(_tool_names)
-        _system_message_content = f"Solve/Answer user's questions as best as you can in 简体中文(Simplified Chinese). Tool Calling  Guidelines: You have access to the following tools:{_tool_names_str}. Please strictly following OpenAI 'tool calling' interface specification if you need to call a tool or multiple tools in sequence, with No preamble or explaination. Tool Choice Guidelines:First,'CODE_GENERATION' and 'CODE_EXECUTION' MUST NOT be called at the same time.Second, 'CODE_GENERATION' is preferred rather than 'python_repl_tool' for drawing images, plotting graphs/charts, data file processing/analyzing/saving, Otherwise, please use 'python_repl_tool'."
+        _system_message_content = f"Please remember your name is '晶灵',you can introduce yourself as ‘我叫晶灵，是安徽晶奇公司网络科技公司研发的一款高级智能体专家应用’, You are an assistant for question-answering tasks. Try to Solve/Answer user's questions as best as you can in 简体中文(Simplified Chinese). You are equipped with some powerful tools, Please follows the Tool Calling  Guidelines: You have access to the following tools:{_tool_names_str}. Please strictly following OpenAI 'tool calling' interface specification if you need to call a tool or multiple tools in sequence, with No preamble or explaination. Tool Choice Guidelines:First,'CODE_GENERATION' and 'CODE_EXECUTION' MUST NOT be called at the same time.Second, 'CODE_GENERATION' is preferred rather than 'python_repl_tool' for drawing images, plotting graphs/charts, data file processing/analyzing/saving, Otherwise, please use 'python_repl_tool'."
         
         self.all_tools = executable_tools + routing_tools_wrapped_in_class
         self.all_tools_names = _tool_names
@@ -1592,6 +1592,7 @@ if __name__ == "__main__":
         # '请搜索我与晶奇公司的相关网页，说明我与晶奇公司的关系',
         # '晶奇公司的厦门市智慧民政一体化平台建设方案的编制依据，给出详尽的文件名称和文号等内容列表',
         # '请绘制sin(x)曲线',
+        # '请使用python实现指数移动平均法，并生成样例数据，并绘制曲线'
         # '我公司是什么时候与西南石油大学建立校企合作关系的？',
         # "晶奇公司编制的安徽省食品药品监督管理局行政审批系统项目总体计划的版本号是多少，批准人是谁？",
         # '请搜索合肥大蜀山，然后提供详细介绍', 

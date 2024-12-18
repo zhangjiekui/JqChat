@@ -128,7 +128,7 @@ def dialogue_page(
                 index=selected_kb_index,
         )
         is_memory = st.checkbox("启用会话记忆",value=True)
-        is_rewrite=st.checkbox("启用启用问题重写",value=True)   
+        is_rewrite=st.checkbox("启用问题重写",value=True)   
     # Display chat messages from history on app rerun
     chat_box.output_messages()
     chat_input_placeholder = "请输入对话内容，换行请使用Shift+Enter。"

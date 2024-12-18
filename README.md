@@ -1,5 +1,57 @@
 ## 还存在的问题
+### GpuStack
+systemctl start gpustack
+systemctl stop gpustack
+systemctl restart gpustack
+systemctl status gpustack
 
+#### 一：Install Server
+服务端：105 【注意要先把vllm等占用GPU的pid杀掉】
+
+安装脚本：curl -sfL https://get.gpustack.ai | sh -s -
+卸载脚本：sudo /var/lib/gpustack/uninstall.sh
+
+
+
+token: cb8bd495f93687ef59ad8768f5e1b05c 【命令：cat /var/lib/gpustack/token】
+WebUI：http://10.1.150.105/用户：admin
+【初始密码：cat /var/lib/gpustack/initial_admin_password】
+修改后的密码：
+Jqkj5350**0
+
+#### 二：Install Worker
+To form a cluster, you can add GPUStack workers on additional nodes. Install GPUStack with the --server-url flag to specify the server' address and the --token flag for worker authenticate.
+
+##### MSI笔记本节点
+
+$env:INSTALL_PACKAGE_SPEC = "gpustack[all]" 
+Invoke-Expression "& { $((Invoke-WebRequest -Uri "https://get.gpustack.ai" -UseBasicParsing).Content) } --server-url http://10.1.150.105 --token cb8bd495f93687ef59ad8768f5e1b05c"
+
+Invoke-Expression "& { $((Invoke-WebRequest -Uri "https://get.gpustack.ai" -UseBasicParsing).Content) } --server-url http://10.1.150.105/ --token cb8bd495f93687ef59ad8768f5e1b05c"
+获取MSI上的token命令：Get-Content -Path "$env:APPDATA\gpustack\token" -Raw
+
+卸载：Set-ExecutionPolicy Bypass -Scope Process -Force; & "$env:APPDATA\gpustack\uninstall.ps1"
+
+###### Windows上Vllm后端
+为了在Windows上Vllm后端运行模型
+切换到D:
+pipx inject gpustack triton-3.0.0-cp311-cp311-win_amd64.whl
+
+模型部署时的设置：
+高级选项卡中=》调度方式：自动；放置策略：Spread =》Worker选择器：键 os 值 windows 后端：vllm
+
+###### Llama-box后端
+只有 GGUF format能使用
+
+##### 106服务器节点
+###### 安装
+curl -sfL https://get.gpustack.ai | INSTALL_INDEX_URL=https://pypi.tuna.tsinghua.edu.cn/simple sh -s - --server-url http://10.1.150.105/ --token cb8bd495f93687ef59ad8768f5e1b05c
+###### 运行
+gpustack start | INSTALL_INDEX_URL=https://pypi.tuna.tsinghua.edu.cn/simple
+
+
+###### 卸载
+sudo /var/lib/gpustack/uninstall.sh
 
 ## Git同步
 ### 本地
