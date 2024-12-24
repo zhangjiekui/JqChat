@@ -7,8 +7,8 @@ from jqcode.jq_knowledge_manegement.chatchat.server.localai_embeddings import Lo
 
 # Initialize the language model with specific parameters
 llm = ChatOpenAI(
-    model_name='qwen25b70',
-    openai_api_base="http://10.1.150.105:9997/v1",    
+    model_name='vanilj/Phi-4:Q8_0',
+    openai_api_base="http://localhost:11434/v1",    
     openai_api_key= 'abc123',              
 )
 

@@ -1,3 +1,17 @@
+## 运行脚本
+```
+workon test
+cd /data/projects/JqChatV2/JqChat
+nohup python startup.py >> /data/xinference/jqchat.log 2>&1 &
+tail -f /data/xinference/jqchat.log
+```
+
+```
+nvidia-smi
+ps -ef | grep 'vllm serve'
+```
+
+
 ## 还存在的问题
 ### GpuStack
 systemctl start gpustack

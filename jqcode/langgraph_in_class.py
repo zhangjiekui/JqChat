@@ -463,7 +463,7 @@ class GraphAgent:
         # 获取知识库相关的信息
         self.kb_base_dict = kb_base_dict
         self.index_name = self.kb_base_dict.get("index_name",None)
-        self.discription = self.kb_base_dict.get("description",None)
+        self.description = self.kb_base_dict.get("description",None)
         self.chat_on_docs_list = chat_on_docs_list
         self.add_docs_list_to_kb = add_docs_list_to_kb
         self.allow_conversation_memory=allow_conversation_memory
@@ -472,16 +472,28 @@ class GraphAgent:
         self.retriever = get_retriever(index_name=self.index_name,chat_on_docs_list=self.chat_on_docs_list,add_docs_list_to_kb=self.add_docs_list_to_kb,top_k=10,source_id_key='source',required_exts=['.doc','.docx','.pdf','.md'])
 
                
-        self.VECTORSTORE.__doc__ = self.discription
-        # 将self.VECTORSTORE加入
+        self.VECTORSTORE.__doc__ = self.description
+        
         # todo：可能需要考虑加入很多个VECTORSTORE？
-        routing_tools_wrapped_in_class+=[self.VECTORSTORE]
+        # 但description不能重复，否则导致prompts膨胀
+        # 当前VECTORSTORE description还不存在的情况下，才添加到self.VECTORSTORE      
+       
+        _VECTORSTOREs = [v for v in routing_tools_wrapped_in_class if 'GraphAgent.VECTORSTORE' in str(v)]  # "<class '__main__.GraphAgent.VECTORSTORE'>"
+        _vectorstore_description_not_existed = True
+        for v in _VECTORSTOREs:
+            if v.__doc__ == self.description:
+                _vectorstore_description_not_existed = False
+                break
+        if _vectorstore_description_not_existed:
+            routing_tools_wrapped_in_class+=[self.VECTORSTORE]
+
+
 
         _executable_tool_names = [tool.name for tool in executable_tools]        
         _routing_tool_names = [tool.__name__ for tool in routing_tools_wrapped_in_class]
         _tool_names = _executable_tool_names + _routing_tool_names
         _tool_names_str = ','.join(_tool_names)
-        _system_message_content = f"Please remember your name is '晶灵',you can introduce yourself as ‘我叫晶灵，是安徽晶奇公司网络科技公司研发的一款高级智能体专家应用’, You are an assistant for question-answering tasks. Try to Solve/Answer user's questions as best as you can in 简体中文(Simplified Chinese). You are equipped with some powerful tools, Please follows the Tool Calling  Guidelines: You have access to the following tools:{_tool_names_str}. Please strictly following OpenAI 'tool calling' interface specification if you need to call a tool or multiple tools in sequence, with No preamble or explaination. Tool Choice Guidelines:First,'CODE_GENERATION' and 'CODE_EXECUTION' MUST NOT be called at the same time.Second, 'CODE_GENERATION' is preferred rather than 'python_repl_tool' for drawing images, plotting graphs/charts, data file processing/analyzing/saving, Otherwise, please use 'python_repl_tool'."
+        _system_message_content = f"Please remember your name is '晶灵',you can introduce yourself as ‘我叫晶灵，是安徽晶奇公司网络科技公司研发的一款高级智能体专家应用’, You are an assistant for question-answering tasks. Try to Solve/Answer user's questions as best as you can in 简体中文(Simplified Chinese). You are equipped with some powerful tools, Please follows the Tool Calling  Guidelines: You have access to the following tools:{_tool_names_str}. Please strictly following OpenAI 'tool calling' interface specification if you need to call a tool or multiple tools in sequence, with No preamble or explaination. Tool Choice Guidelines:First,'CODE_GENERATION' and 'CODE_EXECUTION' MUST NOT be called at the same time. Second, 'CODE_GENERATION' is preferred rather than 'python_repl_tool' for drawing images, plotting graphs/charts, data file processing/analyzing/saving, Otherwise, please use 'python_repl_tool'."
         
         self.all_tools = executable_tools + routing_tools_wrapped_in_class
         self.all_tools_names = _tool_names
@@ -1224,8 +1236,8 @@ class GraphAgent:
                                 
                 # assert d_added
                 try:
-                    print("获取参考文件")
-                    print(_fp,d_added)
+                    print(f"获取参考文献：{_fp=},{d_added=}")
+                  
                 except:
                     pass
                 

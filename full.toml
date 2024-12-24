@@ -1,0 +1,34 @@
+[embedding]
+provider = "ollama"
+base_model = "bce-embedding-base_v1" # defaults to `text-embedding-3-large`
+base_dimension = 512 # defaults to `3072`
+rerank_model = "jina-reranker-v2"
+rerank_url = "http://10.1.150.106:9997"
+
+[completion]
+  [completion.generation_config]
+    provider = "ollama"
+    model = "qwen25b70"
+    concurrent_request_limit = 32
+
+[database]
+  [database.graph_creation_settings]
+    clustering_mode = "remote"
+
+[ingestion]
+provider = "unstructured_local"
+strategy = "auto"
+chunking_strategy = "by_title"
+new_after_n_chars = 2_048
+max_characters = 4_096
+combine_under_n_chars = 1_024
+overlap = 1_024
+
+    [ingestion.extra_parsers]
+    pdf = "zerox"
+
+[orchestration]
+provider = "hatchet"
+kg_creation_concurrency_limit = 32
+ingestion_concurrency_limit = 16
+kg_concurrency_limit = 8
