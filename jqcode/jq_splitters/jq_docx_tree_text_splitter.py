@@ -657,7 +657,7 @@ class JqkjDocTreeTokenTextSplitter(MetadataAwareTextSplitter):
         file_path_txt = file_path_docx+'.txt'
         file_path_txt_preview = file_path_docx+'_preview.txt'
 
-        updated_text = '\n\n'.join(chunks_saved)
+        updated_text = '\n=chunk_delimiter=\n'.join(chunks_saved)
         # 切分后的结果保存到文本文件
         with open(file_path_txt,'w',encoding='utf-8') as f:
             f.write(updated_text)
@@ -914,14 +914,14 @@ if __name__ == "__main__":
     input_file_dir = fr'/data/projects/JqChat/jqcode/jq_readers/.testinputdocs_debug'
     input_file_dir = fr'/data/projects/JqChatV2/JqChat/jqcode/jq_readers/.test_files/.testinputdocs'    
     input_files = [fr'/data/projects/JqChatV2/JqChat/jqcode/jq_readers/.test_files/.testinputdocs/A方案.docx'] 
-    input_files += [fr'/data/projects/JqChatV2/JqChat/jqcode/jq_readers/.test_files/.testinputdocs/InstallationGuide.docx']
-    input_files += [fr'/data/projects/JqChatV2/JqChat/jqcode/jq_readers/.test_files/.testinputdocs/PPQA000_质量保证过程.doc'] 
-    input_files += [fr'/data/projects/JqChatV2/JqChat/jqcode/jq_readers/.test_files/.testinputdocs/厦门市智慧民政一体化平台项目建设方案 V3.6.docx'] 
-    input_files += [fr'/data/projects/JqChatV2/JqChat/jqcode/jq_readers/.test_files/.testinputdocs/PPQA000_质量保证过程.doc']
-    input_files += [fr'/data/projects/JqChatV2/JqChat/jqcode/jq_readers/.test_files/.testinputdocs_debug/test_zh.docx']
-    # 针对以下文件中的表格提问
-    input_files += [fr"/data/projects/JqChatV2/JqChat/jqcode/jq_readers/.test_files/.testinputdocs/AAMIS_项目总体计划_120925.doc"]
-    input_files += ["/data/projects/JqChatV2/workspace/knowledge_base/new8/content/RFB_FWZC-S8A-养老服务功能建设-技术方案1122-批注.docx"]
+    # input_files += [fr'/data/projects/JqChatV2/JqChat/jqcode/jq_readers/.test_files/.testinputdocs/InstallationGuide.docx']
+    # input_files += [fr'/data/projects/JqChatV2/JqChat/jqcode/jq_readers/.test_files/.testinputdocs/PPQA000_质量保证过程.doc'] 
+    # input_files += [fr'/data/projects/JqChatV2/JqChat/jqcode/jq_readers/.test_files/.testinputdocs/厦门市智慧民政一体化平台项目建设方案 V3.6.docx'] 
+    # input_files += [fr'/data/projects/JqChatV2/JqChat/jqcode/jq_readers/.test_files/.testinputdocs/PPQA000_质量保证过程.doc']
+    # input_files += [fr'/data/projects/JqChatV2/JqChat/jqcode/jq_readers/.test_files/.testinputdocs_debug/test_zh.docx']
+    # # 针对以下文件中的表格提问
+    # input_files += [fr"/data/projects/JqChatV2/JqChat/jqcode/jq_readers/.test_files/.testinputdocs/AAMIS_项目总体计划_120925.doc"]
+    # input_files += ["/data/projects/JqChatV2/workspace/knowledge_base/new8/content/RFB_FWZC-S8A-养老服务功能建设-技术方案1122-批注.docx"]
     q = "安徽省食品药品监督管理局行政审批系统项目总体计划的版本号是多少，批准人是谁？"
     query0 = "晶奇公司的应急技术服务电话？"
     query1 = "晶奇公司在哪一年获得ISO9001国际质量体系认证？"

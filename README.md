@@ -6,10 +6,7 @@ nohup python startup.py >> /data/xinference/jqchat.log 2>&1 &
 tail -f /data/xinference/jqchat.log
 ```
 
-```
-nvidia-smi
-ps -ef | grep 'vllm serve'
-```
+
 
 
 ## 还存在的问题
@@ -120,6 +117,10 @@ workon xinfer
 VLLM_USE_MODELSCOPE=True CUDA_VISIBLE_DEVICES=2,3 VLLM_ALLOW_ENGINE_USE_RAY=1 nohup vllm serve /data/models/Qwen2.5-14B-Instruct-GPTQ-Int4 --served-model-name qwen25b14 --enable-auto-tool-choice --tool-call-parser hermes --host 0.0.0.0 --port 9999 --max-model-len 32000 --tensor-parallel-size 2 --distributed-executor-backend ray --use_v2_block_manager --gpu-memory-utilization 0.8 --max-num-seqs 32 --enable-prefix-caching --enable-chunked-prefill >> /data/xinference/vllm14.log 2>&1 &
 tail -f /data/xinference/vllm14.log
 ```
+```
+nvidia-smi
+ps -ef | grep 'vllm serve'
+```
 
 4gpu
 ```
@@ -127,7 +128,10 @@ workon xinfer
 VLLM_USE_MODELSCOPE=True CUDA_VISIBLE_DEVICES=0,1,2,3 VLLM_ALLOW_ENGINE_USE_RAY=1 nohup vllm serve /data/models/Qwen2.5-14B-Instruct-GPTQ-Int4 --served-model-name qwen25b14 --enable-auto-tool-choice --tool-call-parser hermes --host 0.0.0.0 --port 9999 --max-model-len 32000 --tensor-parallel-size 4 --distributed-executor-backend ray --use_v2_block_manager --gpu-memory-utilization 0.80 --max-num-seqs 32 --enable-prefix-caching --enable-chunked-prefill >> /data/xinference/vllm14.log 2>&1 &
 tail -f /data/xinference/vllm14.log
 ```
-
+```
+nvidia-smi
+ps -ef | grep 'vllm serve'
+```
 #### Qwen2.5-32B-Instruct-AWQ
 2gpu
 ```
@@ -140,6 +144,10 @@ tail -f /data/xinference/vllm.log
 workon xinfer
 VLLM_USE_MODELSCOPE=True CUDA_VISIBLE_DEVICES=0,1,2,3 VLLM_ALLOW_ENGINE_USE_RAY=1 nohup vllm serve /data/xinference/modelscope/hub/qwen/Qwen2.5-32B-Instruct-AWQ --served-model-name qwen25b70 --enable-auto-tool-choice --tool-call-parser hermes --host 0.0.0.0 --port 9997 --max-model-len 32000 --tensor-parallel-size 4 --distributed-executor-backend ray --use_v2_block_manager --gpu-memory-utilization 0.8 --max-num-seqs 32 --enable-prefix-caching --enable-chunked-prefill >> /data/xinference/vllm.log 2>&1 &
 tail -f /data/xinference/vllm.log
+```
+```
+nvidia-smi
+ps -ef | grep 'vllm serve'
 ```
 
 #### Qwen2.5-Coder-32B-Instruct-AWQ
