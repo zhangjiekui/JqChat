@@ -15,7 +15,7 @@ import re
 import threading
 from pathlib import Path
 from functools import lru_cache
-from typing import Annotated, List, TypedDict, Optional, Sequence,Literal, Any,Union
+from typing import Annotated, List, Iterable, TypedDict, Optional, Sequence,Literal, Any,Union,Tuple,Dict
 from langchain.callbacks.manager import Callbacks
 import langchain
 langchain.verbose = False
@@ -774,16 +774,6 @@ class InitEnvModels:
             self.all_indices = [index_name for index_name in self.all_indices if not index_name.startswith('.')]
         return self.all_indices
         
-    def get_es_searchstore(self,embedding=None,es_connection=None,index_name='',strategy=None):
-        assert index_name, "参数index_name（ES的索引名称）不得为空！"
-        es_connection = es_connection if es_connection else self.get_es_connection()
-        self.create_es_index_if_not_existes_with_default_chinese_analyzer(es_connection=es_connection,index_name=index_name)
-
-        embedding = embedding if embedding else self.get_emb_8k_rerank_model()[0]        
-        strategy = strategy if strategy else self.strategy           
-        es_searchstore = ElasticsearchStore(es_connection=es_connection, index_name=index_name, embedding=embedding,strategy=strategy)
-        return es_searchstore
-
     def _init_ocr_instances(self,mode="API"):
         ocr = None
         mode = mode or self.ocr_mode
@@ -825,6 +815,16 @@ class InitEnvModels:
     # 方式一，使用LangChain indexing API，防止重复插入
     # https://python.langchain.com/docs/modules/data_connection/indexing 
 
+    def get_es_searchstore(self,embedding=None,es_connection=None,index_name='',strategy=None):
+        assert index_name, "参数index_name（ES的索引名称）不得为空！"
+        es_connection = es_connection if es_connection else self.get_es_connection()
+        self.create_es_index_if_not_existes_with_default_chinese_analyzer(es_connection=es_connection,index_name=index_name)
+
+        embedding = embedding if embedding else self.get_emb_8k_rerank_model()[0]        
+        strategy = strategy if strategy else self.strategy           
+        es_searchstore = ElasticsearchStore(es_connection=es_connection, index_name=index_name, embedding=embedding,strategy=strategy)
+        return es_searchstore
+
     def get_es_searchstore_index_documents(self,documents,embedding,index_name,es_connection=None,cleanup=None,clear_before_add_index=False,strategy=None,source_id_key="source",force_update=True):
         assert index_name, "参数index_name（ES的索引名称）不得为空！"
         if not es_connection:
@@ -864,11 +864,12 @@ class InitEnvModels:
         return es_searchstore
 
     # 方式二：常见的在教程中见到的
-    def get_es_searchstore_from_documents(self,documents,embedding,index_name,es_connection=None,strategy=None):
+    def get_es_searchstore_from_documents(self, documents,embedding,index_name,es_connection=None,strategy=None):
         assert index_name, "参数index_name（ES的索引名称）不得为空！"
         assert documents,  "参数documents（待索引的文档）不得为空！"
         if not es_connection:
             es_connection=self.get_es_connection()
+        embedding = embedding if embedding else self.get_emb_8k_rerank_model()[0] 
         self.create_es_index_if_not_existes_with_default_chinese_analyzer(es_connection=es_connection,index_name=index_name)       
         strategy = strategy if strategy else self.strategy
         es_searchstore = ElasticsearchStore.from_documents(documents=documents,embedding=embedding,es_connection=es_connection,index_name=index_name,strategy=strategy)
@@ -876,8 +877,25 @@ class InitEnvModels:
         es_searchstore.index_name=index_name
         return es_searchstore
 
-    from langchain_core.runnables import chain
+    # 方式三：embedding vectores已经存在的情况
+    def get_es_searchstore_from_document_embedding_pairs(self,index_name:str,text_embedding_pairs: Iterable[Tuple[str, List[float]]],ids:Optional[List[str]] ,
+                                                         metadatas: Optional[List[dict]]=None ,es_connection=None,strategy=None,embedding=None,refresh_indices: bool = True,bulk_kwargs: Optional[Dict] = None):
+        assert index_name, "参数index_name（ES的索引名称）不得为空！"
+        assert text_embedding_pairs,  "参数documents（待索引的文档）不得为空！"
+        assert len(text_embedding_pairs[0])==len(text_embedding_pairs[1]),  "参数text_embedding_pairs里的texts列表和embeddings列表的长度必须一致！"
+        if ids:
+            assert len(text_embedding_pairs[0])==len(ids),  "参数text_embedding_pairs里的texts列表和ids列表的长度必须一致！"
+        if not es_connection:
+            es_connection=self.get_es_connection()
+        embedding = embedding if embedding else self.get_emb_8k_rerank_model()[0]
+        self.create_es_index_if_not_existes_with_default_chinese_analyzer(es_connection=es_connection,index_name=index_name)       
+        strategy = strategy if strategy else self.strategy
+        es_searchstore = ElasticsearchStore(es_connection=es_connection, index_name=index_name, embedding=embedding,strategy=strategy)
+        document_ids = es_searchstore.add_embeddings(text_embedding_pairs,metadatas=metadatas,ids=ids,bulk_kwargs=bulk_kwargs,refresh_indices=refresh_indices)
 
+        es_searchstore.index_name=index_name
+        return es_searchstore
+    
     
     def split_and_get_chunks_relevant_from_documents(self,query:str, docs_list:List[Document]=None,text_splitter=None,embed_model=None,reranker=None,
                                                     if_reranking:bool=True,retriever_docs_num=10,final_docs_num=6,score_threshold=0.3,only_use_reranker:bool=False):
@@ -1014,8 +1032,21 @@ def get_env_models_instance():
 
 env_models_instance = get_env_models_instance()
 ocr = env_models_instance.get_ocr()
-pass
+
 # region 留着备用
+# embedding = env_models_instance.get_emb_8k_rerank_model()[0]
+# texts = ["张结魁是谁？","张结魁是安徽晶奇公司的"]
+# embeddings = embedding.embed_documents(texts)
+
+# vs = env_models_instance.get_es_searchstore_from_document_embedding_pairs(index_name="temp_emb_dense",text_embedding_pairs=[(texts[0], embeddings[0]),(texts[1], embeddings[1])],ids=["1","2"],metadatas=[{"source":"张结魁是谁？"},{"source":"张结魁是安徽晶奇公司的"}])
+# print(vs)
+# vs.similarity_search("张结魁是谁？")
+# vs.similarity_search_with_score("张结魁是谁？")
+# pass
+
+
+
+
 # Visualized-BGE： https://github.com/FlagOpen/FlagEmbedding/tree/master/FlagEmbedding/visual 
 
 # class BgeRerank(BaseDocumentCompressor):
