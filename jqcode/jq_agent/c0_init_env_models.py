@@ -1033,15 +1033,16 @@ def get_env_models_instance():
 env_models_instance = get_env_models_instance()
 ocr = env_models_instance.get_ocr()
 
-# region 留着备用
-# embedding = env_models_instance.get_emb_8k_rerank_model()[0]
+# # region 留着备用
+# embedding_model_fn = env_models_instance.get_emb_8k_rerank_model()[0]
 # texts = ["张结魁是谁？","张结魁是安徽晶奇公司的"]
-# embeddings = embedding.embed_documents(texts)
-
-# vs = env_models_instance.get_es_searchstore_from_document_embedding_pairs(index_name="temp_emb_dense",text_embedding_pairs=[(texts[0], embeddings[0]),(texts[1], embeddings[1])],ids=["1","2"],metadatas=[{"source":"张结魁是谁？"},{"source":"张结魁是安徽晶奇公司的"}])
+# embeddings = embedding_model_fn.embed_documents(texts)
+# text_embedding_pairs = list(zip(texts,embeddings))
+# vs = env_models_instance.get_es_searchstore_from_document_embedding_pairs(index_name="temp_emb_dense",text_embedding_pairs=text_embedding_pairs,ids=["1","2"],metadatas=[{"source":"张结魁是谁？"},{"source":"张结魁是安徽晶奇公司的"}])
+# # vs = env_models_instance.get_es_searchstore_from_document_embedding_pairs(index_name="temp_emb_dense",text_embedding_pairs=[(texts[0], embeddings[0]),(texts[1], embeddings[1])],ids=["1","2"],metadatas=[{"source":"张结魁是谁？"},{"source":"张结魁是安徽晶奇公司的"}])
 # print(vs)
-# vs.similarity_search("张结魁是谁？")
-# vs.similarity_search_with_score("张结魁是谁？")
+# r1=vs.similarity_search("张结魁是谁？")
+# r2=vs.similarity_search_with_score("张结魁是谁？")
 # pass
 
 
