@@ -15,7 +15,7 @@ from langchain_core.tools import tool
 import sqlite3
 from langgraph.checkpoint.sqlite import SqliteSaver
 from jqcode.jq_agent.c0_init_env_models import env_models_instance,clean_up_list_when_encounter_null_element
-from jqcode.jq_agent.tools.jq_functions_and_tools import get_flight_number,python_repl_tool
+from jqcode.jq_agent.tools.jq_functions_and_tools import get_flight_number,python_repl_tool,get_elderly_organization_list
 from langchain_experimental.tools import PythonREPLTool
 from jqcode.jq_agent.tools.jq_retriever import get_retriever
 import asyncio
@@ -447,7 +447,7 @@ answer_addresses_question_grader = answer_prompt | structured_llm_answer_grader
 
     
     
-executable_tools = [get_flight_number,python_repl_tool]
+executable_tools = [get_flight_number,python_repl_tool,get_elderly_organization_list]
 # executable_tools = [get_flight_number]
 route_tools = [WEB_SEARCH,CODE_GENERATION,CODE_EXECUTION]
 default_index_description = "向量库/知识库工具(vectorstore/knowledge base)：关于安徽晶奇网络科技股份有限公司（简称晶奇公司）、医疗卫生、医疗健康、医疗服务、医疗政策、信息化产品方案、技术文档等等方面的文档知识库. 凡是安徽晶奇网络科技股份有限公司及医疗健康相关的问题，都必须使用该vectorstore工具。"
@@ -1620,6 +1620,8 @@ if __name__ == "__main__":
         "还记得我的名字吗？",
         "请将下面的内容：序号,文件名称,文号 1,《关于研究智慧民政和智慧市政建设工作的纪要》,厦门市人民政府专题会议纪要〔2020〕285号 2,《关于进一步推进儿童福利机构优化提质和创新转型高质量发展的意见》,民发〔2021〕44号 3,《民政部办公厅关于印发〈金民工程一期项目试点工作方案〉的通知》,民办函〔2019〕108号 4,《中共中央关于制定国民经济和社会发展第十四个五年规划和二〇三五年远景目标的建议》, 5,《国务院办公厅关于推进养老服务发展的意见》,国办发〔2019〕5号 6,《民政部关于进一步扩大养老服务供给促进养老服务消费的实施意见》,民发〔2019〕88号 7,《国务院扶贫开发领导小组关于建立防止返贫监测和帮扶机制的指导意见》,国开发〔2020〕6号 8,《国务院关于国家基本公共服务标准（2 0 2 1 年 版 ） 的 批 复 》 , 国 函 〔 2 0 2 1 〕 2 0 号 9,《福建省促进电子证照应用管理暂行办法》,闽政办[2017]74号 10,厦门市人民政府办公厅关于进一步深化“互联网+政务服务”推进政务服务“一网、一门、一次”改革工作的通知,厦府办〔2018〕194号 11,《厦门市“十三五”民政事业发展专项规划（2016-2020）》, 12,厦门市城乡社区服务体系建设规划（2016-2020年）, 13,《关于加强和完善城乡社区治理的实施意见》,厦委发〔2018〕7号 转换为表格，使用python生成csv文件并提供下载地址"
     ]
+
+    user_questions = ['请调用工具函数，查询返回养老机构的列表信息，页数为1，每页10条记录。']
     my_main_bot = GraphAgent(executable_tools=executable_tools,routing_tools_wrapped_in_class=route_tools)
 
     for user_question in user_questions:

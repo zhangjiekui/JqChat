@@ -74,6 +74,17 @@ gpustack start | INSTALL_INDEX_URL=https://pypi.tuna.tsinghua.edu.cn/simple
 sudo /var/lib/gpustack/uninstall.sh
 ```
 ## Git同步
+### 代理设置
+```
+git config --global http.https://github.com.proxy socks5h://10.1.42.212:4781
+git config --global https.https://github.com.proxy socks5h://10.1.42.212:4781
+```
+### 代理取消
+```
+git config --global --unset http.proxy
+git config --global --unset https.proxy
+```
+
 ### 本地
 ```sh
 cd /data/projects/JqChatV2/JqChat

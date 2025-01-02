@@ -11,11 +11,53 @@ from langgraph.prebuilt import ToolNode
 from langchain_core.tools import ToolException
 from typing import List
 from jqcode.jq_utils.logger import jqkj_logger
+import requests
+import json
 logger = jqkj_logger(__file__).get_logger()
 # from jqcode.jq_agent.c0_init_env_models import env_models_instance
 
 
 # 自定义工具函数
+
+@tool(parse_docstring=True)
+def get_elderly_organization_list(pageNum:str="1",pageSize:str="10") -> str:
+    """
+    根据输入的页数(pageNum),每页记录数(pageSize),返回养老机构的列表信息。
+
+    Args:
+        pageNum:(str), 页数
+        pageSize:(str), 每页记录数        
+    """
+    url =f"http://60.166.63.147:8181/api/organizationMap/list?pageSize={pageSize}&pageNum={pageNum}"
+    headers = {"referer":"http://60.166.63.147:8181"}
+
+    try:
+        response = requests.get(url, headers=headers)
+        if response.status_code == 200:
+            output = response.json()
+            data = output.get("data",[])
+            organizations = [d.get('orgName','') for d in data]
+            organizations = [o for o in organizations if o]
+
+            if organizations:
+                out_str = f"共找到{len(organizations)}家养老机构，分别为："
+                organizations_str = ','.join(organizations)
+                result_str = f"{out_str}{organizations_str}"
+                return result_str
+            else:
+                result_str = "接口调用成功，但未找到养老机构。"
+                return result_str
+        else:
+            raise Exception(response.text)
+    except Exception as e:
+        msg = f'无法获取到养老机构列表信息:{e}'
+        logger.error(msg)
+        return msg
+## 注释掉# @tool(parse_docstring=True) 后，可运行函数测试
+# r = get_elderly_organization_list(pageNum="1",pageSize="10")
+# print(r)
+
+
 @tool(parse_docstring=True)
 def get_flight_number(origin:Optional[str],destination:Optional[str],date:Optional[str]) -> str:
     """
