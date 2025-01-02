@@ -20,33 +20,37 @@ logger = jqkj_logger(__file__).get_logger()
 # 自定义工具函数
 
 @tool(parse_docstring=True)
-def get_elderly_organization_list(pageNum:str="1",pageSize:str="10") -> str:
+def get_elderly_organization_list(user_location:str="安徽晶奇网络科技股份有限公司",distance:int=10,num:int=10) -> str:
     """
-    根据输入的页数(pageNum),每页记录数(pageSize),返回养老机构的列表信息。
+    根据用户的当前地址位置(user_location),附近距离(distance),查询返回指定数量(num)的养老机构列表信息。
 
     Args:
-        pageNum:(str), 页数
-        pageSize:(str), 每页记录数        
+        user_location:(str), 用户当前地址位置
+        distance:(int), 距离用户当前地址位置的距离（附近多少公里范围内）
+        num:int,返回的养老机构个数
+
     """
-    url =f"http://60.166.63.147:8181/api/organizationMap/list?pageSize={pageSize}&pageNum={pageNum}"
-    headers = {"referer":"http://60.166.63.147:8181"}
+    url = f"http://192.168.44.140:9000/pub_external/orgList?page_num=1&page_size={num}&address={user_location}&distance={distance}"
+    print(url)
+    headers = {"referer":"http://192.168.44.140:9000"}
 
     try:
+        result_str = "接口调用成功，但未找到符合条件的养老机构。"
         response = requests.get(url, headers=headers)
         if response.status_code == 200:
             output = response.json()
             data = output.get("data",[])
-            organizations = [d.get('orgName','') for d in data]
-            organizations = [o for o in organizations if o]
-
-            if organizations:
-                out_str = f"共找到{len(organizations)}家养老机构，分别为："
-                organizations_str = ','.join(organizations)
-                result_str = f"{out_str}{organizations_str}"
-                return result_str
-            else:
-                result_str = "接口调用成功，但未找到养老机构。"
-                return result_str
+            if data:
+                num = data.get('total',0)
+                organizations = data.get('list',[])                     
+                organization_names = [d.get('org_name','') for d in organizations]
+                organization_names = [o for o in organization_names if o]
+                if organization_names:
+                    out_str = f"共找到{len(organization_names)}家养老机构："
+                    organization_names_str = ','.join(organization_names)
+                    result_str = f"{out_str}{organization_names_str}"              
+            return result_str
+        
         else:
             raise Exception(response.text)
     except Exception as e:
@@ -54,7 +58,7 @@ def get_elderly_organization_list(pageNum:str="1",pageSize:str="10") -> str:
         logger.error(msg)
         return msg
 ## 注释掉# @tool(parse_docstring=True) 后，可运行函数测试
-# r = get_elderly_organization_list(pageNum="1",pageSize="10")
+# r = get_elderly_organization_list(num="10",user_location="安徽晶奇网络科技股份有限公司",distance=3)
 # print(r)
 
 
