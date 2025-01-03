@@ -100,6 +100,7 @@ git config --global --unset-all https.proxy
 ### Windows下,pip install 出现错误Missing dependencies for SOCKS support.
 手动下载 https://files.pythonhosted.org/packages/8d/59/b4572118e098ac8e46e399a1dd0f2d85403ce8bbaad9ec79373ed6badaf9/PySocks-1.7.1-py3-none-any.whl
 手动安装 pip install -U D:\PySocks-1.7.1-py3-none-any.whl
+pip install httpx[socks]
 
 
 ### 本地
