@@ -5,6 +5,11 @@ cd /data/projects/JqChatV2/JqChat
 nohup python startup.py >> /data/xinference/jqchat.log 2>&1 &
 tail -f /data/xinference/jqchat.log
 ```
+```
+    sudo lsof -i :7861
+    sudo lsof -i :8501
+    sudo lsof -i :5011
+```
 
 
 
@@ -79,11 +84,23 @@ sudo /var/lib/gpustack/uninstall.sh
 git config --global http.https://github.com.proxy socks5h://10.1.42.212:4781
 git config --global https.https://github.com.proxy socks5h://10.1.42.212:4781
 ```
+
+### 查看git设置
+```
+git config -l
+```
+
 ### 代理取消
 ```
-git config --global --unset http.proxy
-git config --global --unset https.proxy
+git config --global --unset-all http.proxy
+git config --global --unset-all https.proxy
 ```
+
+
+### Windows下,pip install 出现错误Missing dependencies for SOCKS support.
+手动下载 https://files.pythonhosted.org/packages/8d/59/b4572118e098ac8e46e399a1dd0f2d85403ce8bbaad9ec79373ed6badaf9/PySocks-1.7.1-py3-none-any.whl
+手动安装 pip install -U D:\PySocks-1.7.1-py3-none-any.whl
+
 
 ### 本地
 ```sh

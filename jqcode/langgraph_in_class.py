@@ -1599,6 +1599,9 @@ tavily_search_tool = TavilySearchResults(max_results=6) #increased number of res
 
 if __name__ == "__main__":
     user_questions = [
+        "你是谁？请详细介绍一下你自己"
+        "你装备了哪些工具？",
+        "我现在的位置是在安徽晶奇网络科技股份有限公司附近，请查询15公里范围内的养老机构",
         "晶奇公司质量保证过程中的角色及角色的职责或含义解释，对应的人员（姓名）有哪些?其中的批准人是谁？",
         '你好，我的名字是张结魁，请记住我的名字',
         '请搜索我与晶奇公司的相关网页，说明我与晶奇公司的关系',
@@ -1622,6 +1625,7 @@ if __name__ == "__main__":
     ]
 
     user_questions = ['请调用工具函数帮我查询：我现在的位置是在安徽晶奇网络科技股份有限公司附近，请查询15公里范围内的养老机构，最多返回10个']
+    user_questions = ['我现在的位置是在安徽晶奇网络科技股份有限公司附近，请查询15公里范围内的养老机构，最多返回10个']
     my_main_bot = GraphAgent(executable_tools=executable_tools,routing_tools_wrapped_in_class=route_tools)
 
     for user_question in user_questions:
