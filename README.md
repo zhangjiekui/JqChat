@@ -618,19 +618,36 @@ docker run --rm -d --name cassandra --hostname cassandra --network cassandra cas
 docker run --rm -d --name cassandra --hostname cassandra --network cassandra cassandra -p 9042:9042 -e ASSANDRA_USERNAME=cassandra -e CASSANDRA_PASSWORD=password123
 
 
-## pg_vector_age_graph
+## postgres: pg_vector_age_graph
 
 #### docker file: 
 /data/projects/JqChatV2/JqChat/pg_dockerfile
 
+/data/projects/JqChatV2/JqChat/pg_vector_age_zh_dockerfile (中文分词插件)
+
 #### docker build: 
-VS Code中，在上面的文件上右击，选择build image, 然后在最上方的输入框中按提示输入"pg_vector_age"作为image的标签(tag)
+VS Code中，在上面的文件上右击，选择build image, 然后在最上方的输入框中按提示输入"pg_vector_age_zh"作为image的标签(tag)
 
 #### docker run: 
-docker run --name pg_vector_age -e POSTGRES_USER=langchain -e POSTGRES_PASSWORD=langchain -e POSTGRES_DB=langchain -p 6024:5432 -d docker.io/library/pg_vector_age
+docker run --name pg_vector_age_zh -e POSTGRES_USER=langchain -e POSTGRES_PASSWORD=langchain -e POSTGRES_DB=langchain -p 6024:5432 -d docker.io/library/pg16_vector_age_zh
+
+#### 错误解决
+/lib/x86_64-linux-gnu/libc.so.6: version `GLIBC_2.33' not found
+docker exec -it --user root pg_vector_age_zh_16 bash
+apt update
+apt install libc6
+
 
 #### test code: 
 /data/projects/JqChatV2/JqChat/pg_vector_age_graph.py
+
+#### PostgreSQL 的全文检索系统之中文支持 (三)
+
+https://www.qiuzhi99.com/articles/postgresql/17.html  zhparser中文分词的PostgreSQL插件。
+
+CREATE EXTENSION zhparser;
+CREATE TEXT SEARCH CONFIGURATION testzhcfg (PARSER = zhparser);
+ALTER TEXT SEARCH CONFIGURATION testzhcfg ADD MAPPING FOR n,v,a,i,e,l WITH simple;
 
 
 ## Neo4j

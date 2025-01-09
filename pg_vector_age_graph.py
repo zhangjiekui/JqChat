@@ -26,8 +26,28 @@ llm_transformer = LLMGraphTransformer(llm=llm)
 
 with Session(engine) as session:
     with session.begin():
+        session.execute(text("create extension if not exists vector;"))
         session.execute(text("create extension if not exists age;"))
-        session.execute(text('ALTER DATABASE postgres SET search_path = ag_catalog, "$user", public;'))        
+        # session.execute(text("create extension if not exists zhparser;"))  #zhparser中文分词的PostgreSQL插件
+        # session.execute(text("CREATE TEXT SEARCH CONFIGURATION testzhcfg (PARSER = zhparser);"))
+        # session.execute(text("ALTER TEXT SEARCH CONFIGURATION testzhcfg ADD MAPPING FOR n,v,a,i,e,l WITH simple;"))
+
+
+        # 在PostgreSQL数据库中，默认的search_path设置为"$user", public, pg_catalog，其中每个部分的含义如下：
+        # 1. $user
+            # $user表示PostgreSQL首先会查找与当前用户同名的模式（schema）。例如，如果以用户postgres登录，系统会优先在名为postgres的schema中查找对象。如果该schema不存在，则会被忽略。
+        # 2. public
+            # public是一个公共模式，PostgreSQL在创建数据库时自动生成。所有用户都可以访问这个schema，因此它通常用于存放公共数据表和视图。若没有指定schema，PostgreSQL将默认在public中创建新对象。
+        # 3. pg_catalog
+            # pg_catalog是PostgreSQL的系统schema，包含了系统自带的函数、表、视图以及数据类型等元数据。无论是否在search_path中明确列出，系统总是会首先搜索这个schema，以确保内置对象能够被找到。
+        # 总结
+            # $user：优先查找与当前用户同名的schema。
+            # public：所有用户可访问的公共schema。
+            # pg_catalog：系统级别的schema，包含内置函数和元数据。
+            # 这种设计使得PostgreSQL能够灵活地处理对象查找，同时保持了良好的安全性和可管理性。
+        
+        session.execute(text('ALTER DATABASE postgres SET search_path = ag_catalog, "$user", public;'))   
+            #  
         
 index_name = "my_docs"
 
