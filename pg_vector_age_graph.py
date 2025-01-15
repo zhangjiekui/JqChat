@@ -11,7 +11,7 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import Session
 # See docker command above to launch a postgres instance with pgvector enabled.
 # connection = "postgresql+psycopg://postgresUser:postgresPW@localhost:5455/postgresDB"  # Uses psycopg3!
-connection = "postgresql+psycopg://langchain:langchain@localhost:6024/langchain"  # Uses psycopg3!
+connection = "postgresql+psycopg://langchain:langchain@localhost:6022/postgres"  # Uses psycopg3!
 
 
 from sqlalchemy import create_engine
@@ -28,7 +28,17 @@ with Session(engine) as session:
     with session.begin():
         session.execute(text("create extension if not exists vector;"))
         session.execute(text("create extension if not exists age;"))
-        # session.execute(text("create extension if not exists zhparser;"))  #zhparser中文分词的PostgreSQL插件
+        session.execute(text("create extension if not exists pg_jieba;")) 
+        r=session.execute(text("SELECT * FROM to_tsvector('jiebacfg', '小明硕士毕业于中国科学院计算所，后在日本京都大学深造')"))
+        print(r)
+        rec = r.fetchone()
+        print(rec)
+
+        
+        
+         #zhparser中文分词的PostgreSQL插件
+
+
         # session.execute(text("CREATE TEXT SEARCH CONFIGURATION testzhcfg (PARSER = zhparser);"))
         # session.execute(text("ALTER TEXT SEARCH CONFIGURATION testzhcfg ADD MAPPING FOR n,v,a,i,e,l WITH simple;"))
 
@@ -46,7 +56,7 @@ with Session(engine) as session:
             # pg_catalog：系统级别的schema，包含内置函数和元数据。
             # 这种设计使得PostgreSQL能够灵活地处理对象查找，同时保持了良好的安全性和可管理性。
         
-        session.execute(text('ALTER DATABASE postgres SET search_path = ag_catalog, "$user", public;'))   
+        session.execute(text('ALTER DATABASE postgres SET search_path = ag_catalog,polar_feature_utils,"$user", public;'))   
             #  
         
 index_name = "my_docs"
@@ -115,11 +125,11 @@ for doc,sim in results:
 
 
 conf = {
-    "database": "langchain",
+    "database": "postgres",
     "user": "langchain",
     "password": "langchain",
     "host": "localhost",
-    "port": 6024,
+    "port": 6022,
 }
 
 graph = AGEGraph(graph_name=index_name, conf=conf)
@@ -168,8 +178,8 @@ chain = GraphCypherQAChain.from_llm(
     llm, graph=graph, verbose=True, cypher_prompt=CYPHER_GENERATION_PROMPT, validate_cypher=True,allow_dangerous_requests=True
 )
 
-# result = chain.invoke("Who played in Top Gun?")
-# print(result)
+result = chain.invoke("Who played in Top Gun?")
+print(result)
 
 
 # results = vector_store.similarity_search_with_relevance_scores(

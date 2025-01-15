@@ -78,6 +78,32 @@ gpustack start | INSTALL_INDEX_URL=https://pypi.tuna.tsinghua.edu.cn/simple
 ```
 sudo /var/lib/gpustack/uninstall.sh
 ```
+## docker代理配置
+### 创建配置文件
+```
+sudo mkdir -p /etc/systemd/system/docker.service.d
+sudo nano /etc/systemd/system/docker.service.d/http-proxy.conf
+``` 
+
+### 复制黏贴以下内容到配置文件中
+```  
+# http-proxy.conf 文件内容
+[Service] 
+Environment="HTTP_PROXY=http://10.1.42.212:4780/" 
+Environment="HTTPS_PROXY=http://10.1.42.212:4780/" 
+Environment="NO_PROXY=localhost,127.0.0.1"
+```  
+### 应用新的代理配置
+```
+systemctl daemon-reload
+sudo service docker restart
+```
+### 查看验证新的代理配置
+```
+docker info
+```
+
+
 ## Git同步
 ### 代理设置
 ```
@@ -617,6 +643,64 @@ docker run --rm -d --name cassandra --hostname cassandra --network cassandra cas
 
 docker run --rm -d --name cassandra --hostname cassandra --network cassandra cassandra -p 9042:9042 -e ASSANDRA_USERNAME=cassandra -e CASSANDRA_PASSWORD=password123
 
+
+
+## PolarDB for PostgreSQL
+https://github.com/ApsaraDB/PolarDB-for-PostgreSQL
+```
+docker pull polardb/polardb_pg_local_instance:15
+docker run -it --cap-add=SYS_PTRACE --privileged=true --rm polardb/polardb_pg_local_instance:15 psql
+```
+### 初始化数据库
+docker run -it --rm \
+    --cap-add=SYS_PTRACE --privileged=true \
+    --env POLARDB_PORT=5432 \
+    --env POLARDB_USER=langchain \
+    --env POLARDB_PASSWORD=langchain \
+    --env POLARDB_DB=postgres \
+    -p 6024:5432 \
+    polardb/polardb_pg_local_instance:15 \
+    echo 'done'
+### 启动数据库服务
+docker run -d \
+    --cap-add=SYS_PTRACE --privileged=true \
+    --env POLARDB_PORT=5432 \
+    --env POLARDB_USER=langchain \
+    --env POLARDB_PASSWORD=langchain \
+    --env POLARDB_DB=postgres \
+    -p 6024:5432 \
+    polardb/polardb_pg_local_instance:15 \
+
+### 安装插件
+进入容器
+#### age （注意git PG15版本的代码）
+```bash
+    git clone -b release/PG15/1.5.0 https://github.com/apache/age.git
+    cd age
+    make install
+```
+
+```psql
+    psql
+    CREATE EXTENSION age;
+    CREATE EXTENSION vector;
+    CREATE EXTENSION pg_jieba;
+```
+
+### 保存修改后的容器
+docker ps
+docker commit c0970e749db9 polardb15_vector_age_zh:v1.0
+
+
+### 运行修改后的容器
+docker run -d \
+    --cap-add=SYS_PTRACE --privileged=true \
+    --env POLARDB_PORT=5432 \
+    --env POLARDB_USER=langchain \
+    --env POLARDB_PASSWORD=langchain \
+    --env POLARDB_DB=postgres \
+    -p 6022:5432 \
+    polardb15_vector_age_zh:v1.0
 
 ## postgres: pg_vector_age_graph
 
