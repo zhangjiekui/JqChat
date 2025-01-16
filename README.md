@@ -647,6 +647,8 @@ docker run --rm -d --name cassandra --hostname cassandra --network cassandra cas
 
 ## PolarDB for PostgreSQL
 https://github.com/ApsaraDB/PolarDB-for-PostgreSQL
+https://developer.aliyun.com/article/1611770 GraphRAG：基于PolarDB+通义千问+LangChain的知识图谱+大模型最佳实践
+
 ```
 docker pull polardb/polardb_pg_local_instance:15
 docker run -it --cap-add=SYS_PTRACE --privileged=true --rm polardb/polardb_pg_local_instance:15 psql

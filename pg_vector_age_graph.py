@@ -1,27 +1,21 @@
 from langchain_core.documents import Document
 from langchain_postgres import PGVector
-# from langchain_postgres.vectorstores import PGVector
 from jqcode.jq_agent.c0_init_env_models import env_models_instance
 from langchain_community.graphs.age_graph import AGEGraph
-# from langchain_neo4j import GraphCypherQAChain
 from langchain_community.chains.graph_qa.cypher import GraphCypherQAChain
 from langchain_experimental.graph_transformers import LLMGraphTransformer
 
 from sqlalchemy import create_engine
 from sqlalchemy.orm import Session
-# See docker command above to launch a postgres instance with pgvector enabled.
-# connection = "postgresql+psycopg://postgresUser:postgresPW@localhost:5455/postgresDB"  # Uses psycopg3!
-connection = "postgresql+psycopg://langchain:langchain@localhost:6022/postgres"  # Uses psycopg3!
-
-
-from sqlalchemy import create_engine
-from sqlalchemy.orm import Session
 from sqlalchemy.sql import text
-
-
+from langchain.chains import LLMChain
+from langchain.chains import RetrievalQA
+from langchain_core.retrievers import BaseRetriever
+import psycopg
+index_name = "my_collection"
+database_name = 'rag'
+connection = f"postgresql+psycopg://langchain:langchain@localhost:6022/{database_name}"  # Uses psycopg3!
 engine = create_engine(connection)
-llm = env_models_instance.chat_model
-llm_transformer = LLMGraphTransformer(llm=llm)
 
 
 with Session(engine) as session:
@@ -29,20 +23,22 @@ with Session(engine) as session:
         session.execute(text("create extension if not exists vector;"))
         session.execute(text("create extension if not exists age;"))
         session.execute(text("create extension if not exists pg_jieba;")) 
+        # /var/polardb/primary_datadir/postgresql.conf
+        # shared_preload_libraries = 'pg_jieba'
+
+        # session.execute(text("CREATE TEXT SEARCH CONFIGURATION chinese (PARSER = pg_jieba);"))
+        # # # 将指定的词汇类别（n，v，a，i，e，l）与已存在的 simple 配置进行映射。这意味着对于这些词汇类别，将使用 simple 配置的规则来进行文本分析和处理。
+        # session.execute(text("ALTER TEXT SEARCH CONFIGURATION chinese ADD MAPPING FOR n,v,a,i,e,l WITH simple;"))
+
+
+        # # session.execute(text("create extension if not exists pg_jieba;")) 
+        # # session.execute(text("create extension if not exists pg_jieba;")) 
+        
         r=session.execute(text("SELECT * FROM to_tsvector('jiebacfg', '小明硕士毕业于中国科学院计算所，后在日本京都大学深造')"))
         print(r)
         rec = r.fetchone()
         print(rec)
-
-        
-        
-         #zhparser中文分词的PostgreSQL插件
-
-
-        # session.execute(text("CREATE TEXT SEARCH CONFIGURATION testzhcfg (PARSER = zhparser);"))
-        # session.execute(text("ALTER TEXT SEARCH CONFIGURATION testzhcfg ADD MAPPING FOR n,v,a,i,e,l WITH simple;"))
-
-
+        session.execute(text('ALTER DATABASE postgres SET search_path = ag_catalog,polar_feature_utils,"$user", public;'))   
         # 在PostgreSQL数据库中，默认的search_path设置为"$user", public, pg_catalog，其中每个部分的含义如下：
         # 1. $user
             # $user表示PostgreSQL首先会查找与当前用户同名的模式（schema）。例如，如果以用户postgres登录，系统会优先在名为postgres的schema中查找对象。如果该schema不存在，则会被忽略。
@@ -55,11 +51,6 @@ with Session(engine) as session:
             # public：所有用户可访问的公共schema。
             # pg_catalog：系统级别的schema，包含内置函数和元数据。
             # 这种设计使得PostgreSQL能够灵活地处理对象查找，同时保持了良好的安全性和可管理性。
-        
-        session.execute(text('ALTER DATABASE postgres SET search_path = ag_catalog,polar_feature_utils,"$user", public;'))   
-            #  
-        
-index_name = "my_docs"
 
 embeddings = env_models_instance.embed_model
 vector_store = PGVector(
@@ -110,22 +101,24 @@ docs = [
         page_content="a cooking class for beginners is offered at the community center",
         metadata={"id": 10, "location": "community center", "topic": "classes"},
     ),
-]
-
-
-
+    Document(
+        page_content="在PostgreSQL数据库中，默认的search_path设置为'$user', public, pg_catalog",
+        metadata={"id": 11, "domain": "技术", "topic": "数据库"},
+    ),
+]     
 
 vector_store.add_documents(docs, ids=[doc.metadata["id"] for doc in docs])
-results = vector_store.similarity_search_with_relevance_scores(
-    "kitty", k=10, filter={"id": {"$in": [1, 5, 2, 9]}}
+results_vector = vector_store.similarity_search_with_relevance_scores(
+    "cats", k=10, filter={"id": {"$in": [1, 5, 2, 9]}}
 )
-for doc,sim in results:
+results_vector = vector_store.similarity_search_with_relevance_scores("cats", k=2)
+for doc,sim in results_vector:
     print(f"==doc==")
     print(f"* relevance_scores:{sim};\ncontent:{doc.page_content};\nmetadata: [{doc.metadata}]")
 
 
 conf = {
-    "database": "postgres",
+    "database": database_name,
     "user": "langchain",
     "password": "langchain",
     "host": "localhost",
@@ -133,6 +126,7 @@ conf = {
 }
 
 graph = AGEGraph(graph_name=index_name, conf=conf)
+
 # Assuming your database is empty, you can populate it using Cypher query language. 
 graph.query(
     """
@@ -144,11 +138,7 @@ MERGE (a)-[:ACTED_IN]->(m)
 """
 )
 
-graph_documents = llm_transformer.convert_to_graph_documents(docs)
-graph.add_graph_documents(graph_documents)
 
-graph.refresh_schema()
-print(graph.schema)
 
 
 from langchain_core.prompts.prompt import PromptTemplate
@@ -173,32 +163,111 @@ CYPHER_GENERATION_PROMPT = PromptTemplate(
     input_variables=["schema", "question"], template=CYPHER_GENERATION_TEMPLATE
 )
 
-
-chain = GraphCypherQAChain.from_llm(
-    llm, graph=graph, verbose=True, cypher_prompt=CYPHER_GENERATION_PROMPT, validate_cypher=True,allow_dangerous_requests=True
+llm = env_models_instance.chat_model
+graphchain = GraphCypherQAChain.from_llm(
+    llm, graph=graph, verbose=True, cypher_prompt=CYPHER_GENERATION_PROMPT, validate_cypher=True,allow_dangerous_requests=True,
+    return_direct=True, #此处直接返回查询结果，不需要llm来组织回答
 )
 
-result = chain.invoke("Who played in Top Gun?")
+result = graphchain.invoke("Who played in Top Gun?")
 print(result)
 
 
-# results = vector_store.similarity_search_with_relevance_scores(
-#     "where to find ducks?", k=3
-# )
-# for doc,sim in results:
-#     print(f"==doc==")
-#     print(f"* relevance_scores:{sim};\ncontent:{doc.page_content};\nmetadata: [{doc.metadata}]")
-# result2 = chain.invoke(f"With Added Context:{results},Try to Answer The Question:'where to find ducks?'")
-# print(result2)
-
+llm_transformer = LLMGraphTransformer(llm=llm)
+graph_documents = llm_transformer.convert_to_graph_documents(docs)
+graph.add_graph_documents(graph_documents)
+graph.refresh_schema()
+print(graph.schema)
 
 q="where are the cats?"
-results = vector_store.similarity_search_with_relevance_scores(q, k=3)
-for doc,sim in results:
+results_vector = vector_store.similarity_search_with_relevance_scores(q, k=3)
+for doc,sim in results_vector:
     print(f"==doc==")
     print(f"* relevance_scores:{sim};\ncontent:{doc.page_content};\nmetadata: [{doc.metadata}]")
-result2 = chain.invoke(f"With Added Context:{results},Try to Answer The Question:'{q}'")
+
+g_query = """
+SELECT * from cypher('my_docs2', $$ 
+MATCH (V:Entity {id:'Cats'})-[R]-(V2) RETURN V,R,V2 
+$$) as (V agtype, R agtype, V2 agtype);
+"""
+g_query = """
+SELECT * from cypher('my_docs2', $$
+        MATCH (V:Entity {id:"Cats"})-[R]-(V2)
+        RETURN V,R,V2
+$$) as (V agtype, R agtype, V2 agtype);
+"""
+
+g_query = """
+        MATCH (V:Animal {id:"Cats"})-[R]-(V2)
+        RETURN V,R,V2
+"""
+
+g_query = """
+        MATCH (V {id:"Cats"})-[R]-(V2)
+        RETURN V,R,V2
+"""
+
+results_graph = graph.query(g_query)
+
+results = results_vector + results_graph
+result2 = graphchain.invoke(f"With Added Context:{results},Try to Answer The Question:'{q}'")
 print(result2)
+
+psycopg_connection_str = f"dbname={database_name} user=langchain host=localhost port=6022 password=langchain"  
+conn = psycopg.connect(psycopg_connection_str)
+class CustomRetriever(BaseRetriever):
+    def __init__(self):
+        super().__init__()
+    def _get_relevant_documents(self, query: str,topn=5) -> list[Document]:
+        relevant_docs = []
+        cur = conn.cursor()
+        # Get the top 5 most similar documents using the KNN <=> operator
+        # cur.execute("SELECT document FROM docs ORDER BY embedding <=> '{}' LIMIT 5".format(embeddings.embed_query(query)))
+        cur.execute(f"SELECT document FROM public.langchain_pg_embedding ORDER BY embedding <=> '{embeddings.embed_query(query)}' LIMIT {topn}")
+        topn_docs = cur.fetchall()
+        cur.close()
+        
+        for doc in topn_docs:
+            relevant_docs.append(Document(page_content=doc[0]))
+        return relevant_docs
+custom_retriever = CustomRetriever()
+qa_chain = RetrievalQA.from_chain_type(
+    llm=llm,
+    retriever=custom_retriever,
+    verbose=True
+)  
+
+template = """Task:Generate more detailed information about the raw answer.
+The question is:
+{question}
+the raw answer from knowledge graph in format:
+{answer}
+please give more detailed answer about raw answer
+"""
+prompt = PromptTemplate(
+    input_variables=["question", "answer"],
+    template=template
+)
+llm_chain = LLMChain(llm=llm, prompt=prompt)
+def dynamic_query(question):
+    # first round use graph cypher qa
+    answer = graphchain.invoke(question)
+    
+    if answer['result']:
+        graph_answer=answer['result'][0]
+    else:
+        graph_answer = ''
+    # 格式化输入提示
+    formatted_prompt = prompt.format(question=question,answer=graph_answer)
+    
+    answer = qa_chain.invoke(formatted_prompt)
+    return answer
+response = dynamic_query(q)
+print(response['result'])
+
+response = dynamic_query("数据库")
+print(response['result'])
+
 
 
 
