@@ -12,72 +12,6 @@ tail -f /data/xinference/jqchat.log
 ```
 
 
-
-
-## 还存在的问题
-### GpuStack
-systemctl start gpustack
-systemctl stop gpustack
-systemctl restart gpustack
-systemctl status gpustack
-
-#### 一：Install Server
-服务端：105 【注意要先把vllm等占用GPU的pid杀掉】
-
-安装脚本：curl -sfL https://get.gpustack.ai | sh -s -
-卸载脚本：sudo /var/lib/gpustack/uninstall.sh
-
-
-
-token: cb8bd495f93687ef59ad8768f5e1b05c 【命令：cat /var/lib/gpustack/token】
-WebUI：http://10.1.150.105/用户：admin
-【初始密码：cat /var/lib/gpustack/initial_admin_password】
-修改后的密码：
-Jqkj5350**0
-
-#### 二：Install Worker
-To form a cluster, you can add GPUStack workers on additional nodes. Install GPUStack with the --server-url flag to specify the server' address and the --token flag for worker authenticate.
-
-##### MSI笔记本节点
-```sh
-$env:INSTALL_PACKAGE_SPEC = "gpustack[all]" 
-Invoke-Expression "& { $((Invoke-WebRequest -Uri "https://get.gpustack.ai" -UseBasicParsing).Content) } --server-url http://10.1.150.105 --token cb8bd495f93687ef59ad8768f5e1b05c"
-```
-
-获取MSI上的token命令：
-```
-Get-Content -Path "$env:APPDATA\gpustack\token" -Raw
-```
-卸载：
-```
-Set-ExecutionPolicy Bypass -Scope Process -Force; & "$env:APPDATA\gpustack\uninstall.ps1"
-```
-###### Windows上Vllm后端 [放弃吧，Win不支持]
-为了在Windows上Vllm后端运行模型
-切换到D:
-```
-pipx inject gpustack triton-3.0.0-cp311-cp311-win_amd64.whl
-```
-模型部署时的设置：
-高级选项卡中=》调度方式：自动；放置策略：Spread =》Worker选择器：键 os 值 windows 后端：vllm
-
-###### Llama-box后端
-只有 GGUF format能使用
-
-##### 106服务器节点
-###### 安装
-```
-curl -sfL https://get.gpustack.ai | INSTALL_INDEX_URL=https://pypi.tuna.tsinghua.edu.cn/simple sh -s - --server-url http://10.1.150.105/ --token cb8bd495f93687ef59ad8768f5e1b05c
-```
-###### 运行
-```
-gpustack start | INSTALL_INDEX_URL=https://pypi.tuna.tsinghua.edu.cn/simple
-```
-
-###### 卸载
-```
-sudo /var/lib/gpustack/uninstall.sh
-```
 ## docker代理配置
 ### 创建配置文件
 ```
@@ -168,7 +102,7 @@ https://docs.vllm.ai/en/stable/serving/openai_compatible_server.html#extra-param
 #### Qwen2.5-14B-Instruct-GPTQ-Int4
 2gpu
 ```
-workon xinfer
+workon vllm
 VLLM_USE_MODELSCOPE=True CUDA_VISIBLE_DEVICES=2,3 VLLM_ALLOW_ENGINE_USE_RAY=1 nohup vllm serve /data/models/Qwen2.5-14B-Instruct-GPTQ-Int4 --served-model-name qwen25b14 --enable-auto-tool-choice --tool-call-parser hermes --host 0.0.0.0 --port 9999 --max-model-len 32000 --tensor-parallel-size 2 --distributed-executor-backend ray --use_v2_block_manager --gpu-memory-utilization 0.8 --max-num-seqs 32 --enable-prefix-caching --enable-chunked-prefill >> /data/xinference/vllm14.log 2>&1 &
 tail -f /data/xinference/vllm14.log
 ```
@@ -179,7 +113,7 @@ ps -ef | grep 'vllm serve'
 
 4gpu
 ```
-workon xinfer
+workon vllm
 VLLM_USE_MODELSCOPE=True CUDA_VISIBLE_DEVICES=0,1,2,3 VLLM_ALLOW_ENGINE_USE_RAY=1 nohup vllm serve /data/models/Qwen2.5-14B-Instruct-GPTQ-Int4 --served-model-name qwen25b14 --enable-auto-tool-choice --tool-call-parser hermes --host 0.0.0.0 --port 9999 --max-model-len 32000 --tensor-parallel-size 4 --distributed-executor-backend ray --use_v2_block_manager --gpu-memory-utilization 0.80 --max-num-seqs 32 --enable-prefix-caching --enable-chunked-prefill >> /data/xinference/vllm14.log 2>&1 &
 tail -f /data/xinference/vllm14.log
 ```
@@ -190,13 +124,13 @@ ps -ef | grep 'vllm serve'
 #### Qwen2.5-32B-Instruct-AWQ
 2gpu
 ```
-workon xinfer
+workon vllm
 VLLM_USE_MODELSCOPE=True CUDA_VISIBLE_DEVICES=0,1 VLLM_ALLOW_ENGINE_USE_RAY=1 nohup vllm serve /data/xinference/modelscope/hub/qwen/Qwen2.5-32B-Instruct-AWQ --served-model-name qwen25b70 --enable-auto-tool-choice --tool-call-parser hermes --host 0.0.0.0 --port 9997 --max-model-len 32000 --tensor-parallel-size 2 --distributed-executor-backend ray --use_v2_block_manager --gpu-memory-utilization 0.8 --max-num-seqs 16 --enable-prefix-caching --enable-chunked-prefill >> /data/xinference/vllm.log 2>&1 &
 tail -f /data/xinference/vllm.log
 ```
 4gpu
 ```
-workon xinfer
+workon vllm
 VLLM_USE_MODELSCOPE=True CUDA_VISIBLE_DEVICES=0,1,2,3 VLLM_ALLOW_ENGINE_USE_RAY=1 nohup vllm serve /data/xinference/modelscope/hub/qwen/Qwen2.5-32B-Instruct-AWQ --served-model-name qwen25b70 --enable-auto-tool-choice --tool-call-parser hermes --host 0.0.0.0 --port 9997 --max-model-len 32000 --tensor-parallel-size 4 --distributed-executor-backend ray --use_v2_block_manager --gpu-memory-utilization 0.8 --max-num-seqs 32 --enable-prefix-caching --enable-chunked-prefill >> /data/xinference/vllm.log 2>&1 &
 tail -f /data/xinference/vllm.log
 ```
@@ -208,13 +142,13 @@ ps -ef | grep 'vllm serve'
 #### Qwen2.5-Coder-32B-Instruct-AWQ
 2gpu
 ```
-workon xinfer
+workon vllm
 VLLM_USE_MODELSCOPE=True CUDA_VISIBLE_DEVICES=0,1 VLLM_ALLOW_ENGINE_USE_RAY=1 nohup vllm serve /data/xinference/modelscope/hub/qwen/Qwen2.5-Coder-32B-Instruct-AWQ --served-model-name qwen25b70 --enable-auto-tool-choice --tool-call-parser hermes --host 0.0.0.0 --port 9997 --max-model-len 32000 --tensor-parallel-size 2 --distributed-executor-backend ray --use_v2_block_manager --gpu-memory-utilization 0.8  --max-num-seqs 16 --enable-prefix-caching --enable-chunked-prefill >> /data/xinference/vllm.log 2>&1 &
 tail -f /data/xinference/vllm.log
 ```
 4gpu
 ```
-workon xinfer
+workon vllm
 VLLM_USE_MODELSCOPE=True CUDA_VISIBLE_DEVICES=0,1,2,3 VLLM_ALLOW_ENGINE_USE_RAY=1 nohup vllm serve /data/xinference/modelscope/hub/qwen/Qwen2.5-Coder-32B-Instruct-AWQ --served-model-name qwen25b70 --enable-auto-tool-choice --tool-call-parser hermes --host 0.0.0.0 --port 9997 --max-model-len 32000 --tensor-parallel-size 4 --distributed-executor-backend ray --use_v2_block_manager --gpu-memory-utilization 0.8 --max-num-seqs 32 --enable-prefix-caching --enable-chunked-prefill >> /data/xinference/vllm.log 2>&1 &
 tail -f /data/xinference/vllm.log
 ```
@@ -223,14 +157,14 @@ tail -f /data/xinference/vllm.log
 
 #### Qwen2.5-72B-Instruct-AWQ
 ```
-workon xinfer
+workon vllm
 VLLM_USE_MODELSCOPE=True CUDA_VISIBLE_DEVICES=0,1,2,3 VLLM_ALLOW_ENGINE_USE_RAY=1 nohup vllm serve /data/xinference/modelscope/hub/qwen/Qwen2.5-72B-Instruct-AWQ --served-model-name qwen25b70 --enable-auto-tool-choice --tool-call-parser hermes --host 0.0.0.0 --port 9997 --max-model-len 32000 --tensor-parallel-size 4 --distributed-executor-backend ray --use_v2_block_manager --gpu-memory-utilization 0.85 --max-num-seqs 16 --enable-prefix-caching --enable-chunked-prefill >> /data/xinference/vllm.log 2>&1 &
 tail -f /data/xinference/vllm.log
 
 ```
 #### Meta-Llama-3.3-70B-Instruct-AWQ-INT4
 ```
-workon xinfer
+workon vllm
 VLLM_USE_MODELSCOPE=True CUDA_VISIBLE_DEVICES=0,1,2,3 VLLM_ALLOW_ENGINE_USE_RAY=1 nohup vllm serve /data/models/Meta-Llama-3.3-70B-Instruct-AWQ-INT4 --served-model-name qwen25b70 --enable-auto-tool-choice --tool-call-parser llama3_json --chat-template /data/models/Meta-Llama-3.3-70B-Instruct-AWQ-INT4/tool_chat_template_llama3.2_json.jinja --host 0.0.0.0 --port 9997 --max-model-len 12000 --tensor-parallel-size 4 --distributed-executor-backend ray --use_v2_block_manager --gpu-memory-utilization 0.85 --max-num-seqs 4 --enable-prefix-caching --enable-chunked-prefill --disable-frontend-multiprocessing --enforce-eager >> /data/xinference/vllm.log 2>&1 &
 tail -f /data/xinference/vllm.log
 ```
@@ -241,12 +175,12 @@ https://github.com/QwenLM/Qwen2.5/blob/c7871179500a0ea688c97b0f6656dd6e8a28b555/
 模型有更新，需重新下载
   https://www.modelscope.cn/models/tclf90/qwen2.5-72b-instruct-gptq-int4
 ```
-workon xinfer 
+workon vllm 
 VLLM_ALLOW_ENGINE_USE_RAY=1 vllm serve  /data/models/Qwen2.5-14B-Instruct-GPTQ-Int4/ --served-model-name qwen25b70 --enable-auto-tool-choice --tool-call-parser hermes --host 0.0.0.0 --port 9997 --max-model-len 32000 --tensor-parallel-size 1 --distributed-executor-backend ray --use_v2_block_manager --gpu-memory-utilization 0.95 --quantization gptq_marlin
 ```
 
 ```
-workon xinfer
+workon vllm
 VLLM_USE_MODELSCOPE=True CUDA_VISIBLE_DEVICES=0,1,2,3 VLLM_ALLOW_ENGINE_USE_RAY=1 nohup vllm serve /data/models/Qwen2.5-72B-Instruct-GPTQ-Int4/ --served-model-name qwen25b70 --enable-auto-tool-choice --tool-call-parser hermes --host 0.0.0.0 --port 9997 --max-model-len 32000 --tensor-parallel-size 4 --distributed-executor-backend ray --use_v2_block_manager --gpu-memory-utilization 0.90 --quantization gptq_marlin >> /data/xinference/vllm.log 2>&1 &
 tail -f /data/xinference/vllm.log
 ```
@@ -271,7 +205,7 @@ ollama run wangshenzhi/llama3.1_70b_chinese_chat
 
 运行 xinference 框架服务
 ```
-workon xinfer
+workon vllm
 nohup xinference-local -H 0.0.0.0 --log-level debug  >> /data/xinference/xinfer.log 2>&1 & 
 tail -f /data/xinference/xinfer.log
 ```
@@ -653,6 +587,9 @@ https://developer.aliyun.com/article/1611770 GraphRAG：基于PolarDB+通义千�
 docker pull polardb/polardb_pg_local_instance:15
 docker run -it --cap-add=SYS_PTRACE --privileged=true --rm polardb/polardb_pg_local_instance:15 psql
 ```
+### postgresql配置文件位置
+/var/polardb/primary_datadir/postgresql.conf
+
 ### 初始化数据库
 docker run -it --rm \
     --cap-add=SYS_PTRACE --privileged=true \
@@ -682,16 +619,63 @@ docker run -d \
     make install
 ```
 
+### Zhparser
+#### 1.安装SCWS
+```
+cd ~
+wget -q -O - http://www.xunsearch.com/scws/down/scws-1.2.3.tar.bz2 | tar xjf -
+cd scws-1.2.3 ; ./configure ; sudo make install
+```
+
+#### 2.安装Zhparser
+```
+cd ~
+git clone https://github.com/amutu/zhparser.git
+cd zhparser
+make && make install
+```
+
 ```psql
     psql
     CREATE EXTENSION age;
     CREATE EXTENSION vector;
     CREATE EXTENSION pg_jieba;
+    CREATE EXTENSION zhparser;
+    CREATE TEXT SEARCH CONFIGURATION zhparsercfg (PARSER = zhparser);
+    ALTER TEXT SEARCH CONFIGURATION zhparsercfg ADD MAPPING FOR n,v,a,i,e,l WITH simple;
+    CREATE TEXT SEARCH CONFIGURATION zhparser (PARSER = zhparser);
+    ALTER TEXT SEARCH CONFIGURATION zhparser ADD MAPPING FOR n,v,a,i,e,l WITH simple;
+```
+
+### 修改配置文件\var\polardb\primary_datadir\postgresql.conf
+default_text_search_config='zhparsercfg' 
+shared_preload_libraries = 'zhparser.so'
+shared_preload_libraries ='zhparser.so,\$libdir/polar_vfs,\$libdir/polar_io_stat,\$libdir/polar_monitor_preload,\$libdir/polar_worker'
+
+
+### 测试
+```psql
+show default_text_search_config;
+show shared_preload_libraries;
+SELECT * FROM ts_parse('zhparser', 'hello world! 2010年保障房建设在全国范围内获全面启动，从中央到地方纷纷加大 了保障房的建设和投入力度 。2011年，保障房进入了更大规模的建设阶段。住房城乡建设部党组书记、部长姜伟新去年底在全国住房城乡建设工作会议上表示，要继续推进保障性安居工程建设。');
+
+SELECT to_tsvector('zhparsercfg','“今年保障房新开工数量虽然有所下调，但实际的年度在建规模以及竣工规模会超以往年份，相对应的对资金的需求也会创历>史纪录。”陈国强说。在他看来，与2011年相比，2012年的保障房建设在资金配套上的压力将更为严峻。');
+SELECT to_tsvector('zhparser','“今年保障房新开工数量虽然有所下调，但实际的年度在建规模以及竣工规模会超以往年份，相对应的对资金的需求也会创历>史纪录。”陈国强说。在他看来，与2011年相比，2012年的保障房建设在资金配套上的压力将更为严峻。');
+SELECT to_tsquery('zhparsercfg', '保障房资金压力');
+SELECT to_tsquery('保障房资金压力');
+SELECT to_tsvector('“今年保障房新开工数量虽然有所下调，但实际的年度在建规模以及竣工规模会超以往年份，相对应的对资金的需求也会创历>史纪录。”陈国强说。在他看来，与2011年相比，2012年的保障房建设在资金配套上的压力将更为严峻。');
+
+SELECT to_tsquery('zhparsercfg', 'CREATE EXTENSION vector'); #会报错
+SELECT plainto_tsquery('zhparsercfg', 'CREATE EXTENSION vector');
+SELECT plainto_tsquery('CREATE EXTENSION vector');
+SELECT plainto_tsquery('english', 'The Fat Rats');
+SELECT plainto_tsquery('The Fat Rats');
 ```
 
 ### 保存修改后的容器
 docker ps
 docker commit c0970e749db9 polardb15_vector_age_zh:v1.0
+docker commit 7da980b5741c polardb15_vector_age_zh:v1.1
 
 
 ### 运行修改后的容器
@@ -702,7 +686,7 @@ docker run -d \
     --env POLARDB_PASSWORD=langchain \
     --env POLARDB_DB=postgres \
     -p 6022:5432 \
-    polardb15_vector_age_zh:v1.0
+    polardb15_vector_age_zh:v1.1
 
 ## postgres: pg_vector_age_graph
 
@@ -926,7 +910,7 @@ python -m vllm.entrypoints.openai.api_server --served-model-name qwen2-instruct 
 "WEB_SEARCH\nThe current weather in San Francisco (SF) is 13°C with overcast clouds. In Los Angeles (LA), the weather is 21°C with clear skies. Please note that these conditions can change, so it's best to check a weather service for the most up-to-date information."
 
 
-workon xinfer
+workon vllm
 vllm serve /data/xinference/cache/mistral-large-instruct-gptq-123b --model TechxGenus/Mistral-Large-Instruct-2407-GPTQ  --tensor-parallel-size 4  --gpu-memory-utilization 0.98 --max_model_len 3000 --quantization gptq_marlin --enforce-eager --served-model-name mistral qwen2-instruct --port 9999 --api-key abc123
 能跑起来，但应用到项目中，存在很多问题
 #### Mistral-large

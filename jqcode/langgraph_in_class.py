@@ -455,7 +455,7 @@ default_index_description = "向量库/知识库工具(vectorstore/knowledge bas
 class GraphAgent:
     def __init__(self,executable_tools:list=executable_tools, routing_tools_wrapped_in_class:list=route_tools, 
                  llm_model:ChatOpenAI=None,chat_on_docs_list:List[str]=None,add_docs_list_to_kb:bool=True, 
-                 allow_conversation_memory=False,allow_question_rewrite = False,
+                 allow_conversation_memory=False,allow_question_rewrite = True,
                  kb_base_dict:dict={"index_name": 'default', "description":default_index_description}, 
                  recursion_limit:int=25, memory_thread_id:str=shortuuid.uuid()) -> None:
         
@@ -1527,7 +1527,7 @@ class GraphAgent:
         self.question_rewrited = user_question      # 后面会使用self.question_rewrited提交给大模型，就要确保self.question_rewrited有值
         self.message_idx_in_a_question_epoch = -1   # 新的question epoch/session,重新设置idx       
         
-        logger.warning(f"此处默认改写问题设置为{self.allow_question_rewrite=}，但实际需要获取用户是否运行改写的设置") 
+        logger.warning(f"用户改写问题设置为{self.allow_question_rewrite=}") 
         allow_question_rewrite = self.allow_question_rewrite       
         if allow_question_rewrite:
             # 在重写时获取的最近的历史消息列表可以长一些，因为有些历史消息相关性不强，但能提供有用的上下文信息，并且获得的related_history_messages仅用于此次计算，不会真正附加到消息列表中
@@ -1621,11 +1621,12 @@ if __name__ == "__main__":
         "请搜索网络然后回答问题：What is the weather in SF and LA? ",
         "Who won the super bowl in 2024? In what state is the winning team headquarters located?What is the GDP of that state? ",
         "还记得我的名字吗？",
-        "请将下面的内容：序号,文件名称,文号 1,《关于研究智慧民政和智慧市政建设工作的纪要》,厦门市人民政府专题会议纪要〔2020〕285号 2,《关于进一步推进儿童福利机构优化提质和创新转型高质量发展的意见》,民发〔2021〕44号 3,《民政部办公厅关于印发〈金民工程一期项目试点工作方案〉的通知》,民办函〔2019〕108号 4,《中共中央关于制定国民经济和社会发展第十四个五年规划和二〇三五年远景目标的建议》, 5,《国务院办公厅关于推进养老服务发展的意见》,国办发〔2019〕5号 6,《民政部关于进一步扩大养老服务供给促进养老服务消费的实施意见》,民发〔2019〕88号 7,《国务院扶贫开发领导小组关于建立防止返贫监测和帮扶机制的指导意见》,国开发〔2020〕6号 8,《国务院关于国家基本公共服务标准（2 0 2 1 年 版 ） 的 批 复 》 , 国 函 〔 2 0 2 1 〕 2 0 号 9,《福建省促进电子证照应用管理暂行办法》,闽政办[2017]74号 10,厦门市人民政府办公厅关于进一步深化“互联网+政务服务”推进政务服务“一网、一门、一次”改革工作的通知,厦府办〔2018〕194号 11,《厦门市“十三五”民政事业发展专项规划（2016-2020）》, 12,厦门市城乡社区服务体系建设规划（2016-2020年）, 13,《关于加强和完善城乡社区治理的实施意见》,厦委发〔2018〕7号 转换为表格，使用python生成csv文件并提供下载地址"
+        "请将下面的内容：序号,文件名称,文号 1,《关于研究智慧民政和智慧市政建设工作的纪要》,厦门市人民政府专题会议纪要〔2020〕285号 2,《关于进一步推进儿童福利机构优化提质和创新转型高质量发展的意见》,民发〔2021〕44号 3,《民政部办公厅关于印发〈金民工程一期项目试点工作方案〉的通知》,民办函〔2019〕108号 4,《中共中央关于制定国民经济和社会发展第十四个五年规划和二〇三五年远景目标的建议》, 5,《国务院办公厅关于推进养老服务发展的意见》,国办发〔2019〕5号 6,《民政部关于进一步扩大养老服务供给促进养老服务消费的实施意见》,民发〔2019〕88号 7,《国务院扶贫开发领导小组关于建立防止返贫监测和帮扶机制的指导意见》,国开发〔2020〕6号 8,《国务院关于国家基本公共服务标准（2 0 2 1 年 版 ） 的 批 复 》 , 国 函 〔 2 0 2 1 〕 2 0 号 9,《福建省促进电子证照应用管理暂行办法》,闽政办[2017]74号 10,厦门市人民政府办公厅关于进一步深化“互联网+政务服务”推进政务服务“一网、一门、一次”改革工作的通知,厦府办〔2018〕194号 11,《厦门市“十三五”民政事业发展专项规划（2016-2020）》, 12,厦门市城乡社区服务体系建设规划（2016-2020年）, 13,《关于加强和完善城乡社区治理的实施意见》,厦委发〔2018〕7号 转换为表格，使用python生成csv文件并提供下载地址",
+        '我现在的位置是在安徽晶奇网络科技股份有限公司附近，请查询15公里范围内的养老机构，最多返回10个'
     ]
 
-    user_questions = ['请调用工具函数帮我查询：我现在的位置是在安徽晶奇网络科技股份有限公司附近，请查询15公里范围内的养老机构，最多返回10个']
-    user_questions = ['我现在的位置是在安徽晶奇网络科技股份有限公司附近，请查询15公里范围内的养老机构，最多返回10个']
+    # user_questions = ['请调用工具函数帮我查询：我现在的位置是在安徽晶奇网络科技股份有限公司附近，请查询15公里范围内的养老机构，最多返回10个']
+    # user_questions = ['我现在的位置是在安徽晶奇网络科技股份有限公司附近，请查询15公里范围内的养老机构，最多返回10个']
     my_main_bot = GraphAgent(executable_tools=executable_tools,routing_tools_wrapped_in_class=route_tools)
 
     for user_question in user_questions:
