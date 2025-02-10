@@ -1,3 +1,6 @@
+max_model_len 8000
+enable_auto_tool_choice true
+tool_call_parser hermes
 ## 运行脚本
 ```
 workon test
@@ -11,6 +14,15 @@ tail -f /data/xinference/jqchat.log
     sudo lsof -i :5011
 ```
 
+## SGLang qwen2.5-32b-instruct-gptq-int4
+```
+workon sl
+python -m sglang_router.launch_server --model-path tclf90/qwen2.5-32b-instruct-gptq-int4 --host 0.0.0.0 --port 9997 --tool-call-parser qwen25 --dp 2 --tp 2 --enable-p2p-check --log_level debug --enable_mixed_chunk --max_running_requests 32 --served_model_name qwen25b70
+```
+```
+workon sl
+python -m sglang_router.launch_server --model-path /data/xinference/modelscope/hub/qwen/Qwen2.5-32B-Instruct-AWQ --host 0.0.0.0 --port 9997 --tool-call-parser qwen25 --dp 2 --tp 2 --enable-p2p-check --log-level debug --enable-mixed-chunk --max-running-requests 32 --served-model-name qwen25b70
+```
 
 ## docker代理配置
 ### 创建配置文件
@@ -121,6 +133,13 @@ tail -f /data/xinference/vllm14.log
 nvidia-smi
 ps -ef | grep 'vllm serve'
 ```
+#### qwen2.5-32b-instruct-gptq-int4 (VLLM_USE_V1=1)
+```
+workon vllm
+RAY_CGRAPH_get_timeout=60 TORCH_CUDA_ARCH_LIST="8.9+PTX" VLLM_USE_V1=1 VLLM_USE_MODELSCOPE=True CUDA_VISIBLE_DEVICES=0,1,2,3 VLLM_ALLOW_ENGINE_USE_RAY=1 nohup vllm serve /root/.cache/modelscope/hub/tclf90/qwen2.5-32b-instruct-gptq-int4 --served-model-name qwen25b70 --enable-auto-tool-choice --tool-call-parser hermes --host 0.0.0.0 --port 9997 --max-model-len 32000 --tensor-parallel-size 4 --distributed-executor-backend ray --use_v2_block_manager --gpu-memory-utilization 0.8 --max-num-seqs 32 --enable-prefix-caching --enable-chunked-prefill >> /data/xinference/vllm.log 2>&1 &
+tail -f /data/xinference/vllm.log
+```
+
 #### Qwen2.5-32B-Instruct-AWQ
 2gpu
 ```
@@ -134,6 +153,14 @@ workon vllm
 VLLM_USE_MODELSCOPE=True CUDA_VISIBLE_DEVICES=0,1,2,3 VLLM_ALLOW_ENGINE_USE_RAY=1 nohup vllm serve /data/xinference/modelscope/hub/qwen/Qwen2.5-32B-Instruct-AWQ --served-model-name qwen25b70 --enable-auto-tool-choice --tool-call-parser hermes --host 0.0.0.0 --port 9997 --max-model-len 32000 --tensor-parallel-size 4 --distributed-executor-backend ray --use_v2_block_manager --gpu-memory-utilization 0.8 --max-num-seqs 32 --enable-prefix-caching --enable-chunked-prefill >> /data/xinference/vllm.log 2>&1 &
 tail -f /data/xinference/vllm.log
 ```
+2*2gpu
+```
+workon vllm
+VLLM_USE_MODELSCOPE=True CUDA_VISIBLE_DEVICES=0,1,2,3 VLLM_ALLOW_ENGINE_USE_RAY=1 nohup vllm serve /data/xinference/modelscope/hub/qwen/Qwen2.5-32B-Instruct-AWQ --served-model-name qwen25b70 --enable-auto-tool-choice --tool-call-parser hermes --host 0.0.0.0 --port 9997 --max-model-len 32000 --tensor-parallel-size 2 --pipeline-parallel-size 2 --distributed-executor-backend ray --use_v2_block_manager --gpu-memory-utilization 0.8 --max-num-seqs 32 --enable-prefix-caching --enable-chunked-prefill >> /data/xinference/vllm.log 2>&1 &
+tail -f /data/xinference/vllm.log
+```
+
+
 ```
 nvidia-smi
 ps -ef | grep 'vllm serve'
