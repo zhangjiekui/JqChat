@@ -192,7 +192,7 @@ def get_search_result_links(query):
         return []
 
 @func_set_timeout(timeout_value)
-def get_webpages_texts_by_langchain_document_loader_from_urls(urls,document_loader_class=AsyncHtmlLoader, max_doc_nums=4):
+def get_webpages_texts_by_langchain_document_loader_from_urls(urls,document_loader_class=WebBaseLoader, max_doc_nums=4):
     if document_loader_class==NewsURLLoader:
         loader = document_loader_class(urls,text_mode=True,nlp=True,continue_on_failure=True)
         docs = loader.load()
@@ -200,7 +200,8 @@ def get_webpages_texts_by_langchain_document_loader_from_urls(urls,document_load
         loader = document_loader_class(urls,autoset_encoding=True,requests_kwargs ={'verify':False},verify_ssl=False,requests_per_second=max_doc_nums,raise_for_status=False,continue_on_failure=True)
         docs = loader.load()
     elif document_loader_class==AsyncHtmlLoader:
-        loader = document_loader_class(urls,autoset_encoding=True,requests_kwargs ={'verify':False},verify_ssl=False,requests_per_second=max_doc_nums,raise_for_status=False,ignore_load_errors=True)
+        # loader = document_loader_class(urls,autoset_encoding=True,requests_kwargs ={'verify':False},verify_ssl=False,requests_per_second=max_doc_nums,raise_for_status=False,ignore_load_errors=True)
+        loader = document_loader_class(urls,autoset_encoding=True,verify_ssl=False,requests_per_second=max_doc_nums,raise_for_status=False,ignore_load_errors=True)
         docs = loader.load()
     elif document_loader_class==SeleniumURLLoader:
         loader = document_loader_class(urls)

@@ -768,6 +768,47 @@ class GraphAgent:
             print(f"not supported: {generation=}")
             return "not supported" # todo
 
+
+    # async def jq_search_agent(self,query:str):
+    def jq_search_agent(self,query:str):
+        import os
+        from langchain.chat_models import init_chat_model
+        from langchain_community.tools import TavilySearchResults
+        from langchain_core.tools import Tool
+        from langgraph.prebuilt import create_react_agent
+        from jqcode.jq_agent.tools.jq_web_search_engine import get_web_search_documents as search
+        from jqcode.jq_agent.tools.jq_web_search_engine_async import get_web_search_documents as async_search
+
+        tool1 = Tool(
+            name="JqSearchEngineTool",
+            description="Comprehensive Jq Search Engine for recent results from web.",
+            func=search,
+            coroutine = async_search,
+            # func=asyncio.run(search),
+        )
+
+        tool2 = TavilySearchResults(
+            max_results=5,
+            search_depth="advanced",
+            include_answer=True,
+            include_raw_content=True,
+            include_images=True,
+            # include_domains=[...],
+            # exclude_domains=[...],
+            # name="...",            # overwrite default tool name
+            # description="...",     # overwrite default tool description
+            # args_schema=...,       # overwrite default args_schema: BaseModel
+        )
+
+        tools = [tool1,tool2]
+        system_message = "你是一个搜索专家，请根据用户问题自行决定如何进行必要的分解，并持续搜索直到获得满意的答案。使用的语言与用户提问的语言保持一致，默认使用中文"
+        agent = create_react_agent(model=env_models_instance.chat_model,tools=tools, state_modifier=system_message, debug=True)
+        messages_dict = agent.invoke({"messages": [("user", query)]})
+        # messages_dict = await agent.ainvoke({"messages": [("user", query)]})
+        messages=messages_dict.get('messages',[])
+        return messages
+
+
     def web_search(self,state:GraphAgentState):
         """
         Web search based on the re-phrased question.
@@ -780,34 +821,52 @@ class GraphAgent:
         """
         print("---WEB SEARCH---")
         query_generated = ''
-        question = state["question"]    
-        try:
-            user_variables_statedict = state["user_variables"]
-            query_generated = user_variables_statedict[self.user_id]['rag_args']
-            # 再将"rag_args"的值置为空字符串
-            _user_variables_statedict = {self.user_id:{"rag_args":'',"reference":""}}
-            state["user_variables"].update(_user_variables_statedict)
-        except:
-            pass
-        finally:
-            if not query_generated:
-                try:
-                    query_generated = llm_chain.invoke({"question": question,"context":'请生成合适并且简洁的搜索引擎查询关键词,不需要任何额外的解释或内容'},config=invoke_llm_config)
-                except:
-                    query_generated = question
-        logger.info(f'用户问题：{question=}')
-        logger.info(f'网络搜索：{query_generated=}')
+        question = state["question"]
+        # 先使用agent,可以解决复杂搜索问题（需分解搜索多个子问题的情况）
+        messages = self.jq_search_agent(question)
+        docs=[]
+        for message in messages:
+            if isinstance(message,ToolMessage):
+                _docs = eval(message.content)
+                docs.extend(_docs)
+        # 如果agent未得到正确答案
+        if not docs:
+            try:
+                user_variables_statedict = state["user_variables"]
+                query_generated = user_variables_statedict[self.user_id]['rag_args']
+                # 再将"rag_args"的值置为空字符串
+                _user_variables_statedict = {self.user_id:{"rag_args":'',"reference":""}}
+                state["user_variables"].update(_user_variables_statedict)
+            except:
+                pass
+            finally:
+                if not query_generated:
+                    try:
+                        query_generated = llm_chain.invoke({"question": question,"context":'请生成合适并且简洁的搜索引擎查询关键词,不需要任何额外的解释或内容'},config=invoke_llm_config)
+                    except:
+                        query_generated = question
+            logger.info(f'用户问题：{question=}')
+            logger.info(f'网络搜索：{query_generated=}')
 
 
-        # Web search
-        docs = asyncio.run(get_web_search_documents(question,query_generated,max_doc_nums=6))
+            # Web search
+            docs = asyncio.run(get_web_search_documents(question,query_generated,max_doc_nums=6))
+
+
+        # print(docs)
+
+
+
         if not docs:
             return {"documents": [], "question_searched":{question:False}}
-        
-        if docs[0].metadata.get("search_engine",None)!="tavily_search":
-            chunks_relevant = env_models_instance.split_and_get_chunks_relevant_from_documents(query=question,docs_list=docs,) #get embedding retriever and reranker results
-        else:
-            chunks_relevant = docs 
+        try:
+            if docs[0].metadata.get("search_engine",None)!="tavily_search":
+                chunks_relevant = env_models_instance.split_and_get_chunks_relevant_from_documents(query=question,docs_list=docs,) #get embedding retriever and reranker results
+            else:
+                chunks_relevant = docs
+        except:
+             chunks_relevant = docs
+
         referens = []
         if chunks_relevant:
             _sources =[d.metadata.get("source_kb",None) or d.metadata.get("source",None) for d in chunks_relevant]
@@ -1627,6 +1686,10 @@ if __name__ == "__main__":
 
     # user_questions = ['请调用工具函数帮我查询：我现在的位置是在安徽晶奇网络科技股份有限公司附近，请查询15公里范围内的养老机构，最多返回10个']
     # user_questions = ['我现在的位置是在安徽晶奇网络科技股份有限公司附近，请查询15公里范围内的养老机构，最多返回10个']
+    user_questions = ["Who won the super bowl in 2024? In what state is the winning team headquarters located?What is the GDP of that state? ","2024年安徽省会城市的GDP是多少? "]
+
+
+    
     my_main_bot = GraphAgent(executable_tools=executable_tools,routing_tools_wrapped_in_class=route_tools)
 
     for user_question in user_questions:
