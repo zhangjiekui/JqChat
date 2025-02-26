@@ -829,7 +829,8 @@ class GraphAgent:
             if isinstance(message,ToolMessage):
                 _docs = eval(message.content)
                 docs.extend(_docs)
-        # 如果agent未得到正确答案
+        
+        # 如果agent未得到正确答案，再调用自己的Web search：get_web_search_documents
         if not docs:
             try:
                 user_variables_statedict = state["user_variables"]
@@ -850,7 +851,7 @@ class GraphAgent:
 
 
             # Web search
-            docs = asyncio.run(get_web_search_documents(question,query_generated,max_doc_nums=6))
+            docs = asyncio.run(get_web_search_documents(question,query_generated,max_doc_nums=8))
 
 
         # print(docs)
@@ -869,8 +870,12 @@ class GraphAgent:
 
         referens = []
         if chunks_relevant:
-            _sources =[d.metadata.get("source_kb",None) or d.metadata.get("source",None) for d in chunks_relevant]
-            referens = set([s for s in _sources if s])
+            try:
+                _sources =[d.metadata.get("source_kb",None) or d.metadata.get("source",None) for d in chunks_relevant]
+                referens = set([s for s in _sources if s])
+            except:
+                print(chunks_relevant)
+                pass
 
         if referens:
             referens_str = "#### 参考网页:  \n"
@@ -1686,7 +1691,7 @@ if __name__ == "__main__":
 
     # user_questions = ['请调用工具函数帮我查询：我现在的位置是在安徽晶奇网络科技股份有限公司附近，请查询15公里范围内的养老机构，最多返回10个']
     # user_questions = ['我现在的位置是在安徽晶奇网络科技股份有限公司附近，请查询15公里范围内的养老机构，最多返回10个']
-    user_questions = ["Who won the super bowl in 2024? In what state is the winning team headquarters located?What is the GDP of that state? ","2024年安徽省会城市的GDP是多少? "]
+    user_questions = ["请搜索网络然后回答问题：What is the weather in SF and LA?","Who won the super bowl in 2024? In what state is the winning team headquarters located?What is the GDP of that state? ","2024年安徽省会城市的GDP是多少? "]
 
 
     

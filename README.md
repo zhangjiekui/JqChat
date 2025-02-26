@@ -14,8 +14,12 @@ RAY_CGRAPH_get_timeout=60 TORCH_CUDA_ARCH_LIST="8.9+PTX" VLLM_USE_V1=1 VLLM_USE_
 tail -f /root/JqLogs/vllm.log
 
 ### 启动Ktransformers DeepSeek-R1-Q4_K_M （on GPU 0）:
-workon torch26cu126
- PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True USE_NUMA=1 nohup python /root/ktransformers-0.2.1.post1/ktransformers/server/main.py --gguf_path /data/models/DeepSeek-R1-Q4_K_M_ollama_gguf/ --model_path deepseek-ai/DeepSeek-R1 --model_name DeepSeekR1 --cpu_infer 40 --max_new_tokens 8192 --cache_lens 32768 --total_context 32768 --cache_q4 true --temperature 0.6 --top_p 0.95 --host 0.0.0.0 --port 8080 >> //root/JqLogs/kt.log 2>&1 &
+#### local chat mode
+TORCH_CUDA_ARCH_LIST="8.9+PTX" python -m ktransformers.local_chat --gguf_path /data/models/DeepSeek-R1-Q4_K_M_ollama_gguf/ --model_path deepseek-ai/DeepSeek-R1 --max_new_tokens 8192 --cache_lens 32768 --total_context 32768 --cache_q4 true --temperature 0.6 --top_p 0.95 --force_think
+
+#### server api mode
+ workon torch26cu126
+ TORCH_CUDA_ARCH_LIST="8.9+PTX" PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True nohup ktransformers --gguf_path /data/models/DeepSeek-R1-Q4_K_M_ollama_gguf/ --model_path deepseek-ai/DeepSeek-R1 --model_name DeepSeekR1 --cpu_infer 40 --max_new_tokens 8192 --cache_lens 32768 --total_context 32768 --cache_q4 true --temperature 0.6 --top_p 0.95 --force_think --host 0.0.0.0 --port 8080 >> //root/JqLogs/kt.log 2>&1 &
  tail -f /root/JqLogs/kt.log
 
 ### 启动JqChat应用程序:
