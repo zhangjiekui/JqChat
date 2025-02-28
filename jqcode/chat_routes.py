@@ -12,7 +12,9 @@ from langchain_core.messages import ToolMessage
 from jqcode.langgraph_in_class import GraphAgent,display_code, display_text
 from jqcode.jq_docstores.backend_docstore_utils.jq_es_metastores import JqElasticsearchUniMetaStore
 from jqcode.jq_docstores.jq_es_client import JqEsClient
-
+from jqcode.jq_knowledge_manegement.chatchat.server.knowledge_base.kb_service.base import (
+    get_kb_details,
+)
 from jqcode.jq_utils.logger import jqkj_logger
 logger = jqkj_logger(__file__).get_logger()
 metastore = JqElasticsearchUniMetaStore()
@@ -144,6 +146,10 @@ async def upload_file(
 
     return JSONResponse(content={'message': f'上传成功',"files":ids}, status_code=200)
 
+@chat_router.post('/knowledges',summary="知识库列表")
+def knowledges(query: str = Body(alias="query",description="查询字符串"),):
+    kb_list = {x["kb_name"]: x for x in get_kb_details()}
+    return JSONResponse(content=kb_list, status_code=200)
 
 KERNEL_API_BASE = os.getenv("KERNEL_API_BASE",'http://localhost')
 API_PORT = os.getenv("API_PORT",5011)
