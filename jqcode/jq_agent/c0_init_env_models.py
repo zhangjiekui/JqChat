@@ -20,6 +20,7 @@ from langchain.callbacks.manager import Callbacks
 import langchain
 langchain.verbose = False
 
+from openai import OpenAI
 from langchain_openai import ChatOpenAI
 from BCEmbedding.tools.langchain import BCERerank
 from sentence_transformers import SentenceTransformer
@@ -85,6 +86,79 @@ os.environ['LANGCHAIN_PROJECT']= 'JqChat'
 
 def _add_scores_before_page_content(d:Document):
     d.page_content = f'[relevance_score_retriever={d.metadata.get("relevance_score_retriever",0)},relevance_score_reranker={d.metadata.get("relevance_score_reranker",0)}]{d.page_content}'
+
+class Vlm_API:
+    '''
+    https://github.com/QwenLM/Qwen2.5-VL
+    "Qwen/Qwen2.5-VL-7B-Instruct"
+    '''
+    def __init__(self,api_base:str = "http://10.1.150.105:8000/v1",api_key:str='abc123',model:str="qwenvl"):
+        self.api_base = api_base
+        self.api_key = api_key
+        self.model=model
+        self.client = OpenAI(api_key=api_key,base_url=api_base)
+        self.default_prompt = '首先识别出有意义的区块，然后逐个区块完整识别并仅输出图中的文字（相当于ocr，但去掉不必要的换行符），不能遗漏，同一区块的文字内容放在一起。最后仅输出完整的文本，不要有任何额外的内容和解释。'
+    
+    def __call__(self,image_path_or_base64:str,query:str=None,only_return_text=True):
+        ## 如果是图片地址，读取图片并转换为base64
+        if not query:
+            query = self.default_prompt
+        if isinstance(image_path_or_base64,str): 
+            if os.path.isfile(image_path_or_base64):
+                with open(image_path_or_base64, 'rb') as f:
+                    image_path_or_base64 = f.read()
+            else:
+                raise Exception(f"{image_path_or_base64}文件不存在！")
+        elif isinstance(image_path_or_base64, bytes):
+            pass
+        else:
+            raise Exception(f"目前只接受str或bytes类型的参数，不支持：{type(image_path_or_base64)=}")               
+        encoded_data = base64.b64encode(image_path_or_base64)
+        encoded_image_text = encoded_data.decode('utf-8')
+        base64_qwen = f"data:image;base64,{encoded_image_text}"
+
+        try:
+            chat_response = self.client.chat.completions.create(
+                model=self.model,
+                messages=[
+                            {"role": "system", "content": "You are a helpful assistant."},
+                            {
+                                "role": "user",
+                                "content": [
+                                    {
+                                        "type": "image_url",
+                                        "image_url": {
+                                            "url": base64_qwen
+                                        },
+                                    },
+                                    {"type": "text", "text": query},
+                                ],
+                            },
+                            ],
+                        )  
+            logger.info(f"Chat response:\n{chat_response}")
+            if only_return_text:
+                return chat_response.choices[0].message.content
+            else:
+                return chat_response
+             
+        except Exception as e:
+            logger.error(f"请求错误: {str(e)}")
+            return ''
+
+vlm= Vlm_API()
+# r1=vlm(image_path_or_base64='/data/projects/JqChatV2/JqChat/ocr.png',
+#        query='首先识别出有意义的区块，然后逐个区块完整识别并仅输出图中的文字（相当于ocr，但去掉不必要的换行符），不能遗漏，同一区块的文字内容放在一起。最后仅输出完整的纯文本内容，不要有任何额外的解释、格式等。',
+#        only_return_text=False)     
+# print(r1)
+# print(r1.choices[0].message.content)
+
+
+r2 = vlm(image_path_or_base64='/data/projects/JqChatV2/JqChat/ocr.png')
+print(r2)
+
+
+
 
 class Ocr_API:
     def __init__(self,server_url:str = "http://10.1.150.106:5566/api/ocr"):

@@ -1,26 +1,73 @@
+首先识别出有意义的区块，然后逐个区块完整识别并仅输出图中的文字（相当于ocr，但去掉不必要的换行符），不能遗漏，同一区块的文字内容放在一起。最后仅输出完整的文字内容。
+
 max_model_len 8000
 enable_auto_tool_choice true
 tool_call_parser hermes
 
+workon py311
+CUDA_VISIBLE_DEVICES=0 python -m olmocr.pipeline --model /data/models/allenai/olmOCR-7B-0225-preview ./localworkspace --pdfs /root/newgit/olmocr/*.pdf
 
 
 
+sudo add-apt-repository ppa:deadsnakes/ppa
+sudo apt-get update
+sudo apt install python3.11 python3.12 python3.13
+<!-- apt --fix-broken install -->
+mkvirtualenv --python=/usr/bin/python3.11 py311
+<!-- pip install virtualenvwrapper -->
+
+sudo apt-get install ttf-mscorefonts-installer
 
 ## 运行脚本
-
+ enforce_eager=False, kv_cache_dtype=auto,  device_config=cuda, decoding_config=DecodingConfig(guided_decoding_backend='xgrammar'), observability_config=ObservabilityConfig(otlp_traces_endpoint=None, collect_model_forward_time=False, collect_model_execute_time=False), seed=0, served_model_name=qwenvl, num_scheduler_steps=1, multi_step_stream_outputs=True, enable_prefix_caching=False, chunked_prefill_enabled=False,
 ### 启动Qwen32 AWQ （on GPU 2,3）:
 workon vllm
-RAY_CGRAPH_get_timeout=60 TORCH_CUDA_ARCH_LIST="8.9+PTX" VLLM_USE_V1=1 VLLM_USE_MODELSCOPE=True CUDA_VISIBLE_DEVICES=2,3 VLLM_ALLOW_ENGINE_USE_RAY=1 nohup vllm serve /data/xinference/modelscope/hub/qwen/Qwen2.5-32B-Instruct-AWQ --served-model-name qwen25b70 --enable-auto-tool-choice --tool-call-parser hermes --host 0.0.0.0 --port 9997 --max-model-len 32000 --tensor-parallel-size 2 --distributed-executor-backend ray --use_v2_block_manager --gpu-memory-utilization 0.8 --max-num-seqs 16 --enable-prefix-caching --enable-chunked-prefill >> /root/JqLogs/vllm.log 2>&1 &
+PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True RAY_CGRAPH_get_timeout=60 TORCH_CUDA_ARCH_LIST="8.9+PTX" VLLM_USE_V1=1 VLLM_USE_MODELSCOPE=True CUDA_VISIBLE_DEVICES=2,3 VLLM_ALLOW_ENGINE_USE_RAY=1 nohup vllm serve /data/xinference/modelscope/hub/qwen/Qwen2.5-32B-Instruct-AWQ --served-model-name qwen25b70 --enable-auto-tool-choice --tool-call-parser hermes --host 0.0.0.0 --port 9997 --max-model-len 32000 --tensor-parallel-size 2 --distributed-executor-backend ray --use_v2_block_manager --gpu-memory-utilization 0.8 --max-num-seqs 16 --enable-prefix-caching --enable-chunked-prefill >> /root/JqLogs/vllm.log 2>&1 &
 tail -f /root/JqLogs/vllm.log
+
+### 启动Qwen2.5-VL-7B-Instruct （on GPU 1）:
+workon vllm
+PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True RAY_CGRAPH_get_timeout=60 TORCH_CUDA_ARCH_LIST="8.9+PTX" VLLM_USE_V1=1 VLLM_USE_MODELSCOPE=True CUDA_VISIBLE_DEVICES=1 VLLM_ALLOW_ENGINE_USE_RAY=1 nohup vllm serve /data/models/Qwen/Qwen2___5-VL-7B-Instruct --served-model-name qwenvl --gpu-memory-utilization 0.90 --port 8000 --host 0.0.0.0 --limit-mm-per-prompt image=5,video=5 --max-model-len 8000 --distributed-executor-backend ray --use_v2_block_manager --max-num-seqs 16 --enable-prefix-caching --enable-chunked-prefill >> /root/JqLogs/vllmvl.log 2>&1 &
+tail -f /root/JqLogs/vllmvl.log 
 
 ### 启动Ktransformers DeepSeek-R1-Q4_K_M （on GPU 0）:
 #### local chat mode
-TORCH_CUDA_ARCH_LIST="8.9+PTX" python -m ktransformers.local_chat --gguf_path /data/models/DeepSeek-R1-Q4_K_M_ollama_gguf/ --model_path deepseek-ai/DeepSeek-R1 --max_new_tokens 8192 --cache_lens 32768 --total_context 32768 --cache_q4 true --temperature 0.6 --top_p 0.95 --force_think
+workon torch26cu126
+TORCH_CUDA_ARCH_LIST="8.9+PTX" python -m ktransformers.local_chat --gguf_path /data/models/DeepSeek-R1-Q4_K_M_ollama_gguf/ --model_path deepseek-ai/DeepSeek-R1 --max_new_tokens 8192 --cache_lens 32768 --total_context 32768 --cache_q4 true --temperature 0.6 --top_p 0.95 --force_think --cpu_infer 49 --use_cuda_graph
 
-#### server api mode
+#### server api mode [cpu_infer参数值25，还没记录。 设置为33时cpu负荷在80%上下，5+ tokens/s]
  workon torch26cu126
- TORCH_CUDA_ARCH_LIST="8.9+PTX" PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True nohup ktransformers --gguf_path /data/models/DeepSeek-R1-Q4_K_M_ollama_gguf/ --model_path deepseek-ai/DeepSeek-R1 --model_name DeepSeekR1 --cpu_infer 40 --max_new_tokens 8192 --cache_lens 32768 --total_context 32768 --cache_q4 true --temperature 0.6 --top_p 0.95 --force_think --host 0.0.0.0 --port 8080 >> //root/JqLogs/kt.log 2>&1 &
+ USE_NUMA=1 TORCH_CUDA_ARCH_LIST="8.9+PTX" PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True nohup ktransformers --gguf_path /data/models/DeepSeek-R1-Q4_K_M_ollama_gguf/ --model_path deepseek-ai/DeepSeek-R1 --model_name DeepSeekR1 --cpu_infer 33 --max_new_tokens 8192 --cache_lens 32768 --total_context 32768 --cache_q4 true --temperature 0.6 --top_p 0.95 --force_think --host 0.0.0.0 --port 8080 --optimize_config_path /root/.virtualenvs/torch26cu126/lib/python3.10/site-packages/ktransformers/optimize/optimize_rules/DeepSeek-V3-Chat.yaml >> //root/JqLogs/kt.log 2>&1 &
  tail -f /root/JqLogs/kt.log
+
+ ##### 改源代码打印InputMessages(/root/.virtualenvs/torch26cu126/lib/python3.10/site-packages/ktransformers/server/api/openai/endpoints/chat.py L25)
+async def chat_completion(request:Request,create:ChatCompletionCreate):
+    id = str(uuid4())
+
+    interface: BackendInterfaceBase = get_interface()
+    # input_ids = interface.format_and_tokenize_input_ids(id,messages=create.get_tokenizer_messages())
+    print("===========Input Messages Begin(/root/.virtualenvs/torch26cu126/lib/python3.10/site-packages/ktransformers/server/api/openai/endpoints/chat.py L25)===========")
+    i = 0
+    for im in create.messages:
+        i += 1
+        c = im.content.replace('\n','  ')
+        print(f"  --Input Message [{i}]=>【{im.role=} || im.content={c}】")
+    print("===========Input Messages End===========") 
+    input_message = [json.loads(m.model_dump_json()) for m in create.messages]
+
+##### 改源代码打印输出效果如下：
+===========Input Messages Begin(/root/.virtualenvs/torch26cu126/lib/python3.10/site-packages/ktransformers/server/api/openai/endpoints/chat.py L25)===========
+  --Input Message [1]=>【im.role=<Role.system: 'system'> || im.content=  Current model: DeepSeekR1  Current date: 2025-02-27T05:45:24.861Z    You are a helpful assistant.】
+  --Input Message [2]=>【im.role=<Role.user: 'user'> || im.content=python绘制sin(x)曲线的代码】
+===========Input Messages End===========
+
+
+
+#### NUMA内存查看和CPU负荷
+nvidia-smi 查看ktransformers的pid
+numastat -p 3424586(pid)
+htop
+
 
 ### 启动JqChat应用程序:
 

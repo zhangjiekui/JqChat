@@ -1,9 +1,59 @@
 from langchain_core.documents import Document
 from langchain_postgres import PGVector
-from jqcode.jq_agent.c0_init_env_models import env_models_instance
+
 from langchain_community.graphs.age_graph import AGEGraph
 from langchain_community.chains.graph_qa.cypher import GraphCypherQAChain
 from langchain_experimental.graph_transformers import LLMGraphTransformer
+# leiden社区检测方法
+# R2R已经实现了async def _compute_leiden_communities
+# 链接： https://github.com/SciPhi-AI/R2R/blob/45b92670786067fc1304cd63227740ad05402b9c/py/core/providers/database/graphs.py#L2764
+
+    ## 在安装pip install apache-age-python之前
+    ## sudo apt-get install postgresql
+    ## sudo apt-get install libpq-dev
+# pip install apache-age-python
+# pip install graspologic
+import networkx as nx
+from age import Graph, Vertex, Edge
+from langchain_graphrag.indexing.graph_clustering.leiden_community_detector import HierarchicalLeidenCommunityDetector
+# https://github.com/Azure-Samples/graphrag-legalcases-postgres/blob/26a351cb1061a4e03f869d6a558a2858d9680a7a/Data_ingestion/test.ipynb#L1035
+from graspologic.partition import hierarchical_leiden  
+
+
+
+
+G_nx = nx.Graph()
+
+
+edges = [
+    (1, 2, 0.8),
+    (2, 3, 0.6),
+    (3, 4, 0.9),
+    (4, 5, 0.4),
+    (5, 1, 0.7),
+]
+
+for edge in edges:
+    G_nx.add_edge(edge[0], edge[1], weight=edge[2])
+
+
+
+max_cluster_size = 2
+resolution = 1.0
+clusters = hierarchical_leiden(
+    graph=G_nx,
+    max_cluster_size=max_cluster_size,
+    resolution=resolution,
+    is_weighted=True,
+    weight_attribute="weight"
+)
+
+for node, community in clusters.final_level_hierarchical_clustering().items():
+    print(f"Node {node} is in community {community}")
+
+# community_detector = HierarchicalLeidenCommunityDetector(use_lcc=True,max_cluster_size=10)
+# detection_result = community_detector.run(G_nx)
+# print(detection_result)
 
 from sqlalchemy import create_engine
 from sqlalchemy.orm import Session
@@ -12,17 +62,60 @@ from langchain.chains import LLMChain
 from langchain.chains import RetrievalQA
 from langchain_core.retrievers import BaseRetriever
 import psycopg
-index_name = "my_collection"
-database_name = 'rag'
-connection = f"postgresql+psycopg://langchain:langchain@localhost:6022/{database_name}"  # Uses psycopg3!
+index_name = "postgres"
+database_name = 'postgres'
+host = '10.1.150.105'
+port = '6000'
+user= "langchain"
+password= "langchain"
+connection = f"postgresql+psycopg://{user}:{password}@{host}:{port}/{database_name}"  # Uses psycopg3!
 engine = create_engine(connection)
+
+
+# Using Apache AGE with Python:https://dev.to/abdullahzia6464/using-apache-age-with-python-409j
+
+conf = {
+    "database": database_name,
+    "user": user,
+    "password": password,
+    "host": host,
+    "port": port,
+}
+
+graph = AGEGraph(graph_name=index_name, conf=conf)
+
+# Assuming your database is empty, you can populate it using Cypher query language. 
+graph.query(
+    """
+MERGE (m:Movie {name:"Top Gun"})
+WITH m
+UNWIND ["Tom Cruise", "Val Kilmer", "Anthony Edwards", "Meg Ryan"] AS actor
+MERGE (a:Actor {name:actor})
+MERGE (a)-[:ACTED_IN]->(m)
+"""
+)
+
+# community_detector = HierarchicalLeidenCommunityDetector(use_lcc=True,max_cluster_size=10)
+# detection_result = community_detector.run(graph)
+
+clusters = hierarchical_leiden(
+    graph=graph,
+    max_cluster_size=10,
+    resolution=1.0,
+    is_weighted=True,
+    weight_attribute="weight"
+)
+
+for node, community in clusters.final_level_hierarchical_clustering().items():
+    print(f"Node {node} is in community {community}")
 
 
 with Session(engine) as session:
     with session.begin():
         session.execute(text("create extension if not exists vector;"))
         session.execute(text("create extension if not exists age;"))
-        session.execute(text("create extension if not exists pg_jieba;")) 
+        session.execute(text('ALTER DATABASE postgres SET search_path = ag_catalog,polar_feature_utils,"$user", public;'))
+        # session.execute(text("create extension if not exists pg_jieba;")) 
         # /var/polardb/primary_datadir/postgresql.conf
         # shared_preload_libraries = 'pg_jieba'
 
@@ -34,11 +127,11 @@ with Session(engine) as session:
         # # session.execute(text("create extension if not exists pg_jieba;")) 
         # # session.execute(text("create extension if not exists pg_jieba;")) 
         
-        r=session.execute(text("SELECT * FROM to_tsvector('jiebacfg', '小明硕士毕业于中国科学院计算所，后在日本京都大学深造')"))
-        print(r)
-        rec = r.fetchone()
-        print(rec)
-        session.execute(text('ALTER DATABASE postgres SET search_path = ag_catalog,polar_feature_utils,"$user", public;'))   
+        # r=session.execute(text("SELECT * FROM to_tsvector('jiebacfg', '小明硕士毕业于中国科学院计算所，后在日本京都大学深造')"))
+        # print(r)
+        # rec = r.fetchone()
+        # print(rec)
+           
         # 在PostgreSQL数据库中，默认的search_path设置为"$user", public, pg_catalog，其中每个部分的含义如下：
         # 1. $user
             # $user表示PostgreSQL首先会查找与当前用户同名的模式（schema）。例如，如果以用户postgres登录，系统会优先在名为postgres的schema中查找对象。如果该schema不存在，则会被忽略。
@@ -51,7 +144,7 @@ with Session(engine) as session:
             # public：所有用户可访问的公共schema。
             # pg_catalog：系统级别的schema，包含内置函数和元数据。
             # 这种设计使得PostgreSQL能够灵活地处理对象查找，同时保持了良好的安全性和可管理性。
-
+from jqcode.jq_agent.c0_init_env_models import env_models_instance
 embeddings = env_models_instance.embed_model
 vector_store = PGVector(
     embeddings=embeddings,
@@ -117,14 +210,6 @@ for doc,sim in results_vector:
     print(f"* relevance_scores:{sim};\ncontent:{doc.page_content};\nmetadata: [{doc.metadata}]")
 
 
-conf = {
-    "database": database_name,
-    "user": "langchain",
-    "password": "langchain",
-    "host": "localhost",
-    "port": 6022,
-}
-
 graph = AGEGraph(graph_name=index_name, conf=conf)
 
 # Assuming your database is empty, you can populate it using Cypher query language. 
@@ -137,6 +222,10 @@ MERGE (a:Actor {name:actor})
 MERGE (a)-[:ACTED_IN]->(m)
 """
 )
+
+community_detector = HierarchicalLeidenCommunityDetector(use_lcc=True,max_cluster_size=10)
+detection_result = community_detector.run(graph)
+
 
 
 
@@ -203,7 +292,7 @@ g_query = """
 """
 
 g_query = """
-        MATCH (V {id:"Cats"})-[R]-(V2)
+        MATCH (V {name:"gun"})-[R]-(V2)
         RETURN V,R,V2
 """
 
@@ -213,7 +302,7 @@ results = results_vector + results_graph
 result2 = graphchain.invoke(f"With Added Context:{results},Try to Answer The Question:'{q}'")
 print(result2)
 
-psycopg_connection_str = f"dbname={database_name} user=langchain host=localhost port=6022 password=langchain"  
+psycopg_connection_str = f"dbname={database_name} user={user} host={host} port={port} password={password}"  
 conn = psycopg.connect(psycopg_connection_str)
 class CustomRetriever(BaseRetriever):
     def __init__(self):
