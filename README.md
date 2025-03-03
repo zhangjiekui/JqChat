@@ -1,22 +1,55 @@
-首先识别出有意义的区块，然后逐个区块完整识别并仅输出图中的文字（相当于ocr，但去掉不必要的换行符），不能遗漏，同一区块的文字内容放在一起。最后仅输出完整的文字内容。
+需接着运行的下载任务
 
-max_model_len 8000
-enable_auto_tool_choice true
-tool_call_parser hermes
+ollama run MFDoom/deepseek-v3-tool-calling --verbose
+ollama run MHKetbi/qihoo360-TinyR1-32b-preview:q4_K_S
 
+安装FlashInfer (AOT mode)【https://docs.flashinfer.ai/installation.html#install-from-source】
+git clone https://github.com/flashinfer-ai/flashinfer.git --recursive
+cd flashinfer
+MAX_JOBS=8 TORCH_CUDA_ARCH_LIST="7.5 8.0 8.9 9.0 9.0a" FLASHINFER_ENABLE_AOT=1 pip install --no-build-isolation --verbose --editable .
 workon py311
 CUDA_VISIBLE_DEVICES=0 python -m olmocr.pipeline --model /data/models/allenai/olmOCR-7B-0225-preview ./localworkspace --pdfs /root/newgit/olmocr/*.pdf
 
+CUDA_VISIBLE_DEVICES=0 vllm serve /data/models/deepseek-r1-distill-qwen-32b-awq/ --tensor-parallel-size 1 --max-model-len 10000 --enforce-eager
 
 
+
+## olmocr [https://github.com/allenai/olmocr/tree/main]
+### python 3.11
 sudo add-apt-repository ppa:deadsnakes/ppa
 sudo apt-get update
-sudo apt install python3.11 python3.12 python3.13
+sudo apt upgrade
+sudo apt install python3.11 python3.12 python3.13 
+sudo apt-get install python3.11-dev
 <!-- apt --fix-broken install -->
 mkvirtualenv --python=/usr/bin/python3.11 py311
 <!-- pip install virtualenvwrapper -->
+### olmOCR
+sudo apt-get update
+sudo apt upgrade
+sudo apt-get install poppler-utils ttf-mscorefonts-installer msttcorefonts fonts-crosextra-caladea fonts-crosextra-carlito gsfonts lcdf-typetools
 
-sudo apt-get install ttf-mscorefonts-installer
+
+git clone https://github.com/allenai/olmocr.git
+cd olmocr
+pip install -e .
+
+### Install sglang with flashinfer if you want to run inference on GPU.
+
+pip install sgl-kernel --force-reinstall --no-deps
+<!-- python -c "import torch; print(torch.__version__, torch.version.cuda)" 查看对应版本，替代下方版本号 -->
+pip install "sglang[all]==0.4.3" --find-links https://flashinfer.ai/whl/cu124/torch2.5/flashinfer/
+
+
+## Install flashinfer-python
+#### JIT mode
+<!-- python -c "import torch; print(torch.__version__, torch.version.cuda)" 查看对应版本，替代下方版本号 -->
+pip install flashinfer-python -i https://flashinfer.ai/whl/cu124/torch2.5/
+
+#### AOT mode
+cd flashinfer
+TORCH_CUDA_ARCH_LIST="7.5 8.0 8.9 9.0 9.0a" FLASHINFER_ENABLE_AOT=1 pip install --no-build-isolation --verbose --editable .
+
 
 ## 运行脚本
  enforce_eager=False, kv_cache_dtype=auto,  device_config=cuda, decoding_config=DecodingConfig(guided_decoding_backend='xgrammar'), observability_config=ObservabilityConfig(otlp_traces_endpoint=None, collect_model_forward_time=False, collect_model_execute_time=False), seed=0, served_model_name=qwenvl, num_scheduler_steps=1, multi_step_stream_outputs=True, enable_prefix_caching=False, chunked_prefill_enabled=False,
@@ -26,18 +59,62 @@ PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True RAY_CGRAPH_get_timeout=60 TORCH
 tail -f /root/JqLogs/vllm.log
 
 ### 启动Qwen2.5-VL-7B-Instruct （on GPU 1）:
+####  /data/models/Qwen/Qwen2___5-VL-7B-Instruct
 workon vllm
 PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True RAY_CGRAPH_get_timeout=60 TORCH_CUDA_ARCH_LIST="8.9+PTX" VLLM_USE_V1=1 VLLM_USE_MODELSCOPE=True CUDA_VISIBLE_DEVICES=1 VLLM_ALLOW_ENGINE_USE_RAY=1 nohup vllm serve /data/models/Qwen/Qwen2___5-VL-7B-Instruct --served-model-name qwenvl --gpu-memory-utilization 0.90 --port 8000 --host 0.0.0.0 --limit-mm-per-prompt image=5,video=5 --max-model-len 8000 --distributed-executor-backend ray --use_v2_block_manager --max-num-seqs 16 --enable-prefix-caching --enable-chunked-prefill >> /root/JqLogs/vllmvl.log 2>&1 &
 tail -f /root/JqLogs/vllmvl.log 
 
+#### /data/models/allenai/olmOCR-7B-0225-preview
+workon vllm
+PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True RAY_CGRAPH_get_timeout=60 TORCH_CUDA_ARCH_LIST="8.9+PTX" VLLM_USE_V1=1 VLLM_USE_MODELSCOPE=True CUDA_VISIBLE_DEVICES=1 VLLM_ALLOW_ENGINE_USE_RAY=1 nohup vllm serve /data/models/allenai/olmOCR-7B-0225-preview --served-model-name qwenvl --gpu-memory-utilization 0.90 --port 8000 --host 0.0.0.0 --limit-mm-per-prompt image=5,video=5 --max-model-len 8000 --distributed-executor-backend ray --use_v2_block_manager --max-num-seqs 16 --enable-prefix-caching --enable-chunked-prefill >> /root/JqLogs/vllmvl.log 2>&1 &
+tail -f /root/JqLogs/vllmvl.log 
+
+
+
+
+
 ### 启动Ktransformers DeepSeek-R1-Q4_K_M （on GPU 0）:
+#### 安装NUMA库
+apt install libnuma-dev
+#### 获取源代码
+git clone https://github.com/kvcache-ai/ktransformers.git
+cd ktransformers
+git submodule init
+git submodule update
+#### 编译安装
+make install_numa
+(查看编译日志中是否存在NUMA support is enabled\n-- NUMA library found: /usr/lib/x86_64-linux-gnu/libnuma.so - enabling NUMA support\n)
+#### 确认NUMA开启相关的命令 【摘自https://github.com/ggml-org/llama.cpp/discussions/12088】
+numactl --hardware --cpu-compress
+====Confirm Linux Kernel NUMA Balancing Enabled
+cat /proc/sys/kernel/numa_balancing
+1
+==== 内存的实际分配
+nvidia-smi 找到pid
+watch -n1 numastat -p pid
+
+Per-node process memory usage (in MBs) for PID 2402316 (ktransformers)
+                           Node 0          Node 1           Total
+                  --------------- --------------- ---------------
+Huge                         0.00            0.00            0.00
+Heap                      1120.50           22.47         1142.97
+Stack                        0.14            0.00            0.14
+Private                 471208.33       433322.20       904530.53
+----------------  --------------- --------------- ---------------
+Total                   472328.98       433344.67       905673.64
+
+
+====生成速度 
+生成速度由5.2tokens/s提升到7.4tokens/s
+
+
 #### local chat mode
 workon torch26cu126
 TORCH_CUDA_ARCH_LIST="8.9+PTX" python -m ktransformers.local_chat --gguf_path /data/models/DeepSeek-R1-Q4_K_M_ollama_gguf/ --model_path deepseek-ai/DeepSeek-R1 --max_new_tokens 8192 --cache_lens 32768 --total_context 32768 --cache_q4 true --temperature 0.6 --top_p 0.95 --force_think --cpu_infer 49 --use_cuda_graph
 
 #### server api mode [cpu_infer参数值25，还没记录。 设置为33时cpu负荷在80%上下，5+ tokens/s]
  workon torch26cu126
- USE_NUMA=1 TORCH_CUDA_ARCH_LIST="8.9+PTX" PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True nohup ktransformers --gguf_path /data/models/DeepSeek-R1-Q4_K_M_ollama_gguf/ --model_path deepseek-ai/DeepSeek-R1 --model_name DeepSeekR1 --cpu_infer 33 --max_new_tokens 8192 --cache_lens 32768 --total_context 32768 --cache_q4 true --temperature 0.6 --top_p 0.95 --force_think --host 0.0.0.0 --port 8080 --optimize_config_path /root/.virtualenvs/torch26cu126/lib/python3.10/site-packages/ktransformers/optimize/optimize_rules/DeepSeek-V3-Chat.yaml >> //root/JqLogs/kt.log 2>&1 &
+ USE_NUMA=1 TORCH_CUDA_ARCH_LIST="8.9+PTX" PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True nohup ktransformers --gguf_path /data/models/DeepSeek-R1-Q4_K_M_ollama_gguf/ --model_path deepseek-ai/DeepSeek-R1 --model_name DeepSeekR1 --cpu_infer 33 --max_new_tokens 8192 --cache_lens 32768 --total_context 32768 --cache_q4 true --temperature 0.6 --top_p 0.95 --force_think --host 0.0.0.0 --port 8080 --optimize_config_path /root/KT0.2.2rc2/ktransformers/ktransformers/optimize/optimize_rules/DeepSeek-V3-Chat.yaml >> //root/JqLogs/kt.log 2>&1 &
  tail -f /root/JqLogs/kt.log
 
  ##### 改源代码打印InputMessages(/root/.virtualenvs/torch26cu126/lib/python3.10/site-packages/ktransformers/server/api/openai/endpoints/chat.py L25)

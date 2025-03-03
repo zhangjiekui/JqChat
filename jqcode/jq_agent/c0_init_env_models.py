@@ -147,11 +147,11 @@ class Vlm_API:
             return ''
 
 vlm= Vlm_API()
-# r1=vlm(image_path_or_base64='/data/projects/JqChatV2/JqChat/ocr.png',
-#        query='首先识别出有意义的区块，然后逐个区块完整识别并仅输出图中的文字（相当于ocr，但去掉不必要的换行符），不能遗漏，同一区块的文字内容放在一起。最后仅输出完整的纯文本内容，不要有任何额外的解释、格式等。',
-#        only_return_text=False)     
-# print(r1)
-# print(r1.choices[0].message.content)
+r1=vlm(image_path_or_base64="/data/projects/JqChatV2/JqChat/graph.jpg",
+       query='首先识别出有意义的区块，然后逐个区块完整识别并仅输出图中的文字（相当于ocr，但去掉不必要的换行符），不能遗漏，同一区块的文字内容放在一起。最后仅输出完整的纯文本内容，不要有任何额外的解释、格式等。',
+       only_return_text=False)     
+print(r1)
+print(r1.choices[0].message.content)
 
 
 r2 = vlm(image_path_or_base64='/data/projects/JqChatV2/JqChat/ocr.png')
