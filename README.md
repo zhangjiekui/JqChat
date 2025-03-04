@@ -8,7 +8,7 @@ tail -f /root/JqLogs/vllm.log
 ### Qwen2.5R1
 ```
 workon vllm
-CUDA_VISIBLE_DEVICES=2,3 nohup vllm serve /data/models/deepseek-r1-distill-qwen-32b-awq/ --tensor-parallel-size 2 --max-model-len 10000 --served-model-name DeepSeekR1 --enable-auto-tool-choice --tool-call-parser hermes --host 0.0.0.0 --port 8000 >> /root/JqLogs/vllm_r1.log 2>&1 &
+CUDA_VISIBLE_DEVICES=2,3 nohup vllm serve /data/models/deepseek-r1-distill-qwen-32b-awq/ --tensor-parallel-size 2 --max-model-len 10000 --served-model-name DeepSeekR1 --enable-auto-tool-choice --tool-call-parser hermes --host 0.0.0.0 --port 8000 --enable-reasoning --reasoning-parser deepseek_r1 >> /root/JqLogs/vllm_r1.log 2>&1 &
 tail -f /root/JqLogs/vllm_r1.log
 ```
 
