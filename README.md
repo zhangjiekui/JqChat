@@ -1,14 +1,16 @@
 最新的VLLM运行命令
 ### Qwen2.5
+```
 workon vllm
 CUDA_VISIBLE_DEVICES=0,1 nohup vllm serve /data/xinference/modelscope/hub/qwen/Qwen2.5-32B-Instruct-AWQ --served-model-name qwen25b70 --enable-auto-tool-choice --tool-call-parser hermes --host 0.0.0.0 --port 9997 --max-model-len 32000 --tensor-parallel-size 2 --distributed-executor-backend ray --use_v2_block_manager --gpu-memory-utilization 0.8 --max-num-seqs 16 --enable-prefix-caching --enable-chunked-prefill >> /root/JqLogs/vllm.log 2>&1 &
 tail -f /root/JqLogs/vllm.log
-
+```
 ### Qwen2.5R1
+```
 workon vllm
 CUDA_VISIBLE_DEVICES=2,3 nohup vllm serve /data/models/deepseek-r1-distill-qwen-32b-awq/ --tensor-parallel-size 2 --max-model-len 10000 --served-model-name DeepSeekR1 --enable-auto-tool-choice --tool-call-parser hermes --host 0.0.0.0 --port 8000 >> /root/JqLogs/vllm_r1.log 2>&1 &
 tail -f /root/JqLogs/vllm_r1.log
-
+```
 
 
 需接着运行的下载任务
@@ -68,21 +70,25 @@ TORCH_CUDA_ARCH_LIST="7.5 8.0 8.9 9.0 9.0a" FLASHINFER_ENABLE_AOT=1 pip install 
 
 
 ## 运行脚本
+```
  enforce_eager=False, kv_cache_dtype=auto,  device_config=cuda, decoding_config=DecodingConfig(guided_decoding_backend='xgrammar'), observability_config=ObservabilityConfig(otlp_traces_endpoint=None, collect_model_forward_time=False, collect_model_execute_time=False), seed=0, served_model_name=qwenvl, num_scheduler_steps=1, multi_step_stream_outputs=True, enable_prefix_caching=False, chunked_prefill_enabled=False,
+```
 ### 启动Qwen32 AWQ （on GPU 2,3）:
+```
 workon vllm
 VLLM_ATTENTION_BACKEND=FLASH_ATTN_VLLM_V1 FLASH_ATTN_VLLM_V1=1 PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True RAY_CGRAPH_get_timeout=60 TORCH_CUDA_ARCH_LIST="8.9+PTX" VLLM_USE_V1=1 VLLM_USE_MODELSCOPE=True CUDA_VISIBLE_DEVICES=2,3 VLLM_ALLOW_ENGINE_USE_RAY=1 nohup vllm serve /data/xinference/modelscope/hub/qwen/Qwen2.5-32B-Instruct-AWQ --served-model-name qwen25b70 --enable-auto-tool-choice --tool-call-parser hermes --host 0.0.0.0 --port 9997 --max-model-len 32000 --tensor-parallel-size 2 --distributed-executor-backend ray --use_v2_block_manager --gpu-memory-utilization 0.8 --max-num-seqs 16 --enable-prefix-caching --enable-chunked-prefill >> /root/JqLogs/vllm.log 2>&1 &
 tail -f /root/JqLogs/vllm.log
-
-
+```
+```
 workon vllm
 TORCH_CUDA_ARCH_LIST="8.9+PTX" VLLM_USE_MODELSCOPE=True CUDA_VISIBLE_DEVICES=2,3 VLLM_ALLOW_ENGINE_USE_RAY=1 nohup vllm serve /data/xinference/modelscope/hub/qwen/Qwen2.5-32B-Instruct-AWQ --served-model-name qwen25b70 --enable-auto-tool-choice --tool-call-parser hermes --host 0.0.0.0 --port 9997 --max-model-len 32000 --tensor-parallel-size 2 --distributed-executor-backend ray --use_v2_block_manager --gpu-memory-utilization 0.8 --max-num-seqs 16 --enable-prefix-caching --enable-chunked-prefill >> /root/JqLogs/vllm.log 2>&1 &
 tail -f /root/JqLogs/vllm.log
-
+```
+```
 workon vllm
 TORCH_CUDA_ARCH_LIST="8.9+PTX" VLLM_USE_MODELSCOPE=True VLLM_ALLOW_ENGINE_USE_RAY=1 nohup vllm serve /data/xinference/modelscope/hub/qwen/Qwen2.5-32B-Instruct-AWQ --served-model-name qwen25b70 --enable-auto-tool-choice --tool-call-parser hermes --host 0.0.0.0 --port 9997 --max-model-len 32000 --tensor-parallel-size 4 --distributed-executor-backend ray --use_v2_block_manager --gpu-memory-utilization 0.8 --max-num-seqs 16 --enable-prefix-caching --enable-chunked-prefill >> /root/JqLogs/vllm.log 2>&1 &
 tail -f /root/JqLogs/vllm.log
-
+```
 
 FLASH_ATTN_VLLM_V1=1 TORCH_CUDA_ARCH_LIST="8.9+PTX" VLLM_USE_MODELSCOPE=True CUDA_VISIBLE_DEVICES=2,3 VLLM_ALLOW_ENGINE_USE_RAY=1 nohup vllm serve /data/xinference/modelscope/hub/qwen/Qwen2.5-32B-Instruct-AWQ --served-model-name qwen25b70 --enable-auto-tool-choice --tool-call-parser hermes --host 0.0.0.0 --port 9997 --max-model-len 32000 --tensor-parallel-size 2 --distributed-executor-backend ray --use_v2_block_manager --gpu-memory-utilization 0.8 --max-num-seqs 16 --enable-prefix-caching --enable-chunked-prefill >> /root/JqLogs/vllm.log 2>&1 &
 tail -f /root/JqLogs/vllm.log
@@ -139,15 +145,19 @@ Total                   472328.98       433344.67       905673.64
 
 #### local chat mode
 workon torch26cu126
+
 TORCH_CUDA_ARCH_LIST="8.9+PTX" python -m ktransformers.local_chat --gguf_path /data/models/DeepSeek-R1-Q4_K_M_ollama_gguf/ --model_path deepseek-ai/DeepSeek-R1 --max_new_tokens 8192 --cache_lens 32768 --total_context 32768 --cache_q4 true --temperature 0.6 --top_p 0.95 --force_think --cpu_infer 49 --use_cuda_graph
 
 #### server api mode [cpu_infer参数值25，还没记录。 设置为33时cpu负荷在80%上下，5+ tokens/s]
  workon torch26cu126
+
  USE_NUMA=1 TORCH_CUDA_ARCH_LIST="8.9+PTX" PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True nohup ktransformers --gguf_path /data/models/DeepSeek-R1-Q4_K_M_ollama_gguf/ --model_path deepseek-ai/DeepSeek-R1 --model_name DeepSeekR1 --cpu_infer 33 --max_new_tokens 8192 --cache_lens 32768 --total_context 32768 --cache_q4 true --temperature 0.6 --top_p 0.95 --force_think --host 0.0.0.0 --port 8080 --optimize_config_path /root/KT0.2.2rc2/ktransformers/ktransformers/optimize/optimize_rules/DeepSeek-V3-Chat.yaml >> //root/JqLogs/kt.log 2>&1 &
  tail -f /root/JqLogs/kt.log
 
 
 #### FP8 Linear Kernel for DeepSeek-V3/R1
+workon torch26cu126
+
  python ktransformers/local_chat.py \
   --model_path deepseek-ai/DeepSeek-V3 \
   --gguf_path /data/models/DeepSeek-V3-q4km-fp8/ \
