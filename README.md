@@ -1,14 +1,30 @@
+### 容器代码沙盒
+/data/projects/JqChatV2/JqChat/codebox_api_test.py
+
 最新的VLLM运行命令
 ### Qwen2.5
-```
+``` 2gpu
 workon vllm
 CUDA_VISIBLE_DEVICES=0,1 nohup vllm serve /data/xinference/modelscope/hub/qwen/Qwen2.5-32B-Instruct-AWQ --served-model-name qwen25b70 --enable-auto-tool-choice --tool-call-parser hermes --host 0.0.0.0 --port 9997 --max-model-len 32000 --tensor-parallel-size 2 --distributed-executor-backend ray --use_v2_block_manager --gpu-memory-utilization 0.8 --max-num-seqs 16 --enable-prefix-caching --enable-chunked-prefill >> /root/JqLogs/vllm.log 2>&1 &
 tail -f /root/JqLogs/vllm.log
 ```
-### Qwen2.5R1
+
+``` Qwen2.5 gpu0
+workon vllm
+CUDA_VISIBLE_DEVICES=0 nohup vllm serve /data/xinference/modelscope/hub/qwen/Qwen2.5-32B-Instruct-AWQ --served-model-name qwen25b70 --enable-auto-tool-choice --tool-call-parser hermes --host 0.0.0.0 --port 9997 --max-model-len 8000  --distributed-executor-backend ray --use_v2_block_manager --gpu-memory-utilization 0.95 --max-num-seqs 16 --enable-prefix-caching --enable-chunked-prefill >> /root/JqLogs/vllm.log 2>&1 &
+tail -f /root/JqLogs/vllm.log
+```
+``` QwenQwQ gpu1
+workon vllm
+CUDA_VISIBLE_DEVICES=1 nohup vllm serve /data/models/Qwen/QwQ-32B-AWQ/ --served-model-name qwen25qwq --enable-auto-tool-choice --tool-call-parser hermes --host 0.0.0.0 --port 9998 --max-model-len 8000  --distributed-executor-backend ray --use_v2_block_manager --gpu-memory-utilization 0.95 --max-num-seqs 16 --enable-prefix-caching --enable-chunked-prefill >> /root/JqLogs/qwq.log 2>&1 &
+tail -f /root/JqLogs/qwq.log
+```
+
+
+### Qwen2.5R1 gpu2
 ```
 workon vllm
-CUDA_VISIBLE_DEVICES=2,3 nohup vllm serve /data/models/deepseek-r1-distill-qwen-32b-awq/ --tensor-parallel-size 2 --max-model-len 10000 --served-model-name DeepSeekR1 --enable-auto-tool-choice --tool-call-parser hermes --host 0.0.0.0 --port 8000 --enable-reasoning --reasoning-parser deepseek_r1 >> /root/JqLogs/vllm_r1.log 2>&1 &
+CUDA_VISIBLE_DEVICES=2 nohup vllm serve /data/models/deepseek-r1-distill-qwen-32b-awq/ --gpu-memory-utilization 0.98 --max-model-len 4000 --served-model-name DeepSeekR1 --host 0.0.0.0 --port 8000 --enable-reasoning --reasoning-parser deepseek_r1 >> /root/JqLogs/vllm_r1.log 2>&1 &
 tail -f /root/JqLogs/vllm_r1.log
 ```
 
@@ -17,6 +33,9 @@ tail -f /root/JqLogs/vllm_r1.log
 
 ollama run MFDoom/deepseek-v3-tool-calling --verbose
 ollama run MHKetbi/qihoo360-TinyR1-32b-preview:q4_K_S
+
+cd /data/models/
+./hfd.sh qihoo360/TinyR1-32B-Preview --tool aria2c -x 10
 
 安装FlashInfer (AOT mode)【https://docs.flashinfer.ai/installation.html#install-from-source】
 git clone https://github.com/flashinfer-ai/flashinfer.git --recursive
@@ -151,18 +170,22 @@ TORCH_CUDA_ARCH_LIST="8.9+PTX" python -m ktransformers.local_chat --gguf_path /d
 #### server api mode [cpu_infer参数值25，还没记录。 设置为33时cpu负荷在80%上下，5+ tokens/s]
  workon torch26cu126
 
- USE_NUMA=1 TORCH_CUDA_ARCH_LIST="8.9+PTX" PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True nohup ktransformers --gguf_path /data/models/DeepSeek-R1-Q4_K_M_ollama_gguf/ --model_path deepseek-ai/DeepSeek-R1 --model_name DeepSeekR1 --cpu_infer 33 --max_new_tokens 8192 --cache_lens 32768 --total_context 32768 --cache_q4 true --temperature 0.6 --top_p 0.95 --force_think --host 0.0.0.0 --port 8080 --optimize_config_path /root/KT0.2.2rc2/ktransformers/ktransformers/optimize/optimize_rules/DeepSeek-V3-Chat.yaml >> //root/JqLogs/kt.log 2>&1 &
+ USE_NUMA=1 TORCH_CUDA_ARCH_LIST="8.9+PTX" PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True nohup ktransformers --gguf_path /data/models/DeepSeek-R1-Q4_K_M_ollama_gguf/ --model_path deepseek-ai/DeepSeek-R1 --model_name DeepSeekR1 --cpu_infer 33 --max_new_tokens 8192 --cache_lens 32768 --total_context 32768 --cache_q4 true --temperature 0.6 --top_p 0.95 --force_think --host 0.0.0.0 --port 9999 --optimize_config_path /root/KT0.2.2rc2/ktransformers/ktransformers/optimize/optimize_rules/DeepSeek-V3-Chat.yaml >> //root/JqLogs/kt.log 2>&1 &
  tail -f /root/JqLogs/kt.log
 
 
-#### FP8 Linear Kernel for DeepSeek-V3/R1
+#### FP8 Linear Kernel for DeepSeek-V3/R1 【https://github.com/kvcache-ai/ktransformers/issues/696 】
+
+reinstall the latest version of Triton, and then it was able to run properly
+
 workon torch26cu126
 
- python ktransformers/local_chat.py \
-  --model_path deepseek-ai/DeepSeek-V3 \
-  --gguf_path /data/models/DeepSeek-V3-q4km-fp8/ \
-  --optimize_config_path /root/KT0.2.2rc2/ktransformers/ktransformers/optimize/optimize_rules/DeepSeek-V3-Chat-fp8-linear-ggml-experts.yaml \
-  --cpu_infer 49
+CUDA_VISIBLE_DEVICES=0 python ktransformers/local_chat.py \
+--model_path deepseek-ai/DeepSeek-V3 \
+--gguf_path /data/models/DeepSeek-V3-q4km-fp8/ \
+--optimize_config_path /root/KT0.2.2rc2/ktransformers/ktransformers/optimize/optimize_rules/DeepSeek-V3-Chat-fp8-linear-ggml-experts.yaml \
+--cpu_infer 49 \
+--force_think true
 
  ##### 改源代码打印InputMessages(/root/.virtualenvs/torch26cu126/lib/python3.10/site-packages/ktransformers/server/api/openai/endpoints/chat.py L25)
 async def chat_completion(request:Request,create:ChatCompletionCreate):
@@ -1199,4 +1222,21 @@ LMDeploy 支持 InternLM2, InternLM2.5 和 Llama3.1 模型的工具调用
 ### https://medium.com/thedeephub/how-to-scale-graphrag-with-neo4j-for-efficient-document-querying-f8be1ae4feb3
 
 
+## llama.cpp
+## 主分支
+git# clone https://github.com/ggml-org/llama.cpp
+cd llama.cpp
+GGML_CUDA_ENABLE_UNIFIED_MEMORY=1 cmake -B build -DGGML_CUDA=ON -DGGML_SCHED_MAX_COPIES=1 -DCMAKE_CUDA_ARCHITECTURES="89"
+cmake --build build --config Release
 
+/root/newgit/llama.cpp/build/bin/llama-server --model /data/models/DeepSeek-R1-Q4_K_M_ollama_gguf/ollama_Q4KM.gguf --flash-attn --threads 40 --temp 0.6 --min-p 0.05 --ctx-size 4096 --no-mmap -ngl 0
+
+
+### OT分支
+git pull origin/sl/custom-tensor-offload https://github.com/ggml-org/llama.cpp.git
+
+cd llama.cpp
+GGML_CUDA_ENABLE_UNIFIED_MEMORY=1 cmake -B build -DGGML_CUDA=ON -DGGML_SCHED_MAX_COPIES=1 -DCMAKE_CUDA_ARCHITECTURES="89"
+cmake --build build --config Release
+#### 【参数说明 https://github.com/ggml-org/llama.cpp/blob/master/examples/server/README.md】单请求在4tokens/s
+CUDA_VISIBLE_DEVICES=0,1 /root/llama.cpp/build/bin/llama-server --model /data/models/DeepSeek-R1-Q4_K_M_ollama_gguf/ollama_Q4KM.gguf --alias DeepSeekR1 --flash-attn --threads 40 --temp 0.6 --min-p 0.05 --ctx-size 4096 --host 0.0.0.0 --port 9999 -np 2 --no-mmap -ngl 99 -ot exps=CPU --numa distribute --verbose-prompt --no-context-shift

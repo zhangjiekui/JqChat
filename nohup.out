@@ -1,0 +1,1110 @@
+已成功设置multiprocessing.set_start_method("spawn")  [WARNING:jqlogger( c0_init_env_models.py 第122行)]
+
+
+=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*
+项目.env文件路径：/data/projects/JqChatV2/JqChat/.env
+=*=* load_dotenv('/data/projects/JqChatV2/JqChat/.env')成功！
+=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*
+
+
+=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*
+应用启动路径:/data/projects/JqChatV2/JqChat
+本项目中添加使用的Python路径为：{'/root/.virtualenvs/test/lib/python3.10/site-packages', '/data/projects/JqChatV2/JqChat/web', '/usr/lib/python3.10', '/usr/lib/python3.10/lib-dynload', '/usr/lib/python310.zip', '/data/projects/JqChatV2/JqChat/jqcode', '/data/projects/LightRAG', '/data/projects/JqChatV2/graphrag', '/data/projects/JqChatV2/JqChat/jqcode/jq_knowledge_manegement/chatchat/configs', '/data/projects/JqChatV2/JqChat/kernel_program', '/data/projects/JqChatV2/JqChat'}
+本项目运行日志位置: /data/projects/JqChatV2/JqChat/jqchat_agent.log
+=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*
+
+
+=*=*=*=*=*JqChat Configuration=*=*=*=*=*
+操作系统：Linux-5.19.0-1010-nvidia-lowlatency-x86_64-with-glibc2.35.
+python版本：3.10.12 (main, Feb  4 2025, 14:57:36) [GCC 11.4.0]
+项目版本：v0.3.0
+langchain版本：0.3.19
+
+
+服务端运行信息：
+    JqChat Api Server: http://127.0.0.1:7861
+    JqChat WEBUI Server: http://0.0.0.0:8501
+    JqChat Kernel Server: http://0.0.0.0:5011
+=*=*=*=*=*JqChat Configuration=*=*=*=*=*
+
+
+INFO:     Started server process [3984798]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+INFO:     Uvicorn running on http://0.0.0.0:7861 (Press CTRL+C to quit)
+INFO:     10.1.50.150:51399 - "GET /docs HTTP/1.1" 200 OK
+INFO:     10.1.50.150:51399 - "GET /openapi.json HTTP/1.1" 200 OK
+INFO:     10.1.50.150:51399 - "GET /static-offline-docs/favicon.png HTTP/1.1" 200 OK
+
+  You can now view your Streamlit app in your browser.
+
+  URL: http://localhost:8501
+
+2025-03-05 10:06:00,922 root         3985603 WARNING  ApiRequest中的self.timeout=360000
+Failed to retrieve metadata for index temp_emb_dense  [WARNING:jqlogger( jq_es_client.py 第78行)]
+Failed to retrieve metadata for index temp_emb  [WARNING:jqlogger( jq_es_client.py 第78行)]
+Failed to retrieve metadata for index temp_emb_dense  [WARNING:jqlogger( jq_es_client.py 第78行)]
+Failed to retrieve metadata for index temp_emb  [WARNING:jqlogger( jq_es_client.py 第78行)]
+INFO:     10.1.50.150:51400 - "POST /api/knowledges/v1 HTTP/1.1" 200 OK
+2025-03-05 10:06:50,085 root         3985603 WARNING  ApiRequest中的self.timeout=360000
+Failed to retrieve metadata for index temp_emb_dense  [WARNING:jqlogger( jq_es_client.py 第78行)]
+Failed to retrieve metadata for index temp_emb  [WARNING:jqlogger( jq_es_client.py 第78行)]
+INFO:     10.1.50.150:51435 - "POST /api/v1/chat HTTP/1.1" 422 Unprocessable Entity
+2025-03-05 10:07:16,010 root         3985603 WARNING  ApiRequest中的self.timeout=360000
+Failed to retrieve metadata for index temp_emb_dense  [WARNING:jqlogger( jq_es_client.py 第78行)]
+Failed to retrieve metadata for index temp_emb  [WARNING:jqlogger( jq_es_client.py 第78行)]
+INFO:     10.1.50.150:51754 - "GET /docs HTTP/1.1" 200 OK
+INFO:     10.1.50.150:51754 - "GET /openapi.json HTTP/1.1" 200 OK
+已成功设置multiprocessing.set_start_method("spawn")  [WARNING:jqlogger( c0_init_env_models.py 第122行)]
+
+
+=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*
+项目.env文件路径：/data/projects/JqChatV2/JqChat/.env
+=*=* load_dotenv('/data/projects/JqChatV2/JqChat/.env')成功！
+=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*
+
+
+=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*
+应用启动路径:/data/projects/JqChatV2/JqChat
+本项目中添加使用的Python路径为：{'/data/projects/LightRAG', '/data/projects/JqChatV2/JqChat/kernel_program', '/data/projects/JqChatV2/graphrag', '/usr/lib/python3.10', '/data/projects/JqChatV2/JqChat/web', '/data/projects/JqChatV2/JqChat/jqcode', '/root/.virtualenvs/test/lib/python3.10/site-packages', '/usr/lib/python310.zip', '/data/projects/JqChatV2/JqChat', '/data/projects/JqChatV2/JqChat/jqcode/jq_knowledge_manegement/chatchat/configs', '/usr/lib/python3.10/lib-dynload'}
+本项目运行日志位置: /data/projects/JqChatV2/JqChat/jqchat_agent.log
+=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*
+
+
+=*=*=*=*=*JqChat Configuration=*=*=*=*=*
+操作系统：Linux-5.19.0-1010-nvidia-lowlatency-x86_64-with-glibc2.35.
+python版本：3.10.12 (main, Feb  4 2025, 14:57:36) [GCC 11.4.0]
+项目版本：v0.3.0
+langchain版本：0.3.19
+
+
+服务端运行信息：
+    JqChat Api Server: http://127.0.0.1:7861
+    JqChat WEBUI Server: http://0.0.0.0:8501
+    JqChat Kernel Server: http://0.0.0.0:5011
+=*=*=*=*=*JqChat Configuration=*=*=*=*=*
+
+
+INFO:     Started server process [4001592]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+INFO:     Uvicorn running on http://0.0.0.0:7861 (Press CTRL+C to quit)
+
+  You can now view your Streamlit app in your browser.
+
+  URL: http://localhost:8501
+
+INFO:     10.1.50.150:52048 - "GET /docs HTTP/1.1" 200 OK
+INFO:     10.1.50.150:52048 - "GET /openapi.json HTTP/1.1" 500 Internal Server Error
+ERROR:    Exception in ASGI application
+Traceback (most recent call last):
+  File "/root/.virtualenvs/test/lib/python3.10/site-packages/uvicorn/protocols/http/httptools_impl.py", line 435, in run_asgi
+    result = await app(  # type: ignore[func-returns-value]
+  File "/root/.virtualenvs/test/lib/python3.10/site-packages/uvicorn/middleware/proxy_headers.py", line 78, in __call__
+    return await self.app(scope, receive, send)
+  File "/root/.virtualenvs/test/lib/python3.10/site-packages/fastapi/applications.py", line 1054, in __call__
+    await super().__call__(scope, receive, send)
+  File "/root/.virtualenvs/test/lib/python3.10/site-packages/starlette/applications.py", line 123, in __call__
+    await self.middleware_stack(scope, receive, send)
+  File "/root/.virtualenvs/test/lib/python3.10/site-packages/starlette/middleware/errors.py", line 186, in __call__
+    raise exc
+  File "/root/.virtualenvs/test/lib/python3.10/site-packages/starlette/middleware/errors.py", line 164, in __call__
+    await self.app(scope, receive, _send)
+  File "/root/.virtualenvs/test/lib/python3.10/site-packages/starlette/middleware/cors.py", line 85, in __call__
+    await self.app(scope, receive, send)
+  File "/root/.virtualenvs/test/lib/python3.10/site-packages/starlette/middleware/exceptions.py", line 65, in __call__
+    await wrap_app_handling_exceptions(self.app, conn)(scope, receive, send)
+  File "/root/.virtualenvs/test/lib/python3.10/site-packages/starlette/_exception_handler.py", line 64, in wrapped_app
+    raise exc
+  File "/root/.virtualenvs/test/lib/python3.10/site-packages/starlette/_exception_handler.py", line 53, in wrapped_app
+    await app(scope, receive, sender)
+  File "/root/.virtualenvs/test/lib/python3.10/site-packages/starlette/routing.py", line 756, in __call__
+    await self.middleware_stack(scope, receive, send)
+  File "/root/.virtualenvs/test/lib/python3.10/site-packages/starlette/routing.py", line 776, in app
+    await route.handle(scope, receive, send)
+  File "/root/.virtualenvs/test/lib/python3.10/site-packages/starlette/routing.py", line 297, in handle
+    await self.app(scope, receive, send)
+  File "/root/.virtualenvs/test/lib/python3.10/site-packages/starlette/routing.py", line 77, in app
+    await wrap_app_handling_exceptions(app, request)(scope, receive, send)
+  File "/root/.virtualenvs/test/lib/python3.10/site-packages/starlette/_exception_handler.py", line 64, in wrapped_app
+    raise exc
+  File "/root/.virtualenvs/test/lib/python3.10/site-packages/starlette/_exception_handler.py", line 53, in wrapped_app
+    await app(scope, receive, sender)
+  File "/root/.virtualenvs/test/lib/python3.10/site-packages/starlette/routing.py", line 72, in app
+    response = await func(request)
+  File "/root/.virtualenvs/test/lib/python3.10/site-packages/fastapi/applications.py", line 1009, in openapi
+    return JSONResponse(self.openapi())
+  File "/root/.virtualenvs/test/lib/python3.10/site-packages/fastapi/applications.py", line 981, in openapi
+    self.openapi_schema = get_openapi(
+  File "/root/.virtualenvs/test/lib/python3.10/site-packages/fastapi/openapi/utils.py", line 530, in get_openapi
+    return jsonable_encoder(OpenAPI(**output), by_alias=True, exclude_none=True)  # type: ignore
+  File "/root/.virtualenvs/test/lib/python3.10/site-packages/pydantic/main.py", line 214, in __init__
+    validated_self = self.__pydantic_validator__.validate_python(data, self_instance=self)
+pydantic_core._pydantic_core.ValidationError: 9 validation errors for OpenAPI
+components.schemas.Body_chat_api_v1_chat_post.Schema.properties.user_prompt.Schema.required
+  Input should be a valid list [type=list_type, input_value=True, input_type=bool]
+    For further information visit https://errors.pydantic.dev/2.10/v/list_type
+components.schemas.Body_chat_api_v1_chat_post.Schema.properties.user_prompt.bool
+  Input should be a valid boolean [type=bool_type, input_value={'description': '用户...ompt', 'type': 'string'}, input_type=dict]
+    For further information visit https://errors.pydantic.dev/2.10/v/bool_type
+components.schemas.Body_chat_api_v1_chat_post.Schema.properties.es_index_name.Schema.required
+  Input should be a valid list [type=list_type, input_value=False, input_type=bool]
+    For further information visit https://errors.pydantic.dev/2.10/v/list_type
+components.schemas.Body_chat_api_v1_chat_post.Schema.properties.es_index_name.bool
+  Input should be a valid boolean [type=bool_type, input_value={'description': '知识...Name', 'type': 'string'}, input_type=dict]
+    For further information visit https://errors.pydantic.dev/2.10/v/bool_type
+components.schemas.Body_chat_api_v1_chat_post.Schema.properties.user_id.Schema.required
+  Input should be a valid list [type=list_type, input_value=False, input_type=bool]
+    For further information visit https://errors.pydantic.dev/2.10/v/list_type
+components.schemas.Body_chat_api_v1_chat_post.Schema.properties.user_id.bool
+  Input should be a valid boolean [type=bool_type, input_value={'description': '用户...r Id', 'type': 'string'}, input_type=dict]
+    For further information visit https://errors.pydantic.dev/2.10/v/bool_type
+components.schemas.Body_chat_api_v1_chat_post.Schema.properties.files.Schema.required
+  Input should be a valid list [type=list_type, input_value=False, input_type=bool]
+    For further information visit https://errors.pydantic.dev/2.10/v/list_type
+components.schemas.Body_chat_api_v1_chat_post.Schema.properties.files.bool
+  Input should be a valid boolean [type=bool_type, input_value={'description': '上传...Files', 'type': 'array'}, input_type=dict]
+    For further information visit https://errors.pydantic.dev/2.10/v/bool_type
+components.schemas.Body_chat_api_v1_chat_post.Reference.$ref
+  Field required [type=missing, input_value={'properties': {'user_pro...post', 'type': 'object'}, input_type=dict]
+    For further information visit https://errors.pydantic.dev/2.10/v/missing
+2025-03-05 10:15:34,128 root         4002081 WARNING  ApiRequest中的self.timeout=360000
+Failed to retrieve metadata for index temp_emb_dense  [WARNING:jqlogger( jq_es_client.py 第78行)]
+Failed to retrieve metadata for index temp_emb  [WARNING:jqlogger( jq_es_client.py 第78行)]
+2025-03-05 10:16:02,080 root         4002081 WARNING  ApiRequest中的self.timeout=360000
+Failed to retrieve metadata for index temp_emb_dense  [WARNING:jqlogger( jq_es_client.py 第78行)]
+Failed to retrieve metadata for index temp_emb  [WARNING:jqlogger( jq_es_client.py 第78行)]
+INFO:     10.1.50.150:52690 - "GET /docs HTTP/1.1" 200 OK
+INFO:     10.1.50.150:52690 - "GET /openapi.json HTTP/1.1" 500 Internal Server Error
+ERROR:    Exception in ASGI application
+Traceback (most recent call last):
+  File "/root/.virtualenvs/test/lib/python3.10/site-packages/uvicorn/protocols/http/httptools_impl.py", line 435, in run_asgi
+    result = await app(  # type: ignore[func-returns-value]
+  File "/root/.virtualenvs/test/lib/python3.10/site-packages/uvicorn/middleware/proxy_headers.py", line 78, in __call__
+    return await self.app(scope, receive, send)
+  File "/root/.virtualenvs/test/lib/python3.10/site-packages/fastapi/applications.py", line 1054, in __call__
+    await super().__call__(scope, receive, send)
+  File "/root/.virtualenvs/test/lib/python3.10/site-packages/starlette/applications.py", line 123, in __call__
+    await self.middleware_stack(scope, receive, send)
+  File "/root/.virtualenvs/test/lib/python3.10/site-packages/starlette/middleware/errors.py", line 186, in __call__
+    raise exc
+  File "/root/.virtualenvs/test/lib/python3.10/site-packages/starlette/middleware/errors.py", line 164, in __call__
+    await self.app(scope, receive, _send)
+  File "/root/.virtualenvs/test/lib/python3.10/site-packages/starlette/middleware/cors.py", line 85, in __call__
+    await self.app(scope, receive, send)
+  File "/root/.virtualenvs/test/lib/python3.10/site-packages/starlette/middleware/exceptions.py", line 65, in __call__
+    await wrap_app_handling_exceptions(self.app, conn)(scope, receive, send)
+  File "/root/.virtualenvs/test/lib/python3.10/site-packages/starlette/_exception_handler.py", line 64, in wrapped_app
+    raise exc
+  File "/root/.virtualenvs/test/lib/python3.10/site-packages/starlette/_exception_handler.py", line 53, in wrapped_app
+    await app(scope, receive, sender)
+  File "/root/.virtualenvs/test/lib/python3.10/site-packages/starlette/routing.py", line 756, in __call__
+    await self.middleware_stack(scope, receive, send)
+  File "/root/.virtualenvs/test/lib/python3.10/site-packages/starlette/routing.py", line 776, in app
+    await route.handle(scope, receive, send)
+  File "/root/.virtualenvs/test/lib/python3.10/site-packages/starlette/routing.py", line 297, in handle
+    await self.app(scope, receive, send)
+  File "/root/.virtualenvs/test/lib/python3.10/site-packages/starlette/routing.py", line 77, in app
+    await wrap_app_handling_exceptions(app, request)(scope, receive, send)
+  File "/root/.virtualenvs/test/lib/python3.10/site-packages/starlette/_exception_handler.py", line 64, in wrapped_app
+    raise exc
+  File "/root/.virtualenvs/test/lib/python3.10/site-packages/starlette/_exception_handler.py", line 53, in wrapped_app
+    await app(scope, receive, sender)
+  File "/root/.virtualenvs/test/lib/python3.10/site-packages/starlette/routing.py", line 72, in app
+    response = await func(request)
+  File "/root/.virtualenvs/test/lib/python3.10/site-packages/fastapi/applications.py", line 1009, in openapi
+    return JSONResponse(self.openapi())
+  File "/root/.virtualenvs/test/lib/python3.10/site-packages/fastapi/applications.py", line 981, in openapi
+    self.openapi_schema = get_openapi(
+  File "/root/.virtualenvs/test/lib/python3.10/site-packages/fastapi/openapi/utils.py", line 530, in get_openapi
+    return jsonable_encoder(OpenAPI(**output), by_alias=True, exclude_none=True)  # type: ignore
+  File "/root/.virtualenvs/test/lib/python3.10/site-packages/pydantic/main.py", line 214, in __init__
+    validated_self = self.__pydantic_validator__.validate_python(data, self_instance=self)
+pydantic_core._pydantic_core.ValidationError: 9 validation errors for OpenAPI
+components.schemas.Body_chat_api_v1_chat_post.Schema.properties.user_prompt.Schema.required
+  Input should be a valid list [type=list_type, input_value=True, input_type=bool]
+    For further information visit https://errors.pydantic.dev/2.10/v/list_type
+components.schemas.Body_chat_api_v1_chat_post.Schema.properties.user_prompt.bool
+  Input should be a valid boolean [type=bool_type, input_value={'description': '用户...ompt', 'type': 'string'}, input_type=dict]
+    For further information visit https://errors.pydantic.dev/2.10/v/bool_type
+components.schemas.Body_chat_api_v1_chat_post.Schema.properties.es_index_name.Schema.required
+  Input should be a valid list [type=list_type, input_value=False, input_type=bool]
+    For further information visit https://errors.pydantic.dev/2.10/v/list_type
+components.schemas.Body_chat_api_v1_chat_post.Schema.properties.es_index_name.bool
+  Input should be a valid boolean [type=bool_type, input_value={'description': '知识...Name', 'type': 'string'}, input_type=dict]
+    For further information visit https://errors.pydantic.dev/2.10/v/bool_type
+components.schemas.Body_chat_api_v1_chat_post.Schema.properties.user_id.Schema.required
+  Input should be a valid list [type=list_type, input_value=False, input_type=bool]
+    For further information visit https://errors.pydantic.dev/2.10/v/list_type
+components.schemas.Body_chat_api_v1_chat_post.Schema.properties.user_id.bool
+  Input should be a valid boolean [type=bool_type, input_value={'description': '用户...r Id', 'type': 'string'}, input_type=dict]
+    For further information visit https://errors.pydantic.dev/2.10/v/bool_type
+components.schemas.Body_chat_api_v1_chat_post.Schema.properties.files.Schema.required
+  Input should be a valid list [type=list_type, input_value=False, input_type=bool]
+    For further information visit https://errors.pydantic.dev/2.10/v/list_type
+components.schemas.Body_chat_api_v1_chat_post.Schema.properties.files.bool
+  Input should be a valid boolean [type=bool_type, input_value={'description': '上传...Files', 'type': 'array'}, input_type=dict]
+    For further information visit https://errors.pydantic.dev/2.10/v/bool_type
+components.schemas.Body_chat_api_v1_chat_post.Reference.$ref
+  Field required [type=missing, input_value={'properties': {'user_pro...post', 'type': 'object'}, input_type=dict]
+    For further information visit https://errors.pydantic.dev/2.10/v/missing
+INFO:     10.1.50.150:52691 - "GET /docs HTTP/1.1" 200 OK
+INFO:     10.1.50.150:52691 - "GET /openapi.json HTTP/1.1" 500 Internal Server Error
+ERROR:    Exception in ASGI application
+Traceback (most recent call last):
+  File "/root/.virtualenvs/test/lib/python3.10/site-packages/uvicorn/protocols/http/httptools_impl.py", line 435, in run_asgi
+    result = await app(  # type: ignore[func-returns-value]
+  File "/root/.virtualenvs/test/lib/python3.10/site-packages/uvicorn/middleware/proxy_headers.py", line 78, in __call__
+    return await self.app(scope, receive, send)
+  File "/root/.virtualenvs/test/lib/python3.10/site-packages/fastapi/applications.py", line 1054, in __call__
+    await super().__call__(scope, receive, send)
+  File "/root/.virtualenvs/test/lib/python3.10/site-packages/starlette/applications.py", line 123, in __call__
+    await self.middleware_stack(scope, receive, send)
+  File "/root/.virtualenvs/test/lib/python3.10/site-packages/starlette/middleware/errors.py", line 186, in __call__
+    raise exc
+  File "/root/.virtualenvs/test/lib/python3.10/site-packages/starlette/middleware/errors.py", line 164, in __call__
+    await self.app(scope, receive, _send)
+  File "/root/.virtualenvs/test/lib/python3.10/site-packages/starlette/middleware/cors.py", line 85, in __call__
+    await self.app(scope, receive, send)
+  File "/root/.virtualenvs/test/lib/python3.10/site-packages/starlette/middleware/exceptions.py", line 65, in __call__
+    await wrap_app_handling_exceptions(self.app, conn)(scope, receive, send)
+  File "/root/.virtualenvs/test/lib/python3.10/site-packages/starlette/_exception_handler.py", line 64, in wrapped_app
+    raise exc
+  File "/root/.virtualenvs/test/lib/python3.10/site-packages/starlette/_exception_handler.py", line 53, in wrapped_app
+    await app(scope, receive, sender)
+  File "/root/.virtualenvs/test/lib/python3.10/site-packages/starlette/routing.py", line 756, in __call__
+    await self.middleware_stack(scope, receive, send)
+  File "/root/.virtualenvs/test/lib/python3.10/site-packages/starlette/routing.py", line 776, in app
+    await route.handle(scope, receive, send)
+  File "/root/.virtualenvs/test/lib/python3.10/site-packages/starlette/routing.py", line 297, in handle
+    await self.app(scope, receive, send)
+  File "/root/.virtualenvs/test/lib/python3.10/site-packages/starlette/routing.py", line 77, in app
+    await wrap_app_handling_exceptions(app, request)(scope, receive, send)
+  File "/root/.virtualenvs/test/lib/python3.10/site-packages/starlette/_exception_handler.py", line 64, in wrapped_app
+    raise exc
+  File "/root/.virtualenvs/test/lib/python3.10/site-packages/starlette/_exception_handler.py", line 53, in wrapped_app
+    await app(scope, receive, sender)
+  File "/root/.virtualenvs/test/lib/python3.10/site-packages/starlette/routing.py", line 72, in app
+    response = await func(request)
+  File "/root/.virtualenvs/test/lib/python3.10/site-packages/fastapi/applications.py", line 1009, in openapi
+    return JSONResponse(self.openapi())
+  File "/root/.virtualenvs/test/lib/python3.10/site-packages/fastapi/applications.py", line 981, in openapi
+    self.openapi_schema = get_openapi(
+  File "/root/.virtualenvs/test/lib/python3.10/site-packages/fastapi/openapi/utils.py", line 530, in get_openapi
+    return jsonable_encoder(OpenAPI(**output), by_alias=True, exclude_none=True)  # type: ignore
+  File "/root/.virtualenvs/test/lib/python3.10/site-packages/pydantic/main.py", line 214, in __init__
+    validated_self = self.__pydantic_validator__.validate_python(data, self_instance=self)
+pydantic_core._pydantic_core.ValidationError: 9 validation errors for OpenAPI
+components.schemas.Body_chat_api_v1_chat_post.Schema.properties.user_prompt.Schema.required
+  Input should be a valid list [type=list_type, input_value=True, input_type=bool]
+    For further information visit https://errors.pydantic.dev/2.10/v/list_type
+components.schemas.Body_chat_api_v1_chat_post.Schema.properties.user_prompt.bool
+  Input should be a valid boolean [type=bool_type, input_value={'description': '用户...ompt', 'type': 'string'}, input_type=dict]
+    For further information visit https://errors.pydantic.dev/2.10/v/bool_type
+components.schemas.Body_chat_api_v1_chat_post.Schema.properties.es_index_name.Schema.required
+  Input should be a valid list [type=list_type, input_value=False, input_type=bool]
+    For further information visit https://errors.pydantic.dev/2.10/v/list_type
+components.schemas.Body_chat_api_v1_chat_post.Schema.properties.es_index_name.bool
+  Input should be a valid boolean [type=bool_type, input_value={'description': '知识...Name', 'type': 'string'}, input_type=dict]
+    For further information visit https://errors.pydantic.dev/2.10/v/bool_type
+components.schemas.Body_chat_api_v1_chat_post.Schema.properties.user_id.Schema.required
+  Input should be a valid list [type=list_type, input_value=False, input_type=bool]
+    For further information visit https://errors.pydantic.dev/2.10/v/list_type
+components.schemas.Body_chat_api_v1_chat_post.Schema.properties.user_id.bool
+  Input should be a valid boolean [type=bool_type, input_value={'description': '用户...r Id', 'type': 'string'}, input_type=dict]
+    For further information visit https://errors.pydantic.dev/2.10/v/bool_type
+components.schemas.Body_chat_api_v1_chat_post.Schema.properties.files.Schema.required
+  Input should be a valid list [type=list_type, input_value=False, input_type=bool]
+    For further information visit https://errors.pydantic.dev/2.10/v/list_type
+components.schemas.Body_chat_api_v1_chat_post.Schema.properties.files.bool
+  Input should be a valid boolean [type=bool_type, input_value={'description': '上传...Files', 'type': 'array'}, input_type=dict]
+    For further information visit https://errors.pydantic.dev/2.10/v/bool_type
+components.schemas.Body_chat_api_v1_chat_post.Reference.$ref
+  Field required [type=missing, input_value={'properties': {'user_pro...post', 'type': 'object'}, input_type=dict]
+    For further information visit https://errors.pydantic.dev/2.10/v/missing
+已成功设置multiprocessing.set_start_method("spawn")  [WARNING:jqlogger( c0_init_env_models.py 第122行)]
+
+
+=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*
+项目.env文件路径：/data/projects/JqChatV2/JqChat/.env
+=*=* load_dotenv('/data/projects/JqChatV2/JqChat/.env')成功！
+=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*
+
+
+=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*
+应用启动路径:/data/projects/JqChatV2/JqChat
+本项目中添加使用的Python路径为：{'/data/projects/JqChatV2/JqChat/kernel_program', '/data/projects/LightRAG', '/data/projects/JqChatV2/graphrag', '/data/projects/JqChatV2/JqChat/web', '/data/projects/JqChatV2/JqChat/jqcode', '/data/projects/JqChatV2/JqChat', '/usr/lib/python3.10', '/root/.virtualenvs/test/lib/python3.10/site-packages', '/usr/lib/python3.10/lib-dynload', '/data/projects/JqChatV2/JqChat/jqcode/jq_knowledge_manegement/chatchat/configs', '/usr/lib/python310.zip'}
+本项目运行日志位置: /data/projects/JqChatV2/JqChat/jqchat_agent.log
+=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*
+
+
+=*=*=*=*=*JqChat Configuration=*=*=*=*=*
+操作系统：Linux-5.19.0-1010-nvidia-lowlatency-x86_64-with-glibc2.35.
+python版本：3.10.12 (main, Feb  4 2025, 14:57:36) [GCC 11.4.0]
+项目版本：v0.3.0
+langchain版本：0.3.19
+
+
+服务端运行信息：
+    JqChat Api Server: http://127.0.0.1:7861
+    JqChat WEBUI Server: http://0.0.0.0:8501
+    JqChat Kernel Server: http://0.0.0.0:5011
+=*=*=*=*=*JqChat Configuration=*=*=*=*=*
+
+
+INFO:     Started server process [4027409]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+INFO:     Uvicorn running on http://0.0.0.0:7861 (Press CTRL+C to quit)
+INFO:     10.1.50.150:53062 - "GET /docs HTTP/1.1" 200 OK
+INFO:     10.1.50.150:53062 - "GET /openapi.json HTTP/1.1" 500 Internal Server Error
+ERROR:    Exception in ASGI application
+Traceback (most recent call last):
+  File "/root/.virtualenvs/test/lib/python3.10/site-packages/uvicorn/protocols/http/httptools_impl.py", line 435, in run_asgi
+    result = await app(  # type: ignore[func-returns-value]
+  File "/root/.virtualenvs/test/lib/python3.10/site-packages/uvicorn/middleware/proxy_headers.py", line 78, in __call__
+    return await self.app(scope, receive, send)
+  File "/root/.virtualenvs/test/lib/python3.10/site-packages/fastapi/applications.py", line 1054, in __call__
+    await super().__call__(scope, receive, send)
+  File "/root/.virtualenvs/test/lib/python3.10/site-packages/starlette/applications.py", line 123, in __call__
+    await self.middleware_stack(scope, receive, send)
+  File "/root/.virtualenvs/test/lib/python3.10/site-packages/starlette/middleware/errors.py", line 186, in __call__
+    raise exc
+  File "/root/.virtualenvs/test/lib/python3.10/site-packages/starlette/middleware/errors.py", line 164, in __call__
+    await self.app(scope, receive, _send)
+  File "/root/.virtualenvs/test/lib/python3.10/site-packages/starlette/middleware/cors.py", line 85, in __call__
+    await self.app(scope, receive, send)
+  File "/root/.virtualenvs/test/lib/python3.10/site-packages/starlette/middleware/exceptions.py", line 65, in __call__
+    await wrap_app_handling_exceptions(self.app, conn)(scope, receive, send)
+  File "/root/.virtualenvs/test/lib/python3.10/site-packages/starlette/_exception_handler.py", line 64, in wrapped_app
+    raise exc
+  File "/root/.virtualenvs/test/lib/python3.10/site-packages/starlette/_exception_handler.py", line 53, in wrapped_app
+    await app(scope, receive, sender)
+  File "/root/.virtualenvs/test/lib/python3.10/site-packages/starlette/routing.py", line 756, in __call__
+    await self.middleware_stack(scope, receive, send)
+  File "/root/.virtualenvs/test/lib/python3.10/site-packages/starlette/routing.py", line 776, in app
+    await route.handle(scope, receive, send)
+  File "/root/.virtualenvs/test/lib/python3.10/site-packages/starlette/routing.py", line 297, in handle
+    await self.app(scope, receive, send)
+  File "/root/.virtualenvs/test/lib/python3.10/site-packages/starlette/routing.py", line 77, in app
+    await wrap_app_handling_exceptions(app, request)(scope, receive, send)
+  File "/root/.virtualenvs/test/lib/python3.10/site-packages/starlette/_exception_handler.py", line 64, in wrapped_app
+    raise exc
+  File "/root/.virtualenvs/test/lib/python3.10/site-packages/starlette/_exception_handler.py", line 53, in wrapped_app
+    await app(scope, receive, sender)
+  File "/root/.virtualenvs/test/lib/python3.10/site-packages/starlette/routing.py", line 72, in app
+    response = await func(request)
+  File "/root/.virtualenvs/test/lib/python3.10/site-packages/fastapi/applications.py", line 1009, in openapi
+    return JSONResponse(self.openapi())
+  File "/root/.virtualenvs/test/lib/python3.10/site-packages/fastapi/applications.py", line 981, in openapi
+    self.openapi_schema = get_openapi(
+  File "/root/.virtualenvs/test/lib/python3.10/site-packages/fastapi/openapi/utils.py", line 530, in get_openapi
+    return jsonable_encoder(OpenAPI(**output), by_alias=True, exclude_none=True)  # type: ignore
+  File "/root/.virtualenvs/test/lib/python3.10/site-packages/pydantic/main.py", line 214, in __init__
+    validated_self = self.__pydantic_validator__.validate_python(data, self_instance=self)
+pydantic_core._pydantic_core.ValidationError: 9 validation errors for OpenAPI
+components.schemas.Body_chat_api_v1_chat_post.Schema.properties.user_prompt.Schema.required
+  Input should be a valid list [type=list_type, input_value=True, input_type=bool]
+    For further information visit https://errors.pydantic.dev/2.10/v/list_type
+components.schemas.Body_chat_api_v1_chat_post.Schema.properties.user_prompt.bool
+  Input should be a valid boolean [type=bool_type, input_value={'description': '用户...ompt', 'type': 'string'}, input_type=dict]
+    For further information visit https://errors.pydantic.dev/2.10/v/bool_type
+components.schemas.Body_chat_api_v1_chat_post.Schema.properties.es_index_name.Schema.required
+  Input should be a valid list [type=list_type, input_value=False, input_type=bool]
+    For further information visit https://errors.pydantic.dev/2.10/v/list_type
+components.schemas.Body_chat_api_v1_chat_post.Schema.properties.es_index_name.bool
+  Input should be a valid boolean [type=bool_type, input_value={'description': '知识...Name', 'type': 'string'}, input_type=dict]
+    For further information visit https://errors.pydantic.dev/2.10/v/bool_type
+components.schemas.Body_chat_api_v1_chat_post.Schema.properties.user_id.Schema.required
+  Input should be a valid list [type=list_type, input_value=False, input_type=bool]
+    For further information visit https://errors.pydantic.dev/2.10/v/list_type
+components.schemas.Body_chat_api_v1_chat_post.Schema.properties.user_id.bool
+  Input should be a valid boolean [type=bool_type, input_value={'description': '用户...r Id', 'type': 'string'}, input_type=dict]
+    For further information visit https://errors.pydantic.dev/2.10/v/bool_type
+components.schemas.Body_chat_api_v1_chat_post.Schema.properties.files.Schema.required
+  Input should be a valid list [type=list_type, input_value=False, input_type=bool]
+    For further information visit https://errors.pydantic.dev/2.10/v/list_type
+components.schemas.Body_chat_api_v1_chat_post.Schema.properties.files.bool
+  Input should be a valid boolean [type=bool_type, input_value={'description': '上传...Files', 'type': 'array'}, input_type=dict]
+    For further information visit https://errors.pydantic.dev/2.10/v/bool_type
+components.schemas.Body_chat_api_v1_chat_post.Reference.$ref
+  Field required [type=missing, input_value={'properties': {'user_pro...post', 'type': 'object'}, input_type=dict]
+    For further information visit https://errors.pydantic.dev/2.10/v/missing
+
+  You can now view your Streamlit app in your browser.
+
+  URL: http://localhost:8501
+
+2025-03-05 10:30:22,460 root         4028229 WARNING  ApiRequest中的self.timeout=360000
+Failed to retrieve metadata for index temp_emb_dense  [WARNING:jqlogger( jq_es_client.py 第78行)]
+Failed to retrieve metadata for index temp_emb  [WARNING:jqlogger( jq_es_client.py 第78行)]
+INFO:     10.1.50.150:53061 - "GET /docs HTTP/1.1" 200 OK
+INFO:     10.1.50.150:53061 - "GET /openapi.json HTTP/1.1" 500 Internal Server Error
+ERROR:    Exception in ASGI application
+Traceback (most recent call last):
+  File "/root/.virtualenvs/test/lib/python3.10/site-packages/uvicorn/protocols/http/httptools_impl.py", line 435, in run_asgi
+    result = await app(  # type: ignore[func-returns-value]
+  File "/root/.virtualenvs/test/lib/python3.10/site-packages/uvicorn/middleware/proxy_headers.py", line 78, in __call__
+    return await self.app(scope, receive, send)
+  File "/root/.virtualenvs/test/lib/python3.10/site-packages/fastapi/applications.py", line 1054, in __call__
+    await super().__call__(scope, receive, send)
+  File "/root/.virtualenvs/test/lib/python3.10/site-packages/starlette/applications.py", line 123, in __call__
+    await self.middleware_stack(scope, receive, send)
+  File "/root/.virtualenvs/test/lib/python3.10/site-packages/starlette/middleware/errors.py", line 186, in __call__
+    raise exc
+  File "/root/.virtualenvs/test/lib/python3.10/site-packages/starlette/middleware/errors.py", line 164, in __call__
+    await self.app(scope, receive, _send)
+  File "/root/.virtualenvs/test/lib/python3.10/site-packages/starlette/middleware/cors.py", line 85, in __call__
+    await self.app(scope, receive, send)
+  File "/root/.virtualenvs/test/lib/python3.10/site-packages/starlette/middleware/exceptions.py", line 65, in __call__
+    await wrap_app_handling_exceptions(self.app, conn)(scope, receive, send)
+  File "/root/.virtualenvs/test/lib/python3.10/site-packages/starlette/_exception_handler.py", line 64, in wrapped_app
+    raise exc
+  File "/root/.virtualenvs/test/lib/python3.10/site-packages/starlette/_exception_handler.py", line 53, in wrapped_app
+    await app(scope, receive, sender)
+  File "/root/.virtualenvs/test/lib/python3.10/site-packages/starlette/routing.py", line 756, in __call__
+    await self.middleware_stack(scope, receive, send)
+  File "/root/.virtualenvs/test/lib/python3.10/site-packages/starlette/routing.py", line 776, in app
+    await route.handle(scope, receive, send)
+  File "/root/.virtualenvs/test/lib/python3.10/site-packages/starlette/routing.py", line 297, in handle
+    await self.app(scope, receive, send)
+  File "/root/.virtualenvs/test/lib/python3.10/site-packages/starlette/routing.py", line 77, in app
+    await wrap_app_handling_exceptions(app, request)(scope, receive, send)
+  File "/root/.virtualenvs/test/lib/python3.10/site-packages/starlette/_exception_handler.py", line 64, in wrapped_app
+    raise exc
+  File "/root/.virtualenvs/test/lib/python3.10/site-packages/starlette/_exception_handler.py", line 53, in wrapped_app
+    await app(scope, receive, sender)
+  File "/root/.virtualenvs/test/lib/python3.10/site-packages/starlette/routing.py", line 72, in app
+    response = await func(request)
+  File "/root/.virtualenvs/test/lib/python3.10/site-packages/fastapi/applications.py", line 1009, in openapi
+    return JSONResponse(self.openapi())
+  File "/root/.virtualenvs/test/lib/python3.10/site-packages/fastapi/applications.py", line 981, in openapi
+    self.openapi_schema = get_openapi(
+  File "/root/.virtualenvs/test/lib/python3.10/site-packages/fastapi/openapi/utils.py", line 530, in get_openapi
+    return jsonable_encoder(OpenAPI(**output), by_alias=True, exclude_none=True)  # type: ignore
+  File "/root/.virtualenvs/test/lib/python3.10/site-packages/pydantic/main.py", line 214, in __init__
+    validated_self = self.__pydantic_validator__.validate_python(data, self_instance=self)
+pydantic_core._pydantic_core.ValidationError: 9 validation errors for OpenAPI
+components.schemas.Body_chat_api_v1_chat_post.Schema.properties.user_prompt.Schema.required
+  Input should be a valid list [type=list_type, input_value=True, input_type=bool]
+    For further information visit https://errors.pydantic.dev/2.10/v/list_type
+components.schemas.Body_chat_api_v1_chat_post.Schema.properties.user_prompt.bool
+  Input should be a valid boolean [type=bool_type, input_value={'description': '用户...ompt', 'type': 'string'}, input_type=dict]
+    For further information visit https://errors.pydantic.dev/2.10/v/bool_type
+components.schemas.Body_chat_api_v1_chat_post.Schema.properties.es_index_name.Schema.required
+  Input should be a valid list [type=list_type, input_value=False, input_type=bool]
+    For further information visit https://errors.pydantic.dev/2.10/v/list_type
+components.schemas.Body_chat_api_v1_chat_post.Schema.properties.es_index_name.bool
+  Input should be a valid boolean [type=bool_type, input_value={'description': '知识...Name', 'type': 'string'}, input_type=dict]
+    For further information visit https://errors.pydantic.dev/2.10/v/bool_type
+components.schemas.Body_chat_api_v1_chat_post.Schema.properties.user_id.Schema.required
+  Input should be a valid list [type=list_type, input_value=False, input_type=bool]
+    For further information visit https://errors.pydantic.dev/2.10/v/list_type
+components.schemas.Body_chat_api_v1_chat_post.Schema.properties.user_id.bool
+  Input should be a valid boolean [type=bool_type, input_value={'description': '用户...r Id', 'type': 'string'}, input_type=dict]
+    For further information visit https://errors.pydantic.dev/2.10/v/bool_type
+components.schemas.Body_chat_api_v1_chat_post.Schema.properties.files.Schema.required
+  Input should be a valid list [type=list_type, input_value=False, input_type=bool]
+    For further information visit https://errors.pydantic.dev/2.10/v/list_type
+components.schemas.Body_chat_api_v1_chat_post.Schema.properties.files.bool
+  Input should be a valid boolean [type=bool_type, input_value={'description': '上传...Files', 'type': 'array'}, input_type=dict]
+    For further information visit https://errors.pydantic.dev/2.10/v/bool_type
+components.schemas.Body_chat_api_v1_chat_post.Reference.$ref
+  Field required [type=missing, input_value={'properties': {'user_pro...post', 'type': 'object'}, input_type=dict]
+    For further information visit https://errors.pydantic.dev/2.10/v/missing
+2025-03-05 10:30:45,809 root         4028229 WARNING  ApiRequest中的self.timeout=360000
+Failed to retrieve metadata for index temp_emb_dense  [WARNING:jqlogger( jq_es_client.py 第78行)]
+Failed to retrieve metadata for index temp_emb  [WARNING:jqlogger( jq_es_client.py 第78行)]
+INFO:     10.1.50.150:53063 - "GET /docs HTTP/1.1" 200 OK
+INFO:     10.1.50.150:53063 - "GET /openapi.json HTTP/1.1" 500 Internal Server Error
+ERROR:    Exception in ASGI application
+Traceback (most recent call last):
+  File "/root/.virtualenvs/test/lib/python3.10/site-packages/uvicorn/protocols/http/httptools_impl.py", line 435, in run_asgi
+    result = await app(  # type: ignore[func-returns-value]
+  File "/root/.virtualenvs/test/lib/python3.10/site-packages/uvicorn/middleware/proxy_headers.py", line 78, in __call__
+    return await self.app(scope, receive, send)
+  File "/root/.virtualenvs/test/lib/python3.10/site-packages/fastapi/applications.py", line 1054, in __call__
+    await super().__call__(scope, receive, send)
+  File "/root/.virtualenvs/test/lib/python3.10/site-packages/starlette/applications.py", line 123, in __call__
+    await self.middleware_stack(scope, receive, send)
+  File "/root/.virtualenvs/test/lib/python3.10/site-packages/starlette/middleware/errors.py", line 186, in __call__
+    raise exc
+  File "/root/.virtualenvs/test/lib/python3.10/site-packages/starlette/middleware/errors.py", line 164, in __call__
+    await self.app(scope, receive, _send)
+  File "/root/.virtualenvs/test/lib/python3.10/site-packages/starlette/middleware/cors.py", line 85, in __call__
+    await self.app(scope, receive, send)
+  File "/root/.virtualenvs/test/lib/python3.10/site-packages/starlette/middleware/exceptions.py", line 65, in __call__
+    await wrap_app_handling_exceptions(self.app, conn)(scope, receive, send)
+  File "/root/.virtualenvs/test/lib/python3.10/site-packages/starlette/_exception_handler.py", line 64, in wrapped_app
+    raise exc
+  File "/root/.virtualenvs/test/lib/python3.10/site-packages/starlette/_exception_handler.py", line 53, in wrapped_app
+    await app(scope, receive, sender)
+  File "/root/.virtualenvs/test/lib/python3.10/site-packages/starlette/routing.py", line 756, in __call__
+    await self.middleware_stack(scope, receive, send)
+  File "/root/.virtualenvs/test/lib/python3.10/site-packages/starlette/routing.py", line 776, in app
+    await route.handle(scope, receive, send)
+  File "/root/.virtualenvs/test/lib/python3.10/site-packages/starlette/routing.py", line 297, in handle
+    await self.app(scope, receive, send)
+  File "/root/.virtualenvs/test/lib/python3.10/site-packages/starlette/routing.py", line 77, in app
+    await wrap_app_handling_exceptions(app, request)(scope, receive, send)
+  File "/root/.virtualenvs/test/lib/python3.10/site-packages/starlette/_exception_handler.py", line 64, in wrapped_app
+    raise exc
+  File "/root/.virtualenvs/test/lib/python3.10/site-packages/starlette/_exception_handler.py", line 53, in wrapped_app
+    await app(scope, receive, sender)
+  File "/root/.virtualenvs/test/lib/python3.10/site-packages/starlette/routing.py", line 72, in app
+    response = await func(request)
+  File "/root/.virtualenvs/test/lib/python3.10/site-packages/fastapi/applications.py", line 1009, in openapi
+    return JSONResponse(self.openapi())
+  File "/root/.virtualenvs/test/lib/python3.10/site-packages/fastapi/applications.py", line 981, in openapi
+    self.openapi_schema = get_openapi(
+  File "/root/.virtualenvs/test/lib/python3.10/site-packages/fastapi/openapi/utils.py", line 530, in get_openapi
+    return jsonable_encoder(OpenAPI(**output), by_alias=True, exclude_none=True)  # type: ignore
+  File "/root/.virtualenvs/test/lib/python3.10/site-packages/pydantic/main.py", line 214, in __init__
+    validated_self = self.__pydantic_validator__.validate_python(data, self_instance=self)
+pydantic_core._pydantic_core.ValidationError: 9 validation errors for OpenAPI
+components.schemas.Body_chat_api_v1_chat_post.Schema.properties.user_prompt.Schema.required
+  Input should be a valid list [type=list_type, input_value=True, input_type=bool]
+    For further information visit https://errors.pydantic.dev/2.10/v/list_type
+components.schemas.Body_chat_api_v1_chat_post.Schema.properties.user_prompt.bool
+  Input should be a valid boolean [type=bool_type, input_value={'description': '用户...ompt', 'type': 'string'}, input_type=dict]
+    For further information visit https://errors.pydantic.dev/2.10/v/bool_type
+components.schemas.Body_chat_api_v1_chat_post.Schema.properties.es_index_name.Schema.required
+  Input should be a valid list [type=list_type, input_value=False, input_type=bool]
+    For further information visit https://errors.pydantic.dev/2.10/v/list_type
+components.schemas.Body_chat_api_v1_chat_post.Schema.properties.es_index_name.bool
+  Input should be a valid boolean [type=bool_type, input_value={'description': '知识...Name', 'type': 'string'}, input_type=dict]
+    For further information visit https://errors.pydantic.dev/2.10/v/bool_type
+components.schemas.Body_chat_api_v1_chat_post.Schema.properties.user_id.Schema.required
+  Input should be a valid list [type=list_type, input_value=False, input_type=bool]
+    For further information visit https://errors.pydantic.dev/2.10/v/list_type
+components.schemas.Body_chat_api_v1_chat_post.Schema.properties.user_id.bool
+  Input should be a valid boolean [type=bool_type, input_value={'description': '用户...r Id', 'type': 'string'}, input_type=dict]
+    For further information visit https://errors.pydantic.dev/2.10/v/bool_type
+components.schemas.Body_chat_api_v1_chat_post.Schema.properties.files.Schema.required
+  Input should be a valid list [type=list_type, input_value=False, input_type=bool]
+    For further information visit https://errors.pydantic.dev/2.10/v/list_type
+components.schemas.Body_chat_api_v1_chat_post.Schema.properties.files.bool
+  Input should be a valid boolean [type=bool_type, input_value={'description': '上传...Files', 'type': 'array'}, input_type=dict]
+    For further information visit https://errors.pydantic.dev/2.10/v/bool_type
+components.schemas.Body_chat_api_v1_chat_post.Reference.$ref
+  Field required [type=missing, input_value={'properties': {'user_pro...post', 'type': 'object'}, input_type=dict]
+    For further information visit https://errors.pydantic.dev/2.10/v/missing
+已成功设置multiprocessing.set_start_method("spawn")  [WARNING:jqlogger( c0_init_env_models.py 第122行)]
+
+
+=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*
+项目.env文件路径：/data/projects/JqChatV2/JqChat/.env
+=*=* load_dotenv('/data/projects/JqChatV2/JqChat/.env')成功！
+=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*
+
+
+=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*
+应用启动路径:/data/projects/JqChatV2/JqChat
+本项目中添加使用的Python路径为：{'/data/projects/LightRAG', '/usr/lib/python3.10', '/root/.virtualenvs/test/lib/python3.10/site-packages', '/data/projects/JqChatV2/JqChat/jqcode', '/data/projects/JqChatV2/JqChat/web', '/data/projects/JqChatV2/JqChat/kernel_program', '/data/projects/JqChatV2/JqChat/jqcode/jq_knowledge_manegement/chatchat/configs', '/data/projects/JqChatV2/JqChat', '/usr/lib/python310.zip', '/usr/lib/python3.10/lib-dynload', '/data/projects/JqChatV2/graphrag'}
+本项目运行日志位置: /data/projects/JqChatV2/JqChat/jqchat_agent.log
+=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*
+
+
+=*=*=*=*=*JqChat Configuration=*=*=*=*=*
+操作系统：Linux-5.19.0-1010-nvidia-lowlatency-x86_64-with-glibc2.35.
+python版本：3.10.12 (main, Feb  4 2025, 14:57:36) [GCC 11.4.0]
+项目版本：v0.3.0
+langchain版本：0.3.19
+
+
+服务端运行信息：
+    JqChat Api Server: http://127.0.0.1:7861
+    JqChat WEBUI Server: http://0.0.0.0:8501
+    JqChat Kernel Server: http://0.0.0.0:5011
+=*=*=*=*=*JqChat Configuration=*=*=*=*=*
+
+
+INFO:     Started server process [4036485]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+INFO:     Uvicorn running on http://0.0.0.0:7861 (Press CTRL+C to quit)
+INFO:     10.1.50.150:53496 - "GET /docs HTTP/1.1" 200 OK
+INFO:     10.1.50.150:53496 - "GET /openapi.json HTTP/1.1" 500 Internal Server Error
+ERROR:    Exception in ASGI application
+Traceback (most recent call last):
+  File "/root/.virtualenvs/test/lib/python3.10/site-packages/uvicorn/protocols/http/httptools_impl.py", line 435, in run_asgi
+    result = await app(  # type: ignore[func-returns-value]
+  File "/root/.virtualenvs/test/lib/python3.10/site-packages/uvicorn/middleware/proxy_headers.py", line 78, in __call__
+    return await self.app(scope, receive, send)
+  File "/root/.virtualenvs/test/lib/python3.10/site-packages/fastapi/applications.py", line 1054, in __call__
+    await super().__call__(scope, receive, send)
+  File "/root/.virtualenvs/test/lib/python3.10/site-packages/starlette/applications.py", line 123, in __call__
+    await self.middleware_stack(scope, receive, send)
+  File "/root/.virtualenvs/test/lib/python3.10/site-packages/starlette/middleware/errors.py", line 186, in __call__
+    raise exc
+  File "/root/.virtualenvs/test/lib/python3.10/site-packages/starlette/middleware/errors.py", line 164, in __call__
+    await self.app(scope, receive, _send)
+  File "/root/.virtualenvs/test/lib/python3.10/site-packages/starlette/middleware/cors.py", line 85, in __call__
+    await self.app(scope, receive, send)
+  File "/root/.virtualenvs/test/lib/python3.10/site-packages/starlette/middleware/exceptions.py", line 65, in __call__
+    await wrap_app_handling_exceptions(self.app, conn)(scope, receive, send)
+  File "/root/.virtualenvs/test/lib/python3.10/site-packages/starlette/_exception_handler.py", line 64, in wrapped_app
+    raise exc
+  File "/root/.virtualenvs/test/lib/python3.10/site-packages/starlette/_exception_handler.py", line 53, in wrapped_app
+    await app(scope, receive, sender)
+  File "/root/.virtualenvs/test/lib/python3.10/site-packages/starlette/routing.py", line 756, in __call__
+    await self.middleware_stack(scope, receive, send)
+  File "/root/.virtualenvs/test/lib/python3.10/site-packages/starlette/routing.py", line 776, in app
+    await route.handle(scope, receive, send)
+  File "/root/.virtualenvs/test/lib/python3.10/site-packages/starlette/routing.py", line 297, in handle
+    await self.app(scope, receive, send)
+  File "/root/.virtualenvs/test/lib/python3.10/site-packages/starlette/routing.py", line 77, in app
+    await wrap_app_handling_exceptions(app, request)(scope, receive, send)
+  File "/root/.virtualenvs/test/lib/python3.10/site-packages/starlette/_exception_handler.py", line 64, in wrapped_app
+    raise exc
+  File "/root/.virtualenvs/test/lib/python3.10/site-packages/starlette/_exception_handler.py", line 53, in wrapped_app
+    await app(scope, receive, sender)
+  File "/root/.virtualenvs/test/lib/python3.10/site-packages/starlette/routing.py", line 72, in app
+    response = await func(request)
+  File "/root/.virtualenvs/test/lib/python3.10/site-packages/fastapi/applications.py", line 1009, in openapi
+    return JSONResponse(self.openapi())
+  File "/root/.virtualenvs/test/lib/python3.10/site-packages/fastapi/applications.py", line 981, in openapi
+    self.openapi_schema = get_openapi(
+  File "/root/.virtualenvs/test/lib/python3.10/site-packages/fastapi/openapi/utils.py", line 530, in get_openapi
+    return jsonable_encoder(OpenAPI(**output), by_alias=True, exclude_none=True)  # type: ignore
+  File "/root/.virtualenvs/test/lib/python3.10/site-packages/pydantic/main.py", line 214, in __init__
+    validated_self = self.__pydantic_validator__.validate_python(data, self_instance=self)
+pydantic_core._pydantic_core.ValidationError: 9 validation errors for OpenAPI
+components.schemas.Body_chat_api_v1_chat_post.Schema.properties.user_prompt.Schema.required
+  Input should be a valid list [type=list_type, input_value=True, input_type=bool]
+    For further information visit https://errors.pydantic.dev/2.10/v/list_type
+components.schemas.Body_chat_api_v1_chat_post.Schema.properties.user_prompt.bool
+  Input should be a valid boolean [type=bool_type, input_value={'description': '用户...ompt', 'type': 'string'}, input_type=dict]
+    For further information visit https://errors.pydantic.dev/2.10/v/bool_type
+components.schemas.Body_chat_api_v1_chat_post.Schema.properties.es_index_name.Schema.required
+  Input should be a valid list [type=list_type, input_value=False, input_type=bool]
+    For further information visit https://errors.pydantic.dev/2.10/v/list_type
+components.schemas.Body_chat_api_v1_chat_post.Schema.properties.es_index_name.bool
+  Input should be a valid boolean [type=bool_type, input_value={'description': '知识...Name', 'type': 'string'}, input_type=dict]
+    For further information visit https://errors.pydantic.dev/2.10/v/bool_type
+components.schemas.Body_chat_api_v1_chat_post.Schema.properties.user_id.Schema.required
+  Input should be a valid list [type=list_type, input_value=False, input_type=bool]
+    For further information visit https://errors.pydantic.dev/2.10/v/list_type
+components.schemas.Body_chat_api_v1_chat_post.Schema.properties.user_id.bool
+  Input should be a valid boolean [type=bool_type, input_value={'description': '用户...r Id', 'type': 'string'}, input_type=dict]
+    For further information visit https://errors.pydantic.dev/2.10/v/bool_type
+components.schemas.Body_chat_api_v1_chat_post.Schema.properties.files.Schema.required
+  Input should be a valid list [type=list_type, input_value=False, input_type=bool]
+    For further information visit https://errors.pydantic.dev/2.10/v/list_type
+components.schemas.Body_chat_api_v1_chat_post.Schema.properties.files.bool
+  Input should be a valid boolean [type=bool_type, input_value={'description': '上传...Files', 'type': 'array'}, input_type=dict]
+    For further information visit https://errors.pydantic.dev/2.10/v/bool_type
+components.schemas.Body_chat_api_v1_chat_post.Reference.$ref
+  Field required [type=missing, input_value={'properties': {'user_pro...post', 'type': 'object'}, input_type=dict]
+    For further information visit https://errors.pydantic.dev/2.10/v/missing
+
+  You can now view your Streamlit app in your browser.
+
+  URL: http://localhost:8501
+
+2025-03-05 10:36:22,444 root         4037047 WARNING  ApiRequest中的self.timeout=360000
+Failed to retrieve metadata for index temp_emb_dense  [WARNING:jqlogger( jq_es_client.py 第78行)]
+Failed to retrieve metadata for index temp_emb  [WARNING:jqlogger( jq_es_client.py 第78行)]
+2025-03-05 10:36:34,590 root         4037047 WARNING  ApiRequest中的self.timeout=360000
+Failed to retrieve metadata for index temp_emb_dense  [WARNING:jqlogger( jq_es_client.py 第78行)]
+Failed to retrieve metadata for index temp_emb  [WARNING:jqlogger( jq_es_client.py 第78行)]
+2025-03-05 10:36:36,783 root         4037047 WARNING  ApiRequest中的self.timeout=360000
+Failed to retrieve metadata for index temp_emb_dense  [WARNING:jqlogger( jq_es_client.py 第78行)]
+Failed to retrieve metadata for index temp_emb  [WARNING:jqlogger( jq_es_client.py 第78行)]
+INFO:     10.1.50.150:53495 - "GET /docs HTTP/1.1" 200 OK
+INFO:     10.1.50.150:53495 - "GET /openapi.json HTTP/1.1" 500 Internal Server Error
+ERROR:    Exception in ASGI application
+Traceback (most recent call last):
+  File "/root/.virtualenvs/test/lib/python3.10/site-packages/uvicorn/protocols/http/httptools_impl.py", line 435, in run_asgi
+    result = await app(  # type: ignore[func-returns-value]
+  File "/root/.virtualenvs/test/lib/python3.10/site-packages/uvicorn/middleware/proxy_headers.py", line 78, in __call__
+    return await self.app(scope, receive, send)
+  File "/root/.virtualenvs/test/lib/python3.10/site-packages/fastapi/applications.py", line 1054, in __call__
+    await super().__call__(scope, receive, send)
+  File "/root/.virtualenvs/test/lib/python3.10/site-packages/starlette/applications.py", line 123, in __call__
+    await self.middleware_stack(scope, receive, send)
+  File "/root/.virtualenvs/test/lib/python3.10/site-packages/starlette/middleware/errors.py", line 186, in __call__
+    raise exc
+  File "/root/.virtualenvs/test/lib/python3.10/site-packages/starlette/middleware/errors.py", line 164, in __call__
+    await self.app(scope, receive, _send)
+  File "/root/.virtualenvs/test/lib/python3.10/site-packages/starlette/middleware/cors.py", line 85, in __call__
+    await self.app(scope, receive, send)
+  File "/root/.virtualenvs/test/lib/python3.10/site-packages/starlette/middleware/exceptions.py", line 65, in __call__
+    await wrap_app_handling_exceptions(self.app, conn)(scope, receive, send)
+  File "/root/.virtualenvs/test/lib/python3.10/site-packages/starlette/_exception_handler.py", line 64, in wrapped_app
+    raise exc
+  File "/root/.virtualenvs/test/lib/python3.10/site-packages/starlette/_exception_handler.py", line 53, in wrapped_app
+    await app(scope, receive, sender)
+  File "/root/.virtualenvs/test/lib/python3.10/site-packages/starlette/routing.py", line 756, in __call__
+    await self.middleware_stack(scope, receive, send)
+  File "/root/.virtualenvs/test/lib/python3.10/site-packages/starlette/routing.py", line 776, in app
+    await route.handle(scope, receive, send)
+  File "/root/.virtualenvs/test/lib/python3.10/site-packages/starlette/routing.py", line 297, in handle
+    await self.app(scope, receive, send)
+  File "/root/.virtualenvs/test/lib/python3.10/site-packages/starlette/routing.py", line 77, in app
+    await wrap_app_handling_exceptions(app, request)(scope, receive, send)
+  File "/root/.virtualenvs/test/lib/python3.10/site-packages/starlette/_exception_handler.py", line 64, in wrapped_app
+    raise exc
+  File "/root/.virtualenvs/test/lib/python3.10/site-packages/starlette/_exception_handler.py", line 53, in wrapped_app
+    await app(scope, receive, sender)
+  File "/root/.virtualenvs/test/lib/python3.10/site-packages/starlette/routing.py", line 72, in app
+    response = await func(request)
+  File "/root/.virtualenvs/test/lib/python3.10/site-packages/fastapi/applications.py", line 1009, in openapi
+    return JSONResponse(self.openapi())
+  File "/root/.virtualenvs/test/lib/python3.10/site-packages/fastapi/applications.py", line 981, in openapi
+    self.openapi_schema = get_openapi(
+  File "/root/.virtualenvs/test/lib/python3.10/site-packages/fastapi/openapi/utils.py", line 530, in get_openapi
+    return jsonable_encoder(OpenAPI(**output), by_alias=True, exclude_none=True)  # type: ignore
+  File "/root/.virtualenvs/test/lib/python3.10/site-packages/pydantic/main.py", line 214, in __init__
+    validated_self = self.__pydantic_validator__.validate_python(data, self_instance=self)
+pydantic_core._pydantic_core.ValidationError: 9 validation errors for OpenAPI
+components.schemas.Body_chat_api_v1_chat_post.Schema.properties.user_prompt.Schema.required
+  Input should be a valid list [type=list_type, input_value=True, input_type=bool]
+    For further information visit https://errors.pydantic.dev/2.10/v/list_type
+components.schemas.Body_chat_api_v1_chat_post.Schema.properties.user_prompt.bool
+  Input should be a valid boolean [type=bool_type, input_value={'description': '用户...ompt', 'type': 'string'}, input_type=dict]
+    For further information visit https://errors.pydantic.dev/2.10/v/bool_type
+components.schemas.Body_chat_api_v1_chat_post.Schema.properties.es_index_name.Schema.required
+  Input should be a valid list [type=list_type, input_value=False, input_type=bool]
+    For further information visit https://errors.pydantic.dev/2.10/v/list_type
+components.schemas.Body_chat_api_v1_chat_post.Schema.properties.es_index_name.bool
+  Input should be a valid boolean [type=bool_type, input_value={'description': '知识...Name', 'type': 'string'}, input_type=dict]
+    For further information visit https://errors.pydantic.dev/2.10/v/bool_type
+components.schemas.Body_chat_api_v1_chat_post.Schema.properties.user_id.Schema.required
+  Input should be a valid list [type=list_type, input_value=False, input_type=bool]
+    For further information visit https://errors.pydantic.dev/2.10/v/list_type
+components.schemas.Body_chat_api_v1_chat_post.Schema.properties.user_id.bool
+  Input should be a valid boolean [type=bool_type, input_value={'description': '用户...r Id', 'type': 'string'}, input_type=dict]
+    For further information visit https://errors.pydantic.dev/2.10/v/bool_type
+components.schemas.Body_chat_api_v1_chat_post.Schema.properties.files.Schema.required
+  Input should be a valid list [type=list_type, input_value=False, input_type=bool]
+    For further information visit https://errors.pydantic.dev/2.10/v/list_type
+components.schemas.Body_chat_api_v1_chat_post.Schema.properties.files.bool
+  Input should be a valid boolean [type=bool_type, input_value={'description': '上传...Files', 'type': 'array'}, input_type=dict]
+    For further information visit https://errors.pydantic.dev/2.10/v/bool_type
+components.schemas.Body_chat_api_v1_chat_post.Reference.$ref
+  Field required [type=missing, input_value={'properties': {'user_pro...post', 'type': 'object'}, input_type=dict]
+    For further information visit https://errors.pydantic.dev/2.10/v/missing
+INFO:     10.1.50.150:53546 - "GET / HTTP/1.1" 307 Temporary Redirect
+INFO:     10.1.50.150:53546 - "GET /docs HTTP/1.1" 200 OK
+INFO:     10.1.50.150:53546 - "GET /openapi.json HTTP/1.1" 500 Internal Server Error
+ERROR:    Exception in ASGI application
+Traceback (most recent call last):
+  File "/root/.virtualenvs/test/lib/python3.10/site-packages/uvicorn/protocols/http/httptools_impl.py", line 435, in run_asgi
+    result = await app(  # type: ignore[func-returns-value]
+  File "/root/.virtualenvs/test/lib/python3.10/site-packages/uvicorn/middleware/proxy_headers.py", line 78, in __call__
+    return await self.app(scope, receive, send)
+  File "/root/.virtualenvs/test/lib/python3.10/site-packages/fastapi/applications.py", line 1054, in __call__
+    await super().__call__(scope, receive, send)
+  File "/root/.virtualenvs/test/lib/python3.10/site-packages/starlette/applications.py", line 123, in __call__
+    await self.middleware_stack(scope, receive, send)
+  File "/root/.virtualenvs/test/lib/python3.10/site-packages/starlette/middleware/errors.py", line 186, in __call__
+    raise exc
+  File "/root/.virtualenvs/test/lib/python3.10/site-packages/starlette/middleware/errors.py", line 164, in __call__
+    await self.app(scope, receive, _send)
+  File "/root/.virtualenvs/test/lib/python3.10/site-packages/starlette/middleware/cors.py", line 85, in __call__
+    await self.app(scope, receive, send)
+  File "/root/.virtualenvs/test/lib/python3.10/site-packages/starlette/middleware/exceptions.py", line 65, in __call__
+    await wrap_app_handling_exceptions(self.app, conn)(scope, receive, send)
+  File "/root/.virtualenvs/test/lib/python3.10/site-packages/starlette/_exception_handler.py", line 64, in wrapped_app
+    raise exc
+  File "/root/.virtualenvs/test/lib/python3.10/site-packages/starlette/_exception_handler.py", line 53, in wrapped_app
+    await app(scope, receive, sender)
+  File "/root/.virtualenvs/test/lib/python3.10/site-packages/starlette/routing.py", line 756, in __call__
+    await self.middleware_stack(scope, receive, send)
+  File "/root/.virtualenvs/test/lib/python3.10/site-packages/starlette/routing.py", line 776, in app
+    await route.handle(scope, receive, send)
+  File "/root/.virtualenvs/test/lib/python3.10/site-packages/starlette/routing.py", line 297, in handle
+    await self.app(scope, receive, send)
+  File "/root/.virtualenvs/test/lib/python3.10/site-packages/starlette/routing.py", line 77, in app
+    await wrap_app_handling_exceptions(app, request)(scope, receive, send)
+  File "/root/.virtualenvs/test/lib/python3.10/site-packages/starlette/_exception_handler.py", line 64, in wrapped_app
+    raise exc
+  File "/root/.virtualenvs/test/lib/python3.10/site-packages/starlette/_exception_handler.py", line 53, in wrapped_app
+    await app(scope, receive, sender)
+  File "/root/.virtualenvs/test/lib/python3.10/site-packages/starlette/routing.py", line 72, in app
+    response = await func(request)
+  File "/root/.virtualenvs/test/lib/python3.10/site-packages/fastapi/applications.py", line 1009, in openapi
+    return JSONResponse(self.openapi())
+  File "/root/.virtualenvs/test/lib/python3.10/site-packages/fastapi/applications.py", line 981, in openapi
+    self.openapi_schema = get_openapi(
+  File "/root/.virtualenvs/test/lib/python3.10/site-packages/fastapi/openapi/utils.py", line 530, in get_openapi
+    return jsonable_encoder(OpenAPI(**output), by_alias=True, exclude_none=True)  # type: ignore
+  File "/root/.virtualenvs/test/lib/python3.10/site-packages/pydantic/main.py", line 214, in __init__
+    validated_self = self.__pydantic_validator__.validate_python(data, self_instance=self)
+pydantic_core._pydantic_core.ValidationError: 9 validation errors for OpenAPI
+components.schemas.Body_chat_api_v1_chat_post.Schema.properties.user_prompt.Schema.required
+  Input should be a valid list [type=list_type, input_value=True, input_type=bool]
+    For further information visit https://errors.pydantic.dev/2.10/v/list_type
+components.schemas.Body_chat_api_v1_chat_post.Schema.properties.user_prompt.bool
+  Input should be a valid boolean [type=bool_type, input_value={'description': '用户...ompt', 'type': 'string'}, input_type=dict]
+    For further information visit https://errors.pydantic.dev/2.10/v/bool_type
+components.schemas.Body_chat_api_v1_chat_post.Schema.properties.es_index_name.Schema.required
+  Input should be a valid list [type=list_type, input_value=False, input_type=bool]
+    For further information visit https://errors.pydantic.dev/2.10/v/list_type
+components.schemas.Body_chat_api_v1_chat_post.Schema.properties.es_index_name.bool
+  Input should be a valid boolean [type=bool_type, input_value={'description': '知识...Name', 'type': 'string'}, input_type=dict]
+    For further information visit https://errors.pydantic.dev/2.10/v/bool_type
+components.schemas.Body_chat_api_v1_chat_post.Schema.properties.user_id.Schema.required
+  Input should be a valid list [type=list_type, input_value=False, input_type=bool]
+    For further information visit https://errors.pydantic.dev/2.10/v/list_type
+components.schemas.Body_chat_api_v1_chat_post.Schema.properties.user_id.bool
+  Input should be a valid boolean [type=bool_type, input_value={'description': '用户...r Id', 'type': 'string'}, input_type=dict]
+    For further information visit https://errors.pydantic.dev/2.10/v/bool_type
+components.schemas.Body_chat_api_v1_chat_post.Schema.properties.files.Schema.required
+  Input should be a valid list [type=list_type, input_value=False, input_type=bool]
+    For further information visit https://errors.pydantic.dev/2.10/v/list_type
+components.schemas.Body_chat_api_v1_chat_post.Schema.properties.files.bool
+  Input should be a valid boolean [type=bool_type, input_value={'description': '上传...Files', 'type': 'array'}, input_type=dict]
+    For further information visit https://errors.pydantic.dev/2.10/v/bool_type
+components.schemas.Body_chat_api_v1_chat_post.Reference.$ref
+  Field required [type=missing, input_value={'properties': {'user_pro...post', 'type': 'object'}, input_type=dict]
+    For further information visit https://errors.pydantic.dev/2.10/v/missing
+已成功设置multiprocessing.set_start_method("spawn")  [WARNING:jqlogger( c0_init_env_models.py 第122行)]
+
+
+=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*
+项目.env文件路径：/data/projects/JqChatV2/JqChat/.env
+=*=* load_dotenv('/data/projects/JqChatV2/JqChat/.env')成功！
+=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*
+
+
+=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*
+应用启动路径:/data/projects/JqChatV2/JqChat
+本项目中添加使用的Python路径为：{'/data/projects/JqChatV2/JqChat/kernel_program', '/data/projects/JqChatV2/JqChat', '/usr/lib/python3.10/lib-dynload', '/data/projects/JqChatV2/JqChat/jqcode', '/root/.virtualenvs/test/lib/python3.10/site-packages', '/data/projects/JqChatV2/JqChat/jqcode/jq_knowledge_manegement/chatchat/configs', '/data/projects/LightRAG', '/data/projects/JqChatV2/JqChat/web', '/usr/lib/python3.10', '/usr/lib/python310.zip', '/data/projects/JqChatV2/graphrag'}
+本项目运行日志位置: /data/projects/JqChatV2/JqChat/jqchat_agent.log
+=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*
+
+
+=*=*=*=*=*JqChat Configuration=*=*=*=*=*
+操作系统：Linux-5.19.0-1010-nvidia-lowlatency-x86_64-with-glibc2.35.
+python版本：3.10.12 (main, Feb  4 2025, 14:57:36) [GCC 11.4.0]
+项目版本：v0.3.0
+langchain版本：0.3.19
+
+
+服务端运行信息：
+    JqChat Api Server: http://127.0.0.1:7861
+    JqChat WEBUI Server: http://0.0.0.0:8501
+    JqChat Kernel Server: http://0.0.0.0:5011
+=*=*=*=*=*JqChat Configuration=*=*=*=*=*
+
+
+INFO:     Started server process [611258]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+INFO:     Uvicorn running on http://0.0.0.0:7861 (Press CTRL+C to quit)
+INFO:     10.1.50.150:55686 - "GET /docs HTTP/1.1" 200 OK
+INFO:     10.1.50.150:55686 - "GET /static-offline-docs/swagger-ui.css HTTP/1.1" 200 OK
+INFO:     10.1.50.150:55687 - "GET /static-offline-docs/swagger-ui-bundle.js HTTP/1.1" 200 OK
+INFO:     10.1.50.150:55686 - "GET /static-offline-docs/swagger-ui.css.map HTTP/1.1" 404 Not Found
+INFO:     10.1.50.150:55686 - "GET /static-offline-docs/swagger-ui-bundle.js.map HTTP/1.1" 404 Not Found
+INFO:     10.1.50.150:55686 - "GET /openapi.json HTTP/1.1" 200 OK
+INFO:     10.1.50.150:55686 - "GET /static-offline-docs/favicon.png HTTP/1.1" 200 OK
+
+  You can now view your Streamlit app in your browser.
+
+  URL: http://localhost:8501
+
+2025-03-05 18:16:22,071 root         611939 WARNING  ApiRequest中的self.timeout=360000
+Failed to retrieve metadata for index temp_emb_dense  [WARNING:jqlogger( jq_es_client.py 第78行)]
+Failed to retrieve metadata for index temp_emb  [WARNING:jqlogger( jq_es_client.py 第78行)]
+INFO:     10.1.50.150:50094 - "OPTIONS /api/v1/knowledges HTTP/1.1" 200 OK
+Failed to retrieve metadata for index temp_emb_dense  [WARNING:jqlogger( jq_es_client.py 第78行)]
+Failed to retrieve metadata for index temp_emb  [WARNING:jqlogger( jq_es_client.py 第78行)]
+INFO:     10.1.50.150:50094 - "GET /api/v1/knowledges HTTP/1.1" 200 OK
+get_retriever方法，返回的集成检索器为： 检索器[1]embedding，检索的目标知识库为电子病历文书库  检索器[2]bm25，检索的目标知识库为电子病历文书库   [WARNING:jqlogger( jq_retriever.py 第250行)]
+用户改写问题设置为self.allow_question_rewrite=False  [WARNING:jqlogger( langgraph_in_class.py 第1594行)]
+get_retriever方法，返回的集成检索器为： 检索器[1]embedding，检索的目标知识库为temp_memory_or_web_results  检索器[2]bm25，检索的目标知识库为temp_memory_or_web_results   [WARNING:jqlogger( jq_retriever.py 第250行)]
+call_llm:调用LLM时的消息数为:4  [WARNING:jqlogger( langgraph_in_class.py 第1129行)]
+============================================================
+=============开始后台逻辑中....请稍后...........==============
+====用户的问题是: 你好=============================
+====所选的知识库是: 电子病历文书库================================
+====用户的ID是：1543936823649480706===================================
+====上传的文件信息：没有上传的文件==========================
+====启用会话记忆：True==========================
+====启用问题重写：False==========================
+====从metastore中获取到用户所选知识库的详细信息为：{'index_name': '电子病历文书库', 'description': '本知识库主要收纳患者在医院住院期间的病历文书，包括但不限于入院记录、出院记录、病程记录，病案首页等内容，每个患者的病历文书包含多个文档，在知识库中分多次上传。', 'index_creator': 'manager', 'index_create_date': '2025-01-02 17:53:41', 'status': True}====
+============================================================
+chat_on_docs_list=[]
+chat_bot.user_id='1543936823649480706'
+=====================================================================================
+=====================================================================================
+开始会话:你好
+=====================================================================================
+xxxxxxxxxxxxxxxxxxxxxxxxxxxx
+result.tool_calls=[];result.content='你好！我叫晶灵，是安徽晶奇公司网络科技公司研发的一款高级智能体专家应用。有什么可以帮助你的吗？'
+xxxxxxxxxxxxxxxxxxxxxxxxxxxx
+====问题和答案====
+原始问题>>:你好
+改写问题>>:你好 [allow_question_rewrite=False]
+==AI回答:>>:你好！我叫晶灵，是安徽晶奇公司网络科技公司研发的一款高级智能体专家应用。有什么可以帮助你的吗？
+=====================================================================================
+INFO:     10.1.50.150:52051 - "POST /api/v1/chat HTTP/1.1" 200 OK
+2025-03-10 17:55:57,111 root         611939 WARNING  ApiRequest中的self.timeout=360000
+Failed to retrieve metadata for index temp_emb_dense  [WARNING:jqlogger( jq_es_client.py 第78行)]
+Failed to retrieve metadata for index temp_emb  [WARNING:jqlogger( jq_es_client.py 第78行)]
+2025-03-10 17:56:01,118 root         611939 WARNING  ApiRequest中的self.timeout=360000
+2025-03-10 17:56:01,232 root         611939 WARNING  ApiRequest中的self.timeout=360000
+Failed to retrieve metadata for index temp_emb_dense  [WARNING:jqlogger( jq_es_client.py 第78行)]
+Failed to retrieve metadata for index temp_emb  [WARNING:jqlogger( jq_es_client.py 第78行)]
+Failed to retrieve metadata for index temp_emb_dense  [WARNING:jqlogger( jq_es_client.py 第78行)]
+Failed to retrieve metadata for index temp_emb  [WARNING:jqlogger( jq_es_client.py 第78行)]
+get_retriever方法，返回的集成检索器为： 检索器[1]embedding，检索的目标知识库为秋景3号知识库doc乱码库  检索器[2]bm25，检索的目标知识库为秋景3号知识库doc乱码库   [WARNING:jqlogger( jq_retriever.py 第250行)]
+用户改写问题设置为self.allow_question_rewrite=False  [WARNING:jqlogger( langgraph_in_class.py 第1594行)]
+get_retriever方法，返回的集成检索器为： 检索器[1]embedding，检索的目标知识库为temp_memory_or_web_results  检索器[2]bm25，检索的目标知识库为temp_memory_or_web_results   [WARNING:jqlogger( jq_retriever.py 第250行)]
+call_llm:调用LLM时的消息数为:2  [WARNING:jqlogger( langgraph_in_class.py 第1129行)]
+     vectorstore方法，执行实际文档检索的集成检索器为： 检索器[1]embedding，检索的目标知识库为秋景3号知识库doc乱码库  检索器[2]bm25，检索的目标知识库为秋景3号知识库doc乱码库   [WARNING:jqlogger( langgraph_in_class.py 第644行)]
+     vectorstore检索到的相关文档数:len(vector_documents)=1  [WARNING:jqlogger( langgraph_in_class.py 第652行)]
+     web_search搜索到的相关文本块数:len(chunks_relevant)=8  [WARNING:jqlogger( langgraph_in_class.py 第889行)]
+============================================================
+=============开始后台逻辑中....请稍后...........==============
+====用户的问题是: 你这个库里面有啥知识啊=============================
+====所选的知识库是: 秋景3号知识库doc乱码库================================
+====用户的ID是：1543936823649480706===================================
+====上传的文件信息：没有上传的文件==========================
+====启用会话记忆：True==========================
+====启用问题重写：False==========================
+====从metastore中获取到用户所选知识库的详细信息为：{'index_name': '秋景3号知识库doc乱码库', 'description': '该测试库，以科室提供内容为基准，进行智能问答', 'index_creator': 'manager', 'index_create_date': '2025-01-03 10:29:07', 'status': True}====
+============================================================
+chat_on_docs_list=[]
+chat_bot.user_id='1543936823649480706'
+=====================================================================================
+=====================================================================================
+开始会话:你这个库里面有啥知识啊
+=====================================================================================
+xxxxxxxxxxxxxxxxxxxxxxxxxxxx
+result.tool_calls=[{'name': 'VECTORSTORE', 'args': {'query': '你这个库里面有啥知识啊'}, 'id': 'chatcmpl-tool-40c71a7c8dbc49a88efe59561bd45dab', 'type': 'tool_call'}];result.content=''
+xxxxxxxxxxxxxxxxxxxxxxxxxxxx
+---RETRIEVE---
+---BYPASS CHECK DOCUMENT RELEVANCE TO QUESTION---
+---DECIDED TO GENERATE OR WEB SEARCH BASED ON HAVINE ANY DOCUMENTS RELEVANT TO QUESTION ---
+---DECISION: GENERATE---
+---GENERATE---
+获取参考文献：_fp='/data/projects/JqChatV2/workspace/knowledge_base/秋景3号知识库doc乱码库/content/11.docx',d_added=True
+---CHECK HALLUCINATIONS---
+---DECISION: GENERATION IS GROUNDED IN DOCUMENTS---
+---GRADE GENERATION vs QUESTION---
+---DECISION: GENERATION DOES NOT ADDRESS QUESTION---
+not useful: generation='没有发现相关的引用内容\n\n#### 最终回答:\n\n该库包含关于医保政策的信息，如城乡居民基本医保人员分娩住院的生育医疗费用定额补助标准，以及辅助生殖技术门诊费用纳入医保报销的相关规定等。但具体到库内详细的知识分类或内容描述，当前提供的文档并未给出明确说明。'
+---WEB SEARCH---
+[36;1m[1;3m[-1:checkpoint][0m [1mState at the end of step -1:
+[0m{'messages': []}
+[36;1m[1;3m[0:tasks][0m [1mStarting step 0 with 1 task:
+[0m- [32;1m[1;3m__start__[0m -> {'messages': [('user', '你这个库里面有啥知识啊')]}
+[36;1m[1;3m[0:writes][0m [1mFinished step 0 with writes to 1 channel:
+[0m- [33;1m[1;3mmessages[0m -> [('user', '你这个库里面有啥知识啊')]
+[36;1m[1;3m[0:checkpoint][0m [1mState at the end of step 0:
+[0m{'messages': [HumanMessage(content='你这个库里面有啥知识啊', additional_kwargs={}, response_metadata={}, id='4e3ef71b-0d76-4914-ace8-6814ca0d50e8')]}
+[36;1m[1;3m[1:tasks][0m [1mStarting step 1 with 1 task:
+[0m- [32;1m[1;3magent[0m -> {'is_last_step': False,
+ 'messages': [HumanMessage(content='你这个库里面有啥知识啊', additional_kwargs={}, response_metadata={}, id='4e3ef71b-0d76-4914-ace8-6814ca0d50e8')]}
+[36;1m[1;3m[1:writes][0m [1mFinished step 1 with writes to 1 channel:
+[0m- [33;1m[1;3mmessages[0m -> [AIMessage(content='我是一个搜索助手，可以帮您查找各种信息和知识。我没有自带的库或固定的知识内容，但可以通过网络搜索获取最新的、广泛的信息。如果您有具体的问题或需要了解的内容，请告诉我，我会帮您找到相关信息。请问您现在有什么特别想了解的主题或问题吗？', additional_kwargs={'refusal': None}, response_metadata={'token_usage': {'completion_tokens': 63, 'prompt_tokens': 301, 'total_tokens': 364, 'completion_tokens_details': None, 'prompt_tokens_details': None}, 'model_name': 'qwen25b70', 'system_fingerprint': None, 'finish_reason': 'stop', 'logprobs': None}, id='run-ea80c037-26a1-4691-83b3-09737aa5809f-0', usage_metadata={'input_tokens': 301, 'output_tokens': 63, 'total_tokens': 364, 'input_token_details': {}, 'output_token_details': {}})]
+[36;1m[1;3m[1:checkpoint][0m [1mState at the end of step 1:
+[0m{'messages': [HumanMessage(content='你这个库里面有啥知识啊', additional_kwargs={}, response_metadata={}, id='4e3ef71b-0d76-4914-ace8-6814ca0d50e8'),
+              AIMessage(content='我是一个搜索助手，可以帮您查找各种信息和知识。我没有自带的库或固定的知识内容，但可以通过网络搜索获取最新的、广泛的信息。如果您有具体的问题或需要了解的内容，请告诉我，我会帮您找到相关信息。请问您现在有什么特别想了解的主题或问题吗？', additional_kwargs={'refusal': None}, response_metadata={'token_usage': {'completion_tokens': 63, 'prompt_tokens': 301, 'total_tokens': 364, 'completion_tokens_details': None, 'prompt_tokens_details': None}, 'model_name': 'qwen25b70', 'system_fingerprint': None, 'finish_reason': 'stop', 'logprobs': None}, id='run-ea80c037-26a1-4691-83b3-09737aa5809f-0', usage_metadata={'input_tokens': 301, 'output_tokens': 63, 'total_tokens': 364, 'input_token_details': {}, 'output_token_details': {}})]}
+你这个库里面有啥知识啊
+库内知识类型
+tavily_search_query='库内知识类型'
+使用tavily_search,获取到8个文档。
+---GENERATE---
+获取参考文献：_fp='https://www.helplook.net/blog/docs/types-of-knowledge-bases',d_added=True
+获取参考文献：_fp='https://www.getguru.com/zh/reference/types-of-knowledge-bases',d_added=True
+获取参考文献：_fp='https://www.ichuangpai.com/2024/11/13/Exploring-Coze-Knowledge-Base-Usage-and-Design-Principles-Table-Type-Knowledge-Base/',d_added=True
+获取参考文献：_fp='https://docs.pingcode.com/ask/ask-ask/127685.html',d_added=True
+获取参考文献：_fp='https://klutch.app/zh-CN/blog/knowledge-base-definition-types-features-examples/',d_added=True
+获取参考文献：_fp='https://zhuanlan.zhihu.com/p/373271756',d_added=True
+获取参考文献：_fp='https://www.getguru.com/zh/reference/types-of-knowledge',d_added=True
+获取参考文献：_fp='https://docs.lanyingim.com/news/enterprise-knowledge-base-guide-39-20240705-1-6-1720119730.html',d_added=True
+---CHECK HALLUCINATIONS---
+---DECISION: GENERATION IS GROUNDED IN DOCUMENTS---
+---GRADE GENERATION vs QUESTION---
+---DECISION: GENERATION DOES NOT ADDRESS QUESTION---
+---BUT WE HAVE WEB SEARCHED THE QUESTION, SO DIRECTLY ROUTE TO 'END' NODE---
+====问题和答案====
+原始问题>>:你这个库里面有啥知识啊
+改写问题>>:你这个库里面有啥知识啊 [allow_question_rewrite=False]
+==AI回答:>>:
+#### 参考网页: 
+[1] <a href='https://www.helplook.net/blog/docs/types-of-knowledge-bases'>https://www.helplook.net/blog/docs/types-of-knowledge-bases</a>  
+  <p class='referens_content'>知识库可分为两种主要类型：内部和外部。 内部知识库仅限于具有登录凭据的用户，通常只有组织内的员工或授权个人才能访问。 另一方面，外部知识库面向公众，不需要任何特定的<p>  
+[2] <a href='https://www.getguru.com/zh/reference/types-of-knowledge-bases'>https://www.getguru.com/zh/reference/types-of-knowledge-bases</a>  
+  <p class='referens_content'>知識庫系統類型. 知識庫主要有五種類型。 它們包括以下幾種：. 內部知識 ... 設計用於工作流內使用 – 高品質的知識庫解決方案旨在提供答案，並在您<p>  
+[3] <a href='https://www.ichuangpai.com/2024/11/13/Exploring-Coze-Knowledge-Base-Usage-and-Design-Principles-Table-Type-Knowledge-Base/'>https://www.ichuangpai.com/2024/11/13/Exploring-Coze-Knowledge-Base-Usage-and-Design-Principles-Table-Type-Knowledge-Base/</a>  
+  <p class='referens_content'>因为知识库类型有三种、文本类型、表格类型、图片类型，为了深入的探索各种类型的知识库的用法，我将会把这部分内容分为三篇，文本类型知识库篇，表格类型<p>  
+[4] <a href='https://docs.pingcode.com/ask/ask-ask/127685.html'>https://docs.pingcode.com/ask/ask-ask/127685.html</a>  
+  <p class='referens_content'>对于管理和利用知识库内容，有多种方法可以进行分类，主要包括：标签和元数据分类、层次化分类、关系型分类、行为数据分类。 这些方法各有特色，适用于不同的<p>  
+[5] <a href='https://klutch.app/zh-CN/blog/knowledge-base-definition-types-features-examples/'>https://klutch.app/zh-CN/blog/knowledge-base-definition-types-features-examples/</a>  
+  <p class='referens_content'>Published Time: 2024-07-03T06:06:00+00:00 什么是知识库：定义、类型和特征 - Klutch Chrome扩展程序 边缘延伸 模板库 定价 集成 登陆 免费入门 什么是知识库：定义、类型、特征和示例 by 阿比·克莱尔·德拉·克鲁兹 | 2024 年 7 月 3 日 | 知识库 每个人都希望让客户在最需要的时候更容易地获得所需的信息。因此，拥有知识库非常重要。这样，您就设置好了一切，以便人们可以点击任何问题并获得相关答案。但知识库到底是什么，有哪些类型，以及哪些功能使其不可或缺？让我们详细探讨这些问题。 什么是知识库？ 传统的定义表明这是一个已发布的文档和信息的集合。这包括操作指南、常见问题、答案和故障排除帮助。 其目的是让其他人更容易找到问题的答案。这样，他们就不必向别人寻求帮助。 “知识库”通常指系统中存储的信息。然而，它还可以包括 知识管理软件 呈现和创建该信息。 它可以包括各种内容形式，例如： 包含公司页面和记录的内部知识平台 词汇表 定义列表 视频演示 介绍性文章 流程分步指南 常见问题 从某种意义上说，知识库是以有用的形式组织和收集所有信息的最终产品。您通常需要知识管理软件来做到这一点。 因此，您应用知识管理流程来收集信息。然后，您使用知识管理软件来管理、创建并将其（作为知识库）交付给读者。 知识库有何用途？ 某些知识库类型旨在供机器学习和成长。然而，大多数都是由人们设计来使用和获取信息的。 知识库通常关注内部或外部受众，并且可以服务于各种目的。例如，家电公司可能会在外部知识库中维护维护说明和常见问题解答。 然而，它也可能有一个内部知识库，供员工了解公司政策并学习与工作相关的工具。 理解定义并不是您必须知道的全部。虽然你可以找到 知识库示例 在本文后面，您将重点讨论为什么应该创建一个以及它如何使每个人受益。以下是拥有知识库的主要优势： 提高生产力 许多员工花费大约 20% 的时间在存储库、收件箱和同事的大脑中搜索所需的信息。知识库集中了这些空间中的所有数据，以便每个人都可以访问和搜索它。 您的团队不必滚动浏览 Slack 消息、梳理电子邮件以查找附件，或在专家去吃午餐之前追查他们。知识库确保员工更多地专注于工作而不是获取信息。 保持知识更新 每个人都知道他们必须使用适当的搜索词和关键词来优化他们的知识库。然而，如果您的知识管理软件已经不具备 SEO 友好的做法，那么这可能很难做到。 确保您了解您的软件是否提供 SEO 友好的 URL、是否可以生成站点地图等。这样，页面就会被正确索引，因此搜索引擎机器人可以轻松抓取它们。 您还应该寻找带有元标题和描述字段的知识管理软件。开箱即用的软件解决方案应支持基本的 SEO 标准，以提高可见性和排名。 会议.io Meetings.io 再次精简并准备好采取行动。它加载速度很快，每个子类别也是如此。虽然如果它们与搜索框一起显示可能会很好，但它很容易使用。无论如何，大多数人已经知道他们需要什么信息。 Shipt Shipt 知识库非常棒。有一些设计细节与整体品牌相匹配。它立即让你输入你的问题。如果你不想搜索， 在线聊天 可以提供有用的见解。 All / 全部 知识库 销售 销售/市场营销 使用 Klutch 创建的专业设计文档和电子表格模板可以节省时间。 by 阿比·克莱尔·德拉·克鲁兹 | 2025 年 3 月 6 日 | 知识库, 销售 by 克拉奇团队 | 2025 年 2 月 12 日 | All / 全部 by 克拉奇团队 | 2025 年 1 月 21 日 | 知识库,<p>  
+[6] <a href='https://zhuanlan.zhihu.com/p/373271756'>https://zhuanlan.zhihu.com/p/373271756</a>  
+  <p class='referens_content'>1.分类原则和系统操作​ 知识库分类是按照知识点的特点和根据业务系统求解问题的需要将知识分为若干类，而每一类又分为若干子分类。 一般子分类是母分类的基<p>  
+[7] <a href='https://www.getguru.com/zh/reference/types-of-knowledge'>https://www.getguru.com/zh/reference/types-of-knowledge</a>  
+  <p class='referens_content'>1. 顯性知識 ... 顯性知識是指涵蓋易於系統性紀錄（書面）的主題的知識，並能夠大規模地分享：我們所認為的結構化信息。 這些顯性知識的類型都是傳統上捕捉在<p>  
+[8] <a href='https://docs.lanyingim.com/news/enterprise-knowledge-base-guide-39-20240705-1-6-1720119730.html'>https://docs.lanyingim.com/news/enterprise-knowledge-base-guide-39-20240705-1-6-1720119730.html</a>  
+  <p class='referens_content'>企业知识库建设指南：从理论到实践 · 构建你的智能应用，使用蓝莺Chat AI SDK 即时通讯开发指南（IM） 开发 参考 博客 FAQ 行业资讯 新闻 最新 开源AI Agent：让人人都能开发智能体 工业领域AI Agent的应用与挑战 Python编写你的第一个AI Agent AI Agent插件推荐：拓展你的智能体功能 如何利用AI Agent优化客服服务 AI Agent在游戏中的创新应用 企业如何利用AI Agent提升生产力 动画演示：AI Agent是如何工作的 AI Agent实战案例：从理论到实践 国内最火的AI Agent公司盘点 企业知识库的智能化升级 企业知识库系统的部署与运维 企业知识库的一体化解决方案 企业知识库的推广与实施 企业知识库的持续改进方法 AI技术在企业知识库中的应用前景 企业知识库的成功案例解析 如何为企业的知识库制定规划 企业知识库建设的最佳实践 企业知识库的开放与共享策略 企业知识库未来发展趋势预测 企业知识库的集成与扩展能力 企业知识库的评价与优化 企业知识库的语言模型训练 企业知识库的文档管理方案 企业知识库管理系统的开发与实施 企业知识库系统的架构设计 如何构建企业技术知识库 企业知识库应用场景详解 知识库在企业管理中的应用实例 企业知识库平台的搭建与运营 企业知识库系统的选型建议 企业知识库为用户带来的价值 企业知识库规范与标准 企业知识库的建设目标与路径 企业知识库软件市场分析 企业知识库优化提升方案 企业知识库的实际应用与效果 企业知识库内外部协同策略 企业知识库建设的成本与效益分析 知识库对企业提升效益的意义 如何通过AI技术优化企业知识库 企业知识库管理系统的选择标准 企业知识库的分类与应用 企业知识库建设的常见模式 免费企业知识库管理系统推荐 企业知识库API接口开发指南 建立企业文化知识库的方法 企业知识库的维护与更新策略 企业知识库案例分析与借鉴 企业知识库的核心功能介绍 企业知识库免费搭建方案 企业知识库系统设计方案分享 企业知识库推荐机制实现 企业知识库的创新应用场景 企业知识库管理工具的选择与应用 化工企业知识库建设方案 企业知识库系统的功能与实现 企业知识库管理系统功能详情 企业知识库覆盖内容全面解析 企业知识库目录结构设计方法 如何建立企业的共享知识库 企业知识库系统开源框架推荐 企业微信的知识库应用指南 中小企业如何快速搭建知识库 企业知识库系统的创新与优化 企业知识库建设指南：从理论到实践 企业知识库建设指南：从理论到实践 企业知识库建设指南：从理论到实践 Nonaka, I., & Takeuchi, H. The Knowledge-Creating Company: How Japanese Companies Create the Dynamics of Innovation. H., & Prusak, L. Working Knowledge: How Organizations Manage What They Know.<p>  
+
+#### 引用片段:
+
+<p class="referens_content">[1] 知识库可分为两种主要类型：内部和外部。 内部知识库仅限于具有登录凭据的用户，通常只有组织内的员工或授权个人才能访问。 另一方面，外部知识库面向公众，不需要任何特定的</p>
+<p class="referens_content">[2] 知識庫系統類型. 知識庫主要有五種類型。 它們包括以下幾種：. 內部知識 ... 設計用於工作流內使用 – 高品質的知識庫解決方案旨在提供答案，並在您</p>
+<p class="referens_content">[3] 因为知识库类型有三种、文本类型、表格类型、图片类型，为了深入的探索各种类型的知识库的用法，我将会把这部分内容分为三篇，文本类型知识库篇，表格类型</p>
+
+#### 最终回答:
+
+本知识库包含多种类型的知识，主要分为内部和外部两类。<sup><font color="red">[1]</font></sup> 内部知识库仅供组织内员工或授权人士访问，而外部知识库则面向公众。<sup><font color="red">[1]</font></sup> 此外，根据其设计用途，知识库还细分为五种类型。<sup><font color="red">[2]</font></sup> 同时也存在按内容形式分类的知识库，比如文本、表格和图片类型的。<sup><font color="red">[3]</font></sup>
+
+##### **中间推理步骤（开始） 
+尝试通过检索知识库(秋景3号知识库doc乱码库)来解答您的问题，得到的结果如下：
+  
+没有发现相关的引用内容
+
+###### 最终回答:
+
+该库包含关于医保政策的信息，如城乡居民基本医保人员分娩住院的生育医疗费用定额补助标准，以及辅助生殖技术门诊费用纳入医保报销的相关规定等。但具体到库内详细的知识分类或内容描述，当前提供的文档并未给出明确说明。
+因为根据知识库得到的答案似乎并没有很好解答您的问题，接着又尝试了搜索网络，才得到最终的答案。 
+
+#####  **中间推理步骤（结束） 
+=====================================================================================
+INFO:     10.1.50.150:59684 - "POST /api/v1/chat HTTP/1.1" 200 OK
+2025-03-11 07:34:57,786 root         611939 WARNING  ApiRequest中的self.timeout=360000
+Failed to retrieve metadata for index temp_emb_dense  [WARNING:jqlogger( jq_es_client.py 第78行)]
+Failed to retrieve metadata for index temp_emb  [WARNING:jqlogger( jq_es_client.py 第78行)]
+2025-03-11 08:15:56,864 root         611939 WARNING  ApiRequest中的self.timeout=360000
+Failed to retrieve metadata for index temp_emb_dense  [WARNING:jqlogger( jq_es_client.py 第78行)]
+Failed to retrieve metadata for index temp_emb  [WARNING:jqlogger( jq_es_client.py 第78行)]
+2025-03-11 08:16:06,534 root         611939 WARNING  ApiRequest中的self.timeout=360000
+Failed to retrieve metadata for index temp_emb_dense  [WARNING:jqlogger( jq_es_client.py 第78行)]
+Failed to retrieve metadata for index temp_emb  [WARNING:jqlogger( jq_es_client.py 第78行)]
+get_retriever方法，返回的集成检索器为： 检索器[1]embedding，检索的目标知识库为temp_index_for_upload_files  检索器[2]bm25，检索的目标知识库为temp_index_for_upload_files   [WARNING:jqlogger( jq_retriever.py 第250行)]
+用户改写问题设置为self.allow_question_rewrite=True  [WARNING:jqlogger( langgraph_in_class.py 第1594行)]
+call_llm:调用LLM时的消息数为:2  [WARNING:jqlogger( langgraph_in_class.py 第1129行)]
+！！！大语言模型执行失败，！！！错误消息为:Error code: 400 - {'object': 'error', 'message': "This model's maximum context length is 8000 tokens. However, you requested 9514 tokens (1514 in the messages, 8000 in the completion). Please reduce the length of the messages or completion.", 'type': 'BadRequestError', 'param': None, 'code': 400}  [ERROR:jqlogger( langgraph_in_class.py 第1169行)]
+============================================================
+=============开始后台逻辑中....请稍后...........==============
+====用户的问题是: 你好=============================
+====所选的知识库是: temp_index_for_upload_files================================
+====用户的ID是：99ac66be7b23476fb29f80adc7157892===================================
+====执行代码的信息：没有要执行的代码==========================
+====上传的文件信息：没有上传的文件==========================
+====上传的文件是否存入知识库：False==========================
+====启用会话记忆：True==========================
+====启用问题重写：True==========================
+====从metastore中获取到用户所选知识库的详细信息为：{'index_name': 'temp_index_for_upload_files', 'description': '向量库/知识库工具(vectorstore/knowledge base)：关于安徽晶奇网络科技股份有限公司（简称晶奇公司）、医疗卫生、医疗健康、医疗服务、医疗政策、信息化产品方案、技术文档等等方面的文档知识库. 凡是安徽晶奇网络科技股份有限公司及医疗健康相关的问题，都必须使用该vectorstore工具。', 'index_creator': 'manager', 'index_create_date': '2024-12-02 10:29:50', 'status': True}====
+============================================================
+chat_on_docs_list=[]
+chat_bot.user_id='99ac66be7b23476fb29f80adc7157892'
+=====================================================================================
+=====================================================================================
+开始会话:你好
+=====================================================================================
+xxxxxxxxxxxxxxxxxxxxxxxxxxxx
+result.tool_calls=[];result.content='error!大语言模型执行失败，错误消息为:Error code: 400 - {\'object\': \'error\', \'message\': "This model\'s maximum context length is 8000 tokens. However, you requested 9514 tokens (1514 in the messages, 8000 in the completion). Please reduce the length of the messages or completion.", \'type\': \'BadRequestError\', \'param\': None, \'code\': 400}'
+xxxxxxxxxxxxxxxxxxxxxxxxxxxx
+====问题和答案====
+原始问题>>:你好
+改写问题>>:你好 [allow_question_rewrite=True]
+==AI回答:>>:error!大语言模型执行失败，错误消息为:Error code: 400 - {'object': 'error', 'message': "This model's maximum context length is 8000 tokens. However, you requested 9514 tokens (1514 in the messages, 8000 in the completion). Please reduce the length of the messages or completion.", 'type': 'BadRequestError', 'param': None, 'code': 400}
+=====================================================================================
+INFO:     127.0.0.1:60608 - "POST /chat/completions HTTP/1.1" 200 OK

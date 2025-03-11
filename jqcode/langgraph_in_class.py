@@ -388,7 +388,12 @@ Other than code and specific names and citations, your answer must be written in
 def _gen_prompt_string(docs:List[Document]):
     prompt = ""
     for i,d in enumerate(docs):
-        prompt += f"\n[{i+1}]:\n" + d.page_content
+        if isinstance(d,dict):
+            page_content = d.get('content','None')
+        else:
+            page_content = d.page_content
+
+        prompt += f"\n[{i+1}]:\n" + page_content
     return prompt
 
 prompt = lambda x: ChatPromptTemplate.from_messages(
@@ -1224,7 +1229,13 @@ class GraphAgent:
                 filename = ''
                 d_added = False
                 to_be_copyed_file_path = ''
+                if isinstance(doc,dict):
+                    url = doc.get('url',None)
+                    content = doc.get('content','None')
+                    doc = Document(page_content=content,metadata={"source":url})
+                
                 d_metadata = doc.metadata
+                
                 for key in source_related_keys:
                     _fp = d_metadata.get(key,'')
                     if _fp:
