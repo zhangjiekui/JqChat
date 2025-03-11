@@ -240,6 +240,14 @@ workon sl
 python -m sglang_router.launch_server --model-path /data/xinference/modelscope/hub/qwen/Qwen2.5-32B-Instruct-AWQ --host 0.0.0.0 --port 9997 --tool-call-parser qwen25 --dp 2 --tp 2 --enable-p2p-check --log-level debug --enable-mixed-chunk --max-running-requests 32 --served-model-name qwen25b70
 ```
 
+## 为我的笔记本电脑设置固定IP（方便在服务器电脑上设置我的笔记本电脑IP作为固定的代理IP）
+设置Wlan
+IP             10.1.42.150
+掩码           255.255.252.0
+默认网关        10.1.43.254
+DNS           61.132.163.68 (未加密)
+              202.102.192.68 (未加密)
+
 ## docker代理配置
 ### 创建配置文件
 ```
@@ -251,8 +259,8 @@ sudo nano /etc/systemd/system/docker.service.d/http-proxy.conf
 ```  
 # http-proxy.conf 文件内容
 [Service] 
-Environment="HTTP_PROXY=http://10.1.42.212:4780/" 
-Environment="HTTPS_PROXY=http://10.1.42.212:4780/" 
+Environment="HTTP_PROXY=http://10.1.42.150:4780/" 
+Environment="HTTPS_PROXY=http://10.1.42.150:4780/" 
 Environment="NO_PROXY=localhost,127.0.0.1"
 ```  
 ### 应用新的代理配置
@@ -269,8 +277,8 @@ docker info
 ## Git同步
 ### 代理设置
 ```
-git config --global http.https://github.com.proxy socks5h://10.1.42.212:4781
-git config --global https.https://github.com.proxy socks5h://10.1.42.212:4781
+git config --global http.https://github.com.proxy socks5h://10.1.42.150:4781
+git config --global https.https://github.com.proxy socks5h://10.1.42.150:4781
 ```
 
 ### 查看git设置
