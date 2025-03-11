@@ -9,11 +9,14 @@ CUDA_VISIBLE_DEVICES=0,1 nohup vllm serve /data/xinference/modelscope/hub/qwen/Q
 tail -f /root/JqLogs/vllm.log
 ```
 
+#### Qwen2.5 gpu0
 ``` Qwen2.5 gpu0
 workon vllm
 CUDA_VISIBLE_DEVICES=0 nohup vllm serve /data/xinference/modelscope/hub/qwen/Qwen2.5-32B-Instruct-AWQ --served-model-name qwen25b70 --enable-auto-tool-choice --tool-call-parser hermes --host 0.0.0.0 --port 9997 --max-model-len 8000  --distributed-executor-backend ray --use_v2_block_manager --gpu-memory-utilization 0.95 --max-num-seqs 16 --enable-prefix-caching --enable-chunked-prefill >> /root/JqLogs/vllm.log 2>&1 &
 tail -f /root/JqLogs/vllm.log
 ```
+
+#### QwenQwQ gpu1
 ``` QwenQwQ gpu1
 workon vllm
 CUDA_VISIBLE_DEVICES=1 nohup vllm serve /data/models/Qwen/QwQ-32B-AWQ/ --served-model-name qwen25qwq --enable-auto-tool-choice --tool-call-parser hermes --host 0.0.0.0 --port 9998 --max-model-len 8000  --distributed-executor-backend ray --use_v2_block_manager --gpu-memory-utilization 0.95 --max-num-seqs 16 --enable-prefix-caching --enable-chunked-prefill >> /root/JqLogs/qwq.log 2>&1 &
@@ -21,7 +24,7 @@ tail -f /root/JqLogs/qwq.log
 ```
 
 
-### Qwen2.5R1 gpu2
+#### DsQwen2.5R1 gpu2
 ```
 workon vllm
 CUDA_VISIBLE_DEVICES=2 nohup vllm serve /data/models/deepseek-r1-distill-qwen-32b-awq/ --gpu-memory-utilization 0.98 --max-model-len 4000 --served-model-name DeepSeekR1 --host 0.0.0.0 --port 8000 --enable-reasoning --reasoning-parser deepseek_r1 >> /root/JqLogs/vllm_r1.log 2>&1 &
