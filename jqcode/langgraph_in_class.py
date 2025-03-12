@@ -88,11 +88,35 @@ class GraphAgentState(TypedDict):
 # region
 ### Data model and Chains Definitions
 
-question_rewrite_system_prompt = """你是一位擅长根据上下文'Context'，对原始问题('Query'后面的内容)进行优化重写的专家。目标是使得原始问题更加明确具体，但又绝不能改变原始问题的本来意思或意图，所以请秉持谨慎、忠实的态度，具体方法建议仅使用实体消歧(Disambiguation)、指代消解(Co-reference Resolution)等技术。
-    如果不确信需要进行优化重写，请直接返回原始问题本身。
-    仅仅需要返回问题内容本身，绝不能有任何额外的解释或内容。
-    返回格式必须为Json:{"q":$Query}，请使用改写后的问题内容替换$Query
-    """
+# question_rewrite_system_prompt = """你是一位擅长根据上下文'Context'，对原始问题('Query'后面的内容)进行优化重写的专家。目标是使得原始问题更加明确具体，但又绝不能改变原始问题的本来意思或意图，所以请秉持谨慎、忠实的态度，具体方法建议仅使用实体消歧(Disambiguation)、指代消解(Co-reference Resolution)等技术。
+#     如果不确信需要进行优化重写，请直接返回原始问题本身。
+#     仅仅需要返回问题内容本身，绝不能有任何额外的解释或内容。
+#     返回格式必须为Json:{"q":$Query}，请使用改写后的问题内容替换$Query
+#     """
+question_rewrite_system_prompt = """
+请根据当前对话的上下文'Context'，对用户的最新问题（'Query'后面的内容）进行重写，使其满足以下要求：
+1. ==&zwnj;**上下文融合**&zwnj;==：补充用户省略的、但上文已提及的关键信息（如时间、地点、人物、对象属性等）；
+2. ==&zwnj;**意图保留**&zwnj;==：确保重写后的问题与原意完全一致，不扭曲用户目的；
+3. ==&zwnj;**清晰简洁**&zwnj;==：用完整、明确的自然语言表达，避免歧义；
+4. ==&zwnj;**无需扩展**&zwnj;==：仅整合已有上下文信息，不添加假设性内容。
+
+==&zwnj;**示例**&zwnj;==：
+- 上文：用户：“我想订购iPhone 15 Pro Max，星空黑有货吗？”
+- 当前问题：用户：“到了吗？”
+- 重写后：“我上周订购的iPhone 15 Pro Max星空黑版本现在到货了吗？”
+
+==&zwnj;**示例**&zwnj;==：
+- 上文：用户：“我叫张三”
+- 当前问题：用户：“请搜索我与**公司的关系”
+- 重写后：“请搜索张三与**公司的关系”
+
+==&zwnj;**输出要求**&zwnj;==：
+- 仅输出重写后的问题，无需解释；
+- 若上下文无关或信息不足，直接返回原问题。
+- 返回格式必须为Json:{"q":$Query}，请使用改写后的问题内容替换$Query
+
+"""
+
 question_rewrite_prompt = lambda x: ChatPromptTemplate.from_messages(
     [
         SystemMessage(question_rewrite_system_prompt),
@@ -1631,8 +1655,8 @@ class GraphAgent:
         allow_question_rewrite = self.allow_question_rewrite       
         if allow_question_rewrite:
             # 在重写时获取的最近的历史消息列表可以长一些，因为有些历史消息相关性不强，但能提供有用的上下文信息，并且获得的related_history_messages仅用于此次计算，不会真正附加到消息列表中
-            # 所以设置reserve_last_n_messages_num=7
-            related_history_messages = self.retrieve_question_related_messages_from_history(user_question,reserve_last_n_messages_num=7,score_threshold=0.3)
+            # 所以设置reserve_last_n_messages_num=20
+            related_history_messages = self.retrieve_question_related_messages_from_history(user_question,reserve_last_n_messages_num=20,score_threshold=0.3)
             if related_history_messages:
                 if related_history_messages[-1].content == user_question:
                     related_history_messages = related_history_messages[0:-1]
