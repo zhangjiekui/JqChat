@@ -173,7 +173,7 @@ TORCH_CUDA_ARCH_LIST="8.9+PTX" python -m ktransformers.local_chat --gguf_path /d
 #### server api mode [cpu_infer参数值25，还没记录。 设置为33时cpu负荷在80%上下，5+ tokens/s]
  workon torch26cu126
 
- USE_NUMA=1 TORCH_CUDA_ARCH_LIST="8.9+PTX" PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True nohup ktransformers --gguf_path /data/models/DeepSeek-R1-Q4_K_M_ollama_gguf/ --model_path deepseek-ai/DeepSeek-R1 --model_name DeepSeekR1 --cpu_infer 33 --max_new_tokens 8192 --cache_lens 32768 --total_context 32768 --cache_q4 true --temperature 0.6 --top_p 0.95 --force_think --host 0.0.0.0 --port 9999 --optimize_config_path /root/KT0.2.2rc2/ktransformers/ktransformers/optimize/optimize_rules/DeepSeek-V3-Chat.yaml >> //root/JqLogs/kt.log 2>&1 &
+ USE_NUMA=1 TORCH_CUDA_ARCH_LIST="8.9+PTX" PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True nohup ktransformers --gguf_path /data/models/DeepSeek-R1-Q4_K_M_ollama_gguf/ --model_path deepseek-ai/DeepSeek-R1 --model_name DeepSeekR1 --cpu_infer 33 --max_new_tokens 8192 --cache_lens 32768 --total_context 32768 --cache_q4 true --temperature 0.6 --top_p 0.95 --force_think --host 0.0.0.0 --port 9999 --optimize_config_path /root/KT0.2.2rc2/ktransformers/ktransformers/optimize/optimize_rules/DeepSeek-V3-Chat.yaml >> /root/JqLogs/kt.log 2>&1 &
  tail -f /root/JqLogs/kt.log
 
 
@@ -183,12 +183,32 @@ reinstall the latest version of Triton, and then it was able to run properly
 
 workon torch26cu126
 
-CUDA_VISIBLE_DEVICES=0 python ktransformers/local_chat.py \
+CUDA_VISIBLE_DEVICES=3 python ktransformers/local_chat.py \
 --model_path deepseek-ai/DeepSeek-V3 \
 --gguf_path /data/models/DeepSeek-V3-q4km-fp8/ \
 --optimize_config_path /root/KT0.2.2rc2/ktransformers/ktransformers/optimize/optimize_rules/DeepSeek-V3-Chat-fp8-linear-ggml-experts.yaml \
 --cpu_infer 49 \
 --force_think true
+
+workon torch26cu126
+
+CUDA_VISIBLE_DEVICES=3 USE_NUMA=1 TORCH_CUDA_ARCH_LIST="8.9+PTX" PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True nohup ktransformers \
+--model_path deepseek-ai/DeepSeek-V3 \
+--gguf_path /data/models/DeepSeek-V3-q4km-fp8/ \
+--optimize_config_path /root/KT0.2.2rc2/ktransformers/ktransformers/optimize/optimize_rules/DeepSeek-V3-Chat-fp8-linear-ggml-experts.yaml \
+--cpu_infer 33 \
+--model_name DeepSeekV3 \
+--max_new_tokens 8192 \
+--cache_lens 32768 \
+--total_context 32768 \
+--cache_q4 true \
+--temperature 0.6 \
+--top_p 0.95 \
+--host 0.0.0.0 \
+--port 9999 >> /root/JqLogs/kt.log 2>&1 & 
+tail -f /root/JqLogs/kt.log
+
+
 
  ##### 改源代码打印InputMessages(/root/.virtualenvs/torch26cu126/lib/python3.10/site-packages/ktransformers/server/api/openai/endpoints/chat.py L25)
 async def chat_completion(request:Request,create:ChatCompletionCreate):

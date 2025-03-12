@@ -20,17 +20,17 @@ logger = jqkj_logger(__file__).get_logger()
 # 自定义工具函数
 
 @tool(parse_docstring=True)
-def get_elderly_organization_list(user_location:str="安徽晶奇网络科技股份有限公司",distance:int=10,num:int=10) -> str:
+def get_elderly_organization_list(location:str="安徽晶奇网络科技股份有限公司",radius:int=10,num:int=10) -> str:
     """
-    根据用户的当前地址位置(user_location),附近距离(distance),查询返回指定数量(num)的养老机构列表信息。
+    根据用户的当前地址位置(location),附近距离(radius),查询返回指定数量(num)的养老机构列表信息。
 
     Args:
-        user_location:(str), 用户当前地址位置
-        distance:(int), 距离用户当前地址位置的距离（附近多少公里范围内）
+        location:(str), 用户当前地址位置
+        radius:(int), 距离用户当前地址位置的距离（附近多少公里范围内）
         num:int,返回的养老机构个数
 
     """
-    url = f"http://192.168.44.140:9000/pub_external/orgList?page_num=1&page_size={num}&address={user_location}&distance={distance}"
+    url = f"http://192.168.44.140:9000/pub_external/orgList?page_num=1&page_size={num}&address={location}&distance={radius}"
     print(url)
     headers = {"referer":"http://192.168.44.140:9000"}
 

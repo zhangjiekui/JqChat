@@ -32,6 +32,7 @@ import uuid
 from collections import deque
 from jqcode.jq_utils.logger import jqkj_logger
 from dotenv import load_dotenv
+from datetime import date
 import time
 _ = load_dotenv()
 logger = jqkj_logger(__file__).get_logger()
@@ -496,9 +497,30 @@ class GraphAgent:
 
         _executable_tool_names = [tool.name for tool in executable_tools]        
         _routing_tool_names = [tool.__name__ for tool in routing_tools_wrapped_in_class]
+        _current_date = date.today()
         _tool_names = _executable_tool_names + _routing_tool_names
         _tool_names_str = ','.join(_tool_names)
-        _system_message_content = f"Please remember your name is '晶灵',you can introduce yourself as ‘我叫晶灵，是安徽晶奇公司网络科技公司研发的一款高级智能体专家应用’, You are an assistant for question-answering tasks. Try to Solve/Answer user's questions as best as you can in 简体中文(Simplified Chinese). You are equipped with some powerful tools, Please follows the Tool Calling  Guidelines: You have access to the following tools:{_tool_names_str}. Please strictly following OpenAI 'tool calling' interface specification if you need to call a tool or multiple tools in sequence, with No preamble or explaination. Tool Choice Guidelines:First,'CODE_GENERATION' and 'CODE_EXECUTION' MUST NOT be called at the same time. Second, 'CODE_GENERATION' is preferred rather than 'python_repl_tool' for drawing images, plotting graphs/charts, data file processing/analyzing/saving, Otherwise, please use 'python_repl_tool'."
+        _tool_response_format ='''
+            ```json
+            {
+            "name": "$toolname",
+            "parameters": {
+                "$args1_name": "$args1_value"
+                "$args2_name": "$args2_value"
+                }
+            }
+            ```
+        例如下面是一个正确调用"WEB_SEARCH"工具的例子
+            ```json
+            {
+            "name": "WEB_SEARCH",
+            "parameters": {
+                "query": "Who won the Super Bowl in 2024?"
+                }
+            }
+            ```
+        '''
+        _system_message_content = f"Today is {_current_date}. Please remember your name is '晶灵',you can introduce yourself as ‘我叫晶灵，是安徽晶奇公司网络科技公司研发的一款高级智能体专家应用’. You are an assistant for question-answering tasks. Try to Solve/Answer user's questions as best as you can in 简体中文(Simplified Chinese). You are equipped with some powerful tools, Please follows the Tool Calling  Guidelines: You have access to the following tools:{_tool_names_str}. Please strictly following OpenAI 'tool calling' interface specification if you need to call a tool or multiple tools in sequence, with No preamble or explaination. Tool Choice Guidelines:First,'CODE_GENERATION' and 'CODE_EXECUTION' MUST NOT be called at the same time. Second, 'CODE_GENERATION' is preferred rather than 'python_repl_tool' for drawing images, plotting graphs/charts, data file processing/analyzing/saving, Otherwise, please use 'python_repl_tool'.If you need to call tools, you must response following the format:\n {_tool_response_format},and no need any more explanation"
         
         self.all_tools = executable_tools + routing_tools_wrapped_in_class
         self.all_tools_names = _tool_names
@@ -1014,9 +1036,10 @@ class GraphAgent:
             returned_tool_calling_nums = 0
 
         if returned_tool_calling_nums==0 and env_models_instance.need_custom_tool_call_parse: 
-            if self.model.model_name.startswith("qwen"):
-                arg_name = "arguments" 
-            elif self.model.model_name.startswith("deepseek"):
+            if self.model.model_name.lower().startswith("qwen"):
+                # arg_name = "arguments" 
+                arg_name = "parameters"
+            elif self.model.model_name.lower().startswith("deepseek"):
                 arg_name = "parameters"
             else:
                 arg_name = "parameters" 
@@ -1603,6 +1626,7 @@ class GraphAgent:
         self.question_rewrited = user_question      # 后面会使用self.question_rewrited提交给大模型，就要确保self.question_rewrited有值
         self.message_idx_in_a_question_epoch = -1   # 新的question epoch/session,重新设置idx       
         
+        logger.warning(f"用户会话记忆设置为{self.allow_conversation_memory=}") 
         logger.warning(f"用户改写问题设置为{self.allow_question_rewrite=}") 
         allow_question_rewrite = self.allow_question_rewrite       
         if allow_question_rewrite:
@@ -1675,8 +1699,8 @@ tavily_search_tool = TavilySearchResults(max_results=6) #increased number of res
 
 if __name__ == "__main__":
     user_questions = [
-        "你是谁？请详细介绍一下你自己"
-        "你装备了哪些工具？",
+        # "你是谁？请详细介绍一下你自己"
+        # "你装备了哪些工具？",
         "我现在的位置是在安徽晶奇网络科技股份有限公司附近，请查询15公里范围内的养老机构",
         "晶奇公司质量保证过程中的角色及角色的职责或含义解释，对应的人员（姓名）有哪些?其中的批准人是谁？",
         '你好，我的名字是张结魁，请记住我的名字',
@@ -1703,11 +1727,11 @@ if __name__ == "__main__":
 
     # user_questions = ['请调用工具函数帮我查询：我现在的位置是在安徽晶奇网络科技股份有限公司附近，请查询15公里范围内的养老机构，最多返回10个']
     # user_questions = ['我现在的位置是在安徽晶奇网络科技股份有限公司附近，请查询15公里范围内的养老机构，最多返回10个']
-    user_questions = ["请搜索网络然后回答问题：What is the weather in SF and LA?","Who won the super bowl in 2024? In what state is the winning team headquarters located?What is the GDP of that state? ","2024年安徽省会城市的GDP是多少? "]
+    # user_questions = ["请搜索网络然后回答问题：What is the weather in SF and LA?","Who won the super bowl in 2024? In what state is the winning team headquarters located?What is the GDP of that state? ","2024年安徽省会城市的GDP是多少? "]
 
 
     
-    my_main_bot = GraphAgent(executable_tools=executable_tools,routing_tools_wrapped_in_class=route_tools)
+    my_main_bot = GraphAgent(executable_tools=executable_tools,routing_tools_wrapped_in_class=route_tools,allow_conversation_memory=True)
 
     for user_question in user_questions:
         if user_question == '请绘制sin(x)曲线':
