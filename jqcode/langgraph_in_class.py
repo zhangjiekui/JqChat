@@ -806,6 +806,7 @@ class GraphAgent:
         )
 
         tools = [tool1,tool2]
+        # tools = [tool1]
         system_message = "你是一个搜索专家，请根据用户问题自行决定如何进行必要的分解，并持续搜索直到获得满意的答案。使用的语言与用户提问的语言保持一致，默认使用中文"
         agent = create_react_agent(model=env_models_instance.chat_model,tools=tools, state_modifier=system_message, debug=True)
         messages_dict = agent.invoke({"messages": [("user", query)]})
