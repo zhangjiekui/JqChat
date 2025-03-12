@@ -550,23 +550,24 @@ async def get_webpages_texts_by_langchain_document_loader_from_urls(urls,questio
             page_content = html2text_handler.handle(doc.page_content).strip()
             length = len(page_content)
             if 20000>length>500: # 只保留page_content长度>500的，太短了意味着可能没有实质性的文本内容；或者<20000的，太长了会导致无法获取retrieval_document_relevance_grader相关性评分
+                transformed_document = Document(page_content=page_content, metadata={**doc.metadata})
                 try:
                     if question!=query:
-                        q_str = f"'{question}' 或者 '搜索引擎Query: {query}'"
+                        q_str = f"用户问题：'{question}'及'搜索语句: {query}'"
                     else:
                         q_str = question
                     # grade = retrieval_document_relevance_grader.invoke({"document":page_content,"question":q_str})
                     grade = await retrieval_document_relevance_grader.ainvoke({"document":page_content,"question":q_str})
                     relavant = grade.k
-                    if relavant == "yes": 
-                        transformed_document = Document(page_content=page_content, metadata={**doc.metadata})
+                    if relavant == "yes":                         
                         docs_transformed_completed.append(transformed_document)
                 except Exception as e:
-                    logger.warning(f"无法获取网页内容与问题的相关性评分：{e}")
+                    logger.warning(f"无法获取网页内容与问题的相关性评分：{e}，但仍然加入")
+                    docs_transformed_completed.append(transformed_document) 
             if len(docs_transformed_completed) == max_doc_nums:
                 break
     except Exception as e:
-        logger.error(f'get_webpages_texts_by_langchain_document_loader_from_urls失败:{e}')                     
+            logger.warning(f"出现错误：{e}")             
     
     return docs_transformed_completed
 
@@ -612,7 +613,7 @@ async def get_search_result_documents(urls,question,query,document_loader_class=
     # else:
     #     print(f'拟获取全部{url_nums}条Urls的搜索结果')
 
-    docs = []
+    docs = [] 
     try:
         docs =await get_webpages_texts_by_langchain_document_loader_from_urls(urls,question,query,max_doc_nums=max_doc_nums)
     except FunctionTimedOut as e:
@@ -718,8 +719,9 @@ async def _get_web_search_documents(question,query='',max_doc_nums=4):
         print(f"提交到Web_Search的query为空！直接返回空列表。")
         return docs
     try:
+        tavily_search_query = convert_search_query(query,join_character=None)
         # raise Exception("测试：不使用tavily_search_query")
-        tavily_search_query = convert_search_query(query,join_character=None)          
+                  
         print(f'{tavily_search_query=}')
         docs = get_tavily_search_result_documents(tavily_search_query,max_doc_nums=max_doc_nums)
         print(f'使用tavily_search,获取到{len(docs)}个文档。')
@@ -749,21 +751,28 @@ async def _get_web_search_documents(question,query='',max_doc_nums=4):
     docs = None
     if urls:
         try:
-            docs = await get_search_result_documents(urls,question,query,max_doc_nums=max_doc_nums)
-            if docs:
-                return docs        
-        except FunctionTimedOut as e:
-            print(f'搜索网页文档结果超时！')
-            print(f"失败的原因为：{e}") 
-        except Exception as e:
-            print('搜索网页文档结果失败！')
-            print(f"失败的原因为：{e}") 
+            from jq_agent.tools.jq_crawl4ai_batch_crawler import crawl4ai_get_search_result_documents
+            docs =  await crawl4ai_get_search_result_documents(urls=urls,question=question,query=query,max_doc_nums=max_doc_nums)
+            if not docs:
+                raise Exception
+        except:
+            try:
+                docs = await get_search_result_documents(urls,question=question,query=query,max_doc_nums=max_doc_nums)
+            except FunctionTimedOut as e:
+                print(f'搜索网页文档结果超时！')
+                print(f"失败的原因为：{e}") 
+            except Exception as e:
+                print('搜索网页文档结果失败！')
+                print(f"失败的原因为：{e}") 
         finally:
             print(f'获取到{len(docs)}个docs')
-            print(f"Finally:继续向下执行！")             
+            print(f"Finally:继续向下执行！") 
+                        
     
     #如果前面未能获取到实际的结果文档，（即使是中文搜索）最后也转向使用TavilySearchResults
-    if not docs:
+    if docs:
+        return docs 
+    else:
         try:           
            print(f'{tavily_search_query=}')
            docs = get_tavily_search_result_documents(tavily_search_query,max_doc_nums=max_doc_nums)
