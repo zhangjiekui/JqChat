@@ -32,8 +32,8 @@ import uuid
 from collections import deque
 from jqcode.jq_utils.logger import jqkj_logger
 from dotenv import load_dotenv
-from datetime import date
-import time
+from datetime import date,datetime
+
 _ = load_dotenv()
 logger = jqkj_logger(__file__).get_logger()
 
@@ -521,10 +521,12 @@ class GraphAgent:
 
         _executable_tool_names = [tool.name for tool in executable_tools]        
         _routing_tool_names = [tool.__name__ for tool in routing_tools_wrapped_in_class]
-        _current_date = date.today()
+        # _current_date = date.today()
+        _current_date_time=datetime.now().strftime("%Y年%m月%d日%H点%M分")
         _tool_names = _executable_tool_names + _routing_tool_names
         _tool_names_str = ','.join(_tool_names)
         _tool_response_format ='''
+        下面是需要遵循的json模板
             ```json
             {
             "name": "$toolname",
@@ -534,7 +536,8 @@ class GraphAgent:
                 }
             }
             ```
-        例如下面是一个正确调用"WEB_SEARCH"工具的例子
+        请根据实际情况，将上面模板中带有"$"的字段，如"$toolname"、"$args1_name"，"$args1_value"替换为实际的工具名称、参数名称、参数值。
+        下面是一个正确调用"WEB_SEARCH"工具的例子
             ```json
             {
             "name": "WEB_SEARCH",
@@ -544,7 +547,7 @@ class GraphAgent:
             }
             ```
         '''
-        _system_message_content = f"Today is {_current_date}. Please remember your name is '晶灵',you can introduce yourself as ‘我叫晶灵，是安徽晶奇公司网络科技公司研发的一款高级智能体专家应用’. You are an assistant for question-answering tasks. Try to Solve/Answer user's questions as best as you can in 简体中文(Simplified Chinese). You are equipped with some powerful tools, Please follows the Tool Calling  Guidelines: You have access to the following tools:{_tool_names_str}. Please strictly following OpenAI 'tool calling' interface specification if you need to call a tool or multiple tools in sequence, with No preamble or explaination. Tool Choice Guidelines:First,'CODE_GENERATION' and 'CODE_EXECUTION' MUST NOT be called at the same time. Second, 'CODE_GENERATION' is preferred rather than 'python_repl_tool' for drawing images, plotting graphs/charts, data file processing/analyzing/saving, Otherwise, please use 'python_repl_tool'.If you need to call tools, you must response following the format:\n {_tool_response_format},and no need any more explanation"
+        _system_message_content = f"现在是{_current_date_time}. Please remember your name is ‘晶灵’,you can introduce yourself as ‘我叫晶灵，是安徽晶奇公司网络科技公司研发的一款高级智能体专家应用’. You are an assistant for question-answering tasks. Try to Solve/Answer user's questions as best as you can in 简体中文(Simplified Chinese). You are equipped with some powerful tools, Please follows the Tool Calling  Guidelines: You have access to the following tools:{_tool_names_str}. Please strictly following OpenAI 'tool calling' interface specification if you need to call a tool or multiple tools in sequence, with No preamble or explaination. Tool Choice Guidelines:First,'CODE_GENERATION' and 'CODE_EXECUTION' MUST NOT be called at the same time. Second, 'CODE_GENERATION' is preferred rather than 'python_repl_tool' for drawing images, plotting graphs/charts, data file processing/analyzing/saving, Otherwise, please use 'python_repl_tool'.If you need to call tools, you must response following the format:\n {_tool_response_format},and no need any more explanation"
         
         self.all_tools = executable_tools + routing_tools_wrapped_in_class
         self.all_tools_names = _tool_names
