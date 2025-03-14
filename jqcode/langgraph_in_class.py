@@ -835,7 +835,7 @@ class GraphAgent:
 
         tool1 = Tool(
             name="JqSearchEngineTool",
-            description="Comprehensive Jq Search Engine for recent results from web.",
+            description="Comprehensive Search Engine for recent results from web.",
             func=search,
             coroutine = async_search,
             # func=asyncio.run(search),
@@ -857,7 +857,7 @@ class GraphAgent:
         tools = [tool1,tool2]
         # tools = [tool1]
         system_message = "你是一个搜索专家，请根据用户问题自行决定如何进行必要的分解，并持续搜索直到获得满意的答案。使用的语言与用户提问的语言保持一致，默认使用中文"
-        agent = create_react_agent(model=env_models_instance.chat_model,tools=tools, state_modifier=system_message, debug=True)
+        agent = create_react_agent(model=env_models_instance.chat_model,tools=tools, state_modifier=system_message, debug=False)
         messages_dict = agent.invoke({"messages": [("user", query)]})
         # messages_dict = await agent.ainvoke({"messages": [("user", query)]})
         messages=messages_dict.get('messages',[])
@@ -1072,30 +1072,44 @@ class GraphAgent:
                 arg_name = "parameters" 
             try:
                 tool_calls = []
-                tool_calls_json_list = json_repair.loads(result.content)
+                tool_call_content = result.content
+                if '<tool_call>' in result.content and '</tool_call>' in result.content:
+                    pattern = r'<tool_call>(.*?)</tool_call>'
+                    match = re.search(pattern, result.content, re.DOTALL)
+                    if match:
+                        tool_call_content = match.group(1)
+
+                tool_calls_json_list = json_repair.loads(tool_call_content)
                 if isinstance(tool_calls_json_list,dict):
                     tool_calls_json_list = [tool_calls_json_list]
                 for tool_call in tool_calls_json_list:
-                    tool_name = tool_call['name']
-                    if tool_name in ["directly-answer","directly_answer"]:
-                        result.tool_calls = []
-                        break
+                    if tool_call and isinstance(tool_call,dict):
+                        try:
+                            tool_name = tool_call['name']
+                        except:
+                            print(f"无法提取工具名,Json/Dict内容为:{tool_call=}")
+                            tool_name = ''
+                        if tool_name in ["directly-answer","directly_answer"]:
+                            result.tool_calls = []
+                            break
+                        else:
+                            if tool_name in self.all_tools_names:
+                                parameters = tool_call[arg_name]
+                                if not isinstance(parameters,dict):
+                                    parameters = json_repair.loads(parameters)
+                                tool_calls.append({"name":tool_name,"args":parameters,"id":f'call_{str(uuid.uuid4())}'})
                     else:
-                        if tool_name in self.all_tools_names:
-                            parameters = tool_call[arg_name]
-                            if not isinstance(parameters,dict):
-                                parameters = json_repair.loads(parameters)
-                            tool_calls.append({"name":tool_name,"args":parameters,"id":f'call_{str(uuid.uuid4())}'})                
+                        pass                
                 result.tool_calls = tool_calls
                 returned_tool_calling_nums = len(result.tool_calls)
             except:
-                logger.debug(f"Can't parser tool calls from models response content")
+                logger.warning(f"Can't parser tool calls from models response content")
 
 
         if returned_tool_calling_nums > 0:
-            logger.debug(f'Returned {returned_tool_calling_nums} tool_calls')
+            logger.warning(f'Returned {returned_tool_calling_nums} tool_calls:\n{result.tool_calls}')
             if returned_tool_calling_nums>1:
-                logger.info(f'!!! 惊喜: Multitple({returned_tool_calling_nums=}) tool_calls !!!')
+                logger.warning(f'!!! 惊喜: Multitple({returned_tool_calling_nums=}) tool_calls !!!')
             
             # 确保如果存在chat_on_docs_list，则应去检索知识库    
             if self.chat_on_docs_list:
@@ -1728,12 +1742,12 @@ if __name__ == "__main__":
     user_questions = [
         # "你是谁？请详细介绍一下你自己"
         # "你装备了哪些工具？",
-        "我现在的位置是在安徽晶奇网络科技股份有限公司附近，请查询15公里范围内的养老机构",
-        "晶奇公司质量保证过程中的角色及角色的职责或含义解释，对应的人员（姓名）有哪些?其中的批准人是谁？",
-        '你好，我的名字是张结魁，请记住我的名字',
-        '请搜索我与晶奇公司的相关网页，说明我与晶奇公司的关系',
-        '晶奇公司的厦门市智慧民政一体化平台建设方案的编制依据，给出详尽的文件名称和文号等内容列表',
-        '请绘制sin(x)曲线',
+        # "我现在的位置是在安徽晶奇网络科技股份有限公司附近，请查询15公里范围内的养老机构",
+        # "晶奇公司质量保证过程中的角色及角色的职责或含义解释，对应的人员（姓名）有哪些?其中的批准人是谁？",
+        # '你好，我的名字是张结魁，请记住我的名字',
+        # '请搜索我与晶奇公司的相关网页，说明我与晶奇公司的关系',
+        # '晶奇公司的厦门市智慧民政一体化平台建设方案的编制依据，给出详尽的文件名称和文号等内容列表',
+        # '请绘制sin(x)曲线',
         '请使用python实现指数移动平均法，并生成样例数据，并绘制曲线',
         '我公司是什么时候与西南石油大学建立校企合作关系的？',
         "晶奇公司编制的安徽省食品药品监督管理局行政审批系统项目总体计划的版本号是多少，批准人是谁？",

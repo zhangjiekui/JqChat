@@ -98,7 +98,7 @@ class Vlm_API:
         self.model=model
         self.client = OpenAI(api_key=api_key,base_url=api_base)
         self.default_prompt = '首先识别出有意义的区块，然后逐个区块完整识别并仅输出图中的文字（相当于ocr，但去掉不必要的换行符），不能遗漏，同一区块的文字内容放在一起。最后仅输出完整的文本，不要有任何额外的内容和解释。'
-    
+        # 请识别出发票中的购买方 名称（keyname:gmf）、销售方 名称（keyname:xsf）、销售项目名称 （keyname:item）、发票类型（keyname:type），以Json形式返回，使用括号中的keyname代替中文名称，不要有多余内容
     def __call__(self,image_path_or_base64:str,query:str=None,only_return_text=True):
         ## 如果是图片地址，读取图片并转换为base64
         if not query:

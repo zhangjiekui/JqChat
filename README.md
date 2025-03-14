@@ -1,3 +1,25 @@
+### 下载ollama程序安装
+
+nano ~/.curlrc 写入
+   proxy = http://10.1.42.150:4780
+
+下载ollama
+curl --verbose -x socks5://10.1.42.150:4781 -fsSL https://ollama.com/install.sh | sh 
+CUDA_VISIBLE_DEVICES=2 OLLAMA_HOST=0.0.0.0:11434 ollama run gemma3:27b --verbose
+
+CUDA_VISIBLE_DEVICES=2 OLLAMA_HOST=0.0.0.0:11434 ollama run qwen2.5:1.5b --verbose
+
+
+### 下载ollama Docker安装
+```
+docker pull ollama/ollama:latest
+<!-- '"device=0,2"' -->
+CUDA_VISIBLE_DEVICES=2 docker run -d -e HTTPS_PROXY=http://10.1.42.150:4780  --gpus '"device=2"'  -v /data/ollama_v_docker/:/root/.ollama -p 11436:11434 --name ollama ollama/ollama
+```
+### In vscode: Attach Shell in ollama docker:
+```
+ollama run qwen2:72b
+ollama run wangshenzhi/llama3.1_70b_chinese_chat
 ### 容器代码沙盒
 /data/projects/JqChatV2/JqChat/codebox_api_test.py
 
@@ -19,7 +41,17 @@ tail -f /root/JqLogs/vllm.log
 #### QwenQwQ gpu1
 ``` QwenQwQ gpu1
 workon vllm
-CUDA_VISIBLE_DEVICES=1 nohup vllm serve /data/models/Qwen/QwQ-32B-AWQ/ --served-model-name qwen25qwq --enable-auto-tool-choice --tool-call-parser hermes --host 0.0.0.0 --port 9998 --max-model-len 8000  --distributed-executor-backend ray --use_v2_block_manager --gpu-memory-utilization 0.95 --max-num-seqs 16 --enable-prefix-caching --enable-chunked-prefill >> /root/JqLogs/qwq.log 2>&1 &
+CUDA_VISIBLE_DEVICES=1,3 nohup vllm serve /data/models/Qwen/QwQ-32B-AWQ/ --served-model-name qwen25qwq --enable-auto-tool-choice --tool-call-parser hermes --host 0.0.0.0 --port 9998 --max-model-len 32000 --tensor-parallel-size 2 --distributed-executor-backend ray --use_v2_block_manager --gpu-memory-utilization 0.98 --max-num-seqs 16 --enable-prefix-caching --enable-chunked-prefill >> /root/JqLogs/qwq.log 2>&1 &
+tail -f /root/JqLogs/qwq.log
+
+
+workon vllm
+CUDA_VISIBLE_DEVICES=2,3 nohup vllm serve /data/models/Qwen/QwQ-32B-AWQ/ --served-model-name qwen25qwq --enable-auto-tool-choice --tool-call-parser hermes --host 0.0.0.0 --port 9998 --max-model-len 18000 --tensor-parallel-size 2 --use_v2_block_manager --gpu-memory-utilization 0.90 --max-num-seqs 16 --enable-prefix-caching --enable-chunked-prefill >> /root/JqLogs/qwq.log 2>&1 &
+tail -f /root/JqLogs/qwq.log
+
+
+workon vllm
+CUDA_VISIBLE_DEVICES=2,3 nohup vllm serve /data/models/QwQ-32B-unsloth-bnb-4bit/ --served-model-name qwen25qwq --enable-auto-tool-choice --tool-call-parser hermes --host 0.0.0.0 --port 9998 --max-model-len 2000 --tensor-parallel-size 2 --use_v2_block_manager --gpu-memory-utilization 0.90 --max-num-seqs 16 --enable-prefix-caching --enable-chunked-prefill >> /root/JqLogs/qwq.log 2>&1 &
 tail -f /root/JqLogs/qwq.log
 ```
 
@@ -468,7 +500,7 @@ tail -f /data/xinference/vllm.log
 都支持Tools
 ```
 docker pull ollama/ollama:latest
-docker run --gpus all -d -v /data/ollama_v_docker/:/root/.ollama -p 11436:11434 --name ollama ollama/ollama
+docker -e HTTPS_PROXY=http://10.1.42.150:4780 run --gpus all -d -v /data/ollama_v_docker/:/root/.ollama -p 11436:11434 --name ollama ollama/ollama
 ```
 ### In vscode: Attach Shell in ollama docker:
 ```
