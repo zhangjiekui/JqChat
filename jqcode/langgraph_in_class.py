@@ -547,7 +547,7 @@ class GraphAgent:
             }
             ```
         '''
-        _system_message_content = f"现在是{_current_date_time}. Please remember your name is ‘晶灵’,you can introduce yourself as ‘我叫晶灵，是安徽晶奇公司网络科技公司研发的一款高级智能体专家应用’. You are an assistant for question-answering tasks. Try to Solve/Answer user's questions as best as you can in 简体中文(Simplified Chinese). You are equipped with some powerful tools, Please follows the Tool Calling  Guidelines: You have access to the following tools:{_tool_names_str}. Please strictly following OpenAI 'tool calling' interface specification if you need to call a tool or multiple tools in sequence, with No preamble or explaination. Tool Choice Guidelines:First,'CODE_GENERATION' and 'CODE_EXECUTION' MUST NOT be called at the same time. Second, 'CODE_GENERATION' is preferred rather than 'python_repl_tool' for drawing images, plotting graphs/charts, data file processing/analyzing/saving, Otherwise, please use 'python_repl_tool'.If you need to call tools, you must response following the format:\n {_tool_response_format},and no need any more explanation"
+        _system_message_content = f"现在是{_current_date_time}. 你的名字叫做 ‘晶灵’,是安徽晶奇公司网络科技公司研发的一款高级智能体专家应用。请尽量使用简体中文（不要有繁体！）来与用户沟通互动。 And you are equipped with some powerful tools:{_tool_names_str}, Please strictly following OpenAI 'tool calling' interface specification if you need to call a tool or multiple tools in sequence, with No preamble or explaination. Tool Choice Guidelines:First,'CODE_GENERATION' and 'CODE_EXECUTION' MUST NOT be called at the same time(Actualy, in our APPLICATION  'CODE_GENERATION' will call 'CODE_EXECUTION' automatically), 'CODE_GENERATION' is used when user want you write code to solve their problem, while 'CODE_EXECUTION' is only used when user have provided the code, and just want you just to run the code and report the results. Second, 'CODE_GENERATION' is preferred rather than 'python_repl_tool' for drawing images, plotting graphs/charts, data file processing/analyzing/saving, Otherwise, please use 'python_repl_tool'.If you need to call tools, you must response following the format:\n {_tool_response_format},and no need any more explanation"
         
         self.all_tools = executable_tools + routing_tools_wrapped_in_class
         self.all_tools_names = _tool_names
@@ -854,8 +854,8 @@ class GraphAgent:
             # args_schema=...,       # overwrite default args_schema: BaseModel
         )
 
-        tools = [tool1,tool2]
-        # tools = [tool1]
+        # tools = [tool1,tool2]
+        tools = [tool1]
         system_message = "你是一个搜索专家，请根据用户问题自行决定如何进行必要的分解，并持续搜索直到获得满意的答案。使用的语言与用户提问的语言保持一致，默认使用中文"
         agent = create_react_agent(model=env_models_instance.chat_model,tools=tools, state_modifier=system_message, debug=False)
         messages_dict = agent.invoke({"messages": [("user", query)]})
@@ -1744,11 +1744,11 @@ if __name__ == "__main__":
         # "你装备了哪些工具？",
         # "我现在的位置是在安徽晶奇网络科技股份有限公司附近，请查询15公里范围内的养老机构",
         # "晶奇公司质量保证过程中的角色及角色的职责或含义解释，对应的人员（姓名）有哪些?其中的批准人是谁？",
-        # '你好，我的名字是张结魁，请记住我的名字',
+        '你好，我的名字是张结魁，我是安徽晶奇网络科技股份有限公司的，请记住我的信息',
         # '请搜索我与晶奇公司的相关网页，说明我与晶奇公司的关系',
         # '晶奇公司的厦门市智慧民政一体化平台建设方案的编制依据，给出详尽的文件名称和文号等内容列表',
         # '请绘制sin(x)曲线',
-        '请使用python实现指数移动平均法，并生成样例数据，并绘制曲线',
+        '请使用python实现指数移动平均法，并生成样例数据，绘制曲线',
         '我公司是什么时候与西南石油大学建立校企合作关系的？',
         "晶奇公司编制的安徽省食品药品监督管理局行政审批系统项目总体计划的版本号是多少，批准人是谁？",
         '请搜索合肥大蜀山，然后提供详细介绍', 

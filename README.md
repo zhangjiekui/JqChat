@@ -6,6 +6,7 @@ nano ~/.curlrc 写入
 下载ollama
 curl --verbose -x socks5://10.1.42.150:4781 -fsSL https://ollama.com/install.sh | sh 
 CUDA_VISIBLE_DEVICES=2 OLLAMA_HOST=0.0.0.0:11434 ollama run gemma3:27b --verbose
+CUDA_VISIBLE_DEVICES=2 OLLAMA_HOST=0.0.0.0:11434 ollama run PetrosStav/gemma3-tools:27b --verbose
 
 CUDA_VISIBLE_DEVICES=2 OLLAMA_HOST=0.0.0.0:11434 ollama run qwen2.5:1.5b --verbose
 
