@@ -59,9 +59,12 @@ import multiprocessing
 from concurrent.futures import ProcessPoolExecutor,ThreadPoolExecutor
 from jqcode.jq_config.general_config import llm_handler_file_path,if_log_verbose,logfile_path
 from jqcode.jq_utils.logger import jqkj_logger,is_main_process,set_multiprocessing_context
+from langchain.globals import set_llm_cache
 logger = jqkj_logger(__file__).get_logger()
 
+set_llm_cache(SQLiteCache(database_path=".langchain_llm_cache.db"))
 set_multiprocessing_context(multiprocessing,context="spawn",logger=logger)
+
 
 VERBOSE = if_log_verbose()
 if is_main_process():    
@@ -630,15 +633,16 @@ class InitEnvModels:
     #     return self.openai_client
     # endregion 直接初始化openai接口，暂时用不上
 
-    def get_langchain_chat_model(self, temperature=0.6,top_p =0.95, top_k=30, min_p=0, frequency_penalty=0.2, repetition_penalty=1.05, max_tokens=None, streaming=False,llmm_cache_file="local_llm_cache.db"):
+    def get_langchain_chat_model(self, temperature=0.6,top_p =0.95, top_k=30, min_p=0, frequency_penalty=0.2, repetition_penalty=1.05, max_tokens=None, streaming=False):
         if max_tokens:
             if max_tokens!=self.llm_model_max_tokens:
                 logger.warning(f"您现在请求的llm {max_tokens=}，与环境配置中的{self.llm_model_max_tokens=}不同，请确认！")
         else:
             max_tokens = self.llm_model_max_tokens
 
+
         self.chat_model = ChatOpenAI(
-                cache=SQLiteCache(llmm_cache_file),
+                cache=True,
                 model_name=self.llm_model_name,
                 openai_api_base=self.llm_model_base_url,    
                 openai_api_key= self.api_key,
