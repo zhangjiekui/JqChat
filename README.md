@@ -47,7 +47,7 @@ tail -f /root/JqLogs/qwq.log
 
 
 workon vllm
-CUDA_VISIBLE_DEVICES=2,3 nohup vllm serve /data/models/Qwen/QwQ-32B-AWQ/ --served-model-name qwen25qwq --enable-auto-tool-choice --tool-call-parser hermes --host 0.0.0.0 --port 9998 --max-model-len 18000 --tensor-parallel-size 2 --use_v2_block_manager --gpu-memory-utilization 0.90 --max-num-seqs 16 --enable-prefix-caching --enable-chunked-prefill >> /root/JqLogs/qwq.log 2>&1 &
+CUDA_VISIBLE_DEVICES=2,3 nohup vllm serve /data/models/Qwen/QwQ-32B-AWQ/ --served-model-name qwen25qwq --enable-auto-tool-choice --tool-call-parser hermes --host 0.0.0.0 --port 9998 --max-model-len 40000 --tensor-parallel-size 2 --use_v2_block_manager --gpu-memory-utilization 0.90 --max-num-seqs 16 --enable-prefix-caching --enable-chunked-prefill >> /root/JqLogs/qwq.log 2>&1 &
 tail -f /root/JqLogs/qwq.log
 
 

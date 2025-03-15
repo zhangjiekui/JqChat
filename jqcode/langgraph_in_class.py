@@ -1330,8 +1330,21 @@ class GraphAgent:
                         filename=Path(to_be_copyed_file_path).name
                         kb_filepath = f"{temp_index_for_upload_dir}/{filename}"
                         if not os.path.isfile(kb_filepath):
-                            shutil.copy2(to_be_copyed_file_path, kb_filepath)
-                            logger.warning(f"  ==已将文件拷贝到知识库：{to_be_copyed_file_path}=>{kb_filepath}")
+                            try:
+                                target_dir = Path(kb_filepath).parent
+                                target_dir.mkdir(parents=True, exist_ok=True)
+                                shutil.copy2(to_be_copyed_file_path, kb_filepath)
+                                logger.warning(f"  ==已将文件拷贝到知识库：{to_be_copyed_file_path}=>{kb_filepath}")
+                            except FileNotFoundError as e:
+                                logger.error(f"文件路径不存在: {e}")
+                            except PermissionError:
+                                logger.error(f"无权访问目标路径: {kb_filepath}")
+                            except Exception as e:
+                                logger.error(f"文件复制失败: {str(e)}")
+                            finally:
+                                if os.path.exists(kb_filepath):
+                                    os.chmod(kb_filepath, 644)
+                            
                         # if kb_filepath not in referens:
                         if True:
                             referens.append(kb_filepath)
@@ -1781,4 +1794,4 @@ if __name__ == "__main__":
         pass
 
 
-# source: https://learn.deeplearning.ai/courses/ai-agents-in-langgraph/lesson/3/langgraph-components    
+# source: https://learn.deeplearning.ai/courses/ai-agents-in-langgraph/lesson/3/langgraph-components

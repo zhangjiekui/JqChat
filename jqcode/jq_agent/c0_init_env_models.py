@@ -18,6 +18,7 @@ from functools import lru_cache
 from typing import Annotated, List, Iterable, TypedDict, Optional, Sequence,Literal, Any,Union,Tuple,Dict
 from langchain.callbacks.manager import Callbacks
 import langchain
+from langchain_community.cache import SQLiteCache
 langchain.verbose = False
 
 from openai import OpenAI
@@ -41,6 +42,7 @@ from langchain_core.vectorstores import VectorStoreRetriever
 from langchain.callbacks.manager import AsyncCallbackManagerForRetrieverRun,CallbackManagerForRetrieverRun
 from langchain_community.vectorstores import FAISS
 from langchain_community.vectorstores.utils import DistanceStrategy
+
 
 from langchain.retrievers import ContextualCompressionRetriever
 from langchain_core.messages import BaseMessage, HumanMessage,SystemMessage,ToolMessage,AIMessage
@@ -628,7 +630,7 @@ class InitEnvModels:
     #     return self.openai_client
     # endregion 直接初始化openai接口，暂时用不上
 
-    def get_langchain_chat_model(self, temperature=0.6,top_p =0.95, top_k=30, min_p=0, frequency_penalty=0.2, repetition_penalty=1.05, max_tokens=None, streaming=False):
+    def get_langchain_chat_model(self, temperature=0.6,top_p =0.95, top_k=30, min_p=0, frequency_penalty=0.2, repetition_penalty=1.05, max_tokens=None, streaming=False,llmm_cache_file="local_llm_cache.db"):
         if max_tokens:
             if max_tokens!=self.llm_model_max_tokens:
                 logger.warning(f"您现在请求的llm {max_tokens=}，与环境配置中的{self.llm_model_max_tokens=}不同，请确认！")
@@ -636,6 +638,7 @@ class InitEnvModels:
             max_tokens = self.llm_model_max_tokens
 
         self.chat_model = ChatOpenAI(
+                cache=SQLiteCache(llmm_cache_file),
                 model_name=self.llm_model_name,
                 openai_api_base=self.llm_model_base_url,    
                 openai_api_key= self.api_key,
