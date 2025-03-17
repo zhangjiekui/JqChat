@@ -5,7 +5,7 @@ import pytest
 
 # Import your classes
 # from your_module import RetrievalService, SearchSettings, R2RConfig, R2RProviders, ...
-from core.base import EmbeddingPurpose, SearchSettings
+from R2RV350.py.core.base import EmbeddingPurpose, SearchSettings
 
 
 @pytest.fixture
@@ -57,12 +57,12 @@ def retrieval_service(mock_providers):
     """
     Construct your RetrievalService with the mocked providers.
     """
-    from core import R2RConfig  # adjust import as needed
+    from R2RV350.py.core import R2RConfig  # adjust import as needed
 
     config = R2RConfig({})  # or however you normally build it
     providers = mock_providers
     # If your constructor is something like:
-    from core.main.services import RetrievalService  # example
+    from R2RV350.py.core.main.services import RetrievalService  # example
 
     service = RetrievalService(config=config, providers=providers)
     return service

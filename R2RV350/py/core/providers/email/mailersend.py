@@ -4,7 +4,7 @@ from typing import Optional
 
 from mailersend import emails
 
-from core.base import EmailConfig, EmailProvider
+from R2RV350.py.core.base import EmailConfig, EmailProvider
 
 logger = logging.getLogger(__name__)
 

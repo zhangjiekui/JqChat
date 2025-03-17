@@ -5,7 +5,7 @@ from typing import Optional
 from sendgrid import SendGridAPIClient
 from sendgrid.helpers.mail import Content, From, Mail
 
-from core.base import EmailConfig, EmailProvider
+from R2RV350.py.core.base import EmailConfig, EmailProvider
 
 logger = logging.getLogger(__name__)
 

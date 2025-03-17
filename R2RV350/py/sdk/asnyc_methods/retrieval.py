@@ -1,6 +1,6 @@
 from typing import Generator
 
-from shared.api.models import (
+from R2RV350.py.shared.api.models import (
     CitationEvent,
     FinalAnswerEvent,
     MessageEvent,

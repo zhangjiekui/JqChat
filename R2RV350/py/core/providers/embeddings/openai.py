@@ -6,7 +6,7 @@ import tiktoken
 from openai import AsyncOpenAI, AuthenticationError, OpenAI
 from openai._types import NOT_GIVEN
 
-from core.base import (
+from R2RV350.py.core.base import (
     ChunkSearchResult,
     EmbeddingConfig,
     EmbeddingProvider,

@@ -1,11 +1,22 @@
-from r2r import R2RClient
+from R2RV350.py.r2r import R2RClient
 
 client = R2RClient()
 
 with open("test.txt", "w") as file:
     file.write("John is a person that works at Google.")
+from R2RV350.py.core.main.config import R2RConfig
+from R2RV350.py.core.main.assembly.factory import R2RProviderFactory
+from R2RV350.py.core.main.orchestration.simple.ingestion_workflow import simple_ingestion_factory
+from R2RV350.py.core.main.services.ingestion_service import IngestionService
+import asyncio
 
-client.ingest_files(file_paths=["test.txt"])
+r2rconfig = R2RConfig.from_toml(config_path="/data/projects/JqChatV2/JqChat/R2RV350/py/core/configs/full_jq.toml")
+ingestion_factory = simple_ingestion_factory(IngestionService(config=r2rconfig.ingestion,providers=R2RProviderFactory(config=r2rconfig)))
+client.documents.create(file_path="test.txt")
+ingest_files = ingestion_factory["ingest-files"]
+text = asyncio.run(ingest_files("test.txt"))
+
+client.ingest_files("test.txt")
 
 # Call RAG directly on an R2R object
 rag_response = client.rag(

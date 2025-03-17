@@ -8,8 +8,8 @@ from typing import Optional
 logger = logging.getLogger(__name__)
 
 try:
-    from core import R2RApp, R2RBuilder, R2RConfig
-    from core.utils.logging_config import configure_logging
+    from R2RV350.py.core import R2RApp, R2RBuilder, R2RConfig
+    from R2RV350.py.core.utils.logging_config import configure_logging
 except ImportError as e:
     logger.error(
         f"Failed to start server: core dependencies not installed: {e}"
@@ -20,9 +20,9 @@ except ImportError as e:
 
 
 async def create_app(
-    config_name: Optional[str] = None,
-    config_path: Optional[str] = None,
-    full: bool = False,
+    config_name: Optional[str] = "jqkj",
+    config_path: Optional[str] = "/data/projects/JqChatV2/JqChat/R2RV350/py/core/configs/full_jq.toml",
+    full: bool = True,
 ) -> "R2RApp":
     """
     Creates and returns an R2R application instance based on the provided
@@ -115,7 +115,7 @@ def main():
     )
     parser.add_argument(
         "--config-path",
-        default=None,
+        default="/data/projects/JqChatV2/JqChat/R2RV350/py/core/configs/full_jq.toml",
         help="Path to the configuration file. Overrides R2R_CONFIG_PATH env if provided.",
     )
     parser.add_argument(

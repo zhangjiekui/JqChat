@@ -2,8 +2,8 @@ import uuid
 
 import pytest
 
-from core.base import R2RException
-from core.base.api.models import CollectionResponse
+from R2RV350.py.core.base import R2RException
+from R2RV350.py.core.base.api.models import CollectionResponse
 
 
 @pytest.mark.asyncio

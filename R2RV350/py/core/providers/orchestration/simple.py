@@ -1,6 +1,6 @@
 from typing import Any
 
-from core.base import OrchestrationConfig, OrchestrationProvider, Workflow
+from R2RV350.py.core.base import OrchestrationConfig, OrchestrationProvider, Workflow
 
 
 class SimpleOrchestrationProvider(OrchestrationProvider):
@@ -31,12 +31,12 @@ class SimpleOrchestrationProvider(OrchestrationProvider):
             self.messages[key] = msg
 
         if workflow == Workflow.INGESTION:
-            from core.main.orchestration import simple_ingestion_factory
+            from R2RV350.py.core.main.orchestration import simple_ingestion_factory
 
             self.ingestion_workflows = simple_ingestion_factory(service)
 
         elif workflow == Workflow.GRAPH:
-            from core.main.orchestration.simple.graph_workflow import (
+            from R2RV350.py.core.main.orchestration.simple.graph_workflow import (
                 simple_graph_search_results_factory,
             )
 

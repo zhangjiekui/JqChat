@@ -8,9 +8,9 @@ from fastapi import Body, Depends, Path, Query
 from fastapi.background import BackgroundTasks
 from fastapi.responses import FileResponse
 
-from core.base import R2RException
-from core.base.abstractions import GraphCreationSettings
-from core.base.api.models import (
+from R2RV350.py.core.base import R2RException
+from R2RV350.py.core.base.abstractions import GraphCreationSettings
+from R2RV350.py.core.base.api.models import (
     GenericBooleanResponse,
     WrappedBooleanResponse,
     WrappedCollectionResponse,
@@ -19,7 +19,7 @@ from core.base.api.models import (
     WrappedGenericMessageResponse,
     WrappedUsersResponse,
 )
-from core.utils import (
+from R2RV350.py.core.utils import (
     generate_default_user_collection_id,
     update_settings_from_dict,
 )
@@ -1141,7 +1141,7 @@ class CollectionsRouter(BaseRouterV3):
                         f"Error running orchestrated extraction: {e} \n\nAttempting to run without orchestration."
                     )
 
-            from core.main.orchestration import (
+            from R2RV350.py.core.main.orchestration import (
                 simple_graph_search_results_factory,
             )
 

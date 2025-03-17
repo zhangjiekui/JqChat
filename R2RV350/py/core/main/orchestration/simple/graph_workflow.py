@@ -3,8 +3,8 @@ import logging
 import math
 import uuid
 
-from core import GenerationConfig, R2RException
-from core.base.abstractions import (
+from R2RV350.py.core import GenerationConfig, R2RException
+from R2RV350.py.core.base.abstractions import (
     GraphConstructionStatus,
     GraphExtractionStatus,
 )

@@ -9,21 +9,21 @@ default_max_collections_per_user = 5_000
 default_max_upload_size = 214748364800
 
 # LLM used for internal operations, like deriving conversation names
-fast_llm = "openai/gpt-4o-mini"
+fast_llm = "litellm/qwen25b70"
 
 # LLM used for user-facing output, like RAG replies
-quality_llm = "openai/gpt-4o"
+quality_llm = "litellm/qwen25b70"
 
 # LLM used for ingesting visual inputs
-vlm = "openai/gpt-4o"
+vlm = "litellm/qwenvl"
 
 # LLM used for transcription
 audio_lm = "openai/whisper-1"
 
 # Reasoning model, used for `research` agent
-reasoning_llm = "openai/o3-mini"
+reasoning_llm = "litellm/qwen25qwq"
 # Planning model, used for `research` agent
-planning_llm = "anthropic/claude-3-7-sonnet-20250219"
+planning_llm = "litellm/qwen25b70"
 
 
 [agent]
@@ -76,9 +76,11 @@ collection_summary_prompt = "collection_summary"
 provider = "litellm"
 # For basic applications, use `openai/text-embedding-3-small` with `base_dimension = 512`
 # For advanced applications, use `openai/text-embedding-3-large` with `base_dimension = 3072` and binary quantization
-base_model = "openai/text-embedding-3-small"
-base_dimension = 512
-# rerank_model = "huggingface/mixedbread-ai/mxbai-rerank-large-v1" # reranking model
+api_base = 'http://10.1.150.106:9997/v1'
+base_model = "xinference/bce-embedding-base_v1"
+base_dimension = 768
+rerank_model = "jina-reranker-v2" # reranking model
+rerank_url='http://10.1.150.106:9997/v1/rerank'
 batch_size = 128
 add_title_as_prefix = false
 concurrent_request_limit = 256
@@ -87,8 +89,9 @@ quantization_settings = { quantization_type = "FP32" }
 [completion_embedding]
 # Generally this should be the same as the embedding config, but advanced users may want to run with a different provider to reduce latency
 provider = "litellm"
-base_model = "openai/text-embedding-3-small"
-base_dimension = 512
+api_base = 'http://10.1.150.106:9997/v1'
+base_model = "xinference/bce-embedding-base_v1"
+base_dimension = 768
 batch_size = 128
 add_title_as_prefix = false
 concurrent_request_limit = 256
@@ -96,8 +99,8 @@ concurrent_request_limit = 256
 [ingestion]
 provider = "r2r"
 chunking_strategy = "recursive"
-chunk_size = 1_024
-chunk_overlap = 512
+chunk_size = 512
+chunk_overlap = 100
 excluded_parsers = ["mp4"]
 automatic_extraction = true # enable automatic extraction of entities and relations
 

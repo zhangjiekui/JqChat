@@ -9,7 +9,7 @@ from typing import Any, Generic, Optional, TypeVar
 
 import yaml
 
-from core.base import Handler, generate_default_prompt_id
+from R2RV350.py.core.base import Handler, generate_default_prompt_id
 
 from .base import PostgresConnectionManager
 

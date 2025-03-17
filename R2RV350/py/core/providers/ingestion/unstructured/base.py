@@ -12,8 +12,8 @@ import httpx
 from unstructured_client import UnstructuredClient
 from unstructured_client.models import operations, shared
 
-from core import parsers
-from core.base import (
+from R2RV350.py.core import parsers
+from R2RV350.py.core.base import (
     AsyncParser,
     ChunkingStrategy,
     Document,
@@ -21,9 +21,9 @@ from core.base import (
     DocumentType,
     RecursiveCharacterTextSplitter,
 )
-from core.base.abstractions import R2RSerializable
-from core.base.providers.ingestion import IngestionConfig, IngestionProvider
-from core.utils import generate_extraction_id
+from R2RV350.py.core.base.abstractions import R2RSerializable
+from R2RV350.py.core.base.providers.ingestion import IngestionConfig, IngestionProvider
+from R2RV350.py.core.utils import generate_extraction_id
 
 from ...database import PostgresDatabaseProvider
 from ...llm import (

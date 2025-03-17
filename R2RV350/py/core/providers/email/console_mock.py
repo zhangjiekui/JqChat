@@ -1,7 +1,7 @@
 import logging
 from typing import Optional
 
-from core.base import EmailProvider
+from R2RV350.py.core.base import EmailProvider
 
 logger = logging.getLogger()
 

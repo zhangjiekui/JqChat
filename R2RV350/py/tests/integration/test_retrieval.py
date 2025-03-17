@@ -2,7 +2,7 @@ import uuid
 
 import pytest
 
-from core.base import Message, SearchMode
+from R2RV350.py.core.base import Message, SearchMode
 from r2r import R2RClient, R2RException
 
 

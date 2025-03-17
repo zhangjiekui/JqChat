@@ -3,8 +3,8 @@ import logging
 import time
 from typing import Any, AsyncGenerator, Optional
 
-from core import parsers
-from core.base import (
+from R2RV350.py.core import parsers
+from R2RV350.py.core.base import (
     AsyncParser,
     ChunkingStrategy,
     Document,
@@ -16,7 +16,7 @@ from core.base import (
     RecursiveCharacterTextSplitter,
     TextSplitter,
 )
-from core.utils import generate_extraction_id
+from R2RV350.py.core.utils import generate_extraction_id
 
 from ...database import PostgresDatabaseProvider
 from ...llm import (
@@ -163,7 +163,7 @@ class R2RIngestionProvider(IngestionProvider):
                 chunk_overlap=chunk_overlap,
             )
         elif chunking_strategy == ChunkingStrategy.CHARACTER:
-            from core.base.utils.splitter.text import CharacterTextSplitter
+            from R2RV350.py.core.base.utils.splitter.text import CharacterTextSplitter
 
             separator = (
                 ingestion_config_override.get("separator")

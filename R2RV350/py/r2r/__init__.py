@@ -1,7 +1,7 @@
 from importlib import metadata
 
-from sdk.async_client import R2RAsyncClient
-from sdk.models import (
+from R2RV350.py.sdk.async_client import R2RAsyncClient
+from R2RV350.py.sdk.models import (
     CitationEvent,
     FinalAnswerEvent,
     MessageEvent,
@@ -11,10 +11,11 @@ from sdk.models import (
     ToolCallEvent,
     ToolResultEvent,
 )
-from sdk.sync_client import R2RClient
-from shared import *
+from R2RV350.py.sdk.sync_client import R2RClient
+from R2RV350.py.shared import *
 
-__version__ = metadata.version("r2r")
+# __version__ = metadata.version("r2r")
+__version__ = '3.5.0'
 
 __all__ = [
     "R2RAsyncClient",

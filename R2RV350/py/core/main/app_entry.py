@@ -8,8 +8,8 @@ from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
-from core.base import R2RException
-from core.utils.logging_config import configure_logging
+from R2RV350.py.core.base import R2RException
+from R2RV350.py.core.utils.logging_config import configure_logging
 
 from .assembly import R2RBuilder, R2RConfig
 

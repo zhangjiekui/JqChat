@@ -1,4 +1,4 @@
-from shared.utils import (
+from R2RV350.py.shared.utils import (
     RecursiveCharacterTextSplitter,
     TextSplitter,
     _decorate_vector_type,

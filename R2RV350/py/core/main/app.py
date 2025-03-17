@@ -3,12 +3,12 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.openapi.utils import get_openapi
 from fastapi.responses import JSONResponse
 
-from core.base import R2RException
-from core.providers import (
+from R2RV350.py.core.base import R2RException
+from R2RV350.py.core.providers import (
     HatchetOrchestrationProvider,
     SimpleOrchestrationProvider,
 )
-from core.utils.sentry import init_sentry
+from R2RV350.py.core.utils.sentry import init_sentry
 
 from .abstractions import R2RServices
 from .api.v3.chunks_router import ChunksRouter
@@ -107,7 +107,7 @@ class R2RApp:
     async def serve(self, host: str = "0.0.0.0", port: int = 7272):
         import uvicorn
 
-        from core.utils.logging_config import configure_logging
+        from R2RV350.py.core.utils.logging_config import configure_logging
 
         configure_logging()
 

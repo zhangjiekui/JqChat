@@ -10,9 +10,9 @@ from typing import TYPE_CHECKING
 
 from hatchet_sdk import ConcurrencyLimitStrategy, Context
 
-from core import GenerationConfig
-from core.base import OrchestrationProvider, R2RException
-from core.base.abstractions import (
+from R2RV350.py.core import GenerationConfig
+from R2RV350.py.core.base import OrchestrationProvider, R2RException
+from R2RV350.py.core.base.abstractions import (
     GraphConstructionStatus,
     GraphExtractionStatus,
 )

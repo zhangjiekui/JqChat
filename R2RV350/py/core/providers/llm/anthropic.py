@@ -25,8 +25,8 @@ from anthropic.types import (
     ToolUseBlock,
 )
 
-from core.base.abstractions import GenerationConfig, LLMChatCompletion
-from core.base.providers.llm import CompletionConfig, CompletionProvider
+from R2RV350.py.core.base.abstractions import GenerationConfig, LLMChatCompletion
+from R2RV350.py.core.base.providers.llm import CompletionConfig, CompletionProvider
 
 logger = logging.getLogger(__name__)
 

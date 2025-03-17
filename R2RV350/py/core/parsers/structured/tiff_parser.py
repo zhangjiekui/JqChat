@@ -6,9 +6,9 @@ from typing import AsyncGenerator
 
 from PIL import Image
 
-from core.base.abstractions import GenerationConfig
-from core.base.parsers.base_parser import AsyncParser
-from core.base.providers import (
+from R2RV350.py.core.base.abstractions import GenerationConfig
+from R2RV350.py.core.base.parsers.base_parser import AsyncParser
+from R2RV350.py.core.base.providers import (
     CompletionProvider,
     DatabaseProvider,
     IngestionConfig,

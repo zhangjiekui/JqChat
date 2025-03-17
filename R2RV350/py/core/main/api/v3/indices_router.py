@@ -4,9 +4,9 @@ from typing import Optional
 
 from fastapi import Body, Depends, Path, Query
 
-from core.base import IndexConfig, R2RException
-from core.base.abstractions import VectorTableName
-from core.base.api.models import (
+from R2RV350.py.core.base import IndexConfig, R2RException
+from R2RV350.py.core.base.abstractions import VectorTableName
+from R2RV350.py.core.base.api.models import (
     VectorIndexResponse,
     VectorIndicesResponse,
     WrappedGenericMessageResponse,

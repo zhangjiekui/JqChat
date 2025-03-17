@@ -8,7 +8,7 @@ from typing import Any, AsyncGenerator, Generator, Optional
 
 from litellm import AuthenticationError
 
-from core.base.abstractions import (
+from R2RV350.py.core.base.abstractions import (
     GenerationConfig,
     LLMChatCompletion,
     LLMChatCompletionChunk,

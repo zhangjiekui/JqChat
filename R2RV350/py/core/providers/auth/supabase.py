@@ -8,7 +8,7 @@ from fastapi import Depends, HTTPException
 from fastapi.security import OAuth2PasswordBearer
 from supabase import Client, create_client
 
-from core.base import (
+from R2RV350.py.core.base import (
     AuthConfig,
     AuthProvider,
     CryptoProvider,
@@ -17,7 +17,7 @@ from core.base import (
     Token,
     TokenData,
 )
-from core.base.api.models import User
+from R2RV350.py.core.base.api.models import User
 
 from ..database import PostgresDatabaseProvider
 

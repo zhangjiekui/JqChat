@@ -9,8 +9,8 @@ from typing import Optional
 
 import toml
 
-from core.telemetry.events import ErrorEvent, FeatureUsageEvent
-from core.telemetry.posthog import telemetry_client
+from R2RV350.py.core.telemetry.events import ErrorEvent, FeatureUsageEvent
+from R2RV350.py.core.telemetry.posthog import telemetry_client
 
 logger = logging.getLogger()
 

@@ -9,12 +9,12 @@ from typing import Any, AsyncGenerator, Optional, Type
 
 from pydantic import BaseModel
 
-from core.base.abstractions import (
+from R2RV350.py.core.base.abstractions import (
     GenerationConfig,
     LLMChatCompletion,
     Message,
 )
-from core.base.providers import CompletionProvider, DatabaseProvider
+from R2RV350.py.core.base.providers import CompletionProvider, DatabaseProvider
 
 from .base import Tool, ToolResult
 

@@ -8,7 +8,7 @@ from typing import Any, Optional
 
 from litellm import AuthenticationError
 
-from core.base.abstractions import VectorQuantizationSettings
+from R2RV350.py.core.base.abstractions import VectorQuantizationSettings
 
 from ..abstractions import (
     ChunkSearchResult,
@@ -22,6 +22,7 @@ logger = logging.getLogger()
 
 class EmbeddingConfig(ProviderConfig):
     provider: str
+    api_base: str
     base_model: str
     base_dimension: int | float
     rerank_model: Optional[str] = None

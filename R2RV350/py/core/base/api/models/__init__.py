@@ -1,8 +1,8 @@
-from shared.api.models.auth.responses import (
+from R2RV350.py.shared.api.models.auth.responses import (
     TokenResponse,
     WrappedTokenResponse,
 )
-from shared.api.models.base import (
+from R2RV350.py.shared.api.models.base import (
     GenericBooleanResponse,
     GenericMessageResponse,
     PaginatedR2RResult,
@@ -10,7 +10,7 @@ from shared.api.models.base import (
     WrappedBooleanResponse,
     WrappedGenericMessageResponse,
 )
-from shared.api.models.graph.responses import (  # TODO: Need to review anything above this
+from R2RV350.py.shared.api.models.graph.responses import (  # TODO: Need to review anything above this
     Community,
     Entity,
     GraphResponse,
@@ -24,7 +24,7 @@ from shared.api.models.graph.responses import (  # TODO: Need to review anything
     WrappedRelationshipResponse,
     WrappedRelationshipsResponse,
 )
-from shared.api.models.ingestion.responses import (
+from R2RV350.py.shared.api.models.ingestion.responses import (
     IngestionResponse,
     UpdateResponse,
     VectorIndexResponse,
@@ -35,7 +35,7 @@ from shared.api.models.ingestion.responses import (
     WrappedVectorIndexResponse,
     WrappedVectorIndicesResponse,
 )
-from shared.api.models.management.responses import (  # Document Responses; Prompt Responses; Chunk Responses; Conversation Responses; User Responses; TODO: anything below this hasn't been reviewed
+from R2RV350.py.shared.api.models.management.responses import (  # Document Responses; Prompt Responses; Chunk Responses; Conversation Responses; User Responses; TODO: anything below this hasn't been reviewed
     ChunkResponse,
     CollectionResponse,
     ConversationResponse,
@@ -66,7 +66,7 @@ from shared.api.models.management.responses import (  # Document Responses; Prom
     WrappedUserResponse,
     WrappedUsersResponse,
 )
-from shared.api.models.retrieval.responses import (
+from R2RV350.py.shared.api.models.retrieval.responses import (
     AgentEvent,
     AgentResponse,
     Citation,

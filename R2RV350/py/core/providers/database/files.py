@@ -9,7 +9,7 @@ from zipfile import ZipFile
 import asyncpg
 from fastapi import HTTPException
 
-from core.base import Handler, R2RException
+from R2RV350.py.core.base import Handler, R2RException
 
 from .base import PostgresConnectionManager
 

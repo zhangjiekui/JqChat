@@ -2,7 +2,7 @@ from typing import Any, Literal, Optional
 
 from pydantic import BaseModel, Field
 
-from shared.abstractions import (
+from R2RV350.py.shared.abstractions import (
     AggregateSearchResult,
     ChunkSearchResult,
     GraphSearchResult,
@@ -10,8 +10,8 @@ from shared.abstractions import (
     Message,
     WebPageSearchResult,
 )
-from shared.api.models.base import R2RResults
-from shared.api.models.management.responses import DocumentResponse
+from R2RV350.py.shared.api.models.base import R2RResults
+from R2RV350.py.shared.api.models.management.responses import DocumentResponse
 
 from ....abstractions import R2RSerializable
 

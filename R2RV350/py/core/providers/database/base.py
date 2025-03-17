@@ -6,7 +6,7 @@ from typing import Optional
 
 import asyncpg
 
-from core.base.providers import DatabaseConnectionManager
+from R2RV350.py.core.base.providers import DatabaseConnectionManager
 
 logger = logging.getLogger()
 

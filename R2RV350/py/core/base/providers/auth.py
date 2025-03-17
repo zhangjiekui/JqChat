@@ -19,7 +19,7 @@ from .email import EmailProvider
 logger = logging.getLogger()
 
 if TYPE_CHECKING:
-    from core.providers.database import PostgresDatabaseProvider
+    from R2RV350.py.core.providers.database import PostgresDatabaseProvider
 
 api_key_header = APIKeyHeader(name="X-API-Key", auto_error=False)
 

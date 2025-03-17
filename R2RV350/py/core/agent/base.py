@@ -5,9 +5,9 @@ import re
 from abc import ABCMeta
 from typing import AsyncGenerator, Optional, Tuple
 
-from core.base import AsyncSyncMeta, LLMChatCompletion, Message, syncable
-from core.base.agent import Agent, Conversation
-from core.utils import (
+from R2RV350.py.core.base import AsyncSyncMeta, LLMChatCompletion, Message, syncable
+from R2RV350.py.core.base.agent import Agent, Conversation
+from R2RV350.py.core.utils import (
     CitationTracker,
     SearchResultsCollector,
     SSEFormatter,

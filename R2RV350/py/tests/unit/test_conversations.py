@@ -2,8 +2,8 @@ import uuid
 
 import pytest
 
-from core.base import Message, R2RException
-from shared.api.models.management.responses import (
+from R2RV350.py.core.base import Message, R2RException
+from R2RV350.py.shared.api.models.management.responses import (
     ConversationResponse,
     MessageResponse,
 )

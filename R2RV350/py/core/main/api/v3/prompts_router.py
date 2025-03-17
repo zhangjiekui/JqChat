@@ -4,8 +4,8 @@ from typing import Optional
 
 from fastapi import Body, Depends, Path, Query
 
-from core.base import R2RException
-from core.base.api.models import (
+from R2RV350.py.core.base import R2RException
+from R2RV350.py.core.base.api.models import (
     GenericBooleanResponse,
     GenericMessageResponse,
     WrappedBooleanResponse,

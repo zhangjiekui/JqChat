@@ -87,6 +87,8 @@ class ProviderConfig(BaseModel, ABC):
     app: AppConfig  # Add an app_config field
     extra_fields: dict[str, Any] = {}
     provider: Optional[str] = None
+    # api_base: Optional[str] = None
+
 
     class Config:
         populate_by_name = True

@@ -11,7 +11,7 @@ from uuid import UUID
 import asyncpg
 from fastapi import HTTPException
 
-from core.base import (
+from R2RV350.py.core.base import (
     DocumentResponse,
     DocumentType,
     GraphConstructionStatus,

@@ -3,7 +3,7 @@ import asyncio
 import logging
 from typing import Any, Callable, Optional
 
-from core.base import OrchestrationConfig, OrchestrationProvider, Workflow
+from R2RV350.py.core.base import OrchestrationConfig, OrchestrationProvider, Workflow
 
 logger = logging.getLogger()
 
@@ -85,7 +85,7 @@ class HatchetOrchestrationProvider(OrchestrationProvider):
             f"Registering workflows for {workflow} with messages {messages}."
         )
         if workflow == Workflow.INGESTION:
-            from core.main.orchestration.hatchet.ingestion_workflow import (  # type: ignore
+            from R2RV350.py.core.main.orchestration.hatchet.ingestion_workflow import (  # type: ignore
                 hatchet_ingestion_factory,
             )
 
@@ -95,7 +95,7 @@ class HatchetOrchestrationProvider(OrchestrationProvider):
                     self.worker.register_workflow(workflow)
 
         elif workflow == Workflow.GRAPH:
-            from core.main.orchestration.hatchet.graph_workflow import (  # type: ignore
+            from R2RV350.py.core.main.orchestration.hatchet.graph_workflow import (  # type: ignore
                 hatchet_graph_search_results_factory,
             )
 

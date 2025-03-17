@@ -2,25 +2,25 @@
 import logging
 from typing import Any, Callable, Optional
 
-from core.base import (
+from R2RV350.py.core.base import (
     format_search_results_for_llm,
 )
-from core.base.abstractions import (
+from R2RV350.py.core.base.abstractions import (
     AggregateSearchResult,
     GenerationConfig,
     SearchSettings,
     WebPageSearchResult,
     WebSearchResult,
 )
-from core.base.agent import Tool
-from core.base.providers import DatabaseProvider
-from core.providers import (
+from R2RV350.py.core.base.agent import Tool
+from R2RV350.py.core.base.providers import DatabaseProvider
+from R2RV350.py.core.providers import (
     AnthropicCompletionProvider,
     LiteLLMCompletionProvider,
     OpenAICompletionProvider,
     R2RCompletionProvider,
 )
-from core.utils import (
+from R2RV350.py.core.utils import (
     SearchResultsCollector,
     generate_id,
     num_tokens,

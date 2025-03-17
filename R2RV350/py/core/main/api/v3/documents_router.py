@@ -13,7 +13,7 @@ from fastapi.background import BackgroundTasks
 from fastapi.responses import FileResponse, StreamingResponse
 from pydantic import Json
 
-from core.base import (
+from R2RV350.py.core.base import (
     IngestionConfig,
     IngestionMode,
     R2RException,
@@ -25,8 +25,8 @@ from core.base import (
     generate_id,
     select_search_filters,
 )
-from core.base.abstractions import GraphCreationSettings, StoreType
-from core.base.api.models import (
+from R2RV350.py.core.base.abstractions import GraphCreationSettings, StoreType
+from R2RV350.py.core.base.api.models import (
     GenericBooleanResponse,
     WrappedBooleanResponse,
     WrappedChunksResponse,
@@ -39,7 +39,7 @@ from core.base.api.models import (
     WrappedIngestionResponse,
     WrappedRelationshipsResponse,
 )
-from core.utils import update_settings_from_dict
+from R2RV350.py.core.utils import update_settings_from_dict
 
 from ...abstractions import R2RProviders, R2RServices
 from ...config import R2RConfig
@@ -437,7 +437,7 @@ class DocumentsRouter(BaseRouterV3):
                         )
 
                 logger.info("Running chunk ingestion without orchestration.")
-                from core.main.orchestration import simple_ingestion_factory
+                from R2RV350.py.core.main.orchestration import simple_ingestion_factory
 
                 simple_ingestor = simple_ingestion_factory(
                     self.services.ingestion
@@ -561,7 +561,7 @@ class DocumentsRouter(BaseRouterV3):
                 f"Running ingestion without orchestration for file {file_name} and document_id {document_id}."
             )
             # TODO - Clean up implementation logic here to be more explicitly `synchronous`
-            from core.main.orchestration import simple_ingestion_factory
+            from R2RV350.py.core.main.orchestration import simple_ingestion_factory
 
             simple_ingestor = simple_ingestion_factory(self.services.ingestion)
             await simple_ingestor["ingest-files"](workflow_input)
@@ -1535,7 +1535,7 @@ class DocumentsRouter(BaseRouterV3):
                         f"Error running orchestrated extraction: {e} \n\nAttempting to run without orchestration."
                     )
 
-            from core.main.orchestration import (
+            from R2RV350.py.core.main.orchestration import (
                 simple_graph_search_results_factory,
             )
 
@@ -1668,7 +1668,7 @@ class DocumentsRouter(BaseRouterV3):
                         f"Error running orchestrated deduplication: {e} \n\nAttempting to run without orchestration."
                     )
 
-            from core.main.orchestration import (
+            from R2RV350.py.core.main.orchestration import (
                 simple_graph_search_results_factory,
             )
 

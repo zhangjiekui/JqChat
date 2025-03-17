@@ -1,8 +1,8 @@
 # type: ignore
 from typing import IO, AsyncGenerator, Optional
 
-from core.base.parsers.base_parser import AsyncParser
-from core.base.providers import (
+from R2RV350.py.core.base.parsers.base_parser import AsyncParser
+from R2RV350.py.core.base.providers import (
     CompletionProvider,
     DatabaseProvider,
     IngestionConfig,

@@ -9,7 +9,7 @@ import requests
 from aiohttp import ClientError, ClientSession
 from litellm import AuthenticationError, aembedding, embedding
 
-from core.base import (
+from R2RV350.py.core.base import (
     ChunkSearchResult,
     EmbeddingConfig,
     EmbeddingProvider,
@@ -42,20 +42,10 @@ class LiteLLMEmbeddingProvider(EmbeddingProvider):
                 "LiteLLMEmbeddingProvider must be initialized with provider `litellm`."
             )
 
-        self.rerank_url = None
-        if config.rerank_model:
-            if "huggingface" not in config.rerank_model:
-                raise ValueError(
-                    "LiteLLMEmbeddingProvider only supports re-ranking via the HuggingFace text-embeddings-inference API"
-                )
+        self.rerank_url = config.rerank_url
+        self.rerank_model=config.rerank_model
 
-            url = os.getenv("HUGGINGFACE_API_BASE") or config.rerank_url
-            if not url:
-                raise ValueError(
-                    "LiteLLMEmbeddingProvider requires a valid reranking API url to be set via `embedding.rerank_url` in the r2r.toml, or via the environment variable `HUGGINGFACE_API_BASE`."
-                )
-            self.rerank_url = url
-
+        self.api_base = config.api_base
         self.base_model = config.base_model
         if "amazon" in self.base_model:
             logger.warn("Amazon embedding model detected, dropping params")
@@ -64,10 +54,13 @@ class LiteLLMEmbeddingProvider(EmbeddingProvider):
 
     def _get_embedding_kwargs(self, **kwargs):
         embedding_kwargs = {
-            "model": self.base_model,
+            "api_base":self.api_base,
+            "model": f"xinference/{self.base_model}",
             "dimensions": self.base_dimension,
-        }
+            "custom_llm_provider":"xinference",
+        }        
         embedding_kwargs.update(kwargs)
+        logger.warning(f"LiteLLM embedding kwargs: {embedding_kwargs}")
         return embedding_kwargs
 
     async def _execute_task(self, task: dict[str, Any]) -> list[list[float]]:
@@ -208,11 +201,16 @@ class LiteLLMEmbeddingProvider(EmbeddingProvider):
                 )
 
             texts = [result.text for result in results]
+            if len(texts) == 0:
+                logger.warning("由于传入的texts为空, 只好提供一段测试文本")
+                texts = ["由于传入的texts为空", "只好提供一段测试文本"]
 
             payload = {
+                "model": self.config.rerank_model,
                 "query": query,
-                "texts": texts,
-                "model-id": self.config.rerank_model.split("huggingface/")[1],
+                "documents": texts,                
+                "top_n": limit,
+                "return_documents": True,
             }
 
             headers = {"Content-Type": "application/json"}
@@ -226,11 +224,11 @@ class LiteLLMEmbeddingProvider(EmbeddingProvider):
 
                 # Copy reranked results into new array
                 scored_results = []
-                for rank_info in reranked_results:
+                for rank_info in reranked_results['results']:
                     original_result = results[rank_info["index"]]
                     copied_result = copy(original_result)
                     # Inject the reranking score into the result object
-                    copied_result.score = rank_info["score"]
+                    copied_result.score = rank_info.get("score",rank_info.get("relevance_score",0))
                     scored_results.append(copied_result)
 
                 # Return only the ChunkSearchResult objects, limited to specified count

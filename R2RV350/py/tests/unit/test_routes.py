@@ -5,26 +5,26 @@ import pytest
 from starlette.responses import FileResponse, StreamingResponse
 from starlette.templating import _TemplateResponse
 
-from core import R2RProviders
-from core.main.abstractions import R2RServices
-from core.main.api.v3.chunks_router import ChunksRouter
-from core.main.api.v3.collections_router import CollectionsRouter
-from core.main.api.v3.conversations_router import ConversationsRouter
-from core.main.api.v3.documents_router import DocumentsRouter
-from core.main.api.v3.graph_router import GraphRouter
-from core.main.api.v3.indices_router import IndicesRouter
-from core.main.api.v3.prompts_router import PromptsRouter
-from core.main.api.v3.retrieval_router import RetrievalRouter
-from core.main.api.v3.system_router import SystemRouter
-from core.main.api.v3.users_router import UsersRouter
-from core.main.config import R2RConfig
-from core.providers.auth import R2RAuthProvider
-from core.providers.database import PostgresDatabaseProvider
-from core.providers.email import ConsoleMockEmailProvider
-from core.providers.embeddings import OpenAIEmbeddingProvider
-from core.providers.ingestion import R2RIngestionProvider
-from core.providers.llm import OpenAICompletionProvider
-from core.providers.orchestration import SimpleOrchestrationProvider
+from R2RV350.py.core import R2RProviders
+from R2RV350.py.core.main.abstractions import R2RServices
+from R2RV350.py.core.main.api.v3.chunks_router import ChunksRouter
+from R2RV350.py.core.main.api.v3.collections_router import CollectionsRouter
+from R2RV350.py.core.main.api.v3.conversations_router import ConversationsRouter
+from R2RV350.py.core.main.api.v3.documents_router import DocumentsRouter
+from R2RV350.py.core.main.api.v3.graph_router import GraphRouter
+from R2RV350.py.core.main.api.v3.indices_router import IndicesRouter
+from R2RV350.py.core.main.api.v3.prompts_router import PromptsRouter
+from R2RV350.py.core.main.api.v3.retrieval_router import RetrievalRouter
+from R2RV350.py.core.main.api.v3.system_router import SystemRouter
+from R2RV350.py.core.main.api.v3.users_router import UsersRouter
+from R2RV350.py.core.main.config import R2RConfig
+from R2RV350.py.core.providers.auth import R2RAuthProvider
+from R2RV350.py.core.providers.database import PostgresDatabaseProvider
+from R2RV350.py.core.providers.email import ConsoleMockEmailProvider
+from R2RV350.py.core.providers.embeddings import OpenAIEmbeddingProvider
+from R2RV350.py.core.providers.ingestion import R2RIngestionProvider
+from R2RV350.py.core.providers.llm import OpenAICompletionProvider
+from R2RV350.py.core.providers.orchestration import SimpleOrchestrationProvider
 
 ROUTERS = [
     UsersRouter,

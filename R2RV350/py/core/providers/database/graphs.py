@@ -15,7 +15,7 @@ import httpx
 from asyncpg.exceptions import UniqueViolationError
 from fastapi import HTTPException
 
-from core.base.abstractions import (
+from R2RV350.py.core.base.abstractions import (
     Community,
     Entity,
     Graph,
@@ -25,9 +25,9 @@ from core.base.abstractions import (
     StoreType,
     VectorQuantizationType,
 )
-from core.base.api.models import GraphResponse
-from core.base.providers.database import Handler
-from core.base.utils import (
+from R2RV350.py.core.base.api.models import GraphResponse
+from R2RV350.py.core.base.providers.database import Handler
+from R2RV350.py.core.base.utils import (
     _get_vector_column_str,
     generate_entity_document_id,
 )

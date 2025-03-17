@@ -4,8 +4,8 @@ from pathlib import Path
 import pytest
 import toml
 
-from core.base.utils import deep_update
-from core.main.config import R2RConfig
+from R2RV350.py.core.base.utils import deep_update
+from R2RV350.py.core.main.config import R2RConfig
 
 ###############################################################################
 # Fixtures
@@ -45,7 +45,7 @@ def all_configs(all_config_files):
 @pytest.fixture
 def full_config(all_configs):
     """Return the full override config (full.toml)"""
-    return all_configs["full.toml"]
+    return all_configs["full_jq.toml"]
 
 
 @pytest.fixture

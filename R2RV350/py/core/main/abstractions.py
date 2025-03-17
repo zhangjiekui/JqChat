@@ -3,7 +3,7 @@ from typing import TYPE_CHECKING
 
 from pydantic import BaseModel
 
-from core.providers import (
+from R2RV350.py.core.providers import (
     AnthropicCompletionProvider,
     AsyncSMTPEmailProvider,
     ConsoleMockEmailProvider,
@@ -26,11 +26,11 @@ from core.providers import (
 )
 
 if TYPE_CHECKING:
-    from core.main.services.auth_service import AuthService
-    from core.main.services.graph_service import GraphService
-    from core.main.services.ingestion_service import IngestionService
-    from core.main.services.management_service import ManagementService
-    from core.main.services.retrieval_service import (  # type: ignore
+    from R2RV350.py.core.main.services.auth_service import AuthService
+    from R2RV350.py.core.main.services.graph_service import GraphService
+    from R2RV350.py.core.main.services.ingestion_service import IngestionService
+    from R2RV350.py.core.main.services.management_service import ManagementService
+    from R2RV350.py.core.main.services.retrieval_service import (  # type: ignore
         RetrievalService,  # type: ignore
     )
 

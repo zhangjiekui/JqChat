@@ -3,7 +3,7 @@ import uuid
 
 import pytest
 
-from core.base import (
+from R2RV350.py.core.base import (
     DocumentResponse,
     DocumentType,
     GraphExtractionStatus,

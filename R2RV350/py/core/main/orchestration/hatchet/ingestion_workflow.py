@@ -10,15 +10,15 @@ from fastapi import HTTPException
 from hatchet_sdk import ConcurrencyLimitStrategy, Context
 from litellm import AuthenticationError
 
-from core.base import (
+from R2RV350.py.core.base import (
     DocumentChunk,
     GraphConstructionStatus,
     IngestionStatus,
     OrchestrationProvider,
     generate_extraction_id,
 )
-from core.base.abstractions import DocumentResponse, R2RException
-from core.utils import (
+from R2RV350.py.core.base.abstractions import DocumentResponse, R2RException
+from R2RV350.py.core.utils import (
     generate_default_user_collection_id,
     update_settings_from_dict,
 )

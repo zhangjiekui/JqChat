@@ -1,7 +1,7 @@
 import re
 from typing import Set, Tuple
 
-from shared.utils.base_utils import (
+from R2RV350.py.shared.utils.base_utils import (
     SearchResultsCollector,
     SSEFormatter,
     convert_nonserializable_objects,
@@ -22,7 +22,7 @@ from shared.utils.base_utils import (
     validate_uuid,
     yield_sse_event,
 )
-from shared.utils.splitter.text import (
+from R2RV350.py.shared.utils.splitter.text import (
     RecursiveCharacterTextSplitter,
     TextSplitter,
 )

@@ -7,9 +7,9 @@ from fastapi import Body, Depends, Path, Query
 from fastapi.background import BackgroundTasks
 from fastapi.responses import FileResponse
 
-from core.base import GraphConstructionStatus, R2RException, Workflow
-from core.base.abstractions import DocumentResponse, StoreType
-from core.base.api.models import (
+from R2RV350.py.core.base import GraphConstructionStatus, R2RException, Workflow
+from R2RV350.py.core.base.abstractions import DocumentResponse, StoreType
+from R2RV350.py.core.base.api.models import (
     GenericBooleanResponse,
     GenericMessageResponse,
     WrappedBooleanResponse,
@@ -23,7 +23,7 @@ from core.base.api.models import (
     WrappedRelationshipResponse,
     WrappedRelationshipsResponse,
 )
-from core.utils import (
+from R2RV350.py.core.utils import (
     generate_default_user_collection_id,
     update_settings_from_dict,
 )
@@ -323,7 +323,7 @@ class GraphRouter(BaseRouterV3):
                     logger.error(
                         f"Error running orchestrated community building: {e} \n\nAttempting to run without orchestration."
                     )
-            from core.main.orchestration import (
+            from R2RV350.py.core.main.orchestration import (
                 simple_graph_search_results_factory,
             )
 

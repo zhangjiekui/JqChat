@@ -3,9 +3,9 @@ import asyncio
 import json
 from typing import AsyncGenerator
 
-from core.base import R2RException
-from core.base.parsers.base_parser import AsyncParser
-from core.base.providers import (
+from R2RV350.py.core.base import R2RException
+from R2RV350.py.core.base.parsers.base_parser import AsyncParser
+from R2RV350.py.core.base.providers import (
     CompletionProvider,
     DatabaseProvider,
     IngestionConfig,

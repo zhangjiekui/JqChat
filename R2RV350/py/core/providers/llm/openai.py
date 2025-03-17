@@ -6,8 +6,8 @@ from typing import Any
 
 from openai import AsyncAzureOpenAI, AsyncOpenAI, OpenAI
 
-from core.base.abstractions import GenerationConfig
-from core.base.providers.llm import CompletionConfig, CompletionProvider
+from R2RV350.py.core.base.abstractions import GenerationConfig
+from R2RV350.py.core.base.providers.llm import CompletionConfig, CompletionProvider
 
 logger = logging.getLogger()
 
@@ -147,8 +147,9 @@ class OpenAICompletionProvider(CompletionProvider):
 
         # Initialize OpenAI clients if credentials exist
         if os.getenv("OPENAI_API_KEY"):
-            self.openai_client = OpenAI()
-            self.async_openai_client = AsyncOpenAI()
+            base_url=os.getenv("OPENAI_API_BASE","http://10.1.150.105:9997/v1")
+            self.openai_client = OpenAI(base_url=base_url)
+            self.async_openai_client = AsyncOpenAI(base_url=base_url)
             logger.debug("OpenAI clients initialized successfully")
 
         # Initialize Azure OpenAI clients if credentials exist
@@ -567,7 +568,7 @@ class OpenAICompletionProvider(CompletionProvider):
         )
 
         if contains_images:
-            vision_models = ["gpt-4-vision", "gpt-4o"]
+            vision_models = ["qwenvl"]
             if not any(
                 vision_model in model_name for vision_model in vision_models
             ):
@@ -620,7 +621,7 @@ class OpenAICompletionProvider(CompletionProvider):
         )
 
         if contains_images:
-            vision_models = ["gpt-4-vision", "gpt-4o"]
+            vision_models = ["qwenvl"]
             if not any(
                 vision_model in model_name for vision_model in vision_models
             ):

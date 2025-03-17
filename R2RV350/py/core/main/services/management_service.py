@@ -7,7 +7,7 @@ from uuid import UUID
 
 import toml
 
-from core.base import (
+from R2RV350.py.core.base import (
     CollectionResponse,
     ConversationResponse,
     DocumentResponse,
@@ -20,7 +20,7 @@ from core.base import (
     StoreType,
     User,
 )
-from core.telemetry.telemetry_decorator import telemetry_event
+from R2RV350.py.core.telemetry.telemetry_decorator import telemetry_event
 
 from ..abstractions import R2RProviders
 from ..config import R2RConfig

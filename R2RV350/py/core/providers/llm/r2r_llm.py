@@ -1,8 +1,8 @@
 import logging
 from typing import Any
 
-from core.base.abstractions import GenerationConfig
-from core.base.providers.llm import CompletionConfig, CompletionProvider
+from R2RV350.py.core.base.abstractions import GenerationConfig
+from R2RV350.py.core.base.providers.llm import CompletionConfig, CompletionProvider
 
 from .anthropic import AnthropicCompletionProvider
 from .azure_foundry import AzureFoundryCompletionProvider

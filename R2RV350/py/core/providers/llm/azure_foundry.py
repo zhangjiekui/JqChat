@@ -10,8 +10,8 @@ from azure.ai.inference.aio import (
 )
 from azure.core.credentials import AzureKeyCredential
 
-from core.base.abstractions import GenerationConfig
-from core.base.providers.llm import CompletionConfig, CompletionProvider
+from R2RV350.py.core.base.abstractions import GenerationConfig
+from R2RV350.py.core.base.providers.llm import CompletionConfig, CompletionProvider
 
 logger = logging.getLogger(__name__)
 

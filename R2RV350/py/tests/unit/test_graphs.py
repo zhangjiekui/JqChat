@@ -3,7 +3,7 @@ from enum import Enum
 
 import pytest
 
-from core.base.api.models import GraphResponse
+from R2RV350.py.core.base.api.models import GraphResponse
 
 
 class StoreType(str, Enum):
@@ -511,7 +511,7 @@ async def test_filter_by_collection_ids_in_entities(graphs_handler):
 # # tests/test_graph_filters.py
 # import pytest
 # import uuid
-# from core.providers.database.postgres import PostgresGraphsHandler
+# from R2RV350.py.core.providers.database.postgres import PostgresGraphsHandler
 
 # @pytest.mark.asyncio
 # async def test_filter_by_collection_ids_in_entities(graphs_handler: PostgresGraphsHandler):

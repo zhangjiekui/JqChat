@@ -10,13 +10,13 @@ from typing import Any, AsyncGenerator, Coroutine, Optional
 from uuid import UUID
 from xml.etree.ElementTree import Element
 
-from core.base import (
+from R2RV350.py.core.base import (
     DocumentChunk,
     GraphExtraction,
     GraphExtractionStatus,
     R2RDocumentProcessingError,
 )
-from core.base.abstractions import (
+from R2RV350.py.core.base.abstractions import (
     Community,
     Entity,
     GenerationConfig,
@@ -25,8 +25,8 @@ from core.base.abstractions import (
     Relationship,
     StoreType,
 )
-from core.base.api.models import GraphResponse
-from core.telemetry.telemetry_decorator import telemetry_event
+from R2RV350.py.core.base.api.models import GraphResponse
+from R2RV350.py.core.telemetry.telemetry_decorator import telemetry_event
 
 from ..abstractions import R2RProviders
 from ..config import R2RConfig
