@@ -33,11 +33,20 @@ tail -f /root/JqLogs/vllm.log
 ```
 
 #### Qwen2.5 gpu0
-``` Qwen2.5 gpu0
+``` Qwen2.5 14B gpu0
 workon vllm
-CUDA_VISIBLE_DEVICES=0 nohup vllm serve /data/xinference/modelscope/hub/qwen/Qwen2.5-32B-Instruct-AWQ --served-model-name qwen25b70 --enable-auto-tool-choice --tool-call-parser hermes --host 0.0.0.0 --port 9997 --max-model-len 8000  --distributed-executor-backend ray --use_v2_block_manager --gpu-memory-utilization 0.95 --max-num-seqs 16 --enable-prefix-caching --enable-chunked-prefill >> /root/JqLogs/vllm.log 2>&1 &
+TORCH_CUDA_ARCH_LIST="8.9+PTX" VLLM_ALLOW_ENGINE_USE_RAY=1 CUDA_VISIBLE_DEVICES=0 nohup vllm serve /data/models/Qwen2.5-14B-Instruct-GPTQ-Int4/ --served-model-name qwen25b70 --enable-auto-tool-choice --tool-call-parser hermes --host 0.0.0.0 --port 9997 --max-model-len 32000  --distributed-executor-backend ray --use_v2_block_manager --gpu-memory-utilization 0.95 --max-num-seqs 16 --enable-prefix-caching --enable-chunked-prefill >> /root/JqLogs/vllm.log 2>&1 &
 tail -f /root/JqLogs/vllm.log
 ```
+
+``` Qwen2.5 gpu0
+```
+workon vllm
+TORCH_CUDA_ARCH_LIST="8.9+PTX" VLLM_ALLOW_ENGINE_USE_RAY=1 CUDA_VISIBLE_DEVICES=0 nohup vllm serve /data/xinference/modelscope/hub/qwen/Qwen2.5-32B-Instruct-AWQ --served-model-name qwen25b70 --enable-auto-tool-choice --tool-call-parser hermes --host 0.0.0.0 --port 9997 --max-model-len 13000  --distributed-executor-backend ray --use_v2_block_manager --gpu-memory-utilization 1 --max-num-seqs 16 --enable-prefix-caching --enable-chunked-prefill >> /root/JqLogs/vllm.log 2>&1 &
+tail -f /root/JqLogs/vllm.log
+```
+
+
 
 #### QwenQwQ gpu1
 ``` QwenQwQ gpu1

@@ -7,8 +7,9 @@ from langchain_graphrag.indexing import TextUnitExtractor
 # 修改原始文件/root/.virtualenvs/test/lib/python3.10/site-packages/langchain_graphrag/indexing/graph_generation/entity_relationship_extraction/extractor.py
 # 在上面的EntityRelationshipExtractor中增加了batch方法
 from langchain_graphrag_code_test.jqkj_er_extractor import EntityRelationshipExtractor
+from langchain_graphrag_code_test.jqkj_graph_generator import GraphGenerator
 from langchain_graphrag.indexing.graph_generation import EntityRelationshipDescriptionSummarizer
-from langchain_graphrag.indexing.graph_generation import GraphsMerger,GraphGenerator
+from langchain_graphrag.indexing.graph_generation import GraphsMerger
 
 from jqcode.jq_utils.logger import jqkj_logger
 
@@ -61,10 +62,10 @@ def get_df_text_units_from_file_directory(dir:str,input_files:str=None, overwrit
     return df_text_units
 
 file_dir = '/data/projects/JqChatV2/JqChat/langchain_graphrag_code_test/data'
-# chunked_documents = get_chunked_documents_from_file_directory(file_dir)
+chunked_documents = get_chunked_documents_from_file_directory(file_dir)
 df_text_units = get_df_text_units_from_file_directory(dir=file_dir)
-files = [r"/data/projects/JqChatV2/JqChat/PPQA000_质量保证过程.docx"]
-df_text_units = get_df_text_units_from_file_directory(dir=None,input_files=files)
+# files = [r"/data/projects/JqChatV2/JqChat/PPQA000_质量保证过程.docx"]
+# df_text_units = get_df_text_units_from_file_directory(dir=None,input_files=files)
 
 
 
@@ -75,16 +76,16 @@ batch_size = 14
 er_extractor = EntityRelationshipExtractor.build_default(llm=llm)
 summarizer = EntityRelationshipDescriptionSummarizer.build_default(llm=llm)
 graphs_merger = GraphsMerger()
-text_unit_graphs = er_extractor.batch(df_text_units[0:100],batch_size=batch_size)
-# text_unit_graphs = er_extractor.batch(df_text_units,batch_size=batch_size)
-for index, g in enumerate(text_unit_graphs):
-    print("---------------------------------")
-    print(f"图谱: {index+1}")
-    print(f"节点数量 - {len(g.nodes)}")
-    print(f"边数量 - {len(g.edges)}")
-    print(f"{g.nodes()=}")
-    print(f"{g.edges()=}")
-    print("---------------------------------")
+# text_unit_graphs = er_extractor.batch(df_text_units[0:100],batch_size=batch_size)
+# # text_unit_graphs = er_extractor.batch(df_text_units,batch_size=batch_size)
+# for index, g in enumerate(text_unit_graphs):
+#     print("---------------------------------")
+#     print(f"图谱: {index+1}")
+#     print(f"节点数量 - {len(g.nodes)}")
+#     print(f"边数量 - {len(g.edges)}")
+#     print(f"{g.nodes()=}")
+#     print(f"{g.edges()=}")
+#     print("---------------------------------")
 
 graph_generator = GraphGenerator(
     er_extractor=er_extractor,
@@ -92,7 +93,7 @@ graph_generator = GraphGenerator(
     er_description_summarizer=summarizer,
 )
 
-graphs = graph_generator.run(df_text_units[0:100])
+graphs = graph_generator.run(df_text_units[0:200])
 for graph in graphs:
     print(f"Number of nodes - {len(graph.nodes)}")
     print(f"Number of edges - {len(graph.edges)}")
