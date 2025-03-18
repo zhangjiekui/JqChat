@@ -40,6 +40,7 @@ def model_test():
     print("以上为rerank模型测试输出结果-------------------")
 
 def r2r_test():
+    print("R2R服务测试--------请首先启动R2R服务--------")
     client = R2RClient(base_url='http://10.1.150.105:7272') # can set remote w/ R2RClient(base_url=...)
     client.users.login("admin@example.com", "change_me_immediately")
     try:
@@ -55,7 +56,7 @@ def r2r_test():
 
 if __name__ == "__main__":
     model_test()
-    # r2r_test()
+    r2r_test()
 
 
 
