@@ -60,7 +60,7 @@ class LiteLLMEmbeddingProvider(EmbeddingProvider):
             "custom_llm_provider":"xinference",
         }        
         embedding_kwargs.update(kwargs)
-        logger.warning(f"LiteLLM embedding kwargs: {embedding_kwargs}")
+        logger.debug(f"Embedding kwargs: {embedding_kwargs}")
         return embedding_kwargs
 
     async def _execute_task(self, task: dict[str, Any]) -> list[list[float]]:
@@ -125,6 +125,7 @@ class LiteLLMEmbeddingProvider(EmbeddingProvider):
             "purpose": purpose,
             "kwargs": kwargs,
         }
+        logger.debug(f"Async_get_embedding ......")
         return (await self._execute_with_backoff_async(task))[0]
 
     def get_embedding(
@@ -145,6 +146,7 @@ class LiteLLMEmbeddingProvider(EmbeddingProvider):
             "purpose": purpose,
             "kwargs": kwargs,
         }
+        logger.debug(f"Get_embedding ......")
         return self._execute_with_backoff_sync(task)[0]
 
     async def async_get_embeddings(
@@ -214,6 +216,7 @@ class LiteLLMEmbeddingProvider(EmbeddingProvider):
             }
 
             headers = {"Content-Type": "application/json"}
+            logger.debug(f"SyncRerank kwargs: [rerank_model] {self.config.rerank_model},[rerank_url] {self.rerank_url}")
 
             try:
                 response = requests.post(
@@ -268,11 +271,13 @@ class LiteLLMEmbeddingProvider(EmbeddingProvider):
             texts = [result.text for result in results]
 
             payload = {
+                "model": self.config.rerank_model,
                 "query": query,
-                "texts": texts,
-                "model-id": self.config.rerank_model.split("huggingface/")[1],
+                "documents": texts,                
+                "top_n": limit,
+                "return_documents": True,
             }
-
+            logger.debug(f"AsyncRerank kwargs: [rerank_model] {self.config.rerank_model},[rerank_url] {self.rerank_url}")
             headers = {"Content-Type": "application/json"}
 
             try:
@@ -285,11 +290,11 @@ class LiteLLMEmbeddingProvider(EmbeddingProvider):
 
                         # Copy reranked results into new array
                         scored_results = []
-                        for rank_info in reranked_results:
+                        for rank_info in reranked_results['results']:
                             original_result = results[rank_info["index"]]
                             copied_result = copy(original_result)
                             # Inject the reranking score into the result object
-                            copied_result.score = rank_info["score"]
+                            copied_result.score = rank_info.get("score",rank_info.get("relevance_score",0))
                             scored_results.append(copied_result)
 
                         # Return only the ChunkSearchResult objects, limited to specified count

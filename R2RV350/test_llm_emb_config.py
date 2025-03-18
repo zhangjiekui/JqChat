@@ -30,3 +30,7 @@ if __name__ == "__main__":
 
     rerank_result=liteemb.rerank('测试rerank文本',test_list)
     print(rerank_result)
+
+    import asyncio
+    a_rerank_result=asyncio.run(liteemb.arerank('测试rerank文本',test_list))
+    print(a_rerank_result)
