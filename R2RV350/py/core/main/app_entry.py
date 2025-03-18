@@ -18,6 +18,8 @@ log_file = configure_logging()
 # Global scheduler
 scheduler = AsyncIOScheduler()
 
+config_name = os.getenv("R2R_CONFIG_NAME", None)
+config_path = os.getenv("R2R_CONFIG_PATH", "/data/projects/JqChatV2/JqChat/R2RV350/py/core/configs/full_jq.toml")
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -48,9 +50,10 @@ async def lifespan(app: FastAPI):
 
 async def create_r2r_app(
     config_name: Optional[str] = "default",
-    config_path: Optional[str] = None,
+    config_path: Optional[str] = "/data/projects/JqChatV2/JqChat/R2RV350/py/core/configs/full_jq.toml",
 ):
     config = R2RConfig.load(config_name=config_name, config_path=config_path)
+    # print(config)
 
     if (
         config.embedding.provider == "openai"
@@ -65,8 +68,7 @@ async def create_r2r_app(
     return await builder.build()
 
 
-config_name = os.getenv("R2R_CONFIG_NAME", None)
-config_path = os.getenv("R2R_CONFIG_PATH", None)
+
 
 if not config_path and not config_name:
     config_name = "default"

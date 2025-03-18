@@ -143,6 +143,8 @@ services:
 
   unstructured:
     image: ragtoriches/unst-prod
+    ports:
+      - "7275:7275"
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:7275/health"]
       interval: 10s

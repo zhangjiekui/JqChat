@@ -35,12 +35,18 @@ class AppConfig(InnerConfig):
     default_max_chunks_per_user: Optional[int] = 10_000
     default_max_collections_per_user: Optional[int] = 5
     default_max_upload_size: int = 2_000_000  # e.g. ~2 MB
-    quality_llm: Optional[str] = None
-    fast_llm: Optional[str] = None
-    vlm: Optional[str] = None
+    quality_llm: Optional[str] = "openai/qwen25b70"
+    quality_api_base: Optional[str] = 'http://10.1.150.105:9997/v1'
+    fast_llm: Optional[str] = "openai/qwen25b70"
+    fast_api_base: Optional[str] = 'http://10.1.150.105:9997/v1'
+    vlm: Optional[str] = "litellm/qwenvl"
+    vlm_api_base: Optional[str] = 'http://10.1.150.105:8000/v1'
     audio_lm: Optional[str] = None
-    reasoning_llm: Optional[str] = None
-    planning_llm: Optional[str] = None
+    audio_api_base: Optional[str] = None
+    reasoning_llm: Optional[str] = "qwen25qwq"
+    reasoning_api_base: Optional[str] = 'http://10.1.150.105:9998/v1'
+    planning_llm: Optional[str] = "qwen25qwq"
+    planning_api_base: Optional[str] = 'http://10.1.150.105:9998/v1'
 
     # File extension to max-size mapping
     # These are examples; adjust sizes as needed.

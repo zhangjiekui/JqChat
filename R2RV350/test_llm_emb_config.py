@@ -8,9 +8,9 @@ if __name__ == "__main__":
 
     r2rconfig = R2RConfig.from_toml(config_path="/data/projects/JqChatV2/JqChat/R2RV350/py/core/configs/full_jq.toml")
     litellm = LiteLLMCompletionProvider(config=r2rconfig.completion)
-    llm_task = {"messages":[{ "content": "Hello, how are you?","role": "user"}], "generation_config": r2rconfig.completion.generation_config, "kwargs": {}}
+    llm_task = {"messages":[{ "content": "Hello, who are you?","role": "user"}], "generation_config": r2rconfig.completion.generation_config, "kwargs": {}}
     llm_result= litellm._execute_task_sync(llm_task)
-    print(llm_result)
+    # print(llm_result)
     print(llm_result.choices[0].message.content)
 
     emb_task = {"texts":"测试embedding文本"}

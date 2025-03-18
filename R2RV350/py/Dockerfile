@@ -1,4 +1,17 @@
+# 基于官方slim镜像构建
 FROM python:3.12-slim AS builder
+
+# 创建并配置APT阿里云源
+RUN mkdir -p /etc/apt && \
+    echo "deb http://mirrors.aliyun.com/debian/ bookworm main contrib non-free non-free-firmware" > /etc/apt/sources.list && \
+    echo "deb http://mirrors.aliyun.com/debian-security/ bookworm-security main contrib non-free non-free-firmware" >> /etc/apt/sources.list && \
+    echo "deb http://mirrors.aliyun.com/debian/ bookworm-updates main contrib non-free non-free-firmware" >> /etc/apt/sources.list && \
+    apt-get update -y && \
+    rm -rf /var/lib/apt/lists/*
+
+# 配置阿里云pip源
+RUN pip config set global.index-url https://mirrors.aliyun.com/pypi/simple/ && \
+    pip config set install.trusted-host mirrors.aliyun.com
 
 # Install system dependencies
 RUN apt-get update && apt-get install -y --no-install-recommends \
@@ -22,7 +35,23 @@ RUN pip install -e ".[core]" && \
 RUN pip install --no-cache-dir gunicorn uvicorn
 
 # Create the final image
+
+# 基于官方slim镜像构建
 FROM python:3.12-slim
+# 创建并配置APT阿里云源
+RUN mkdir -p /etc/apt && \
+    echo "deb http://mirrors.aliyun.com/debian/ bookworm main contrib non-free non-free-firmware" > /etc/apt/sources.list && \
+    echo "deb http://mirrors.aliyun.com/debian-security/ bookworm-security main contrib non-free non-free-firmware" >> /etc/apt/sources.list && \
+    echo "deb http://mirrors.aliyun.com/debian/ bookworm-updates main contrib non-free non-free-firmware" >> /etc/apt/sources.list && \
+    apt-get update -y && \
+    rm -rf /var/lib/apt/lists/*
+
+
+
+# 配置阿里云pip源
+RUN pip config set global.index-url https://mirrors.aliyun.com/pypi/simple/ && \
+    pip config set install.trusted-host mirrors.aliyun.com
+
 
 # Minimal runtime deps
 RUN apt-get update && apt-get install -y --no-install-recommends \

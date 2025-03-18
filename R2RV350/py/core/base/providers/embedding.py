@@ -9,6 +9,7 @@ from typing import Any, Optional
 from litellm import AuthenticationError
 
 from R2RV350.py.core.base.abstractions import VectorQuantizationSettings
+from .base import AppConfig
 
 from ..abstractions import (
     ChunkSearchResult,
@@ -21,13 +22,14 @@ logger = logging.getLogger()
 
 
 class EmbeddingConfig(ProviderConfig):
-    provider: str
-    api_base: str
-    base_model: str
-    base_dimension: int | float
-    rerank_model: Optional[str] = None
-    rerank_url: Optional[str] = None
-    batch_size: int = 1
+    app:AppConfig
+    provider: str = "litellm"
+    api_base: str = 'http://10.1.150.106:9997/v1'
+    base_model: str = "xinference/bce-embedding-base_v1"
+    base_dimension: int | float = 768
+    rerank_model: Optional[str] = "jina-reranker-v2"
+    rerank_url: Optional[str] = 'http://10.1.150.106:9997/v1/rerank'
+    batch_size: int = 16
     prefixes: Optional[dict[str, str]] = None
     add_title_as_prefix: bool = True
     concurrent_request_limit: int = 256
@@ -57,6 +59,11 @@ class EmbeddingProvider(Provider):
         RERANK = 2
 
     def __init__(self, config: EmbeddingConfig):
+        print(f"EmbeddingConfig:{config}")
+        if not isinstance(config, EmbeddingConfig):
+            config = EmbeddingConfig(app=config.app)
+            
+
         if not isinstance(config, EmbeddingConfig):
             raise ValueError(
                 "EmbeddingProvider must be initialized with a `EmbeddingConfig`."

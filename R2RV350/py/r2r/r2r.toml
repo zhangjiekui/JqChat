@@ -16,6 +16,7 @@ quality_llm = "litellm/qwen25b70"
 
 # LLM used for ingesting visual inputs
 vlm = "litellm/qwenvl"
+vlm_api_base = 'http://10.1.150.105:8000/v1'
 
 # LLM used for transcription
 audio_lm = "openai/whisper-1"

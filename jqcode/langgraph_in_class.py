@@ -994,6 +994,9 @@ class GraphAgent:
                 "useful": END,
             },
         )
+        # todo：参照https://github.com/NanGePlus/LangGraphChatBot/blob/68d5e014b6143bdb42f7df8f1ad4212ec2a5ec40/03_ChatBotWithPostgres/demoWithMemory.py
+        # 改造PostgresSaver、PostgresStore
+        # 其中PostgresStore会带向量搜索功能，可以获取相关的历史对话内容
         return graph.compile(checkpointer=self.memory)
         # with self.memory as checkpointer:
         #     app = graph.compile(checkpointer=checkpointer)

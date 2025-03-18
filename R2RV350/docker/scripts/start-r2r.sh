@@ -2,6 +2,7 @@
 
 # Check if HATCHET_CLIENT_TOKEN is set, if not read it from the API key file
 if [ -z "${HATCHET_CLIENT_TOKEN}" ]; then
+  echo HATCHET_CLIENT_TOKEN
   export HATCHET_CLIENT_TOKEN=$(cat /hatchet_api_key/api_key.txt)
 fi
 
