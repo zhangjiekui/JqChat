@@ -153,6 +153,7 @@ def main():
 if __name__ == "__main__":
     main()
     # 检查服务运行状态：http://10.1.150.105:7272/v3/health {"results":{"message":"ok"}}
+    # 启动Docker：r2r-dashboard:1.0.2 【7273端口】
     # 运行界面：http://10.1.150.105:7273/   
     # 填入服务地址：http://10.1.150.105:7272
     # 登录信息
