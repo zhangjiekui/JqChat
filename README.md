@@ -1,3 +1,11 @@
+绑定到固定网络
+
+## vllm保险的启动方法
+workon vllm
+nohup vllm serve /data/xinference/modelscope/hub/qwen/Qwen2.5-32B-Instruct-AWQ --served-model-name qwen25qwq --enable-auto-tool-choice --tool-call-parser hermes --host 0.0.0.0 --port 9998 --max-model-len 32000 --tensor-parallel-size 2 --use_v2_block_manager --gpu-memory-utilization 0.95 --max-num-seqs 32 --enable-prefix-caching --enable-chunked-prefill >> /root/JqLogs/vllm.log 2>&1 &
+tail -f /root/JqLogs/vllm.log
+
+
 
 # Set Postgres+pgvector settings
 ```
