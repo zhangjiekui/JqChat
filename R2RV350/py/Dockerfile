@@ -24,8 +24,8 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 ENV PATH="/root/.cargo/bin:${PATH}"
 
 # Create the /app/py directory
-RUN mkdir -p /app/py
-WORKDIR /app/py
+RUN mkdir -p /app/R2RV350/py
+WORKDIR /app/R2RV350/py
 COPY pyproject.toml ./
 RUN pip install -e ".[core]" && \
     pip install gunicorn uvicorn pydantic

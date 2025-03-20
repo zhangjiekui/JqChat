@@ -656,7 +656,7 @@ class InitEnvModels:
                 # https://huggingface.co/Qwen/QwQ-32B#usage-guidelines              
                 extra_body={"repetition_penalty": repetition_penalty,"min_p": min_p,"top_k": top_k},        
             )
-        logger.info(f'当前使用的LLM模型为:Langchain ChatOpenAI, {self.chat_model.model_name}, API_URL为{self.chat_model.openai_api_base}')
+        logger.warning(f'当前使用的LLM模型为:model_name = {self.chat_model.model_name}, api_base = {self.chat_model.openai_api_base}')
         return self.chat_model
     
     def _get_emb_8k_rerank_model(self,embedding_model_name=None, embedding_model_name_8k=None, rerank_model_name=None, device = ['cpu','cpu','cpu'],final_docs_num_reranked=4): #device = ['cuda:1','cuda:2''cuda:3']

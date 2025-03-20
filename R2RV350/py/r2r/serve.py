@@ -123,8 +123,8 @@ def main():
     )
     parser.add_argument(
         "--config-path",
-        # default="/data/projects/JqChatV2/JqChat/R2RV350/py/core/configs/full_jq.toml",
-        default="/data/projects/JqChatV2/JqChat/R2RV350/py/r2r/r2r.toml",
+        default="/data/projects/JqChatV2/JqChat/R2RV350/py/core/configs/full_jq.toml",
+        # default="/data/projects/JqChatV2/JqChat/R2RV350/py/r2r/r2r.toml",
         
         help="Path to the configuration file. Overrides R2R_CONFIG_PATH env if provided.",
     )

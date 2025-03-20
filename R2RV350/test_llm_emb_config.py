@@ -61,4 +61,17 @@ if __name__ == "__main__":
 
 
 
+# workon vllm
+# CUDA_VISIBLE_DEVICES=2,3 VLLM_ATTENTION_BACKEND=FLASH_ATTN_VLLM_V1 FLASH_ATTN_VLLM_V1=1 RAY_CGRAPH_get_timeout=60  VLLM_USE_V1=1 VLLM_USE_MODELSCOPE=True VLLM_ALLOW_ENGINE_USE_RAY=1 nohup vllm serve /data/xinference/modelscope/hub/qwen/Qwen2.5-32B-Instruct-AWQ --served-model-name qwen25qwq --enable-auto-tool-choice --tool-call-parser hermes --host 0.0.0.0 --port 9998 --max-model-len 32000 --tensor-parallel-size 2 --distributed-executor-backend ray --use_v2_block_manager --gpu-memory-utilization 0.95 --max-num-seqs 32 --enable-prefix-caching --enable-chunked-prefill >> /root/JqLogs/vllm.log 2>&1 &
+# tail -f /root/JqLogs/vllm.log
+
+
+
+# workon vllm
+# nohup vllm serve /data/xinference/modelscope/hub/qwen/Qwen2.5-32B-Instruct-AWQ --served-model-name qwen25qwq --enable-auto-tool-choice --tool-call-parser hermes --host 0.0.0.0 --port 9998 --max-model-len 32000 --tensor-parallel-size 2 --use_v2_block_manager --gpu-memory-utilization 0.95 --max-num-seqs 32 --enable-prefix-caching --enable-chunked-prefill >> /root/JqLogs/vllm.log 2>&1 &
+# tail -f /root/JqLogs/vllm.log
+
+
+
+
 

@@ -1,10 +1,44 @@
 绑定到固定网络
+workon vllmb
+VLLM_USE_V1=0 CUDA_VISIBLE_DEVICES=0,1 vllm serve /data/models/Mistral-Small-3.1-24B-Instruct-2503/ --tokenizer_mode mistral --config_format mistral --load_format mistral --tool-call-parser mistral --enable-auto-tool-choice --limit_mm_per_prompt 'image=10' --host 0.0.0.0 --port 9999 --max-model-len 32000 --tensor-parallel-size 2 --use_v2_block_manager --gpu-memory-utilization 0.95 --max-num-seqs 32 --enable-prefix-caching --enable-chunked-prefill --served-model-name mistral
 
-## vllm保险的启动方法
-workon vllm
-nohup vllm serve /data/xinference/modelscope/hub/qwen/Qwen2.5-32B-Instruct-AWQ --served-model-name qwen25qwq --enable-auto-tool-choice --tool-call-parser hermes --host 0.0.0.0 --port 9998 --max-model-len 32000 --tensor-parallel-size 2 --use_v2_block_manager --gpu-memory-utilization 0.95 --max-num-seqs 32 --enable-prefix-caching --enable-chunked-prefill >> /root/JqLogs/vllm.log 2>&1 &
+
+workon vllmb
+VLLM_USE_V1=0 vllm serve /data/models/Mistral-Small-3.1-24B-Instruct-2503/ --tokenizer_mode mistral --config_format mistral --load_format mistral --tool-call-parser mistral --enable-auto-tool-choice --limit_mm_per_prompt 'image=10' --host 0.0.0.0 --port 9999 --max-model-len 32000 --tensor-parallel-size 4 --use_v2_block_manager --gpu-memory-utilization 0.95 --max-num-seqs 32 --enable-prefix-caching --enable-chunked-prefill --served-model-name mistral
+
+
+
+docker pull vllm/vllm-openai
+
+docker run --runtime nvidia --gpus '"device=0,1"' all -p 8000:8000 \
+-v /data/models:/data/models \
+-v /data/xinference:/data/xinference \
+-v ~/.cache/huggingface:/root/.cache/huggingface \
+--ipc=host \
+vllm/vllm-openai:latest --model /data/xinference/modelscope/hub/qwen/Qwen2.5-32B-Instruct-AWQ --served-model-name qwen25_32b --enable-auto-tool-choice --tool-call-parser hermes --host 0.0.0.0 --port 9998 --max-model-len 32000 --tensor-parallel-size 2 --use_v2_block_manager --gpu-memory-utilization 0.95 --max-num-seqs 32 --enable-prefix-caching --enable-chunked-prefill
+
+
+
+## vllm8.0保险的启动方法
+workon vllmb 
+VLLM_USE_V1=0 CUDA_VISIBLE_DEVICES=2,3 VLLM_ALLOW_ENGINE_USE_RAY=1 nohup vllm serve /data/xinference/modelscope/hub/qwen/Qwen2.5-32B-Instruct-AWQ --served-model-name Qwen25B32 --enable-auto-tool-choice --tool-call-parser hermes --host 0.0.0.0 --port 9997 --max-model-len 32000 --tensor-parallel-size 2 --use_v2_block_manager --gpu-memory-utilization 0.95 --max-num-seqs 32 --enable-prefix-caching --enable-chunked-prefill >> /root/JqLogs/Qwen25B32.log 2>&1 &
+tail -f /root/JqLogs/Qwen25B32.log
+
+workon vllmb 
+VLLM_USE_V1=0 CUDA_VISIBLE_DEVICES=2,3 VLLM_ALLOW_ENGINE_USE_RAY=1 nohup vllm serve /data/xinference/modelscope/hub/qwen/Qwen2.5-32B-Instruct-AWQ --served-model-name qwen25qwq --enable-auto-tool-choice --tool-call-parser hermes --host 0.0.0.0 --port 9998 --max-model-len 32000 --tensor-parallel-size 2 --use_v2_block_manager --gpu-memory-utilization 0.95 --max-num-seqs 32 --enable-prefix-caching --enable-chunked-prefill >> /root/JqLogs/vllm.log 2>&1 &
 tail -f /root/JqLogs/vllm.log
 
+
+workon vllmb 
+VLLM_OPENVINO_KVCACHE_SPACE=5 VLLM_OPENVINO_CPU_KV_CACHE_PRECISION=u8 VLLM_OPENVINO_ENABLE_QUANTIZED_WEIGHTS=ON CUDA_VISIBLE_DEVICES=0,1,2,3 VLLM_ALLOW_ENGINE_USE_RAY=1 nohup vllm serve /data/xinference/modelscope/hub/qwen/Qwen2.5-32B-Instruct-AWQ --disable-mm-preprocessor-cache --served-model-name qwen25qwq --enable-auto-tool-choice --tool-call-parser hermes --host 0.0.0.0 --port 9998 --max-model-len 32000 --tensor-parallel-size 2 --use_v2_block_manager --gpu-memory-utilization 0.95 --max-num-seqs 32 --enable-prefix-caching --enable-chunked-prefill >> /root/JqLogs/vllm.log 2>&1 &
+tail -f /root/JqLogs/vllm.log
+
+workon vllmb 
+VLLM_ALLOW_ENGINE_USE_RAY=1 nohup vllm serve /data/xinference/modelscope/hub/qwen/Qwen2.5-32B-Instruct-AWQ --served-model-name qwen25qwq --enable-auto-tool-choice --tool-call-parser hermes --host 0.0.0.0 --port 9998 --max-model-len 32000 --tensor-parallel-size 1 --use_v2_block_manager --gpu-memory-utilization 0.95 --max-num-seqs 32 --enable-prefix-caching --enable-chunked-prefill >> /root/JqLogs/vllm.log 2>&1 &
+tail -f /root/JqLogs/vllm.log
+
+
+VLLM_OPENVINO_KVCACHE_SPACE=100 VLLM_OPENVINO_CPU_KV_CACHE_PRECISION=u8 VLLM_OPENVINO_ENABLE_QUANTIZED_WEIGHTS=ON
 
 
 # Set Postgres+pgvector settings
@@ -95,8 +129,16 @@ tail -f /root/JqLogs/vllm.log
 #### QwenQwQ gpu1
 ``` QwenQwQ gpu1
 workon vllm
-CUDA_VISIBLE_DEVICES=1,3 nohup vllm serve /data/models/Qwen/QwQ-32B-AWQ/ --served-model-name qwen25qwq --enable-auto-tool-choice --tool-call-parser hermes --host 0.0.0.0 --port 9998 --max-model-len 32000 --tensor-parallel-size 2 --distributed-executor-backend ray --use_v2_block_manager --gpu-memory-utilization 0.98 --max-num-seqs 16 --enable-prefix-caching --enable-chunked-prefill >> /root/JqLogs/qwq.log 2>&1 &
+CUDA_VISIBLE_DEVICES=2,3 nohup vllm serve /data/models/Qwen/QwQ-32B-AWQ/ --served-model-name qwen25qwq --enable-auto-tool-choice --tool-call-parser hermes --host 0.0.0.0 --port 9998 --max-model-len 32000 --tensor-parallel-size 2 --distributed-executor-backend ray --use_v2_block_manager --gpu-memory-utilization 0.98 --max-num-seqs 16 --enable-prefix-caching --enable-chunked-prefill >> /root/JqLogs/qwq.log 2>&1 &
 tail -f /root/JqLogs/qwq.log
+
+### **[Prequant BitsAndBytes models with tensor parallelism is not supported.]**
+workon vllmb
+CUDA_VISIBLE_DEVICES=3 nohup vllm serve /data/models/QwQ-32B-unsloth-bnb-4bit/ --served-model-name qwen25qwq --enable-auto-tool-choice --tool-call-parser hermes --host 0.0.0.0 --port 9998 --max-model-len 32000 --tensor-parallel-size 1 --distributed-executor-backend ray --use_v2_block_manager --gpu-memory-utilization 0.98 --max-num-seqs 16 --quantization bitsandbytes --load-format bitsandbytes --enable-prefix-caching --enable-chunked-prefill >> /root/JqLogs/qwq.log 2>&1 &
+tail -f /root/JqLogs/qwq.log
+
+
+""
 
 
 workon vllm
@@ -679,8 +721,9 @@ export XINFERENCE_HOME=/data/xinference
 ```
 ## pip / conda源
 
-```
+``` pip配置多个镜像源平衡负载
 pip config set global.index-url https://mirrors.aliyun.com/pypi/simple/
+pip config set global.extra-index-url "https://mirrors.tuna.tsinghua.edu.cn/pypi/web/simple  https://mirrors.ustc.edu.cn/pypi/simple/ https://repo.huaweicloud.com/repository/pypi/simple/"
 
 conda config --add channels https://mirrors.aliyun.com/anaconda/pkgs/main/
 conda config --add channels https://mirrors.aliyun.com/anaconda/pkgs/free/

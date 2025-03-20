@@ -1224,14 +1224,16 @@ class GraphAgent:
             return {'messages': message,'question_related_messages':[]}
         else:
             try:
+                model_name = self.model.bound.model_name
+                max_tokens = self.model.bound.max_tokens
+                api_base = self.model.bound.openai_api_base
                 message = self.model.invoke(messages,config=invoke_llm_config)                
                 # 尝试获取finish_reason，如发现因token限制导致的大模型输出不完整或异常，给出警告提示
                 try: 
                     finish_reason = message.response_metadata["finish_reason"]
                     if finish_reason ==  "length":
                         reason = 'a finish_reason of “length” means that the AI had more data to output but the limitations of that call prevented it from finishing'
-                        model_name = self.model.bound.model_name
-                        max_tokens = self.model.bound.max_tokens
+
                         _warning_str = f'LLM({model_name})返回: finish_reason ==  "length" [{reason}]，当前设置的max_tokens={max_tokens}，请检查调整该设置'
                         logger.warning(_warning_str)
                         print("警告Warning:"+_warning_str)
@@ -1239,8 +1241,9 @@ class GraphAgent:
                     logger.error("无法获取到finish_reason，错误消息为：{e}")
                     # message.pretty_print()
             except Exception as e:
-                logger.error(f'！！！大语言模型执行失败，！！！错误消息为:{e}')
-                message=AIMessage(content=f'error!大语言模型执行失败，错误消息为:{e}')
+                err_message = f'！！！大语言模型[{model_name=},{api_base=}]执行失败，！！！错误消息为:{e}'
+                logger.error(err_message)
+                message=AIMessage(content=err_message)
                 # logger.error('请检查大语言模型接口服务状态,并查看传入的消息列表，如下：')            
                 # for m in messages:
                 #     m.pretty_print()
