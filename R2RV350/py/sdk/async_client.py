@@ -4,8 +4,8 @@ from typing import Any, AsyncGenerator
 
 import httpx
 
-# from R2RV350.py.shared.abstractions import R2RException
-from R2RV350.py.shared.abstractions import R2RException
+# from shared.abstractions import R2RException
+from shared.abstractions import R2RException
 
 from .asnyc_methods import (
     ChunksSDK,

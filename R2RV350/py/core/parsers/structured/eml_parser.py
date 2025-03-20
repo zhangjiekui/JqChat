@@ -2,8 +2,8 @@
 from email import message_from_bytes, policy
 from typing import AsyncGenerator
 
-from R2RV350.py.core.base.parsers.base_parser import AsyncParser
-from R2RV350.py.core.base.providers import (
+from ..base.parsers.base_parser import AsyncParser
+from ..base.providers import (
     CompletionProvider,
     DatabaseProvider,
     IngestionConfig,

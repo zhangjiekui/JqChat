@@ -3,7 +3,7 @@ from uuid import UUID
 
 from pydantic import BaseModel, Field
 
-from R2RV350.py.shared.api.models.base import PaginatedR2RResult, R2RResults
+from shared.api.models.base import PaginatedR2RResult, R2RResults
 
 T = TypeVar("T")
 

@@ -3,7 +3,7 @@ from pathlib import Path
 from typing import Any, Optional
 from uuid import UUID
 
-from R2RV350.py.shared.api.models import (
+from shared.api.models import (
     WrappedBooleanResponse,
     WrappedConversationMessagesResponse,
     WrappedConversationResponse,

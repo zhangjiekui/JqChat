@@ -14,8 +14,8 @@ from google.auth.transport import requests as google_requests
 from google.oauth2 import id_token
 from pydantic import EmailStr
 
-from R2RV350.py.core.base import R2RException
-from R2RV350.py.core.base.api.models import (
+from .core.base import R2RException
+from shared.api.models import (
     GenericBooleanResponse,
     GenericMessageResponse,
     WrappedAPIKeyResponse,

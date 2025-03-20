@@ -4,8 +4,8 @@ from uuid import UUID
 
 from pydantic import BaseModel
 
-from R2RV350.py.shared.abstractions.graph import Community, Entity, Relationship
-from R2RV350.py.shared.api.models.base import PaginatedR2RResult, R2RResults
+from shared.abstractions.graph import Community, Entity, Relationship
+from shared.api.models.base import PaginatedR2RResult, R2RResults
 
 WrappedEntityResponse = R2RResults[Entity]
 WrappedEntitiesResponse = PaginatedR2RResult[list[Entity]]

@@ -6,17 +6,17 @@ import tempfile
 from copy import copy
 from typing import Any, Callable, Optional
 
-from R2RV350.py.core.base import AppConfig
-from R2RV350.py.core.base.abstractions import GenerationConfig, Message, SearchSettings
-from R2RV350.py.core.base.agent import Tool
-from R2RV350.py.core.base.providers import DatabaseProvider
-from R2RV350.py.core.providers import (
+from .core.base import AppConfig
+from .core.base.abstractions import GenerationConfig, Message, SearchSettings
+from .core.base.agent import Tool
+from .core.base.providers import DatabaseProvider
+from .core.providers import (
     AnthropicCompletionProvider,
     LiteLLMCompletionProvider,
     OpenAICompletionProvider,
     R2RCompletionProvider,
 )
-from R2RV350.py.core.utils import extract_citations
+from .core.utils import extract_citations
 
 from ..base.agent.agent import RAGAgentConfig  # type: ignore
 

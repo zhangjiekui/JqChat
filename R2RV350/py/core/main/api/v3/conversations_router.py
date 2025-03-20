@@ -7,8 +7,8 @@ from fastapi import Body, Depends, Path, Query
 from fastapi.background import BackgroundTasks
 from fastapi.responses import FileResponse
 
-from R2RV350.py.core.base import Message, R2RException
-from R2RV350.py.core.base.api.models import (
+from .core.base import Message, R2RException
+from shared.api.models import (
     GenericBooleanResponse,
     WrappedBooleanResponse,
     WrappedConversationMessagesResponse,

@@ -4,8 +4,8 @@ from pathlib import Path
 import pytest
 import toml
 
-from R2RV350.py.core.base.utils import deep_update
-from R2RV350.py.core.main.config import R2RConfig
+from .core.base.utils import deep_update
+from .core.main.config import R2RConfig
 
 ###############################################################################
 # Fixtures

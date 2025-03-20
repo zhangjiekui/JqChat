@@ -1,7 +1,7 @@
 from datetime import datetime, timedelta
 from typing import Optional
 
-from R2RV350.py.core.base import Handler
+from .core.base import Handler
 
 from .base import PostgresConnectionManager
 

@@ -4,7 +4,7 @@ from typing import Any, Generator
 
 from httpx import Client, RequestError, Response
 
-from R2RV350.py.shared.abstractions import R2RException
+from shared.abstractions import R2RException
 
 from .base.base_client import BaseClient
 from .sync_methods import (

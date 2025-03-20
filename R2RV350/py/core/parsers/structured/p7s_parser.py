@@ -10,8 +10,8 @@ from cryptography import x509
 from cryptography.hazmat.primitives.serialization import pkcs7
 from cryptography.x509.oid import NameOID
 
-from R2RV350.py.core.base.parsers.base_parser import AsyncParser
-from R2RV350.py.core.base.providers import (
+from .core.base.parsers.base_parser import AsyncParser
+from .core.base.providers import (
     CompletionProvider,
     DatabaseProvider,
     IngestionConfig,

@@ -16,8 +16,8 @@ os.environ['HATCHET_CLIENT_TOKEN']="eyJhbGciOiJFUzI1NiIsImtpZCI6InQ3ZF81ZyJ9.eyJ
 os.environ['CLUSTERING_SERVICE_URL']='http://10.1.150.105:7276'
 
 try:
-    from R2RV350.py.core import R2RApp, R2RBuilder, R2RConfig
-    from R2RV350.py.core.utils.logging_config import configure_logging
+    from core import R2RApp, R2RBuilder, R2RConfig
+    from core.utils.logging_config import configure_logging
 except ImportError as e:
     logger.error(
         f"Failed to start server: core dependencies not installed: {e}"
@@ -159,4 +159,3 @@ if __name__ == "__main__":
     # 登录信息
     # Email: admin@example.com
     # Password: Admin123!!
-

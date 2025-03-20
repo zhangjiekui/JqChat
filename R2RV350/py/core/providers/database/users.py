@@ -7,10 +7,10 @@ from uuid import UUID
 
 from fastapi import HTTPException
 
-from R2RV350.py.core.base import CryptoProvider, Handler
-from R2RV350.py.core.base.abstractions import R2RException
-from R2RV350.py.core.utils import generate_user_id
-from R2RV350.py.shared.abstractions import User
+from .core.base import CryptoProvider, Handler
+from .core.base.abstractions import R2RException
+from .core.utils import generate_user_id
+from shared.abstractions import User
 
 from .base import PostgresConnectionManager, QueryBuilder
 from .collections import PostgresCollectionsHandler

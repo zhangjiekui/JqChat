@@ -1,13 +1,13 @@
-from R2RV350.py.r2r import R2RClient
+from .r2r import R2RClient
 
 client = R2RClient()
 
 with open("test.txt", "w") as file:
     file.write("John is a person that works at Google.")
-from R2RV350.py.core.main.config import R2RConfig
-from R2RV350.py.core.main.assembly.factory import R2RProviderFactory
-from R2RV350.py.core.main.orchestration.simple.ingestion_workflow import simple_ingestion_factory
-from R2RV350.py.core.main.services.ingestion_service import IngestionService
+from .core.main.config import R2RConfig
+from .core.main.assembly.factory import R2RProviderFactory
+from .core.main.orchestration.simple.ingestion_workflow import simple_ingestion_factory
+from .core.main.services.ingestion_service import IngestionService
 import asyncio
 
 r2rconfig = R2RConfig.from_toml(config_path="/data/projects/JqChatV2/JqChat/R2RV350/py/core/configs/full_jq.toml")

@@ -7,7 +7,7 @@ from uuid import UUID
 
 from fastapi import HTTPException
 
-from R2RV350.py.core.base import (
+from .core.base import (
     Document,
     DocumentChunk,
     DocumentResponse,
@@ -22,16 +22,16 @@ from R2RV350.py.core.base import (
     VectorType,
     generate_id,
 )
-from R2RV350.py.core.base.abstractions import (
+from .core.base.abstractions import (
     ChunkEnrichmentSettings,
     IndexMeasure,
     IndexMethod,
     R2RDocumentProcessingError,
     VectorTableName,
 )
-from R2RV350.py.core.base.api.models import User
-from R2RV350.py.core.telemetry.telemetry_decorator import telemetry_event
-from R2RV350.py.shared.abstractions import PDFParsingError, PopplerNotFoundError
+from shared.api.models import User
+from .core.telemetry.telemetry_decorator import telemetry_event
+from shared.abstractions import PDFParsingError, PopplerNotFoundError
 
 from ..abstractions import R2RProviders
 from ..config import R2RConfig

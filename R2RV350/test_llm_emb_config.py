@@ -1,12 +1,13 @@
-from R2RV350.py.core.main.config import R2RConfig
-from R2RV350.py.core.providers.llm.litellm import LiteLLMCompletionProvider
-from R2RV350.py.core.providers.embeddings.litellm import LiteLLMEmbeddingProvider
-from R2RV350.py.r2r import R2RClient
-from R2RV350.py.shared.api.models.ingestion.responses import IngestionResponse
-from R2RV350.py.shared.abstractions import ChunkSearchResult
-import uuid
-from uuid import UUID
 def model_test():
+    from ..core.main.config import R2RConfig
+    from ..core.providers.llm.litellm import LiteLLMCompletionProvider
+    from ..core.providers.embeddings.litellm import LiteLLMEmbeddingProvider
+    from ..py.r2r.serve import R2RClient
+    from ..shared.api.models.ingestion.responses import IngestionResponse
+    from ..shared.abstractions import ChunkSearchResult
+    import uuid
+    from uuid import UUID
+
     print("大语言模型测试-------------------")
     r2rconfig = R2RConfig.from_toml(config_path="/data/projects/JqChatV2/JqChat/R2RV350/py/core/configs/full_jq.toml")
     litellm = LiteLLMCompletionProvider(config=r2rconfig.completion)
@@ -41,6 +42,8 @@ def model_test():
 
 def r2r_test():
     print("R2R服务测试--------请首先启动R2R服务--------")
+    # from r2r import R2RClient
+    from r2r import R2RClient
     client = R2RClient(base_url='http://10.1.150.105:7272') # can set remote w/ R2RClient(base_url=...)
     client.users.login("admin@example.com", "change_me_immediately")
     try:
@@ -55,7 +58,7 @@ def r2r_test():
 
 
 if __name__ == "__main__":
-    model_test()
+    # model_test()
     r2r_test()
 
 
@@ -70,8 +73,3 @@ if __name__ == "__main__":
 # workon vllm
 # nohup vllm serve /data/xinference/modelscope/hub/qwen/Qwen2.5-32B-Instruct-AWQ --served-model-name qwen25qwq --enable-auto-tool-choice --tool-call-parser hermes --host 0.0.0.0 --port 9998 --max-model-len 32000 --tensor-parallel-size 2 --use_v2_block_manager --gpu-memory-utilization 0.95 --max-num-seqs 32 --enable-prefix-caching --enable-chunked-prefill >> /root/JqLogs/vllm.log 2>&1 &
 # tail -f /root/JqLogs/vllm.log
-
-
-
-
-

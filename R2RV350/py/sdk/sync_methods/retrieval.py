@@ -2,7 +2,7 @@ import json
 import uuid
 from typing import Any, Generator, Optional
 
-from R2RV350.py.core.base.api.models import (
+from shared.api.models import (
     AgentEvent,
     CitationData,
     CitationEvent,

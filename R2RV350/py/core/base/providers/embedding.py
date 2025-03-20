@@ -8,7 +8,7 @@ from typing import Any, Optional
 
 from litellm import AuthenticationError
 
-from R2RV350.py.core.base.abstractions import VectorQuantizationSettings
+from .core.base.abstractions import VectorQuantizationSettings
 from .base import AppConfig
 
 from ..abstractions import (

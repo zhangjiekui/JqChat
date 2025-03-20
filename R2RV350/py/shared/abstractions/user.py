@@ -4,7 +4,7 @@ from uuid import UUID
 
 from pydantic import BaseModel, Field
 
-from R2RV350.py.shared.abstractions import R2RSerializable
+from . import R2RSerializable
 
 from ..utils import generate_default_user_collection_id
 

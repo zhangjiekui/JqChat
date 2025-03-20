@@ -3,7 +3,7 @@ import math
 import os
 from typing import Any, Optional
 
-from R2RV350.py.core.base import (
+from .core.base import (
     AuthConfig,
     CompletionConfig,
     CompletionProvider,
@@ -15,7 +15,7 @@ from R2RV350.py.core.base import (
     IngestionConfig,
     OrchestrationConfig,
 )
-from R2RV350.py.core.providers import (
+from .core.providers import (
     AnthropicCompletionProvider,
     AsyncSMTPEmailProvider,
     BcryptCryptoConfig,
@@ -156,7 +156,7 @@ class R2RProviderFactory:
             orchestration_provider.get_worker("r2r-worker")
             return orchestration_provider
         elif config.provider == "simple":
-            from R2RV350.py.core.providers import SimpleOrchestrationProvider
+            from .core.providers import SimpleOrchestrationProvider
 
             return SimpleOrchestrationProvider(config)
         else:
@@ -209,17 +209,17 @@ class R2RProviderFactory:
                 raise ValueError(
                     "Must set OPENAI_API_KEY in order to initialize OpenAIEmbeddingProvider."
                 )
-            from R2RV350.py.core.providers import OpenAIEmbeddingProvider
+            from .core.providers import OpenAIEmbeddingProvider
 
             embedding_provider = OpenAIEmbeddingProvider(embedding)
 
         elif embedding.provider == "litellm":
-            from R2RV350.py.core.providers import LiteLLMEmbeddingProvider
+            from .core.providers import LiteLLMEmbeddingProvider
 
             embedding_provider = LiteLLMEmbeddingProvider(embedding)
 
         elif embedding.provider == "ollama":
-            from R2RV350.py.core.providers import OllamaEmbeddingProvider
+            from .core.providers import OllamaEmbeddingProvider
 
             embedding_provider = OllamaEmbeddingProvider(embedding)
 

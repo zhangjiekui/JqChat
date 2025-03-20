@@ -4,10 +4,10 @@ from uuid import UUID
 
 from pydantic import BaseModel
 
-from R2RV350.py.shared.abstractions.document import DocumentResponse
-from R2RV350.py.shared.abstractions.llm import Message
-from R2RV350.py.shared.abstractions.user import Token, User
-from R2RV350.py.shared.api.models.base import PaginatedR2RResult, R2RResults
+from shared.abstractions.document import DocumentResponse
+from shared.abstractions.llm import Message
+from shared.abstractions.user import Token, User
+from shared.api.models.base import PaginatedR2RResult, R2RResults
 
 
 class PromptResponse(BaseModel):

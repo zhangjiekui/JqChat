@@ -13,7 +13,7 @@ import nacl.signing
 from nacl.exceptions import BadSignatureError
 from nacl.pwhash import argon2i
 
-from R2RV350.py.core.base import CryptoConfig, CryptoProvider
+from .core.base import CryptoConfig, CryptoProvider
 
 DEFAULT_NACL_SECRET_KEY = "wNFbczH3QhUVcPALwtWZCPi0lrDlGV3P1DPRVEQCPbM"  # Replace or load from env or secrets manager
 

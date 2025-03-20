@@ -1,10 +1,17 @@
-绑定到固定网络
+请将R2RV350目录下.py文件中的类似from .core import引用更改为类似 ..core的相对引用，要保证相对引用的准确性
+
+请将R2RV350目录下.py所有文件中绝对引用改为相对引用（例如from .core import引用更改为类似 ..core的相对引用），请仔细分析代码目录结构，要保证相对引用的准确性
+
+请将R2RV350目录下.py所有文件中,首先查找包含绝对引用from R2RV350.py.的地方，全部改为相对引用（例如from .core import引用更改为类似 ..core的相对引用），请仔细分析代码目录结构，要保证相对引用的准确性。逐个文件进行修改，避免提示词过长导致调用错误
 workon vllmb
-VLLM_USE_V1=0 CUDA_VISIBLE_DEVICES=0,1 vllm serve /data/models/Mistral-Small-3.1-24B-Instruct-2503/ --tokenizer_mode mistral --config_format mistral --load_format mistral --tool-call-parser mistral --enable-auto-tool-choice --limit_mm_per_prompt 'image=10' --host 0.0.0.0 --port 9999 --max-model-len 32000 --tensor-parallel-size 2 --use_v2_block_manager --gpu-memory-utilization 0.95 --max-num-seqs 32 --enable-prefix-caching --enable-chunked-prefill --served-model-name mistral
+VLLM_USE_V1=0 CUDA_VISIBLE_DEVICES=0,1 vllm serve /data/models/Mistral-Small-3.1-24B-Instruct-2503/ --tokenizer_mode mistral --config_format mistral --load_format mistral --tool-call-parser mistral --enable-auto-tool-choice --host 0.0.0.0 --port 9999 --max-model-len 32000 --tensor-parallel-size 2 --use_v2_block_manager --gpu-memory-utilization 0.95 --max-num-seqs 32 --enable-prefix-caching --enable-chunked-prefill --served-model-name mistral
 
 
 workon vllmb
 VLLM_USE_V1=0 vllm serve /data/models/Mistral-Small-3.1-24B-Instruct-2503/ --tokenizer_mode mistral --config_format mistral --load_format mistral --tool-call-parser mistral --enable-auto-tool-choice --limit_mm_per_prompt 'image=10' --host 0.0.0.0 --port 9999 --max-model-len 32000 --tensor-parallel-size 4 --use_v2_block_manager --gpu-memory-utilization 0.95 --max-num-seqs 32 --enable-prefix-caching --enable-chunked-prefill --served-model-name mistral
+
+workon vllmb
+VLLM_USE_V1=0 CUDA_VISIBLE_DEVICES=0,1 vllm serve /data/models/Mistral-Small-3.1-24B-Instruct-2503/ --tokenizer_mode mistral --config_format mistral --load_format mistral --tool-call-parser mistral --enable-auto-tool-choice --limit_mm_per_prompt 'image=10' --host 0.0.0.0 --port 9999 --tensor-parallel-size 2 --max-model-len 2048 --gpu-memory-utilization 0.95 --max-num-batched-tokens 8192 --served-model-name mistral --dtype float16
 
 
 
@@ -53,7 +60,7 @@ os.environ['CLUSTERING_SERVICE_URL']='http://10.1.150.105:7276'
 os.environ['HATCHET_CLIENT_TOKEN']="eyJhbGciOiJFUzI1NiIsImtpZCI6InQ3ZF81ZyJ9.eyJhdWQiOiJodHRwOi8vaG9zdC5kb2NrZXIuaW50ZXJuYWw6NzI3NCIsImV4cCI6NDg5NTgxNDE5NywiZ3JwY19icm9hZGNhc3RfYWRkcmVzcyI6ImhhdGNoZXQtZW5naW5lOjcwNzciLCJpYXQiOjE3NDIyMTQxOTcsImlzcyI6Imh0dHA6Ly9ob3N0LmRvY2tlci5pbnRlcm5hbDo3Mjc0Iiwic2VydmVyX3VybCI6Imh0dHA6Ly9ob3N0LmRvY2tlci5pbnRlcm5hbDo3Mjc0Iiwic3ViIjoiNzA3ZDA4NTUtODBhYi00ZTFmLWExNTYtZjFjNDU0NmNiZjUyIiwidG9rZW5faWQiOiI3YWNkZWM4Yy1kNDdiLTQ1ZmMtOGMwNi1kZmVmNmJlMTc5MTYifQ.9V7039q8l8URALS-8pi-hZIaIDoDAbTKao78gaNM3jAkag5F1cYMumKwU-9MK1m7PThmzR9f1L2L5TdEb1mi-w"
 
 
-cd /data/projects/JqChatV2/JqChat/R2RV350/py
+cd /data/projects/JqChatV2/JqChat/JqR2R/py
 pip install -e .[core]
 python -m r2r.serve
 

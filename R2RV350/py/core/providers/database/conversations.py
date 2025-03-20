@@ -8,8 +8,8 @@ from uuid import UUID, uuid4
 
 from fastapi import HTTPException
 
-from R2RV350.py.core.base import Handler, Message, R2RException
-from R2RV350.py.shared.api.models.management.responses import (
+from .core.base import Handler, Message, R2RException
+from shared.api.models.management.responses import (
     ConversationResponse,
     MessageResponse,
 )

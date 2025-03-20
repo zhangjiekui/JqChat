@@ -9,7 +9,7 @@ from uuid import UUID
 
 import numpy as np
 
-from R2RV350.py.core.base import (
+from .core.base import (
     ChunkSearchResult,
     Handler,
     IndexArgsHNSW,
@@ -22,7 +22,7 @@ from R2RV350.py.core.base import (
     VectorQuantizationType,
     VectorTableName,
 )
-from R2RV350.py.core.base.utils import _decorate_vector_type
+from .core.base.utils import _decorate_vector_type
 
 from .base import PostgresConnectionManager
 from .filters import apply_filters

@@ -1,7 +1,7 @@
 from pydantic import BaseModel
 
-from R2RV350.py.shared.abstractions import Token
-from R2RV350.py.shared.api.models.base import R2RResults
+from shared.abstractions import Token
+from shared.api.models.base import R2RResults
 
 
 class TokenResponse(BaseModel):

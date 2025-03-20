@@ -6,13 +6,13 @@ import tiktoken
 from fastapi import HTTPException
 from litellm import AuthenticationError
 
-from R2RV350.py.core.base import (
+from .core.base import (
     DocumentChunk,
     GraphConstructionStatus,
     R2RException,
     increment_version,
 )
-from R2RV350.py.core.utils import (
+from .core.utils import (
     generate_default_user_collection_id,
     generate_extraction_id,
     update_settings_from_dict,
@@ -37,8 +37,8 @@ def simple_ingestion_factory(service: IngestionService):
     async def ingest_files(input_data):
         document_info = None
         try:
-            from R2RV350.py.core.base import IngestionStatus
-            from R2RV350.py.core.main import IngestionServiceAdapter
+            from .core.base import IngestionStatus
+            from .core.main import IngestionServiceAdapter
 
             parsed_data = IngestionServiceAdapter.parse_ingest_file_input(
                 input_data
@@ -251,7 +251,7 @@ def simple_ingestion_factory(service: IngestionService):
             ) from e
 
     async def update_files(input_data):
-        from R2RV350.py.core.main import IngestionServiceAdapter
+        from .core.main import IngestionServiceAdapter
 
         parsed_data = IngestionServiceAdapter.parse_update_files_input(
             input_data
@@ -338,8 +338,8 @@ def simple_ingestion_factory(service: IngestionService):
     async def ingest_chunks(input_data):
         document_info = None
         try:
-            from R2RV350.py.core.base import IngestionStatus
-            from R2RV350.py.core.main import IngestionServiceAdapter
+            from .core.base import IngestionStatus
+            from .core.main import IngestionServiceAdapter
 
             parsed_data = IngestionServiceAdapter.parse_ingest_chunks_input(
                 input_data
@@ -481,7 +481,7 @@ def simple_ingestion_factory(service: IngestionService):
             ) from e
 
     async def update_chunk(input_data):
-        from R2RV350.py.core.main import IngestionServiceAdapter
+        from .core.main import IngestionServiceAdapter
 
         try:
             parsed_data = IngestionServiceAdapter.parse_update_chunk_input(
@@ -515,7 +515,7 @@ def simple_ingestion_factory(service: IngestionService):
 
     async def create_vector_index(input_data):
         try:
-            from R2RV350.py.core.main import IngestionServiceAdapter
+            from .core.main import IngestionServiceAdapter
 
             parsed_data = (
                 IngestionServiceAdapter.parse_create_vector_index_input(
@@ -535,7 +535,7 @@ def simple_ingestion_factory(service: IngestionService):
 
     async def delete_vector_index(input_data):
         try:
-            from R2RV350.py.core.main import IngestionServiceAdapter
+            from .core.main import IngestionServiceAdapter
 
             parsed_data = (
                 IngestionServiceAdapter.parse_delete_vector_index_input(
@@ -557,7 +557,7 @@ def simple_ingestion_factory(service: IngestionService):
 
     async def update_document_metadata(input_data):
         try:
-            from R2RV350.py.core.main import IngestionServiceAdapter
+            from .core.main import IngestionServiceAdapter
 
             parsed_data = (
                 IngestionServiceAdapter.parse_update_document_metadata_input(

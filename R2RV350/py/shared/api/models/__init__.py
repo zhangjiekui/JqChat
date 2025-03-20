@@ -1,8 +1,8 @@
-from R2RV350.py.shared.api.models.auth.responses import (
+from shared.api.models.auth.responses import (
     TokenResponse,
     WrappedTokenResponse,
 )
-from R2RV350.py.shared.api.models.base import (
+from shared.api.models.base import (
     GenericBooleanResponse,
     GenericMessageResponse,
     PaginatedR2RResult,
@@ -10,7 +10,7 @@ from R2RV350.py.shared.api.models.base import (
     WrappedBooleanResponse,
     WrappedGenericMessageResponse,
 )
-from R2RV350.py.shared.api.models.graph.responses import (
+from shared.api.models.graph.responses import (
     GraphResponse,
     WrappedCommunitiesResponse,
     WrappedCommunityResponse,
@@ -21,7 +21,7 @@ from R2RV350.py.shared.api.models.graph.responses import (
     WrappedRelationshipResponse,
     WrappedRelationshipsResponse,
 )
-from R2RV350.py.shared.api.models.ingestion.responses import (
+from shared.api.models.ingestion.responses import (
     IngestionResponse,
     WrappedIngestionResponse,
     WrappedMetadataUpdateResponse,
@@ -29,7 +29,7 @@ from R2RV350.py.shared.api.models.ingestion.responses import (
     WrappedVectorIndexResponse,
     WrappedVectorIndicesResponse,
 )
-from R2RV350.py.shared.api.models.management.responses import (
+from shared.api.models.management.responses import (
     ChunkResponse,
     CollectionResponse,
     ConversationResponse,
@@ -58,7 +58,7 @@ from R2RV350.py.shared.api.models.management.responses import (
     WrappedUserResponse,
     WrappedUsersResponse,
 )
-from R2RV350.py.shared.api.models.retrieval.responses import (
+from shared.api.models.retrieval.responses import (
     AgentEvent,
     AgentResponse,
     AggregateSearchResult,

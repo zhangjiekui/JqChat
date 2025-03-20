@@ -1,7 +1,7 @@
 import os
 from typing import Optional
 
-from R2RV350.py.shared.abstractions import R2RException
+from shared.abstractions import R2RException
 
 
 class BaseClient:

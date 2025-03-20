@@ -2,7 +2,7 @@ import uuid
 
 import pytest
 
-# from R2RV350.py.core.providers.database.postgres_prompts import PostgresPromptsHandler
+# from .core.providers.database.postgres_prompts import PostgresPromptsHandler
 
 
 @pytest.mark.asyncio

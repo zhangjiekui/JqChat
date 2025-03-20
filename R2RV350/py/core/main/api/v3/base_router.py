@@ -6,7 +6,7 @@ from typing import Callable
 from fastapi import APIRouter, Depends, HTTPException, Request
 from fastapi.responses import FileResponse, StreamingResponse
 
-from R2RV350.py.core.base import R2RException
+from .core.base import R2RException
 
 from ...abstractions import R2RProviders, R2RServices
 from ...config import R2RConfig

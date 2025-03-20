@@ -9,7 +9,7 @@ import requests
 from aiohttp import ClientError, ClientSession
 from litellm import AuthenticationError, aembedding, embedding
 
-from R2RV350.py.core.base import (
+from .core.base import (
     ChunkSearchResult,
     EmbeddingConfig,
     EmbeddingProvider,

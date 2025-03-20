@@ -8,7 +8,7 @@ from uuid import UUID
 
 from fastapi import HTTPException
 
-from R2RV350.py.core import (
+from .core import (
     Citation,
     R2RRAGAgent,
     R2RStreamingRAGAgent,
@@ -18,8 +18,8 @@ from R2RV350.py.core import (
     R2RXMLToolsStreamingRAGAgent,
     R2RXMLToolsStreamingResearchAgent,
 )
-from R2RV350.py.core.agent.research import R2RResearchAgent
-from R2RV350.py.core.base import (
+from .core.agent.research import R2RResearchAgent
+from .core.base import (
     AggregateSearchResult,
     ChunkSearchResult,
     DocumentResponse,
@@ -36,9 +36,9 @@ from R2RV350.py.core.base import (
     WebSearchResult,
     format_search_results_for_llm,
 )
-from R2RV350.py.core.base.api.models import RAGResponse, User
-from R2RV350.py.core.telemetry.telemetry_decorator import telemetry_event
-from R2RV350.py.core.utils import (
+from shared.api.models import RAGResponse, User
+from .core.telemetry.telemetry_decorator import telemetry_event
+from .core.utils import (
     CitationTracker,
     SearchResultsCollector,
     SSEFormatter,
@@ -48,7 +48,7 @@ from R2RV350.py.core.utils import (
     find_new_citation_spans,
     num_tokens_from_messages,
 )
-from R2RV350.py.shared.api.models.management.responses import MessageResponse
+from shared.api.models.management.responses import MessageResponse
 
 from ..abstractions import R2RProviders
 from ..config import R2RConfig
@@ -1940,7 +1940,7 @@ class RetrievalService(Service):
         """
         try:
             # Import the Serper client here to avoid circular imports
-            from R2RV350.py.core.utils.serper import SerperClient
+            from .core.utils.serper import SerperClient
 
             # Initialize the Serper client
             serper_client = SerperClient()

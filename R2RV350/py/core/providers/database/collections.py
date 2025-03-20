@@ -8,19 +8,19 @@ from uuid import UUID, uuid4
 from asyncpg.exceptions import UniqueViolationError
 from fastapi import HTTPException
 
-from R2RV350.py.core.base import (
+from .core.base import (
     DatabaseConfig,
     GraphExtractionStatus,
     Handler,
     R2RException,
     generate_default_user_collection_id,
 )
-from R2RV350.py.core.base.abstractions import (
+from .core.base.abstractions import (
     DocumentResponse,
     DocumentType,
     IngestionStatus,
 )
-from R2RV350.py.core.base.api.models import CollectionResponse
+from shared.api.models import CollectionResponse
 
 from .base import PostgresConnectionManager
 

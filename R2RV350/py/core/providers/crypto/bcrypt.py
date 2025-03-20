@@ -12,7 +12,7 @@ import nacl.exceptions
 import nacl.signing
 import nacl.utils
 
-from R2RV350.py.core.base import CryptoConfig, CryptoProvider
+from .core.base import CryptoConfig, CryptoProvider
 
 DEFAULT_BCRYPT_SECRET_KEY = "wNFbczH3QhUVcPALwtWZCPi0lrDlGV3P1DPRVEQCPbM"  # Replace or load from env or secrets manager
 

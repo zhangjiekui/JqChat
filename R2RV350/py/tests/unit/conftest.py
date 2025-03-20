@@ -3,9 +3,9 @@ import os
 
 import pytest
 
-from R2RV350.py.core.base import AppConfig, DatabaseConfig, VectorQuantizationType
-from R2RV350.py.core.providers import NaClCryptoConfig, NaClCryptoProvider
-from R2RV350.py.core.providers.database.postgres import (
+from ..core.base import AppConfig, DatabaseConfig, VectorQuantizationType
+from ..providers import NaClCryptoConfig, NaClCryptoProvider
+from ..providers.database.postgres import (
     PostgresChunksHandler,
     PostgresCollectionsHandler,
     PostgresConversationsHandler,
@@ -15,7 +15,7 @@ from R2RV350.py.core.providers.database.postgres import (
     PostgresLimitsHandler,
     PostgresPromptsHandler,
 )
-from R2RV350.py.core.providers.database.users import (  # Make sure this import is correct
+from ..providers.database.users import (  # Make sure this import is correct
     PostgresUserHandler, )
 
 TEST_DB_CONNECTION_STRING = os.environ.get(
@@ -177,7 +177,7 @@ async def users_handler(db_provider, crypto_provider):
 async def prompt_handler(db_provider):
     """Returns an instance of PostgresPromptsHandler, creating the necessary
     tables first."""
-    # from R2RV350.py.core.providers.database.postgres_prompts import PostgresPromptsHandler
+    # from .core.providers.database.postgres_prompts import PostgresPromptsHandler
 
     project_name = db_provider.project_name
     connection_manager = db_provider.connection_manager

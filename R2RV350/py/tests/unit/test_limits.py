@@ -4,9 +4,9 @@ from uuid import UUID
 
 import pytest
 
-from R2RV350.py.core.base import LimitSettings
-from R2RV350.py.core.providers.database.postgres import PostgresLimitsHandler
-from R2RV350.py.shared.abstractions import User
+from .core.base import LimitSettings
+from .core.providers.database.postgres import PostgresLimitsHandler
+from shared.abstractions import User
 
 
 @pytest.mark.asyncio
@@ -312,7 +312,7 @@ async def test_separate_route_usage_is_isolated(limits_handler):
     # 2) Setup user & routes
     import uuid
 
-    from R2RV350.py.shared.abstractions import User
+    from shared.abstractions import User
 
     user_id = uuid.uuid4()
     routeA = "/v3/retrieval/rag"
@@ -368,7 +368,7 @@ async def test_separate_route_usage_is_isolated(limits_handler):
 #     await limits_handler.connection_manager.execute_query(clear_query)
 
 #     import uuid
-#     from R2RV350.py.shared.abstractions import User
+#     from shared.abstractions import User
 #     user_id = uuid.uuid4()
 #     routeA = "/v3/retrieval/rag"
 #     routeB = "/v3/retrieval/search"

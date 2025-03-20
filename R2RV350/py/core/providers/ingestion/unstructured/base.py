@@ -12,8 +12,8 @@ import httpx
 from unstructured_client import UnstructuredClient
 from unstructured_client.models import operations, shared
 
-from R2RV350.py.core import parsers
-from R2RV350.py.core.base import (
+from .core import parsers
+from .core.base import (
     AsyncParser,
     ChunkingStrategy,
     Document,
@@ -21,9 +21,9 @@ from R2RV350.py.core.base import (
     DocumentType,
     RecursiveCharacterTextSplitter,
 )
-from R2RV350.py.core.base.abstractions import R2RSerializable
-from R2RV350.py.core.base.providers.ingestion import IngestionConfig, IngestionProvider
-from R2RV350.py.core.utils import generate_extraction_id
+from .core.base.abstractions import R2RSerializable
+from .core.base.providers.ingestion import IngestionConfig, IngestionProvider
+from .core.utils import generate_extraction_id
 
 from ...database import PostgresDatabaseProvider
 from ...llm import (
@@ -300,7 +300,7 @@ class UnstructuredIngestionProvider(IngestionProvider):
             # TODO - Include check on excluded parsers here.
             if self.config.provider == "unstructured_api":
                 logger.info(f"Using API to parse document {document.id}")
-                files = self.shared.Files(
+                files = selfshared.Files(
                     content=file_content.read(),  # type: ignore
                     file_name=document.metadata.get("title", "unknown_file"),
                 )
@@ -309,7 +309,7 @@ class UnstructuredIngestionProvider(IngestionProvider):
                 ingestion_config.pop("extra_parsers", None)
 
                 req = self.operations.PartitionRequest(
-                    self.shared.PartitionParameters(
+                    selfshared.PartitionParameters(
                         files=files,
                         **ingestion_config,
                     )

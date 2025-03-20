@@ -17,14 +17,14 @@ from PIL import Image
 from pypdf import PdfReader
 
 # Local application imports
-from R2RV350.py.core.base.abstractions import GenerationConfig
-from R2RV350.py.core.base.parsers.base_parser import AsyncParser
-from R2RV350.py.core.base.providers import (
+from .core.base.abstractions import GenerationConfig
+from .core.base.parsers.base_parser import AsyncParser
+from .core.base.providers import (
     CompletionProvider,
     DatabaseProvider,
     IngestionConfig,
 )
-from R2RV350.py.shared.abstractions import PDFParsingError, PopplerNotFoundError
+from shared.abstractions import PDFParsingError, PopplerNotFoundError
 
 logger = logging.getLogger()
 

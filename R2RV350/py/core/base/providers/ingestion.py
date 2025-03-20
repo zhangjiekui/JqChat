@@ -5,7 +5,7 @@ from typing import TYPE_CHECKING, Any, ClassVar, Optional
 
 from pydantic import Field
 
-from R2RV350.py.core.base.abstractions import ChunkEnrichmentSettings
+from .core.base.abstractions import ChunkEnrichmentSettings
 
 from .base import AppConfig, Provider, ProviderConfig
 from .llm import CompletionProvider
@@ -13,7 +13,7 @@ from .llm import CompletionProvider
 logger = logging.getLogger()
 
 if TYPE_CHECKING:
-    from R2RV350.py.core.providers.database import PostgresDatabaseProvider
+    from .core.providers.database import PostgresDatabaseProvider
 
 
 class ChunkingStrategy(str, Enum):

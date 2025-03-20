@@ -1,5 +1,5 @@
-from R2RV350.py.shared.abstractions.base import AsyncSyncMeta, R2RSerializable, syncable
-from R2RV350.py.shared.abstractions.document import (
+from shared.abstractions.base import AsyncSyncMeta, R2RSerializable, syncable
+from shared.abstractions.document import (
     ChunkEnrichmentSettings,
     Document,
     DocumentChunk,
@@ -12,15 +12,15 @@ from R2RV350.py.shared.abstractions.document import (
     UnprocessedChunk,
     UpdateChunk,
 )
-from R2RV350.py.shared.abstractions.embedding import (
+from shared.abstractions.embedding import (
     EmbeddingPurpose,
     default_embedding_prefixes,
 )
-from R2RV350.py.shared.abstractions.exception import (
+from shared.abstractions.exception import (
     R2RDocumentProcessingError,
     R2RException,
 )
-from R2RV350.py.shared.abstractions.graph import (
+from shared.abstractions.graph import (
     Community,
     Entity,
     Graph,
@@ -31,7 +31,7 @@ from R2RV350.py.shared.abstractions.graph import (
     Relationship,
     StoreType,
 )
-from R2RV350.py.shared.abstractions.llm import (
+from shared.abstractions.llm import (
     GenerationConfig,
     LLMChatCompletion,
     LLMChatCompletionChunk,
@@ -39,8 +39,8 @@ from R2RV350.py.shared.abstractions.llm import (
     MessageType,
     RAGCompletion,
 )
-from R2RV350.py.shared.abstractions.prompt import Prompt
-from R2RV350.py.shared.abstractions.search import (
+from shared.abstractions.prompt import Prompt
+from shared.abstractions.search import (
     AggregateSearchResult,
     ChunkSearchResult,
     ChunkSearchSettings,
@@ -57,8 +57,8 @@ from R2RV350.py.shared.abstractions.search import (
     WebSearchResult,
     select_search_filters,
 )
-from R2RV350.py.shared.abstractions.user import Token, TokenData, User
-from R2RV350.py.shared.abstractions.vector import (
+from shared.abstractions.user import Token, TokenData, User
+from shared.abstractions.vector import (
     IndexArgsHNSW,
     IndexArgsIVFFlat,
     IndexConfig,

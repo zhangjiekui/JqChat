@@ -6,7 +6,7 @@ from uuid import UUID
 
 from fastapi import Body, Depends, Path, Query
 
-from R2RV350.py.core.base import (
+from ...core.base import (
     ChunkResponse,
     GraphSearchSettings,
     R2RException,
@@ -14,7 +14,7 @@ from R2RV350.py.core.base import (
     UpdateChunk,
     select_search_filters,
 )
-from R2RV350.py.core.base.api.models import (
+from ..shared.api.models import (
     GenericBooleanResponse,
     WrappedBooleanResponse,
     WrappedChunkResponse,
@@ -22,8 +22,8 @@ from R2RV350.py.core.base.api.models import (
     WrappedVectorSearchResponse,
 )
 
-from ...abstractions import R2RProviders, R2RServices
-from ...config import R2RConfig
+from ....abstractions import R2RProviders, R2RServices
+from ....config import R2RConfig
 from .base_router import BaseRouterV3
 
 logger = logging.getLogger()
@@ -230,7 +230,7 @@ class ChunksRouter(BaseRouterV3):
             }
 
             logger.info("Running chunk ingestion without orchestration.")
-            from R2RV350.py.core.main.orchestration import simple_ingestion_factory
+            from .core.main.orchestration import simple_ingestion_factory
 
             # TODO - CLEAN THIS UP
 

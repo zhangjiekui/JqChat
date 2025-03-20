@@ -7,7 +7,7 @@ from uuid import UUID
 
 from pydantic import BaseModel
 
-from R2RV350.py.core.base.abstractions import (
+from .core.base.abstractions import (
     GraphCreationSettings,
     GraphEnrichmentSettings,
     GraphSearchSettings,

@@ -1,0 +1,44 @@
+[embedding]
+  provider = "litellm"
+  api_base = 'http://10.1.150.106:9997/v1'
+  base_model = "xinference/bce-embedding-base_v1" # defaults to `text-embedding-3-large`
+  base_dimension = 768  
+  rerank_model="jina-reranker-v2"
+  rerank_url='http://10.1.150.106:9997/v1/rerank'
+
+
+[completion]
+  [completion.generation_config]
+    provider = "openai"
+    model = "openai/qwen25b70"
+    concurrent_request_limit = 32
+    api_base = 'http://10.1.150.105:9997/v1'
+    
+
+[database]
+  user = "langchain"
+  password = "langchain"
+  host = '10.1.150.105'
+  port = "6000"
+  db_name = 'postgres'
+  your_project_name = "r2r_jq_project"
+  [database.graph_creation_settings]
+    clustering_mode = "remote"
+
+[ingestion]
+provider = "unstructured_local"
+strategy = "auto"
+chunking_strategy = "by_title"
+new_after_n_chars = 2_048
+max_characters = 4_096
+combine_under_n_chars = 1_024
+overlap = 1_024
+
+    [ingestion.extra_parsers]
+    pdf = "zerox"
+
+[orchestration]
+provider = "hatchet"
+kg_creation_concurrency_limit = 32
+ingestion_concurrency_limit = 16
+kg_concurrency_limit = 8

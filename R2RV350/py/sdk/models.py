@@ -1,4 +1,4 @@
-from R2RV350.py.shared.abstractions import (
+from shared.abstractions import (
     AggregateSearchResult,
     ChunkSearchResult,
     GenerationConfig,
@@ -20,11 +20,11 @@ from R2RV350.py.shared.abstractions import (
     User,
     select_search_filters,
 )
-from R2RV350.py.shared.abstractions.graph import (
+from shared.abstractions.graph import (
     GraphCreationSettings,
     GraphEnrichmentSettings,
 )
-from R2RV350.py.shared.api.models import (
+from shared.api.models import (
     AgentResponse,
     Citation,
     CitationData,

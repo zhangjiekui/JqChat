@@ -4,7 +4,7 @@ from typing import Any
 
 from ollama import AsyncClient, Client
 
-from R2RV350.py.core.base import (
+from .core.base import (
     ChunkSearchResult,
     EmbeddingConfig,
     EmbeddingProvider,

@@ -7,7 +7,7 @@ from uuid import UUID
 import jwt
 from fastapi import Depends
 
-from R2RV350.py.core.base import (
+from .core.base import (
     AuthConfig,
     AuthProvider,
     CryptoProvider,
@@ -16,7 +16,7 @@ from R2RV350.py.core.base import (
     Token,
     TokenData,
 )
-from R2RV350.py.core.base.api.models import User
+from shared.api.models import User
 
 from ..database import PostgresDatabaseProvider
 

@@ -3,8 +3,8 @@ from datetime import datetime, timedelta, timezone
 from typing import Optional
 from uuid import UUID
 
-from R2RV350.py.core.base import Handler
-from R2RV350.py.shared.abstractions import User
+from .core.base import Handler
+from shared.abstractions import User
 
 from ...base.providers.database import DatabaseConfig, LimitSettings
 from .base import PostgresConnectionManager
@@ -224,8 +224,8 @@ class PostgresLimitsHandler(Handler):
 # from typing import Optional
 # from uuid import UUID
 
-# from R2RV350.py.core.base import Handler
-# from R2RV350.py.shared.abstractions import User
+# from .core.base import Handler
+# from shared.abstractions import User
 
 # from ..base.providers.database import DatabaseConfig, LimitSettings
 # from .base import PostgresConnectionManager
