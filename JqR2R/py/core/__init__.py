@@ -6,6 +6,20 @@ from .base import *
 from .main import *
 from .parsers import *
 from .providers import *
+from .main import *
+from .utils import (
+    CitationTracker,
+    SearchResultsCollector,
+    SSEFormatter,
+    dump_collector,
+    dump_obj,
+    extract_citations,
+    find_new_citation_spans,
+    generate_id,
+    num_tokens,
+    num_tokens_from_messages,
+    convert_nonserializable_objects
+)
 
 logger = logging.getLogger()
 logger.setLevel(logging.INFO)
@@ -30,6 +44,7 @@ logging.getLogger("httpx").setLevel(logging.WARNING)
 logging.getLogger("LiteLLM").setLevel(logging.WARNING)
 
 __all__ = [
+    "R2RApp",
     "ThinkingEvent",
     "ToolCallEvent",
     "ToolResultEvent",
@@ -173,3 +188,6 @@ __all__ = [
     "R2RIngestionProvider",
     "ChunkingStrategy",
 ]
+print("===============/data/projects/JqChatV2/JqChat/JqR2R/py/core/__init__.py中包括的包")
+print(dir())
+print("===============/data/projects/JqChatV2/JqChat/JqR2R/py/core/__init__.py中包括的包")

@@ -6,7 +6,9 @@ from .app import *
 from .assembly import *
 from .orchestration import *
 from .services import *
-
+print("===============/data/projects/JqChatV2/JqChat/R2RV350 copy/py/core/main/__init__.py中包括的包")
+print(dir())
+print("===============/data/projects/JqChatV2/JqChat/R2RV350 copy/py/core/main/__init__.py中包括的包")
 __all__ = [
     # R2R Primary
     "R2RProviders",

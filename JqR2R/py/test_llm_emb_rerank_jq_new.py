@@ -1,5 +1,6 @@
 import sys,pathlib
-import os, sys,pathlib    
+import os, sys,pathlib 
+os.environ['OPENAI_API_KEY']='abc123'   
 def add_import_paths():
     project_root_path = pathlib.Path().resolve()
     p1 = project_root_path/'jqcode'
@@ -18,23 +19,14 @@ print("=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*")
 project_root_path = pathlib.Path().resolve()
 print(f"应用启动路径:{project_root_path}")
 print(f"本项目中添加使用的Python路径为：{set(sys.path)}")
-from rank_bm25 import BM25Okapi
-from r2r import R2RClient
-from r2r.core.main.config import R2RConfig
+from r2r import *
+# from r2r import LiteLLMCompletionProvider
 
-import r2r as r2r
-
-from JqR2R.py.core.main.config import R2RConfig
-from JqR2R.py.core.providers.llm.litellm import LiteLLMCompletionProvider
-from JqR2R.py.core.providers.embeddings.litellm import LiteLLMEmbeddingProvider
-from JqR2R.py.r2r import R2RClient
-from JqR2R.py.shared.api.models.ingestion.responses import IngestionResponse
-from JqR2R.py.shared.abstractions import ChunkSearchResult
 import uuid
 from uuid import UUID
 def model_test():
     print("大语言模型测试-------------------")
-    r2rconfig = R2RConfig.from_toml(config_path="/data/projects/JqChatV2/JqChat/R2RV350/py/core/configs/full_jq.toml")
+    r2rconfig = R2RConfig.from_toml(config_path="/data/projects/JqChatV2/JqChat/JqR2R/py/r2r/r2r.toml")
     litellm = LiteLLMCompletionProvider(config=r2rconfig.completion)
     llm_task = {"messages":[{ "content": "Hello, who are you?","role": "user"}], "generation_config": r2rconfig.completion.generation_config, "kwargs": {}}
     llm_result= litellm._execute_task_sync(llm_task)

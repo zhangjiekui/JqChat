@@ -1,3 +1,18 @@
+import sys,pathlib
+import os, sys,pathlib    
+# def add_import_paths():
+#     project_root_path = pathlib.Path().resolve()
+#     p1 = project_root_path/'jqcode'
+#     p2 = project_root_path/'jqchatweb'
+#     p3 = project_root_path/'JqR2R'
+#     p4 = project_root_path/'JqR2R/py/core'
+#     p5 = project_root_path/'JqR2R/py/sdk'
+#     p6 = project_root_path/'JqR2R/py/shared'
+
+#     for p in [project_root_path, p1, p2,p3,p4,p5,p6]:
+#         sys.path.append(str(p))
+#     print(sys.path)
+# added_paths = add_import_paths()
 import argparse
 import asyncio
 import logging
@@ -5,11 +20,14 @@ import os
 import sys
 from typing import Optional
 
+
 logger = logging.getLogger(__name__)
 
 try:
-    from core import R2RApp, R2RBuilder, R2RConfig
-    from core.utils.logging_config import configure_logging
+    import r2r
+    print(dir(r2r))
+    from r2r import *
+
 except ImportError as e:
     logger.error(
         f"Failed to start server: core dependencies not installed: {e}"
@@ -27,12 +45,14 @@ os.environ['R2R_POSTGRES_DBNAME']="postgres"
 os.environ['R2R_PROJECT_NAME']="r2r_jq_project"
 os.environ['HATCHET_CLIENT_TOKEN']="eyJhbGciOiJFUzI1NiIsImtpZCI6InQ3ZF81ZyJ9.eyJhdWQiOiJodHRwOi8vaG9zdC5kb2NrZXIuaW50ZXJuYWw6NzI3NCIsImV4cCI6NDg5NTgxNDE5NywiZ3JwY19icm9hZGNhc3RfYWRkcmVzcyI6ImhhdGNoZXQtZW5naW5lOjcwNzciLCJpYXQiOjE3NDIyMTQxOTcsImlzcyI6Imh0dHA6Ly9ob3N0LmRvY2tlci5pbnRlcm5hbDo3Mjc0Iiwic2VydmVyX3VybCI6Imh0dHA6Ly9ob3N0LmRvY2tlci5pbnRlcm5hbDo3Mjc0Iiwic3ViIjoiNzA3ZDA4NTUtODBhYi00ZTFmLWExNTYtZjFjNDU0NmNiZjUyIiwidG9rZW5faWQiOiI3YWNkZWM4Yy1kNDdiLTQ1ZmMtOGMwNi1kZmVmNmJlMTc5MTYifQ.9V7039q8l8URALS-8pi-hZIaIDoDAbTKao78gaNM3jAkag5F1cYMumKwU-9MK1m7PThmzR9f1L2L5TdEb1mi-w"
 os.environ['CLUSTERING_SERVICE_URL']='http://10.1.150.105:7276'
+os.environ['OPENAI_API_KEY']='abc123'
+os.environ['SERPER_API_KEY']="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"
 
 async def create_app(
     config_name: Optional[str] = None,
     config_path: Optional[str] = None,
     full: bool = False,
-) -> "R2RApp":
+) -> "R2RApp": # type: ignore
     """
     Creates and returns an R2R application instance based on the provided
     or environment-sourced configuration.
@@ -92,6 +112,7 @@ def run_server(
     final_port = int(os.getenv("R2R_PORT", "7272"))
 
     try:
+        from r2r import configure_logging
         configure_logging()
     except Exception as e:
         logger.error(f"Failed to configure logging: {e}")

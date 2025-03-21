@@ -60,8 +60,15 @@ os.environ['CLUSTERING_SERVICE_URL']='http://10.1.150.105:7276'
 os.environ['HATCHET_CLIENT_TOKEN']="eyJhbGciOiJFUzI1NiIsImtpZCI6InQ3ZF81ZyJ9.eyJhdWQiOiJodHRwOi8vaG9zdC5kb2NrZXIuaW50ZXJuYWw6NzI3NCIsImV4cCI6NDg5NTgxNDE5NywiZ3JwY19icm9hZGNhc3RfYWRkcmVzcyI6ImhhdGNoZXQtZW5naW5lOjcwNzciLCJpYXQiOjE3NDIyMTQxOTcsImlzcyI6Imh0dHA6Ly9ob3N0LmRvY2tlci5pbnRlcm5hbDo3Mjc0Iiwic2VydmVyX3VybCI6Imh0dHA6Ly9ob3N0LmRvY2tlci5pbnRlcm5hbDo3Mjc0Iiwic3ViIjoiNzA3ZDA4NTUtODBhYi00ZTFmLWExNTYtZjFjNDU0NmNiZjUyIiwidG9rZW5faWQiOiI3YWNkZWM4Yy1kNDdiLTQ1ZmMtOGMwNi1kZmVmNmJlMTc5MTYifQ.9V7039q8l8URALS-8pi-hZIaIDoDAbTKao78gaNM3jAkag5F1cYMumKwU-9MK1m7PThmzR9f1L2L5TdEb1mi-w"
 
 
+
+VSCODE中在单独界面打开文件夹/data/projects/JqChatV2/JqChat/JqR2R/py
 cd /data/projects/JqChatV2/JqChat/JqR2R/py
 pip install -e .[core]
+
+
+
+cd /data/projects/JqChatV2/JqChat/JqR2R/py
+pip install -e .[core] --force-reinstall
 python -m r2r.serve
 
 查看界面：
@@ -72,6 +79,8 @@ python -m r2r.serve
 # 登录信息
 # Email: admin@example.com
 # Password: Admin123!!
+
+然后可以运行/data/projects/JqChatV2/JqChat/jq_local_r2r_test.py，进行代码测试
  
 ```
 

@@ -216,7 +216,7 @@ class LiteLLMEmbeddingProvider(EmbeddingProvider):
             }
 
             headers = {"Content-Type": "application/json"}
-            logger.debug(f"SyncRerank kwargs: [rerank_model] {self.config.rerank_model},[rerank_url] {self.rerank_url}")
+            logger.warning(f"SyncRerank kwargs: [rerank_model] {self.config.rerank_model},[rerank_url] {self.rerank_url}")
 
             try:
                 response = requests.post(

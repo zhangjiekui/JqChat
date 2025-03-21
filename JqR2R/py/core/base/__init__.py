@@ -4,7 +4,9 @@ from .api.models import *
 from .parsers import *
 from .providers import *
 from .utils import *
-
+print("===============JqR2R/py/core/base/__init__.py中包括的包")
+print(dir())
+print("===============JqR2R/py/core/base/__init__.py中包括的包")
 __all__ = [
     "ThinkingEvent",
     "ToolCallEvent",

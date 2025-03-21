@@ -1,6 +1,8 @@
 from .abstractions import R2RProviders
 from .api import *
 from .app import *
+from .app import R2RApp
+
 
 # from .app_entry import r2r_app
 from .assembly import *
@@ -22,3 +24,7 @@ __all__ = [
     "RetrievalService",
     "GraphService",
 ]
+
+print("===============/data/projects/JqChatV2/JqChat/JqR2R/py/core/main/__init__.py中包括的包")
+print(dir())
+print("===============/data/projects/JqChatV2/JqChat/JqR2R/py/core/main/__init__.py中包括的包")
