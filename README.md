@@ -64,23 +64,33 @@ os.environ['HATCHET_CLIENT_TOKEN']="eyJhbGciOiJFUzI1NiIsImtpZCI6InQ3ZF81ZyJ9.eyJ
 VSCODE中在单独界面打开文件夹/data/projects/JqChatV2/JqChat/JqR2R/py
 cd /data/projects/JqChatV2/JqChat/JqR2R/py
 pip install -e .[core]
-
-
-
-cd /data/projects/JqChatV2/JqChat/JqR2R/py
-pip install -e .[core] --force-reinstall
 python -m r2r.serve
+
+
+
+
 
 查看界面：
 # 检查服务运行状态：http://10.1.150.105:7272/v3/health {"results":{"message":"ok"}}
+# 测试配置的模型是否正常运行 python /data/projects/JqChatV2/JqChat/JqR2R/py/test_llm_emb_rerank_jq_new.py
 # 启动Docker：r2r-dashboard:1.0.2 【7273端口】
 # 运行界面：http://10.1.150.105:7273/   
 # 填入服务地址：http://10.1.150.105:7272
 # 登录信息
 # Email: admin@example.com
-# Password: Admin123!!
+# Password: change_me_immediately
 
-然后可以运行/data/projects/JqChatV2/JqChat/jq_local_r2r_test.py，进行代码测试
+然后可以运行代码测试：
+###注意，在本地开发测试时，在语句from r2r import * 之前 需要加入路径，代码如下###
+import os,sys,pathlib
+project_root_path = pathlib.Path().resolve()
+sys.path.append(str(project_root_path))
+os.environ['OPENAI_API_KEY']='abc123' 
+否则会报错：ImportError: cannot import name 'AuthConfig' from 'core.base' (unknown location)
+
+###注意，在本地开发测试时，在语句from r2r import * 之前 需要加入路径，代码如下###
+/data/projects/JqChatV2/JqChat/JqR2R/py/local_test/test_hello_r2r_jq_new.py
+/data/projects/JqChatV2/JqChat/jq_local_r2r_test.py
  
 ```
 
