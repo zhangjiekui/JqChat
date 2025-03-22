@@ -1,5 +1,6 @@
 FROM python:3.12-slim AS builder
 
+#RUN sed -i 's/http:\/\/archive.ubuntu.com/http:\/\/mirrors.tuna.tsinghua.edu.cn\/ubuntu/g' /etc/apt/sources.list
 # Install system dependencies
 RUN apt-get update && apt-get install -y --no-install-recommends \
     gcc g++ musl-dev curl libffi-dev gfortran libopenblas-dev \
@@ -14,6 +15,10 @@ ENV PATH="/root/.cargo/bin:${PATH}"
 RUN mkdir -p /app/py
 WORKDIR /app/py
 COPY pyproject.toml ./
+
+RUN pip config set global.index-url https://mirrors.aliyun.com/pypi/simple/ && \
+    pip config set install.trusted-host mirrors.aliyun.com
+
 RUN pip install -e ".[core]" && \
     pip install gunicorn uvicorn pydantic
 

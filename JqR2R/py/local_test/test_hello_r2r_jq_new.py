@@ -1,10 +1,3 @@
-import os,sys,pathlib
-project_root_path = pathlib.Path().resolve()
-sys.path.append(str(project_root_path))
-os.environ['OPENAI_API_KEY']='abc123' 
-
-
-
 from r2r import *
 
 def r2r_test():

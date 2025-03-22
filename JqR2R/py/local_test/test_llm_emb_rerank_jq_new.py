@@ -1,15 +1,4 @@
-import os,sys,pathlib
-project_root_path = pathlib.Path().resolve()
-sys.path.append(str(project_root_path))
-os.environ['OPENAI_API_KEY']='abc123' 
-
-print("=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*")    
-project_root_path = pathlib.Path().resolve()
-print(f"应用启动路径:{project_root_path}")
-print(f"本项目中添加使用的Python路径为：{set(sys.path)}")
 from r2r import *
-# from r2r import LiteLLMCompletionProvider
-
 import uuid
 from uuid import UUID
 def model_test():

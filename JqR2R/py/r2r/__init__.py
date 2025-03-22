@@ -1,5 +1,9 @@
-from importlib import metadata
+import os,sys,pathlib
+project_root_path = pathlib.Path().resolve()
+sys.path.append(str(project_root_path))
+print(f"已将{project_root_path}添加到sys.path中")
 
+from importlib import metadata
 from sdk.async_client import R2RAsyncClient
 from sdk.sync_client import R2RClient
 from core import *

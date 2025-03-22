@@ -60,7 +60,7 @@ os.environ['CLUSTERING_SERVICE_URL']='http://10.1.150.105:7276'
 os.environ['HATCHET_CLIENT_TOKEN']="eyJhbGciOiJFUzI1NiIsImtpZCI6InQ3ZF81ZyJ9.eyJhdWQiOiJodHRwOi8vaG9zdC5kb2NrZXIuaW50ZXJuYWw6NzI3NCIsImV4cCI6NDg5NTgxNDE5NywiZ3JwY19icm9hZGNhc3RfYWRkcmVzcyI6ImhhdGNoZXQtZW5naW5lOjcwNzciLCJpYXQiOjE3NDIyMTQxOTcsImlzcyI6Imh0dHA6Ly9ob3N0LmRvY2tlci5pbnRlcm5hbDo3Mjc0Iiwic2VydmVyX3VybCI6Imh0dHA6Ly9ob3N0LmRvY2tlci5pbnRlcm5hbDo3Mjc0Iiwic3ViIjoiNzA3ZDA4NTUtODBhYi00ZTFmLWExNTYtZjFjNDU0NmNiZjUyIiwidG9rZW5faWQiOiI3YWNkZWM4Yy1kNDdiLTQ1ZmMtOGMwNi1kZmVmNmJlMTc5MTYifQ.9V7039q8l8URALS-8pi-hZIaIDoDAbTKao78gaNM3jAkag5F1cYMumKwU-9MK1m7PThmzR9f1L2L5TdEb1mi-w"
 
 
-
+启动DB Docker: polardb15_vector_age_zh:v1.2 
 VSCODE中在单独界面打开文件夹/data/projects/JqChatV2/JqChat/JqR2R/py
 cd /data/projects/JqChatV2/JqChat/JqR2R/py
 pip install -e .[core]
@@ -87,7 +87,6 @@ project_root_path = pathlib.Path().resolve()
 sys.path.append(str(project_root_path))
 os.environ['OPENAI_API_KEY']='abc123' 
 否则会报错：ImportError: cannot import name 'AuthConfig' from 'core.base' (unknown location)
-
 ###注意，在本地开发测试时，在语句from r2r import * 之前 需要加入路径，代码如下###
 /data/projects/JqChatV2/JqChat/JqR2R/py/local_test/test_hello_r2r_jq_new.py
 /data/projects/JqChatV2/JqChat/jq_local_r2r_test.py
