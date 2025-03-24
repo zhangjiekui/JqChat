@@ -43,12 +43,23 @@ def model_test():
 def r2r_test():
 
     try:
-        doc=client.documents.create(file_path="/data/projects/JqChatV2/JqChat/JqR2R/py/doc1.docx")
+        doc=client.documents.create(file_path="/data/projects/JqChatV2/JqChat/JqR2R/py/doc2.docx")
         print(doc)
         doc_id=doc.results.document_id
         message = doc.results.message
         print(doc_id)
         print(message)
+        list_chunks_response = client.documents.list_chunks(id=doc_id,include_vectors=True)
+        extract_response = client.documents.extract(id=doc_id,run_with_orchestration= True)
+        print(extract_response.results.message)
+        deduplicate_response = client.documents.deduplicate(id=doc_id)
+        print(deduplicate_response.results.message)
+        collections_list_result = client.collections.list(offset=0, limit=10)
+        collections_id=collections_list_result.results[0].id
+        collections_add_document_result = client.collections.add_document(id=collections_id, document_id=doc_id)
+        print(collections_add_document_result)
+        response = client.graphs.pull(collection_id=collections_id)
+        print(response)
     except Exception as e:
         print(e)
 
@@ -57,7 +68,7 @@ def r2r_test():
 # https://r2r-docs.sciphi.ai/api-and-sdks/retrieval/search-app
     print("Performing RAG...")
     rag_response = client.retrieval.rag(
-        query="什么是质量保证过程?",
+        query="医院信息系统的全部功能模块包括哪些?",
         search_settings={
             "use_semantic_search": True,
             "use_hybrid_search": True,
@@ -82,7 +93,7 @@ def r2r_test():
 
     print("Performing Search...")
     search_response = client.retrieval.search(
-        query="什么是质量保证过程?",
+        query="医院信息系统的全部功能模块包括哪些?",
         search_mode="advanced",
     )
 
@@ -96,10 +107,11 @@ def r2r_test():
     agent_response = client.retrieval.agent(
         message={
         "role": "user",
-        "content": "什么是质量保证过程?"
+        "content": "医院信息系统的全部功能模块包括哪些?"
         # "content": "Do a deep analysis of the philosophical implications of DeepSeek R1"
         },
-        rag_tools=["web_search", "web_scrape", "search_file_descriptions", "search_file_knowledge", "get_file_content"],
+        # rag_tools=["web_search", "web_scrape", "search_file_descriptions", "search_file_knowledge", "get_file_content"],
+        rag_tools=["search_file_descriptions", "search_file_knowledge", "get_file_content"],
     )
 
     print(agent_response.results.messages[0].content)

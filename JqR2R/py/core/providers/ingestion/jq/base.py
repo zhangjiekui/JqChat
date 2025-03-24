@@ -200,12 +200,12 @@ class JqIngestionProvider(IngestionProvider):
 
     def chunk(
         self,
-        parsed_document: str | DocumentChunk,
+        parsed_document: str | DocumentChunk | DocxDocumentObject,
         ingestion_config_override: dict,
     ) -> AsyncGenerator[Any, None]:
-        text_spliiter = self.text_splitter
+        splitter = self.text_splitter
         if ingestion_config_override:
-            text_spliiter = self._build_text_splitter(
+            splitter = self._build_text_splitter(
                 ingestion_config_override
             )
         if isinstance(parsed_document, DocumentChunk):
@@ -214,9 +214,9 @@ class JqIngestionProvider(IngestionProvider):
         if isinstance(parsed_document, str):
             # text = '<标题目录toc：doc1.docx/>[表格]：项目名称,,,省工信厅“中国声谷”奖补项目申报核查,,,,,,\r\n被审计（调查）单位或个人,,,安徽晶奇网络科技股份有限公司,,,,,,\r\n审计（调查）事项,,,对技术创新产品产业化项目、企业研发产品产业化项目申报,,,,,,\r\n审计（调查）事项摘要,"安徽晶奇网络科技股份有限公司（以下简称“晶奇网络公司”）以民政和卫生领域的信息化为基础，围绕“防、治、养”为大健康产业链中的服务对象提供智慧医疗、智慧医保、智慧民政、智慧健康养老的整体解方案、数据挖掘以及数据安全服务,在健康医疗大数据领域从大数据采集、大数据治理、大数据挖掘分析和大数据应用四个环节提供技术解决方案和产品服务，系软件信息化整体解决方案提供商。根据《支持中国声谷创新发展若干政策》及应用指南等有关政策文件中关于企业研发产品产业化项目、企业研发产品产业化项目的相关规定，分别于2019年至2023年每年度向省工信厅（原省经信厅）提交有关项目申请奖补材料。1.企业日常按“晶奇退役军人智能信息管理系统”“处方流转平台”等项目进行内部研发立项（为便于区别，以下简称“小项目”），在向省工信厅申报研发产品产业化补助时，将若干研发“小项目”组成一个“大项目”进行奖补申报，如2020年申报的“基层民生服务大数据应用示范项目”共涉及11个“小项目”。“大项目”与“小项目”对应关系如下表所示：2.检查晶奇网络公司产品产业化项目相关申报材料，发现以下事实，详见下表（单位：万元）：",,,,,,,,\r\n审计人员,,,,,,编制日期,,,\r\n证据提供单位或个人意见,,,,,,,,,\r\n证据提供单位或个人意见,,证据提供单位盖章、负责人或者其确定的人员签名,,,,,日期,,\r\n附件：     页'
             # chunks = text_spliiter.create_documents([text])
-            chunks = text_spliiter.create_documents([parsed_document])
+            chunks = splitter.create_documents([parsed_document])
 
-        if isinstance(parsed_document, DocxDocumentObject):
+        elif isinstance(parsed_document, DocxDocumentObject):
             from jqcode.jq_readers.jqkj_readers import JqkjDocxReader
             reader = JqkjDocxReader()
             doc_tree,df_table_list = reader.parse_docx_into_tree(parsed_document,file_path="/data/projects/JqChatV2/JqChat/JqR2R/py/doc1.docx")
