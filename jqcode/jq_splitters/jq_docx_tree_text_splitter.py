@@ -1,3 +1,14 @@
+from langchain_text_splitters import Language
+
+def is_programming_file(programing_language_name:str):
+    programing_language__set = {language.value for language in Language}  # 创建集合
+    if programing_language_name in programing_language__set:
+        return True
+    else:
+        return False
+
+r = is_programming_file('py')
+
 import os,re
 import copy,math
 import pandas as pd
@@ -683,7 +694,7 @@ class JqkjDocTreeTokenTextSplitter(MetadataAwareTextSplitter):
 
     def _parse_node_on_text(self, node: BaseNode, cutoff_ratio_as_chunk=0.8,get_to_first_title_directly=False) -> List[BaseNode]:
         splitter = self.cr_text_splitter
-        if node.metadata.get("file_extension","") == '.py':
+        if node.metadata.get("file_extension","") != '.docx':
             from langchain_text_splitters import Language
             splitter = self.cr_text_splitter.from_language(language=Language.PYTHON,tokenizer=self.cr_text_splitter.tokenizer_wrapper.tokenizer)
         text = node.text        

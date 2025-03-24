@@ -156,6 +156,11 @@ class R2RIngestionProvider(IngestionProvider):
             ingestion_config_override.get("chunk_overlap")
             or self.config.chunk_overlap
         )
+        if chunking_strategy == ChunkingStrategy.JQ:
+            from jqcode.jq_agent.c0_init_env_models import env_models_instance
+            doc_tree_spiltter = env_models_instance.doc_tree_spiltter
+
+
 
         if chunking_strategy == ChunkingStrategy.RECURSIVE:
             return RecursiveCharacterTextSplitter(

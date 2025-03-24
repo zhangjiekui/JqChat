@@ -1,9 +1,15 @@
 from r2r import *
 import uuid
 from uuid import UUID
+
+r2rconfig = R2RConfig.from_toml(config_path="/data/projects/JqChatV2/JqChat/JqR2R/py/r2r/r2r.toml")
+print("R2R服务测试--------请首先运行[python -m r2r.serve]启动R2R服务--------")
+client = R2RClient(base_url='http://10.1.150.105:7272') # can set remote w/ R2RClient(base_url=...)
+client.users.login("admin@example.com", "change_me_immediately")
+print("R2RClient对象创建\登录成功")
+
 def model_test():
-    print("大语言模型测试-------------------")
-    r2rconfig = R2RConfig.from_toml(config_path="/data/projects/JqChatV2/JqChat/JqR2R/py/r2r/r2r.toml")
+    print("大语言模型测试-------------------")    
     litellm = LiteLLMCompletionProvider(config=r2rconfig.completion)
     llm_task = {"messages":[{ "content": "Hello, who are you?","role": "user"}], "generation_config": r2rconfig.completion.generation_config, "kwargs": {}}
     llm_result= litellm._execute_task_sync(llm_task)
@@ -35,12 +41,9 @@ def model_test():
     print("以上为rerank模型测试输出结果-------------------")
 
 def r2r_test():
-    print("R2R服务测试--------请首先启动R2R服务--------")
-    client = R2RClient(base_url='http://10.1.150.105:7272') # can set remote w/ R2RClient(base_url=...)
-    print("R2RClient对象创建成功")
-    client.users.login("admin@example.com", "change_me_immediately")
+
     try:
-        doc=client.documents.create(file_path="/data/projects/JqChatV2/JqChat/财务发票模板.docx")
+        doc=client.documents.create(file_path="/data/projects/JqChatV2/JqChat/JqR2R/py/doc1.docx")
         print(doc)
         doc_id=doc.results.document_id
         message = doc.results.message
@@ -114,7 +117,86 @@ def r2r_test():
     print("以上为R2R服务测试输出结果-------------------")
 
 
+from jqcode.jq_readers.jqkj_readers import JqkjSimpleDirectoryReader
+from jqcode.jq_agent.c0_init_env_models import env_models_instance
+from jqcode.jq_utils.logger import jqkj_logger
+logger = jqkj_logger(__file__).get_logger()
+doc_tree_spiltter = env_models_instance.doc_tree_spiltter
+
+# 转换文件：/data/projects/JqChatV2/JqChat/JqR2R/py/sdk/sync_methods/documents.py
+# 或者：async def _process_file(file) /data/projects/JqChatV2/JqChat/JqR2R/py/core/main/api/v3/documents_router.py
+# 自定义ChunkingStrategy： /data/projects/JqChatV2/JqChat/JqR2R/py/core/base/providers/ingestion.py
+# 自定义spitter：/data/projects/JqChatV2/JqChat/JqR2R/py/core/providers/ingestion/r2r/base.py
+# chunk方法：/data/projects/JqChatV2/JqChat/JqR2R/py/core/providers/ingestion/r2r/base.py
+
+def get_chunked_documents_from_file_directory(dir:str,input_files:str=None, overwrite_existing_converted_files=False,required_exts=['.doc','.docx','.pdf','.txt','.py'],exclude_hidden=False):
+    # 构造晶奇文件读取器，读取目录中的文件
+    simple_reader = JqkjSimpleDirectoryReader(input_dir=dir,input_files=input_files, 
+                                              overwrite_existing_converted_files=overwrite_existing_converted_files,
+                                              required_exts=required_exts,
+                                              exclude_hidden=exclude_hidden)
+    documents = simple_reader.load_data()
+    logger.warning(f'Loaded {len(documents)} documents from {dir}:')
+    list_of_dict_docid_chunks_metadata = []
+    for idx, doc in enumerate(documents):
+        logger.warning(f'  ==原始文档[{idx+1}]:  {doc.metadata.get("source",doc.metadata.get("original_source_jq",""))}\n         转换=>   {doc.metadata.get("original_source_converted_jq",doc.metadata.get("file_path",""))}')
+        tree_nodes = doc_tree_spiltter.get_nodes_from_documents([doc])
+        doc_id = doc.id_
+        metadata = doc.metadata
+        file_path = doc.metadata.get("file_path",doc.metadata.get("original_source_converted_jq",doc.metadata.get("source",doc.metadata.get("original_source_jq",""))))
+        chunks = [node.text for node in tree_nodes]
+        client.documents.create(id=doc_id,chunks=chunks,metadata=metadata,ingestion_mode="fast")
+        # client.documents.create(file_path=file_path,id=doc_id,chunks=chunks,metadata=metadata,ingestion_mode="fast")  # use fast for a quick chunk ingestion
+        list_chunks_response = client.documents.list_chunks(id=doc_id,include_vectors=True)
+        extract_response = client.documents.extract(id=doc_id,run_with_orchestration= True)
+        print(extract_response.results.message)
+        deduplicate_response = client.documents.deduplicate(id=doc_id)
+        print(deduplicate_response.results.message)
+
+    documents_search_response = client.documents.search(query="什么是质量保证过程?",search_mode="advanced")
+    print('文档搜索结果......')
+    for result in documents_search_response.results:
+        print("---------")
+        print(f"{result.title=},{result.ingestion_status=},{result.summary=}")
+    
+    print('检索搜索结果......')
+    retrieval_search_response = client.retrieval.search(query="什么是质量保证过程?", search_mode="advanced")
+    for result in retrieval_search_response.results:
+        print("---------")
+        print(f"{result.title=},{result.ingestion_status=},{result.summary=}")
+
+
+
+
+
+
+
+        pass
+        # dict_docid_chunks_metadata = [{"doc_id":str(doc.metadata.get("doc_id",uuid.uuid1())),"chunk":node.text,"metadata":node.metadata} for node in tree_nodes]
+
+    # 使用文档树分割器，将文档分割成切片（树节点）
+    tree_nodes = doc_tree_spiltter.get_nodes_from_documents(documents)
+    # 将切片（树节点）转换成LangChain格式的文档
+    # chunked_documents = [LcDocument(page_content=node.text,metadata=node.metadata) for node in tree_nodes]
+    # logger.warning(f'Splits {len(documents)} documents into {len(chunked_documents)} chunks.')
+
+    return tree_nodes
+
+def r2r_lifecycle_test():
+    print("R2R服务生命周期测试--------请首先运行[python -m r2r.serve]启动R2R服务--------")
+    print("==List documents==")
+    print(client.documents.list(limit=10, offset=0))
+    print("==Create document==")
+    client.documents.create(
+    chunks=None,
+    ingestion_mode="fast"  # use fast for a quick chunk ingestion
+)
+
+
+
 if __name__ == "__main__":
 
-    model_test()
+    # model_test()
     r2r_test()
+    file_dir = '/data/projects/JqChatV2/JqChat/langchain_graphrag_code_test/data'
+    # chunked_documents = get_chunked_documents_from_file_directory(file_dir)

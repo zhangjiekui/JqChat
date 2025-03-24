@@ -117,6 +117,7 @@ __all__ = [
     ## UTILS
     "RecursiveCharacterTextSplitter",
     "TextSplitter",
+    "JqChineseRecursiveTextSplitter",
     "format_search_results_for_llm",
     "validate_uuid",
     # ID generation

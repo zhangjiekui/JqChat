@@ -17,7 +17,7 @@ from .base_utils import (
     validate_uuid,
     yield_sse_event,
 )
-from .splitter.text import RecursiveCharacterTextSplitter, TextSplitter
+from .splitter.text import RecursiveCharacterTextSplitter, TextSplitter , JqChineseRecursiveTextSplitter
 
 __all__ = [
     "format_search_results_for_llm",
@@ -37,6 +37,7 @@ __all__ = [
     # Text splitter
     "RecursiveCharacterTextSplitter",
     "TextSplitter",
+    "JqChineseRecursiveTextSplitter",
     # Vector utils
     "_decorate_vector_type",
     "_get_vector_column_str",

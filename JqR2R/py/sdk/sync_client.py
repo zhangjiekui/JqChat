@@ -25,7 +25,7 @@ class R2RClient(BaseClient):
     def __init__(
         self,
         base_url: str | None = None,
-        timeout: float = 300.0,
+        timeout: float = 3000000000.0,
         custom_client=None,
     ):
         super().__init__(base_url, timeout)

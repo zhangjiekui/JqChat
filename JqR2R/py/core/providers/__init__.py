@@ -20,6 +20,8 @@ from .embeddings import (
 from .ingestion import (  # type: ignore
     R2RIngestionConfig,
     R2RIngestionProvider,
+    JqIngestionConfig,
+    JqIngestionProvider,
     UnstructuredIngestionConfig,
     UnstructuredIngestionProvider,
 )

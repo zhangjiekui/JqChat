@@ -36,6 +36,8 @@ from core.providers import (
     R2RCompletionProvider,
     R2RIngestionConfig,
     R2RIngestionProvider,
+    JqIngestionConfig,
+    JqIngestionProvider,
     SendGridEmailProvider,
     SimpleOrchestrationProvider,
     SupabaseAuthProvider,
@@ -129,6 +131,13 @@ class R2RProviderFactory:
                 **config_dict, **extra_fields
             )
             return R2RIngestionProvider(
+                r2r_ingestion_config, database_provider, llm_provider
+            )
+        if config_dict["provider"] == "jq":
+            r2r_ingestion_config = JqIngestionConfig(
+                **config_dict, **extra_fields
+            )
+            return JqIngestionProvider(
                 r2r_ingestion_config, database_provider, llm_provider
             )
         elif config_dict["provider"] in [

@@ -1,6 +1,7 @@
 from shared.utils import (
     RecursiveCharacterTextSplitter,
     TextSplitter,
+    JqChineseRecursiveTextSplitter,
     _decorate_vector_type,
     _get_vector_column_str,
     decrement_version,
@@ -33,6 +34,7 @@ __all__ = [
     "generate_default_prompt_id",
     "RecursiveCharacterTextSplitter",
     "TextSplitter",
+    "JqChineseRecursiveTextSplitter",
     "validate_uuid",
     "deep_update",
     "_decorate_vector_type",

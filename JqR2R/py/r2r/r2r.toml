@@ -90,7 +90,6 @@ concurrent_request_limit = 256
 provider = "litellm"
 concurrent_request_limit = 64
   [completion.generation_config]
-    provider = "openai"
     model = "openai/Qwen25B32"
     concurrent_request_limit = 32
     api_base = 'http://10.1.150.105:9997/v1'
@@ -101,7 +100,7 @@ concurrent_request_limit = 64
     add_generation_kwargs = { }
 
 [ingestion]
-provider = "r2r"
+provider = "jq"
 document_summary_model = "openai/Qwen25B32"
 vision_img_model = "openai/qwenvl"
 vision_pdf_model = "openai/qwenvl"

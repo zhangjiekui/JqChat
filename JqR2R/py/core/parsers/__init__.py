@@ -7,6 +7,7 @@ __all__ = [
     "BMPParser",
     "DOCParser",
     "DOCXParser",
+    "JqDOCXParser",
     "ImageParser",
     "ODTParser",
     "VLMPDFParser",

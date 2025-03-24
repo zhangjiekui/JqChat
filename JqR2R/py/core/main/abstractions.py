@@ -19,6 +19,7 @@ from core.providers import (
     R2RAuthProvider,
     R2RCompletionProvider,
     R2RIngestionProvider,
+    JqIngestionProvider,
     SendGridEmailProvider,
     SimpleOrchestrationProvider,
     SupabaseAuthProvider,
@@ -38,7 +39,7 @@ if TYPE_CHECKING:
 class R2RProviders(BaseModel):
     auth: R2RAuthProvider | SupabaseAuthProvider | JwtAuthProvider
     database: PostgresDatabaseProvider
-    ingestion: R2RIngestionProvider | UnstructuredIngestionProvider
+    ingestion: R2RIngestionProvider | UnstructuredIngestionProvider | JqIngestionProvider
     embedding: (
         LiteLLMEmbeddingProvider
         | OpenAIEmbeddingProvider

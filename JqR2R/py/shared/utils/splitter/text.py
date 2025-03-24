@@ -25,12 +25,15 @@ import copy
 import json
 import logging
 import pathlib
+import math
 import re
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from enum import Enum
 from io import BytesIO, StringIO
 from typing import (
+    List,
+    Union,
     AbstractSet,
     Any,
     Callable,
@@ -417,6 +420,23 @@ def _split_text_with_regex(
         splits = list(text)
     return [s for s in splits if s != ""]
 
+def _split_text_with_regex_from_end(
+        text: str, separator: str, keep_separator: bool
+) -> List[str]:
+    # Now that we have the separator, split the text
+    if separator:
+        if keep_separator:
+            # The parentheses in the pattern keep the delimiters in the result.
+            _splits = re.split(f"({separator})", text)
+            splits = ["".join(i) for i in zip(_splits[0::2], _splits[1::2])]
+            if len(_splits) % 2 == 1:
+                splits += _splits[-1:]
+            # splits = [_splits[0]] + splits
+        else:
+            splits = re.split(separator, text)
+    else:
+        splits = list(text)
+    return [s for s in splits if s != ""]
 
 class TextSplitter(BaseDocumentTransformer, ABC):
     """Interface for splitting text into chunks."""
@@ -1760,6 +1780,109 @@ class RecursiveCharacterTextSplitter(TextSplitter):
                 f"Language {language} is not supported! "
                 f"Please choose from {list(Language)}"
             )
+
+class _JqTokenizerWrapper():
+    def __init__(self,tokenizer):
+        self.tokenizer = tokenizer
+
+    _max_length_equal_32_bit_integer: int = 2**32
+    def tokenize(self, text: str) -> List[int]: 
+        token_ids_with_start_and_end_token_ids = self.tokenizer.encode(text,max_length=self._max_length_equal_32_bit_integer,truncation="do_not_truncate")
+        return token_ids_with_start_and_end_token_ids
+    
+    def de_tokenize(self,ids: List[int]) -> str:
+        return self.tokenizer.decode(ids)
+    
+    def tokens_len(self, text: str)-> int:
+        if len(text)==0:
+            return 0
+        return len(self.tokenize(text))
+
+    
+    def __call__(self, text: str) -> List[int]:
+        return self.tokenize(text)
+
+class JqChineseRecursiveTextSplitter(RecursiveCharacterTextSplitter):
+    def __init__(
+            self,
+            tokenizer:None,
+            chunk_size: int = 500,
+            chunk_overlap: float = 0.2,
+            separators: Optional[List[str]] = [
+                                                "\n\n",
+                                                "\n",
+                                                "。|！|？",
+                                                "\.\s|\!\s|\?\s",
+                                                "；|;\s",
+                                                "”|》\s",
+                                                "，|,|、\s", #还不能删除逗号作为分隔符，否则有些句子无法分割
+                                                " " # 有些可能没有符号分割的，如方法名列表，考虑用空格分
+                                              ],
+            keep_separator: bool = True,
+            is_separator_regex: bool = True,
+            add_start_index: bool = True,
+            strip_whitespace: bool = True,
+            length_function: Callable[[str], int] = None,            
+            **kwargs: Any,
+    ) -> None:
+        """Create a new TextSplitter."""
+        if isinstance(chunk_overlap, float):
+            if not 0.0 < chunk_overlap < 1.0:
+                raise ValueError(f"Chunk overlap ratio/percent must between (0.0, 1.0), but got a value of {chunk_overlap}")                
+            chunk_overlap = math.floor(chunk_size * chunk_overlap)
+
+        if chunk_overlap >= chunk_size:
+            raise ValueError(
+                f"Got a larger chunk overlap ({chunk_overlap}) than or equal to chunk size "
+                f"({chunk_size}), should be smaller."
+            )
+        if tokenizer is None:
+            from jqcode.jq_agent.c0_init_env_models import env_models_instance
+            tokenizer = env_models_instance._tokenizer
+
+        self.tokenizer_wrapper = _JqTokenizerWrapper(tokenizer)  
+        super().__init__(chunk_size=chunk_size,chunk_overlap=chunk_overlap,separators=separators,is_separator_regex=is_separator_regex,add_start_index=add_start_index,keep_separator=keep_separator, strip_whitespace=strip_whitespace, length_function = self.tokenizer_wrapper.tokens_len,**kwargs)
+        
+
+    def _split_text(self, text: str, separators: List[str]) -> List[str]:
+        """Split incoming text and return chunks."""
+        final_chunks = []
+        # Get appropriate separator to use
+        separator = separators[-1]
+        new_separators = []
+        for i, _s in enumerate(separators):
+            _separator = _s if self._is_separator_regex else re.escape(_s)
+            if _s == "":
+                separator = _s
+                break
+            if re.search(_separator, text):
+                separator = _s
+                new_separators = separators[i + 1:]
+                break
+
+        _separator = separator if self._is_separator_regex else re.escape(separator)
+        splits = _split_text_with_regex_from_end(text, _separator, self._keep_separator)
+
+        # Now go merging things, recursively splitting longer texts.
+        _good_splits = []
+        _separator = "" if self._keep_separator else separator
+        for s in splits:
+            if self._length_function(s) < self._chunk_size:
+                _good_splits.append(s)
+            else:
+                if _good_splits:
+                    merged_text = self._merge_splits(_good_splits, _separator)
+                    final_chunks.extend(merged_text)
+                    _good_splits = []
+                if not new_separators:
+                    final_chunks.append(s)
+                else:
+                    other_info = self._split_text(s, new_separators)
+                    final_chunks.extend(other_info)
+        if _good_splits:
+            merged_text = self._merge_splits(_good_splits, _separator)
+            final_chunks.extend(merged_text)
+        return [re.sub(r"\n{2,}", "\n", chunk.strip()) for chunk in final_chunks if chunk.strip()!=""]
 
 
 class NLTKTextSplitter(TextSplitter):

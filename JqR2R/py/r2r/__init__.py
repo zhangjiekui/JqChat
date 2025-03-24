@@ -1,7 +1,8 @@
 import os,sys,pathlib
+os.environ['OPENAI_API_KEY']='abc123'
 project_root_path = pathlib.Path().resolve()
 sys.path.append(str(project_root_path))
-print(f"已将{project_root_path}添加到sys.path中")
+print(f"已在r2r __init__文件中直接将{project_root_path}添加到sys.path中")
 
 from importlib import metadata
 from sdk.async_client import R2RAsyncClient

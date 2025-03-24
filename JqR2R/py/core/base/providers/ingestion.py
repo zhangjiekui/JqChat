@@ -21,6 +21,7 @@ class ChunkingStrategy(str, Enum):
     CHARACTER = "character"
     BASIC = "basic"
     BY_TITLE = "by_title"
+    JQ = "jq"
 
 
 class IngestionMode(str, Enum):
@@ -32,7 +33,7 @@ class IngestionMode(str, Enum):
 class IngestionConfig(ProviderConfig):
     _defaults: ClassVar[dict] = {
         "app": AppConfig(),
-        "provider": "r2r",
+        "provider": "jq",
         "excluded_parsers": ["mp4"],
         "chunking_strategy": "recursive",
         "chunk_size": 1024,
@@ -146,7 +147,7 @@ class IngestionConfig(ProviderConfig):
 
     @property
     def supported_providers(self) -> list[str]:
-        return ["r2r", "unstructured_local", "unstructured_api"]
+        return ["r2r", "jq","unstructured_local", "unstructured_api"]
 
     def validate_config(self) -> None:
         if self.provider not in self.supported_providers:
