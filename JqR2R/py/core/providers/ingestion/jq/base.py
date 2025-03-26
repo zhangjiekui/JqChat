@@ -217,13 +217,20 @@ class JqIngestionProvider(IngestionProvider):
             chunks = splitter.create_documents([parsed_document])
 
         elif isinstance(parsed_document, DocxDocumentObject):
-            from jqcode.jq_readers.jqkj_readers import JqkjDocxReader
+            from jq_readers.jqkj_readers import JqkjDocxReader
+            from shared.utils.splitter.text import JqChineseRecursiveTextSplitter
+            from jq_splitters.jq_docx_tree_text_splitter import JqkjDocTreeTokenTextSplitter
+
             reader = JqkjDocxReader()
-            doc_tree,df_table_list = reader.parse_docx_into_tree(parsed_document,file_path="/data/projects/JqChatV2/JqChat/JqR2R/py/doc1.docx")
-            from jqcode.jq_agent.c0_init_env_models import env_models_instance
-            doc_tree_spiltter = env_models_instance.doc_tree_spiltter
+            makeup_file_path="/app/docs/doc1.docx"
+            doc_tree,_ = reader.parse_docx_into_tree(parsed_document,file_path=makeup_file_path)          
+            
+            text_splitter = JqChineseRecursiveTextSplitter(self._tokenizer,chunk_size=self.embedding_model_max_tokens,chunk_overlap=0.2)
+            doc_tree_spiltter = JqkjDocTreeTokenTextSplitter.from_defaults(cr_text_splitter=text_splitter)
+            
+
             from llama_index.core.schema import TextNode
-            lm_base_node = TextNode(text='',metadata={"source":"/data/projects/JqChatV2/JqChat/JqR2R/py/doc1.docx"})
+            lm_base_node = TextNode(text='',metadata={"source":makeup_file_path})
             split_results = doc_tree_spiltter._parse_node_on_tree(lm_base_node,doc_tree)
             chunks = [node.text for node in split_results]
 

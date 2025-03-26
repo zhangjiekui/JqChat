@@ -582,9 +582,9 @@ class OpenAICompletionProvider(CompletionProvider):
                 model_value = args.pop(
                     "model"
                 )  # Remove model before passing args
-                response = await client.complete(**args)
+                response = await client.complete(**args,timeout=30000)
             else:
-                response = await client.chat.completions.create(**args)
+                response = await client.chat.completions.create(**args,timeout=30000)
             logger.debug("Async task executed successfully")
             return response
         except Exception as e:

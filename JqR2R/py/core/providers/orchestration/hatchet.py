@@ -88,7 +88,8 @@ class HatchetOrchestrationProvider(OrchestrationProvider):
             from core.main.orchestration.hatchet.ingestion_workflow import (  # type: ignore
                 hatchet_ingestion_factory,
             )
-
+            service.providers.orchestration.orchestrator.config.host_port = "10.1.150.105:7077"
+            service.providers.orchestration.orchestrator.config.server_url = "http://10.1.150.105:7274"
             workflows = hatchet_ingestion_factory(self, service)
             if self.worker:
                 for workflow in workflows.values():

@@ -1,0 +1,541 @@
+2023年全球医疗行业展望节选
+2023年全球医疗行业展望
+目录综述与展望5 虚拟医疗服务6 数字化转型 11 可持续性 19 联系我们 26 尾注 27
+2023年全球医疗行业展望
+综述与展望
+新冠疫情永久改变了全球医疗行业，它不仅加快了新技术和医疗服务
+模式的应用，提高了对可持续性和韧性的关注；同时，它还加剧了现
+有的劳动力挑战和医疗公平性方面的全球差距。
+全球70%以上的人口都已接种至少一针新冠疫苗，医疗行业现在面临着决定其在2023年及以后发展路径的关键问题。未来一年，医疗机构、医疗行业其他参与者、政府和监管机构必须思考如何： • 借助疫情期间的虚拟医疗服务经验，增加问诊渠道并提高诊疗质量 • 利用技术降低成本，减少对医护人员的需求，同时改善患者护理服务 • 减少碳排量，从而帮助减轻影响公众健康的一些环境危害 •通过重新划定
+工作范围、更多地采用远程工作并且提供心理健康服务等支持，缓解医护人员日益沉重的工作压力• 未雨绸缪，为可能的大流行病、公共
+卫生事件或自然灾害，更好地准备设施设备、供应链和合作关系新冠
+疫情尚未退出全球舞台，但公共健康专家愈加认为它正成为一种地方
+性或长期性流行病，就像流感。这意味着该病毒虽然还存在，但更易
+于管理和预测。
+虽然2022年底全球每天都报道几十万例新增感染，甚至还有几百例死亡，但新疫苗已显著降低了新冠病毒的死亡率。2022年期间，世界卫生组织没有公布任何属于“需关注变种”的新菌株。
+医疗行业的利益相关者应保持警惕并灵活应对新冠病毒以及其他传染
+病的感染高峰和低谷。
+同时，新冠疫情也教会医护人员如何适应远程办公、虚拟问诊以及医
+疗用品、人员和服务的短缺。事实上，长期持续的新冠疫情是挑战，
+
+也是机遇，医疗行业可以借机进行彻底改革，充分利用疫情前就已出现的新兴趋势，例如消费者偏好转变、患者行为变化和科技飞速发展；并持续探索临床创新和新型医疗服务模式，其中像远程医疗等在疫情期间已被成功地广泛应用。如果医疗行业抓住这些机遇，定能变革医疗服务模式、提升患者体验并改变医院和其他相关机构的工作方式，同时减少医疗不公现象并加强灵活性。在本期2023展望中，我们将介绍对这一转型至关重要的五大关键领域，并提出意见和建议，以帮助专业人士引领转型。
+2023年全球医疗行业展望 | 虚拟医疗服务
+虚拟医疗服务
+新冠疫情引发了人们对于目前医疗模式可持续性的新担忧，尤其是对按服务付费（ fee-for-service）体制。就其性质而言，按服务付费意味着等着病人生病，这对医疗支付方可能会比较昂贵，对患者也不利。这场疫情就迅速击垮了这一模式。
+同时，此次疫情也证实远程互动可以在日常护理以及潜在的下一次健康危机中改善患者医护服务以及降低医疗成本。虚拟医疗服务——包括加强医疗协调和患者教育的技术以及远程医疗和居家护理——整合数字技术，以应对医疗生态系统所面临的挑战，例如医疗公平性、医疗成本上涨以及劳动力短缺。此外，它还能变革全球的医疗服务模式。¹
+更重要的是，由于新冠疫情，医疗机构和公众出于必要，对虚拟医疗的兴趣度和接受度也被加速提高，心理健康就是很好的例证。疫情促使许多心理健康治疗转移到虚拟场景中进行，许多患者也更青睐这种方法。
+在未来，互联互通的体系以及在线数据收集将加强医疗参与者之间的合作，治疗将变得更加精确，复杂度更低，侵入性更小，成本也更低。²
+对于这一医疗新未来的投资早已开始。根据对医疗行业首席信息官和技术高管的调研，由于医疗机构越发关注医疗结果和价值，2022年虚拟医疗支出预计将增长39%。³
+虽然近年来患者对于虚拟医疗工具的兴趣不断增加，但一些医生仍不
+
+确定如何在临床环境中充分使用该技术，还有些医生担心会失去面对面护理和医患关系中不可或缺的人际连接。但这些都极易解决，虚拟医疗能够传达、定制、加快和增强医疗服务能力。只有在护理过程中保留人为因素，虚拟医疗才能真正发挥作用。患者必须将其视为对护理的补充完善，而非缺乏人际互动的阻碍。实现这种平衡需要医护人员以及患者的共同投入。4
+6
+2023年全球医疗行业展望 | 虚拟医疗服务
+虚拟医疗的潜力
+虚拟医疗服务不仅仅是实现视频问诊或电话会议预约，它能补充甚至替代面对面服务。其首要目标是拓宽患者和医生对于关键医疗服务的获取渠道、改善临床结果、提升消费者参与度、加强护理协调、降低成本并提高整个护理流程的效率。
+这些包括医疗机构和患者之间的直接互动（直接面向患者的医护）以及技术，例如远程中风治疗、数字化重症监护病房（e-ICU）和专家咨询，其中医疗机构之间可共享信息（医疗机构对医疗机构的转诊）。5
+拥抱虚拟医疗的第一步就是使用电子病历（EHR），它能提供更全面的人口群体以及个人健康状况。
+但是，医疗行业必须在此基础上采用更多的技术来提升医疗服务并推动创新。虚拟医疗能够为患者提供更优质的服务以及预防护理，帮助他们预防疾病。
+除完善服务和保障患者健康之外，虚拟医疗解决方案还能解决医疗行业面临的部分艰巨挑战，包括：
+• 医疗公平性：虚拟医疗可以为弱势群体和未享受到基本服务的群体提供更公平的诊断和治疗机会。
+• 医疗成本：实施远程监测进行预防和早期干预可以降低或扭转不断增加的医疗成本。
+• 环境影响：虚拟场景可以减少对于一次性产品的需求。虚拟医疗能够适应不断变化的环境情况，同时提供最佳护理方案。它无需转运患者，因此能减少相关废弃物和污染。
+
+• 劳动力：借助虚拟医疗，医术超群的临床医生和专家可以注重治疗，摆脱行政职责，从而专注于自己的专业领域，造福更广大的患者群体。从短期看，虚拟医疗可以解决临床医生职业倦怠。通过远程办公，医生可以居家诊断并治疗许多病例，有效减少工作相关的压力；从长期看，医院可以通过远程的临床和非临床员工提供医护服务。• 监管：虚拟医疗和新兴技术可以改善监管结果，例如监管机构在新冠疫情期间使用的疫苗监控。同时，医疗设施的数字化以及向电子病历的转变也面临着更严密的审查。在美国，数据存储供应商必须具备特定级别的速度和响应能力。其他一些国家则要求患者数据必须储存在境内。
+虚拟医疗的优势
+医疗虚拟化既改变了医疗服务的性质，又吸引了新的市场参与者。大型医疗机构一直投资于小型医疗公司，例如，Mayo Clinic以及Kaiser Permanente向居家医疗风投公司Medically Home Group投资了1.1亿美元。6
+与此同时，虚拟医疗也吸引了科技和零售巨头的目光。消费电子产品零售商Best Buy于2021年11月向虚拟护理解决方案提供商Current Health注资4亿美元；7苹果公司8 与Zimmer Biomet合作开发远程传感器，通过智能电话和智能手表追踪患者在膝关节置换手术后的康复情况。9
+随着越来越多的数字医疗技术通过云计算、机器学习和联网设备走进临床流程，医疗成本显著降低。保险公司的一项研究发现，数字医疗技术可以将急诊室利用率降低9%，患者住院率降低17%，可为每位患者每月节约共641美元。10 此外，技术也能帮助解决重症监护医生短缺的问题。例如，日本昭和大学医院正通过按需、双向的视听通讯连接e-ICU与远程护理中心，便于患者的床边护理团队与e-ICU临床团队进行磋商。11 7
+2023年全球医疗行业展望 | 虚拟医疗服务 2021年，德勤与印度哈里亚纳邦的卡纳尔地区合作，通过“扩展医院病房”计划，为农村地区表
+
+现出新冠肺炎轻微症状的患者提供虚拟的家庭护理设施，以减轻卫生系统的负担。12技术也能创造更大的灵活性。患者和医疗机构可选择结合医院治疗和居家护理的混合服务模式。在创新的初级护理模式下，由临床医生和两到三名医疗助理组成的高级医疗团队亲自问诊，便于医疗机构更有效地部署临床医生资源。在早期应用中，患者、医生和相关工作人员的满意度均有所提高。13 在家庭护理已经成熟的瑞士，医疗机构正在试验下一代远程护理：居家医疗。在这种模式下，先前通常需要住院治疗的患者可在家中接受治疗。通过可穿戴传感器和设备，患者可得到全天候的监测和指导，医生借助远程医疗技术与患者沟通，专业护理人员也会在需要时上门护理。居家医疗技术也能补充现有的治疗手段。以仍必须在传统医院进行的大手术为例（见图1），该项服务允许患者在大手术后进行居家恢复，改善了患者的治愈流程，降低了医疗机构的长期护理成本。14整个流程由药房、保险公司和
+其他利益相关方合作完成。
+图1：居家医疗居家医疗是标准家庭护理的延伸，患有需住院治疗疾病的患者可在其家中接受治疗。这种去中心化模式以患者为核心，需要医院、医生、药房和保险公司等不同利益相关者的合作。
+居家医疗通过传感器/可穿戴由专门的护理人设备进行全天候员上门探视监测所有利益相关者之间进行与医院医生进行远程数据交换医疗交流与医疗保险公司合作资料来源：德勤分析 8
+2023年全球医疗行业展望 | 虚拟医疗服务居家监测系统能够缓解全球老龄化人口带来的大量需求。例如，将智能手表等技术与远程传感器和监控器相连接，可以让老龄人口居家养老，减少急诊室就诊，改善患者的心理健康并提高医护质量。因此，全球远程监测设备市场有望从2021年的约300亿美元增长到2028年的1,010亿美元以上，年增长率18.9%。15到2024年，德勤预测随着新产品陆续上市及医疗人员接受度的提升，全球消费医疗可穿戴设备的出货量将攀升至约4.4亿台。
+
+2023年全球医疗行业展望 | 虚拟医疗服务居家监测系统能够缓解全球老龄化人口带来的大量需求。例如，将智能手表等技术与远程传感器和监控器相连接，可以让老龄人口居家养老，减少急诊室就诊，改善患者的心理健康并提高医护质量。因此，全球远程监测设备市场有望从2021年的约300亿美元增长到2028年的1,010亿美元以上，年增长率18.9%。15到2024年，德勤预测随着新产品陆续上市及医疗人员接受度的提升，全球消费医疗可穿戴设备的出货量将攀升至约4.4亿台。其中包括面向一般消费者的智能手表以及面向患者的医疗级可穿戴设备（通常称为智能贴片），可以经医疗保健专业人员开具处方后购买，也可以自行购买。16在疫情期间心理健康服务是虚拟医疗的首要应用场景，越来越多的移
+动用户成为主要消费群体。17患者可以借助移动
+应用帮助管理焦虑或抑郁等心理健康问题，或者将其与传统疗法结合使用，例如通过线上聊天、视频或电话等渠道获
+得心理健康专业人士的支持，以及在这些应用的引导下做出行为改变，比如练习正念和冥想，提升总体幸福感。
+目前市场上已出现接近20,000个心理健康应用，许多开发人员正与其他线上服务和应用合作开发新产品，例如Snapchat和Bumble，为消费者提供更多服务。18 德勤预测，全球在移动心理健康应用上的支出每年将激增32%，从2019年前10个月的2.03亿美元到2020年同期增至2.69亿美元，并将继续以每年约20%的速度增长（见图2）。19图2：2019至2022年全球心理健康和保健移动应用支出（百万美元）500 491 
+400 
+372 300 269 
+203 200 100 0 2019 2020
+2021 
+2022
+注：2021年和2022年支出为预测数据。
+资料来源： SensorTower, Mobile Wellness Market Trends 2021 9
+
+实施虚拟医疗医疗行业在完全接受虚拟医疗之前，必须更好地评估总体人口健康情况，并加强机构之间的协作以快速构建并分享数据。由于之前尚未对牵头人选——政府机构、保险公司或私营企业——达成统一，这一关键步骤被延误了。此外，医疗机构必须做出必要投资，并确定这些投资的额外收入。如果虚拟医疗将变革医疗服务方式，临床医生的参与必不可少。虚拟医疗不仅仅是工具，而是代表全新的交互式、综合性、拓展性医疗服务方法。但是，对于任何形式的数字化技术，尤其是虚拟医疗，信任都是不可或缺的要素。医疗行业长期以来一直在努力实现持续的高度信任，特别是在种族和民族多样化的人群中。医疗机构可与社区组织合作确保医疗服务满足当地人群的需求，从而加强对虚拟医疗的信任。虚拟医疗的设计需要考虑多样化人口的需求，并依靠可触及这些群体的服务渠道。20 在未来，这些新兴技术将被纳入分级诊疗体系，各个层级将解决不同的医疗问题。
+医疗机构的难题评估医疗机构目前在应用虚拟医疗方面所处的阶段，对于构建预测工具来定义和投资以资助未来能力至关重要。高管们必须思考一些关键问题，例如： • 如何充分与电子病历公司整合？
+• 虚拟医疗需求如何与患者病历以及患者和临床医生的经验相结合？
+• 患者是否选择了正确策略？如果患者不来复诊怎么办？
+• 是否能通过第二诊疗意见来扩大内部医护服务？
+医疗行业领先机构在采用虚拟医疗服务时应考虑的问题虚拟医疗服务不是传统医疗的替代，相反，它提供了前所未有的医疗服务新方法。在采用虚拟医疗时，医疗机构应考虑以下步骤： • 培训、支持并协助医生在虚拟医疗过程中注入人为因素 • 重新思考现有医护模式并评估
+如何优先进行虚拟医疗投资以发展未来护理模式 • 确保虚拟医疗能够满足所有患者群体的需求，并为他们所使用 • 全面了解接收和提供医护的人道体验，运用完善的方法重新设计工作流程、设计技术应用和医护实施团队，遵循细致的变更管理计划 • 让医生、患者和其他医护团队成员参与，珍视他们的付出，
+
+如何优先进行虚拟医疗投资以发展未来护理模式 • 确保虚拟医疗能够满足所有患者群体的需求，并为他们所使用 • 全面了解接收和提供医护的人道体验，运用完善的方法重新设计工作流程、设计技术应用和医护实施团队，遵循细致的变更管理计划 • 让医生、患者和其他医护团队成员参与，珍视他们的付出，同时设计和实施以人为本的虚拟医疗服务和工作流程• 考虑可能影响医护模式的监管和政策问题，倡导灵活的虚拟医疗设计，支持相关的充分报销10
+2023年全球医疗行业展望 | 数字化转型
+数字化转型
+新冠疫情使全球医疗系统不堪重负，导致患者人数激增，医疗需求上涨，医疗劳动力短缺以及供应链紧张。医疗机
+构必须采用技术解决方案帮助克服这些挑战。
+先前在远程医疗和电子病历等方面反应迟缓的医疗机构正加速采用这
+些新技术，以期降低成本，高效处理变化的需
+求模式，解决临床医生短缺并更好地应对新一轮的全球医疗危机。
+与此同时，全球每三个成年人中就有一人患有慢性疾病，每四个人就有一人患有精神疾病并且75%以上的医疗消费者希望得到个性化护理，这些都加重了医疗系统的负担。1护理成本也不容小觑，在2010到2030年的20年间，全球仅因心理健康问题造成的经济产出累计损失预计将达到16.3万亿美元。2
+但医疗能力仍受限于分散的出资和报销、过时的治疗模式、过度的行
+政管理、流程效率低下和医疗劳动力短缺。
+由于行政管理冗杂、定价失败以及医疗服务质量差，美国25%的医疗保健支出（共计9,350亿美元）没有物尽其用。3此外，有42%的医生反映超负荷工作，到2035年，全球医护人员缺口将达到1,210万。4因
+此，越来越多的机构转向
+采用数字化技术来提高效率并降低医疗成本。
+德勤美国消费者调研指出，在过去五年，患者对于虚拟和数字医疗工具的需求稳步增长，但医生的采用率却参差不齐（见图1）。有些人
+
+不确定如何在临床环境中充分发挥虚拟医疗的作用，而另一些人则担心会失去面对面医护中不可或缺的人际连接。5 112023年全球医疗行业展望 | 数字化转型图1：视频问诊的采用率上
+升，但其他虚拟医疗方式的应用停滞不前
+您在主要工作场景中使用以下哪些虚拟医疗方式？（选择所有适用选项） 2018 2020 2022 14%
+视频问诊 19% 67%
+通过数字化应用或短信与患者交流 N/A N/A 30%
+医生之间的虚拟咨询
+17% 22% 23%
+患者通过数字化应用报告结果 N/A 20% 11% 在其他机构或部门（如ICU或SNF）6% 
+13%
+进行远程患者监测
+11%
+居家远程监测患者 6% 12% 
+6%
+使用能够回答患者常见问题的聊天N/A 4% N/A
+机器人或虚拟助手
+将患者可穿戴设备中的数据纳入患
+5%
+者的医疗记录
+10% 
+4%
+注：专业护理机构（SNF）；可穿戴设备（从健身、睡眠质量、基本
+心率活动和其他消费者健康追踪设备中被动收集数据）；医生之间的
+虚拟咨询（医生之间借助虚拟通讯工具或门户相互咨询患者情况）；患者报告结果（患者通过数字应用或短信主动提交相关数据）。2018年受访人数为624人；2020年受访人数为660人。
+资料来源：德勤在2018年、2020年和2022年开展的美国医生调研。
+12
+2023年全球医疗行业展望 | 数字化转型
+新冠疫情也带来一线机遇——让此前很难被患者或临床医生接受的数
+字化和远程医疗加速发展。
+例如，英国长期以来在开发虚拟咨询框架方面停滞不前，但由于疫情
+造成医护人员短缺以及脱欧工作限制等因素，终于取得了进展。到2023年，英国将透过其国家医疗服务体系（NHS）为每10万人口提供40到50张虚拟病床。6尽管世界许多地区已经解除封控和其他限制，远程医疗的应用仍维持在疫情前水平。
+
+造成医护人员短缺以及脱欧工作限制等因素，终于取得了进展。到2023年，英国将透过其国家医疗服务体系（NHS）为每10万人口提供40到50张虚拟病床。6尽管世界许多地区已经解除封控和其他限制，远程医疗的应用仍维持在疫情前水平。例如， Kaiser Permanente发现其在疫情前已有15%的美国会员使用虚拟顾问，在疫情爆发期间达到80%的峰值，现在仍有约35%的会员在使用虚拟顾问。在欧洲与亚洲也出现了类似的情况。欧洲议会近期宣布EU4Health健康计划，鼓励电子病历共享、电子处方和远程医疗。沙特阿拉伯正推广相关体系，使偏远地区的患者通过智能手机应用与初级保健中心和医院建立联系。7 对于心理健康等专业领域，虚拟医疗由于其便捷性、灵活性以及医生和患者的良好体验而大受欢迎。89%的心理健康就诊采用虚拟方式进行。经妥善设计的虚拟服务模式能够提供与面对面问诊同等的临床疗效，在某些情况下甚至能带来更好的治疗结果以及更高的患者满意度。
+许多国家的患者已经习惯于管理自己的治疗途径。家庭新冠试剂以及疫苗接种安排和报告的广泛使用，也使许多人对其他类型的自测诊断和疾病筛查更加放心。
+在后疫情时代，40%以上的患者表示愿意继续使用远程医疗（见图2）。8这一需求将鼓励医疗机构投资于数字化转型，为患者提供能够满足其需求和偏好的个性化服务。
+这些相互连接的系统可以使患者实现自行选择与操控，改善医疗服务，增加问诊渠道，实现更快速高效的管理，并降低成本。
+图2：去年曾接受过虚拟医疗服务的消费者将继续采用虚拟或混合模式解决未来的部分医疗需求。
+当新冠疫情缓解后，您倾向于选择以下哪种方式进行问诊？
+完全虚拟
+大部分虚拟
+虚拟与面诊各一半
+大部分面对面
+完全面对面
+不知道/不适用
+慢性/持续性疾病检查
+8% 
+15%
+
+22% 24% 27% 4%
+新症状和问题检查 6% 14% 22% 27% 29%
+紧急问题检查 5% 8% 13% 21% 50%
+定期全身检查（例如每年体检） 5% 7% 12% 24% 50%
+注：受访者为去年（作为患者或者陪伴患者）参加过至少一次虚拟问诊的人员。资料来源：2022 Connectivity and Mobile Trends，第三版
+13 
+2023年全球医疗行业展望 | 数字化转型
+洞悉数字化转型深度
+许多国家在采用电子病历方面取得进展。英国国家医疗服务体系计划
+在2025年前将电子病历推广至国内所有医院和社区诊所。9虽然这样做能够强化数字架构，但也带来互操作性的挑战——例如，如何将关联医院的系统相互连接，并扩展至初级保健中心等外部机构。
+再者，电子数据的质量和可比性并不一致。非结构化数据或“脏数据”不能全面反映患者的健康状况。大多数机构采用标准数据集，构建数据“湖”来整合数据，并使用最先进的人工智能工具获取重要见解。
+尽管如此，在许多国家，重要医疗信息仍然使用纸质媒介记录，通常通过传真、邮件、社交软件或患者随身携带以进行共享。
+越来越多的医疗机构使用健康信息交换（HIEs）系统，以交换电子医疗信息。新的支付和报销方式加大了对护理协调的关注。例如，健康信息交换系统能够帮助医疗机构避免不必要的再次入院和错误用药，改善诊断结果，减少重复测试。10信息交换是标准化技术，能够帮助医疗机构和患者建立高效联系，并使医疗服务覆盖多个医疗途径、医疗场景和地理区域。
+芬兰已设立区域内电子病历共享流程。爱沙尼亚作为实施数字医疗的典范，其医疗数字化历程已达12年，99%以上的医疗数据已实现电子化。爱沙尼亚居民能够通过线上门户访问他们的医疗记录，普遍使用视频咨询和电子处方。
+患者无需亲自就诊就能更新处方，而且也不必前往药房，大多数处方药品能够直接送至患者家中。11
+
+同时，美国卫生与公众服务部呼吁在2024年前建立全国性的可互操作医疗IT生态系统，提供跨产品和机构的卫生数据，使数据接收方更有意义地使用这些数据。该系统旨在降低成本、改善人口健康、推动创新，并赋能消费者。后续将对其进行持续更新，让消费者能够与其所选的医疗机构安全地分享信息。12
+迁移上云
+财务压力是医疗行业数字化转型中的一把双刃剑。一方面，技术能够降本增效；另一方面，将系统转移到新的数字平台需要资金投入，这将拖慢云解决方案的采用。
+在英国和斯堪的纳维亚国家，利润压力推动了医疗机构的数字化进
+程，而在美国和澳大利亚，为维持利润水平，新技术的采用却受到限
+制。相应地，定价方式正在转变为以订阅或使用为基础，并从资本支出转变为运营支出。例如，德勤与Amazon Web Services（AWS）合
+作使用云上第三方数据，创建高效、稳定、安全的医疗数据生态系统，以改善人口健康、完善报销流程并提供其他真实世界洞察。13
+尽管如此，大多数医疗行业高管均认可数字化带来的长期益处。一项针对6个国家内近400名医疗行业高管的调查显示，三分之二的受访者希望能在一年内将IT基础设施迁移上云，96%的受访者计划在三年内达成该目标。14
+数字化的焦点大多都偏向运营层面，尤其是医疗的管理和服务，然
+而，技术（特别是自动化）的采用也正在降低成本，完善临床编码、
+计费、调度、工资支出和采购等后台流程。
+14
+2023年全球医疗行业展望 | 数字化转型
+新冠疫情加速云技术的应用，这些技术旨在加强业务运营并推动更多
+消费者进入数字领域进行互动。这一趋势迫使大型电子病历供应商将其产品和服务迁移上云，并与客户关系管理（CRM）和企业资源规划（ERP）供应商建立伙
+伴关系。
+2022年6月，甲骨文公司完成了对塞纳公司（Cerner）的收购，计划
+在美国乃至全球医院和卫生系统市场扩展其云
+
+业务。甲骨文公司表示，通过此次收购，公司可为医护人员提供新一代信息，从而改善治疗决策和治疗效果，同时降低医疗机构的行政工作量，保护患者隐私并降低成本。15 2021年12月，CVS Health和微
+软宣布建立战略联盟，开发创新解决方案帮助消费者改善健康状况。该合作旨在助力CVS Health为消费者提供基于数据的定制体验。
+2021年，信诺公司（Cigna）与Majesco合作以加速其数字化转型。2022年7月，信诺公司开始使用Majesco旗下L&A Group的云平台补充其现有的健康解决方案组合。16
+此外，还有许多风投机构、私募股权公司和医疗机构正在投资初创平台。2021年，全球医疗技术投资高达440亿美元，是上一年的两倍（见图3）。17大型科技平台公司能够通过对现有系统和服务模式的
+现代化改造帮助医院和医疗系统提高效率并快速扩张，运用平台解决医疗公平性问题。18图3. 医疗技术投资持续以空前速度增长
+医疗技术风投基金（十亿美元） 29.1 14.0 8.2 1.1 1.5 2.1 4.1 4.7 4.6 5.8
+7.4
+2011 2012 2013 2014 2015 2016 2017 2018 2019 2020 2021 资料来源：德勤对Rock Health Digital Health Funding Database的分析。
+15
+2023年全球医疗行业展望 | 数字化转型
+然而，迁移上云将引发环保担忧。有预测显示，云计算所产生的碳排放已超过航空业——一个数据中心的耗能相当于5万个家庭的耗能。19公司在评估其间接排放或范围3排放时，也必须衡量其合作伙伴、供应商、供货商和其他第三方的碳排放。AWS、 Google Cloud和Microsoft Azure都已推出工具，助力客户评估并减轻其碳排放。20
+德勤正与国际医院联合会协作，为医疗机构开发可评估碳排放的仪表
+盘，目前已发布可持续性加速器工具的测试版
+本。请参阅本报告的“可持续性”章节，以了解更多关于该工具的信
+息。
+新兴技术
+人工智能、远程医疗、区块链和监测设备（如传感器、可穿戴设备和
+可服用设备）等新兴技术能够实时、持续地为
+
+我们提供健康和环境相关数据，它们重新定义了医疗行业的未来。医疗公司能够利用这些创新技术提高诊断的准确
+性，定制治疗方案，预测风险或恶化情况并进行早期干预。
+疫情期间，远程医疗得到大众认可并不断发展，它整合了患者门户、
+远程诊疗、移动医疗、视频会议和远程患者监测。目前，患者可频繁
+使用门户网站挂号，并通过智能手机接收检查结果。远程医疗应用有望在未来5到10年内继续
+扩展。
+几乎半数的消费者表示其在2021年至少参加过一次虚拟问诊。尽管许
+多消费者的初衷是为了避免新冠肺炎感染，但
+他们发现虚拟问诊确实更为便捷，比如能够根据自身日常安排灵活选择预约时间。使用虚拟预约问诊的消费者中，有92%表示满意，48%表示非常满意。21
+医疗机构整合人工智能与云上储存的电子病历等数据，开发主动持续
+的医护系统以保障消费者健康，而非在消费者已患病时再进行偶发性医疗服务。由约翰·霍普金斯医疗卫生体系（Johns Hopkins Health System）新近开发的人工
+智能系统能够搜索医疗记录和临床记录，在症状出现之前识别出有感
+染风险的患者。该卫生系统进行的一项研究发现，由于该智能工具的使用，患者死于脓毒症的可能性降低了20%。22
+AI4HealthCro（一家总部位于克罗地亚的非营利性公私联营企业）正
+在为欧盟开发人工智能技术。据估计，这项技术每年将节省多达1,944个工时，挽救多达40.3万人的生命，并降低高达2,124亿欧元的医疗成本。23
+并非所有的身体症状或问题都需要当面咨询医生。人工智能拓宽了患
+者获取医疗服务的途径。通过自动化渠道（例如呼叫中心、短信、聊
+天机器人、视频咨询等），算法能够为患者进行诊断并提供定制化的建议和支持。Kaiser Permanente表示， 75%的医疗咨询能够通过远
+程渠道得到一次性解决。
+
+疫情期间，对巴西圣保罗某个紧急医护中心的研究发现，人工智能注册系统平均减少12分钟的等待时间，每年为员工节省2,500多个工时。24人工智能正被用于改善疾病诊断，提高预测医学的准确性。谷歌旗下
+DeepMind Health的研究人员设计了一种人工智能算法，能够识别患有晚期肾衰竭风险的因素，并提前48小时进行预测。整体看来，该算法的准确率为55.8%，在需要透析的严重情况下，其准确率甚至高达90.2%。25
+虽然新兴咨询和治疗渠道能增加病人就诊的机会、全天候运作并减少临床团队超负荷的工作量，详细的检查和落实
+仍然至关重要。数据质量差、取值点数量少，以及缺乏技术专业人员，都会影响远程医疗体验。此外，这些渠道必
+须同步，让患者能够在自由切换渠道时，持续更新和维护医疗记录。
+远程医疗也存在风险，新技术往往是分散实
+施，没有在医疗机构内部或患者就医过程中予以整合。26 
+16 
+2023年全球医疗行业展望 | 数字化转型
+使用可穿戴技术监测慢性健康状况、跟踪生命体征、睡眠质量和用药情况的医疗机构表示这项技术非常实用。然
+而，为规模化地采用，临床医生必须就警报参数、临床治理安排、高效工作流程以及有效的设备和数据报销模式达成一致。数据准确性和隐私，以及网络威胁，亦将妨碍医疗机构采取可穿戴技术。27图2. 消费者使用智能手表等健身追踪器测量活动和健康指标
+您如何使用智能手表/健身追踪器进行锻炼？
+您使用智能手表/健身追踪器监测以下哪些健康指标？
+记录每日步数
+脉率
+64% 59%
+激励锻炼（提醒/徽章）
+热量和营养 36% 
+42%
+测速和测距（GPS）
+心脏健康（心电图） 31% 
+40%
+存储训练数据
+睡眠质量和时长 28%
+39% 管理体重呼吸速率 27% 
+30% 衡量表现血氧含量（SPO2） 25% 24% 规划训练安排体温 17% 
+22% 实施训练计划压力值 16%
+
+21%
+提供定制化的指导 9% 注：受访者为拥有智能手表和/或健身追踪器并将其用于锻炼监测的消费者。资料来源：2022 Connectivity and Mobile Trends，第三版17 2023年全球医疗行业展望 | 数字化转型
+医疗机构在数字化转型时应考虑的问题医疗机构应解决以下问题，为未来5到10年内即将到来的变革性技术做好准备： • 数字化前门——作为数字参与的元点，数字化前门由多渠道通信平台组成，包括网络门户、移动应用和SMS消息,让各利益相关者能够访问医疗机构的数字化和类似服务。
+• 自主监测——使用视频和传感器技术对患者进行监测，并部署人工智能和行为分析工具提供实时建议并及时进行医疗干预。
+• 数字化临床会诊——运用临床方案、算法和人工智能与患者进行半自动化互动，以评估症状、开具处方等，通过使用基于证据的临床知识，减少临床医生的直接参与。
+• 数字化健康平台——医疗机构能够通过基于云平台和服务解决健康问题，为患者提供有价值、便捷的虚拟医护服务。
+18
+2023年全球医疗行业展望 | 可持续性
+可持续性气候变化是人类最大的健康威胁，对全球的清洁空气、安全饮用水、充足食物供应和安全住所均有极大影响。2000年至2016年，全球范围内暴露在极端高温下的人口增加了约1.25亿。热浪给卫生和紧急服务、水和能源供应以及交通运输造成压力。如果极端高温导致作物或牲畜死亡，粮食和生计安全也可能受到损害。1 气候变化的长期影响更为严峻。预计2030年到2050年期间，气温上升将导致全球25万人因营养不良、疟疾、腹泻和中暑而死亡。2此外，碳排放的增加将引发气候和环境问题，反过来又会影响人类的身体健康。当干旱、野火、恶劣天气、空气污染、极端高温和海平面上升等现象频繁出现，过敏反应、呼吸道疾病和传染病的发生频率亦将增加（见图1）。
+
+可持续性气候变化是人类最大的健康威胁，对全球的清洁空气、安全饮用水、充足食物供应和安全住所均有极大影响。2000年至2016年，全球范围内暴露在极端高温下的人口增加了约1.25亿。热浪给卫生和紧急服务、水和能源供应以及交通运输造成压力。如果极端高温导致作物或牲畜死亡，粮食和生计安全也可能受到损害。1 气候变化的长期影响更为严峻。预计2030年到2050年期间，气温上升将导致全球25万人因营养不良、疟疾、腹泻和中暑而死亡。2此外，碳排放的增加将引发气候和环境问题，反过来又会影响人类的身体健康。当干旱、野火、恶劣天气、空气污染、极端高温和海平面上升等现象频繁出现，过敏反应、呼吸道疾病和传染病的发生频率亦将增加（见图1）。全球90%以上的人口呼吸着不健康的空气，全球每年死于环境影响的人数高达1,300万。3碳排放的增加还威胁到健康公平和心理健康。4例如，心理障碍入院治疗的比率增加与热浪有关。19
+2023年全球医疗行业展望 | 可持续性图1.气候变化是人类面临的常见健康风险大气中的二氧化碳浓度已达到历史之最。美国国家海洋和大气管理局的研究显示，在有记录以来最暖的十年中，过去九年都榜上有名。
+气候风险野火海平面上升极端高温恶劣天气
+空气污染干旱健康影响呼吸道疾病传染病神经系统疾病胃肠道疾病多系统疾病
+如过敏哮喘如病媒传播疾病、如神经元迁徙异常、焦如营养不良、
+腹泻如中暑、心脏病发作、
+疟疾、新冠肺炎虑、抑郁、痴呆
+心绞痛资料来源：德勤对科学研究和IPCC报告的分析预计到2030年，每年应对公共卫生风险的成本将高达20亿至40亿美元。5更糟糕的是，受影响最严重地区的居民往往财务上无法支持举家搬迁或应对气候变暖的后果。
+医疗体系应提升其韧性和可持续性以应对气候威胁。医疗机构必须做好准备，在自然灾害发生后提供医疗服务，在
+
+天气相关疾病爆发时确保药物供应，并采取措施减少浪费。与气候变化相关的疾病日益增多，虽然该类疾病的治疗由医疗机构负责，但医务人员也受到了影响。极端天气会导
+致停电、洪涝和其他阻碍患者就诊的状况，从而扰乱医院和医疗设施的运作。此外，医务人员比一般群众能更强烈
+地感知气候变化引发的身体和精神健康方面的需求。例如，在新冠疫情期间，公众对医疗设施的需求上升加大了医
+务人员的工作难度。6
+与此同时，医疗行业正在审查业务运营，重新评估流程，并规划目标以降低对气候变化的影响。
+20
+2023年全球医疗行业展望 | 可持续性
+医疗行业碳排放持续上升
+全球医疗行业有责任应对气候变化导致的健康后果，但该行业也产生了大量碳排放，导致气候变化。如果将全球医疗行业比作一个国家，那么它将成为世界第五大温室气体排放国，占全球碳排放总量的5%（见图2）。7
+图2. 美国医疗公司的温室气体排放量占美国排放总量的8%-10%，医疗行业排放量占全球排放总量的5%
+碳排放来源
+71% 
+12% 
+17%
+来自涵盖药品以及医院设备
+来自购买的能源，如电力、
+直接来自医疗设施和医的供应链蒸汽、制冷、制热疗相关交通工具对行业的影响
+基础设施破坏供应链中断更加复杂的医疗需求影响对于能源和医疗服务将导致患者、医疗机构、生产商由作为新的合并症的气候而引发的获取所需物品出现短缺 • 成本增加 • 公共设施 • 医疗设备 • 加重人类疾病 • 交通 • 药品
+• 通信系统 • 医疗用品
+资料来源：德勤分析
+医疗行业近70%的碳排放都来自于涵盖药品以及医院设备的供应链。由于这些碳排放通常是由第三方造成，且排放过程涉及化学品、医疗设备和食品，因此难以得到解决。8尽管碳排放仍是最大的挑战之一，医疗机构还在寻找减少废弃物和推动可持续性的方法。仅在美国，医院每年产生的废弃物就接近600万吨。9
+
+资料来源：德勤分析
+医疗行业近70%的碳排放都来自于涵盖药品以及医院设备的供应链。由于这些碳排放通常是由第三方造成，且排放过程涉及化学品、医疗设备和食品，因此难以得到解决。8尽管碳排放仍是最大的挑战之一，医疗机构还在寻找减少废弃物和推动可持续性的方法。仅在美国，医院每年产生的废弃物就接近600万吨。9
+新冠疫情也强调了废弃物的问题。个人防护用品（PPE）的广泛使用让医疗废弃物管理系统不堪重负。由于生物危害品处理袋的匮乏，约三分之一的个人防护用品无法得到安全地装袋或储存。全球医疗行业在应对新冠疫情的过程中产生了近9,600万吨废弃物——包括2.8万多吨无害废弃物和6.7万吨医用废弃物。10
+与此同时，极端天气和疾病爆发能够轻易阻断供应链，影响医疗用品的供应。新冠疫情期间，由于供应短缺，临床医
+生不得不重复使用口罩和病号服，且常依赖于未经充分测试的方案，因此建立可持续化供应链更加刻不容缓。11
+21
+越来越多的医疗机构正在实施回收和废弃物管理项目，在可行的情况
+下用可重复使用的材料代替一次性材料，并尽可能地选择本地供应商，以尽量减少供应中断的情况。例如，Cleveland Clinic从当地可持续供应商采购30%的食物，并就环境可持续性对采购和供应商进行评估。该医院还期望在2027年之前将其产生的所有无害废弃物转移出垃圾填埋场。Intermountain Healthcare利用可重复使用的托盘和药篮
+建立了闭环产品服务系统；还整合了运送和车队
+业务，以提高运输效率，减少碳足迹。13
+目前，供应链问题是碳排放和可持续性面临的最大挑战，但医疗设施
+及其能耗所产生的碳排放亦不容小觑。
+在美国，医院的用水量约占商业用水总量的7%，能耗约占商业建筑总能耗的10%，每年成本达80亿美元。14,15一些
+医院采用了绿色建筑标准，安装太阳能发电器，提高能效或签订可再
+生能源购买协议。
+
+例如，Kaiser Permanente提高建筑能效，加装太阳能发电器，并签订可再生能源长期购电协议（PPA），在2020年成为美国首个实现碳中和的医疗机构。16
+其他医疗机构则着眼于能源消耗以外的变革。斯坦福大学医学中心使用七氟醚等麻醉药取代地氟醚，减少了1,200吨温室气体排放。17地氟醚的全球变暖潜能值是二氧化碳的3,700多倍，而七氟醚的仅为二氧化碳的350倍。18
+同样，雾化吸入剂的碳排放量是干粉吸入器的10到37倍，目前约占英国国家医疗服务体系碳排放的3.9%。NHS的研究人员发现，干粉吸入器的使用将减少5.8万吨的二氧化碳排放当量。19
+医疗机构还在寻找改进医疗服务的方式（如虚拟医疗），以减少救护
+车和私家车的碳排放，并保护敏感体质的患者免受空气污染物和过敏原的影响（见图3）。2021年，据CommonSpirit Health报告，新冠疫情期间，该机构接待了150万次虚拟问诊，减少了170万加仑的燃料消耗和约1.5万吨的碳排放。20
+22
+图3. 缓解运营风险和碳排放的策略
+缓解
+转型
+适应
+医疗机构
+低碳城市企划：设计基于社区的医护中心，以减少或消除高碳排放运
+输
+回收和废弃物管理：安全高效回收医疗废弃物
+虚拟和数字化医疗服务：增加虚拟问诊和远程监测的渠道以降低运输碳排放制药公司及医疗科技公司低碳生产：改变生产流程以提高效率并减少排放，探索并实施能够降低运营碳排放的减排技术回收和废弃物管理：安全高效回收医疗废弃物，降低生产所需的物料和能耗设计可持续再利用的包装：与药企合作，减少药品流通过程中使用的塑料包装，并制定包装回收/再利用计划监管机构虚拟和数字化医疗服务激励计划：通过签订基于价值的合同条款，
+
+虚拟和数字化医疗服务：增加虚拟问诊和远程监测的渠道以降低运输碳排放制药公司及医疗科技公司低碳生产：改变生产流程以提高效率并减少排放，探索并实施能够降低运营碳排放的减排技术回收和废弃物管理：安全高效回收医疗废弃物，降低生产所需的物料和能耗设计可持续再利用的包装：与药企合作，减少药品流通过程中使用的塑料包装，并制定包装回收/再利用计划监管机构虚拟和数字化医疗服务激励计划：通过签订基于价值的合同条款，激励医疗机构使用虚拟问诊和远程监测评估医疗机构的可持续性标准：与医疗机构网络签订合同，鼓励制定机构内部的可持续性和减排标准混合经营模式：设计混合经营模式，平衡当面问诊和虚拟问诊，以及加强员工之间的协作，降低患者出行需求并减少物理足迹资料来源：德勤对Rock Health Digital Health Funding Database的分析 23缺乏政策支持政策制定者已开始支持着手解决医疗排放问题。在世界卫生组织COP26医疗计划中，45个国家已经承诺将减少医疗卫生相关的碳排放，使医疗系统可持续发展，其中14个参与国目标在2050年或之前实现净零排放。21 2010年至今，英国国家医疗服务体系已减
+少30%的碳排放，并承诺到2040年实现直接排放净清零。222022年，它率先将净零排放写入立法，是其他医疗机构效仿的榜样。23它还开创了追踪间接排放并制定
+减排计划的先例，例如使用虚拟医疗来减少救护车的使用。
+虽然部分国家的医疗系统支持气候行动，但仅有少数遵循协调一致的计划。如果没有政策或法规支持，即使有研究作为支撑，医疗系统也无法快速制定相关策略并有效应对气候变化。近期，澳大利亚皇家医师学院汲取英国国家医疗服务体系的经验，呼吁制定相关政策，包括设立气候变化健康适应专项基金以支持研究和创新，制定气候风险评估和本土灾难应急计划，并承诺在2040年前在全国范围内实现医疗系统净零排放。24
+
+在2022年11月的联合国气候变化大会（COP27）上，英国国家医疗服务体系和美国有关机构宣布将就采购要求进行合作，以降低两国医疗供应链对于气候的影响。25然而，全球范围内几乎没有确定上述举措的优先级，目前仍缺乏全面政策来处理已经遭受气候风险的居民所受到的严重影响。
+由于政策要求涵盖范围不够广泛，医疗公司和机构正在自行制定路线。一些医疗行业领先机构正在推行实现减排和提高可持续性的内部政策，因此医护人员和患者能更好地实施。例如，麻省总医院成立了环境与健康中心，这是首个基于卫生机构的中心，旨在将可持续性融入医院各个层面。26
+增强全球医疗系统韧性和可持续性的道路仍然困难重重。随着气候风险增加，医疗机构在面对财务压力的同时，还需要保证医疗服务质量。此外，尤其是在经济欠发达地区，气候变化对灾难应对提出了更高的要求，包括确保药品能够送达受影响地区以及缓解气温上升对劳动力的影响。
+24
+追踪可持续性方面的进展
+德勤与Geneva Sustainability Center和国际医院联合会建立了战略伙伴关系，以提高医疗行业的可持续性。
+为此，我们开发了可持续性加速器工具，助力医疗行业领先机构追踪
+其在公平提供低碳和灵活医疗服务方面的进展。
+该工具涵盖三个维度（1）环境影响，（2）健康、公平及幸福，
+（3）领导力及治理（见图4）。图4：可持续性加速器工具
+1）环境影响 2）健康、公平及幸福 3）领导力及治理 • 减少机构和生态系统的碳排放 • 评估社区医疗的薄弱环节以更好地提• 落实相关结构和实践，促进领导问• 建立抵御气候变化影响的韧性
+供针对性服务
+责制和报告制度 • 通过运营服务和临床实践实现低碳• 公平地提供健康和防护服务，助力公• 吸引并助力员工参与解决可持续性
+民身心健康幸福
+问题
+医疗转型 • 提防患疾并积极对健康相关的环境和 • 与社区和利益相关
+者协作
+社会决定因素施加影响
+德勤就各个维度均提出深思熟虑的建议，助力医疗机构：
+
+– 评估目前定位优势； – 了解低、中、高成熟度的含义； – 追踪进展； – 参照国际基准与同级别医院进行比较； – 与其他机构分享信息并开展合作，以快速学习； – 开发全球统一的进度描述和测量方法；– 提供可靠的认证数据。25
+2023年全球医疗行业展望联系我们德勤中国生命科学与医疗行业领
+导团队简思华领导合伙人中国生命科学与医疗行业
+jensewert@deloitte.com.cn 虞扬肖琨孙晓臻审计及鉴证领导合伙人
+管理咨询领导合伙人管理咨询副领导合伙人中国生命科学与医疗行
+业中国生命科学与医疗行业中国生命科学与医疗行业
+davyu@deloitte.com.cn carriexiao@deloitte.com.cn scottsun@deloitte.com.cn 杨晟
+祝世谦赵益民财务咨询领导合伙人风险咨询领导合伙人税务咨询领
+导合伙人中国生命科学与医疗行业中国生命科学与医疗行业中国生命科学与医疗行业 bilyang@deloitte.com.cn trazhu@deloitte.com.cn jazhao@deloitte.com.cn 26
+2023年全球医疗行业展望尾注虚拟医疗服务 1.
+Asif Dhar, “2022 Outlook for Health Care and Life Sciences,”global/ en/pages/about-deloitte/press-releases/deloitte-and-
+Deloitte Health Forward Blog, January 27, 2022, https://www2. haryana-government-launch-innovative-initiative-to-expand-
+deloitte.com/us/en/blog/health-care-blog/2022/outlook-for-thehospital-ward-in-haryana.html health-care-and-life-sciences.html 2.
+13. Victoria Bailey, “Virtual Care Visits Improve Patient Neal Batra, David Betts, and Steve Davis, “Forces of change,”
+
+Satisfaction, Engagement Levels,” mHealth Intelligence, July Deloitte Insights, April 30, 2019, https://www2.deloitte.com/ 12, 2021, https://mhealthintelligence.com/news/virtual-care-us/en/ insights/industry/health-care/forces-of-change-health-visitsimprove-patient-satisfaction-engagement-levels care.html 3.14. “Hospital at Home — A model with a future,” Deloitte, https:// Pooja Singh, “2022 CIO Agenda: A Healthcare Provider’s
+www2.deloitte.com/ch/en/pages/public-sector/articles/ 
+Perspective,” Gartner, https://emtemp.gcom.cloud/ngw/ hospitalat-home.html globalassets/en/information-technology/ 
+documents/2022-4.
+15. “Remote Patient Monitoring Devices Market Size, Share cio-
+agenda-cuts/2022-cio-agenda-ebook-healthcare.pdf 
+& COVID-19 Impact Analysis,” Fortune Business Insights, Bill Fera, Ken Abrams, Urvi Shah, and Hemnabh Varia, 
+February 2022, https://www.fortunebusinessinsights.com/“Tapping virtual health’s full potential,” Deloitte Insights, remote-patientmonitoring-devices-market-106328 Setpember 8, 2022, https:// www2.deloitte.com/us/en/ 5.
+16. Jeff Loucks, Duncan Stewart, Ariane Bucaille, and Gillian
+insights/industry/health-care/virtual-health-survey.html 
+Crossan, “Wearable technology in health care: Getting 
+better“Telemedicine vs. Virtual Care: Defining the Difference,”all the time,” Deloitte Insights, December 1, 2021, https:// Teladoc Health, https://intouchhealth.com/finding-the-right
+www2.deloitte.com/us/en/insights/industry/technology/ term-formodern-digital-healthcare/ technology-media-and-telecom
+predictions/2022/wearable
+technology-healthcare.html 6.
+
+“New $110 Million Round of Funding,” Medically Home Group, 17. Kenny Walter, “Mental Health at the Forefront During January 10, 2022, https://www.medicallyhome.com/new-110
+million-round-of-funding/COVID-19 Pandemic,” HCP Live, April 25, 2020, https://www. hcplive.com/view/mental-health-covid-19-pandemic 7.
+Heather Landi, “Best Buy shelled out $400M for Current 
+18. Brooke Auxier, Ariane Bucaille, and Kevin Westcott, “Mental
+Health as it ramps up health strategy,” Fierce Healthcare, 
+November 29, 2021, https://www.fiercehealthcare.com/digitalhealth goes mobile: The mental health app market will keep health/best-buy-shelled-out-400m-for-current-health-as-it-on growing,” Deloitte Insights, December 1, 2021, https:// 
+ramps-up-health-strategy www2.deloitte.com/us/en/insights/ industry/technology/ 
+technology-media-and-telecom-predictions/2022/mental-8.
+“Deloitte Global’s 2023 Global Health Care Outlook is an
+health-app-market.html/#endnote-8 
+independent publication and has not been authorized, 19. Ibid.
+sponsored, or otherwise approved by Apple Inc.”9.
+“Zimmer Biomet and Apple Collaborate to Launch Major 20.
+Heather Nelson and Julius Tapper, “Can equity-centered 
+Clinical Study Detailing Patient Experience and Improving design narrow the digital health divide?” Deloitte Health 
+Joint Replacement Journey,” Zimmer Biomet, October 15, Forward Blog, April 5, 2022, https://www2.deloitte.com/us/ 
+2018, https://investor.zimmerbiomet.com/news-and-events/ en/ blog/health-care-blog/2022/can-equity-centered-design
+news/2018/10-15-2018 narrow-the-digital-health-divide.html 10.
+“Does digital health work?” Wellframe, https://www.wellframe.
+
+com/industry-insights/does-digital-health-work/ 11. CatherineSturman, “Philips launches a tele-intensive care eICU
+programme in Japan,” Healthcare, May 17, 2020, https:// 
+healthcare-digital.com/digital-healthcare/philips-launches- teleintensive-care-eicu-programme-japan 12. “Deloitte and Haryana Government launch innovative initiative to ‘expand the hospital ward’ in Haryana,” Deloitte press release, May 24, 2021, https:// www2.deloitte.com/ 27 
+2023年全球医疗行业展望
+数字化转型
+1.
+2.
+3.
+4.
+5.
+6.
+7.
+8.
+9.
+The survey of more than 1,000 the US consumers by Redpoint Global in 2019 “Global governance toolkit for digital mental health,” Deloitte, March 18, 2021, https://www.deloitte.com/ global/ en/Industries/ life-sciences-health-care/analysis/globalgovernance-toolkit-for-digital-mental-health.html
+William H. Shrank, Teresa L. Rogstad, and Natasha Parekh, “Waste in the US Health Care System,” Journal of the American Medical
+Association, October 7, 2019, https://jamanetwork.
+com/journals/jama/article-abstract/2752664
+Medscape conducted a survey in 2021 covering more than 12,000 physicians across 29 specialties
+Bill Fera, Ken Abrams, Urvi Shah, and Hemnabh Varia, “Tapping virtual health’s full potential,” Deloite Insights, September 8, 2022, https://www2.deloitte.com/us/en/ insights/industry/health-care/ virtual-health-survey.html.
+“Enablers for success: virtual wards including hospitals at home,”AT Today, April 25, 2022, https://attoday.co.uk/ important-guidancefor-ics-leads-on-implementing-successful-virtual-wards/
+
+Robert Pearl and Brian Wayling, “The Telehealth Era Is Just Beginning,” Harvard Business Review, May-June 2022, https:// hbr.org/2022/05/the-telehealth-era-is-just-beginningMcKinsey conducted a survey covering more than 1,000 physicians in the US in 2021
+Lindsay Clark, “UK govt promises to sink billions into electronic health records for England,” The Register, June 30, 2022, https:// www.theregister.com/2022/06/30/uk_ electronic_health_records/
+10. “What is HIE?” HealthIT.gov, The US. Office of the National Coordinator for Health Information Technology, https:// 
+www.healthit.gov/topic/health-it-and-health-information-exchangebasics/what-hie
+11. Amy Lewin, “Inside Estonia’s pioneering digital health service,”Sifted, July 8, 2020, https://sifted.eu/articles/estoniadigital-health/
+12. “Connecting Health and Care for the Nation: A 10-Year Vision to Achieve an Interoperable Health IT Infrastructure,” The US.
+Office of the National Coordinator for Health Information Technology, 2-3, https://www.healthit.gov/sites/default/files/
+ONC10yearInteroperabilityConceptPaper.pdf
+13. “Deloitte Working With Amazon Web Services to Create New Health Ecosystems Through Data,” Deloitte, November 14, 2019, https://www2.deloitte.com/us/en/pages/about-deloitte/ articles/ press-releases/deloitte-and-aws-create-new-health-ecosystems.html
+14. The Accenture Digital Health Technology Vision surveyed 399 healthcare executives across six countries to learn from their perspectives
+15. Heather Landi, “Oracle closes $28B deal to buy EHR giant Cerner,” Fierce Healthcare, June 7, 2022, https://www. fiercehealthcare.com/health-tech/oracle-gets-europeanapproval-28m-cerner-deal-set-close-next-week.
+28
+
+16. Anthony R. O’Donnell, “Cigna Selects Majesco L&A Group Core Suite to Accelerate Digital Transformation,” Insurance Innovation Reporter, May 25, 2021, https://iireporter.com/ cigna-selectsmajesco-la-group-core-suite-to-accelerate-digital-transformation/17. “2021 Year-End Insights Report: $44B Raised Globally in Health Innovation, Doubling Year Over Year,” StartUp Health, January 7, 2022, https://healthtransformer.co/2021-year-end-insights
+report-44b-raised-globally-in-health-innovation-doubling-year-overyear-90b19ff4a8a6
+18. Simon Grisby, Peter Micca, Boris Kheyn-Kheyfets, and Christine Chang, “New business models in health care: Building platformenabled ecosystems,” Deloitte Insights, February 24, 2022, https:// www2.deloitte.com/za/en/insights/ industry/health-care/ 
+transformed-health-care-ecosystems. html.
+19. Steven Gonzalez Monserrate, “The Staggering Ecological Impacts of Computation and the Cloud,” The MIT Press Reader, https://thereader.mitpress.mit.edu/the-staggering-ecologicalimpacts-of-computation-and-the-cloud/
+20. Donna Goodison, “How the Big Three cloud providers are
+helping customers manage their energy consumption and carbon emissions,” Protocol, July 25, 2022, https://www.
+protocol.com/enterprise/aws-microsoft-google-energy-carbon
+21. “Mastering the new digital life: 2022 Connectivity and Mobile Trends,” 3rd edition, Deloitte Insights, 17, https://www2. 
+deloitte.com/content/dam/insights/articles/us175371_tmt_ connectivity-and-mobile-trends-interactive-landing-page/ 
+DI_Connectivity-mobile-trends-2022.pdf
+
+22. Kumar Chebrolu, “AI is an increasingly critical tool, health leaders say” Deloitte Health Forward Blog, August 25, 2022, https://www2.deloitte.com/us/en/blog/health-care-blog/2022/aiis-an-increasingly-critical-tool-health-leaders-say.html23. AI4HealthCro, https://ai4healthcro.eu/
+24. Kaio Jia Bin, Adler Araujo Ribeiro Melo, José Guilherme Moraes Franco da Rocha, Renata Pivi de Almeida, Vilson Cobello Junior, Fernando Liebhart Maia, Elizabeth de Faria, Antonio José Pereira, Linamara Rizzo Battistella, and Suzane Kioko Ono, “The Impact of Artificial Intelligence on Waiting Time for Medical Care in an Urgent Care Service for COVID-19: Single-Center Prospective 
+Study,” JMIR Formative Research, January 2, 2022, https:// 
+formative.jmir.org/2022/2/e29012
+25. Starre Vartan, “AI Can Predict Kidney Failure Days in Advance,”Scientific American, July 31, 2019, https://www.
+scientificamerican.com/article/ai-can-predict-kidney-failure-daysin-advance/.
+26. Jay Bhatt, “Is digital the answer to better health, happier staff?”Deloitte Health Forward Blog, July 12, 2022. https://bit.
+ly/3uzJw6l
+27. Stacy Weiner, “The growing threat of ransomware attacks on hospitals,” AAMC.org, July 20,2021, https://www.aamc.org/ news-
+insights/growing-threat-ransomware-attacks-hospitals
+2023年全球医疗行业展望
+28. Becky Sullivan, “Hackers disrupt payroll for thousands of employers — including hospitals,” NPR, January 15 2022, https:// www.npr.org/2022/01/15/1072846933/kronos-hack-lawsuits.
+29. Joe Tidy, “NHS IT supplier held to ransom by hackers,” BBC News, August 11, 2022, https://www.bbc.com/news/ 
+technology-62506039.
+
+30. Deborah Golden, Jesse Goldhammer, Jay Parekh, and Diana Kearns-Manolatos, “Earning digital trust: Where to invest today and tomorrow,” Deloitte Insights, February 16, 2022, https:// 
+www2.deloitte.com/global/en/insights/topics/digital
+transformation/digital-trust-solutions.html31. Asha Barbaschow, “Australian Department of Health using blockchain for medical research records,” ZDNet, May 20, 2018, https://www.zdnet.com/article/australian-department-of-healthusing-blockchain-for-medical-research-records/
+32. Trevor Clawson, “Broken Records - UK Entrepreneurs See Blockchain As The Solution To The Patient Data Problem,” Forbes, August 31, 2018, https://www.forbes.com/sites/ 
+trevorclawson/2018/08/31/broken-records-uk-entrepreneurs-seeblockchain-as-the-solution-to-the-patient-data- problem/?
+sh=35c0ab3072ac
+33. “Estonia — the Digital Republic Secured by Blockchain,” PwC, https://www.pwc.com/gx/en/services/legal/tech/assets/ estoniathe-digital-republic-secured-by-blockchain.pdf
+34. Apple Health is a registered trademark of Apple Inc.
+35. https://www.grandviewresearch.com/industry-analysis/ fitnesstracker-market
+36. “Mastering the new digital life: 2022 Connectivity and Mobile Trends,” 3rd edition, Deloitte Insights, 18, https://www2. 
+deloitte.com/content/dam/insights/articles/us175371_tmt_
+
+connectivity-and-mobile-trends-interactive-landing-page/ 
+DI_Connectivity-mobile-trends-2022.pdf 37. Jeff Loucks, Duncan Stewart, Ariane Bucaille, and Gillian Crossan, “Wearable technology in health care: Getting better all the time,” Deloitte Insights, 
+December 1, 2021, https:// www2.deloitte.com/us/en/insights/ industry/technology/ technology-media-and-telecom
+predictions/2022/wearable- technology-healthcare.html2023年全球医疗行业展望
+可持续性 1.
+“Heatwaves,” World Health Organization, https://www.who. 15. M. J. Eckelman et al., “Health care pollution and public health
+int/health-topics/heatwaves#tab=tab_1 damage in the United States: An update: Study examines
+health care pollution and public health damage in the United 2.
+“Climate change and health,” World Health Organization,
+States,” Health Affairs, vol. 39, no. 12, pp. 2071–2079, 2020.
+October 30, 2021, https://www.who.int/news-room/fact-
+https://www.researchgate.net/publication/347818104_ sheets/ detail/climate-change-and-health
+Health_Care_Pollution_And_Public_Health_Damage_In_The_ 3.
+“World Health Day 2022,” World Health Organization, April
+United_States_An_Update_Study_examines_health_care_
+pollution_and_public_health_damage_in_the_United_States 7, 2022, https://www.who.int/campaigns/world-health-4.
+day/2022 16. “How Kaiser Permanente is driving environmental Neal Batra, Dr. Elizabeth Baca, Michael Joseph Johnson, Jay stewardship and sustainability forward – 4 Qs answered,”
+Becker’s Hospital Review, April 22, 2022, https://www. Sekhon, and Wendy Gerhardt, “Why climate resilience is key
+
+beckershospitalreview.com/supply-chain/how-kaiser- to building the health care organization of the future,” Deloittepermanente-is-driving-environmental-stewardship-and-Insights, April 4, 2022, https://www2.deloitte.com/us/en/
+sustainability-forward-4-qs-answered.html insights/industry/healthcare/climate-change-and-health.
+5.
+html 17. Patrick Boyle, “Hospitals take creative steps to reduce carbon“Climate change and health,” World Health Organization, footprint,” Association of American Medical Colleges, July 28,
+2022, https://www.aamc.org/news-insights/hospitals-take-October 30, 2021, https://www.who.int/news-room/fact-
+creative-steps-reduce-carbon-footprint sheets/detail/climatechange-and-health 6.
+“The Impact of Climate Change on Our Health and Health 18. Ariel Wittenberg, “New front in climate fight: Hospital
+operating rooms,” E&E News, September 15, 2021, https:// Systems,” The Commonwealth Fund, May 4, 2022, https://
+www.eenews.net/articles/new-front-in-climate-fight-hospitalwww.commonwealthfund.org/publications/explainer/2022/
+operating-rooms/ may/impact-climate-change-our-health-andhealth-systems 7.
+Batra, Deloitte Insights https://www2.deloitte.com/us/en/ 19. https://www.cam.ac.uk/research/news/switching-to-green-
+inhalers-could-reduce-carbon-emissions-and-cut-costs-
+insights/industry/health-care/climate-change-and-health.
+study-suggests
+html
+8.
+9.
+Shira Stein, “Hospitals Confront Their Climate Achilles Heel: Supply Chains,” Bloomberg Law, June 7, 2022, https://news.
+
+bloomberglaw.com/health-law-and-business/hospitals-confronttheir-climate-achilles-heel-supply-chains“US Medical Waste Management Market to Attain USD 5.25 Billion by 2027; Grim Effects of Clinical Waste on Nature and Human Safety to Create Opportunities for Market Growth Throughout 2020-2027,” Global Newsire, November 19, 2020, https:// 
+www.globenewswire.com/en/ news
+release/2020/11/19/2130017/0/en/U-S-Medical-Waste-
+Management-Market-to-Attain-USD-5-25-Billion-by-2027-Grim-Effects-of-Clinical-Waste-on-Nature-and-Human-Safety-to-Create-Opportunities-for-Market-Growth-Throughou.html
+10. “WHO report | Global analysis of health care waste in the context of COVID-19,” Health Care Without Harm, February 2, 2022, https://noharm-global.org/WHO-COVID-waste
+11. Shira Stein, “Hospitals Confront Their Climate Achilles Heel: Supply Chains,” Bloomberg Law, June 7, 2022, https://news.
+bloomberglaw.com/health-law-and-business/hospitals-confronttheir-climate-achilles-heel-supply-chains
+12. Ying Fang, Greg Orekhov, Zachary F. Lerner, “A Move Toward Sustainability in Health Care,” IEEE Pulse, February 12, 2022, https://www.embs.org/pulse/articles/a-move-toward
+sustainability-in-health-care/
+13. “Intermountain Healthcare Case Study,” Utah Department of Environmental Quality, https://deq.utah.gov/sbeap/ intermountainhealthcare-ihc-case-study
+14. “Water,” Practice Greenhealth, https://practicegreenhealth. org/topics/water/water
+30
+
+20. Dave Muoio, “Shift to virtual care during COVID-19 saved 1.7M gallons of fuel, 15K tons of CO2 emissions: CommonSpirit 
+Health,”Fierce Healthcare, April 23, 2021, https://www.fiercehealthcare.com/hospitals/commonspirit-health-1-5mambulatory-virtual-visits-saved-1-7m-gallons-fuel-15-000-tons
+21. “COP26 Health Programme,” World Health Organization, https://www.who.int/initiatives/cop26-health-programme
+22. “Health and climate change,” NHS England, https://www. england.nhs.uk/greenernhs/national-ambition/nationalcommitments/
+23. “Delivering a `Net Zero’ National Health Service,” NHS England, https://www.england.nhs.uk/greenernhs/ publication/delivering-anet-zero-national-health-service/
+24. “Climate Change and Australia’s Healthcare Systems,” Royal Australian College of Physicians, https://www.racp.edu.au/ docs/ default-source/advocacy-library/climate-change-and-australiashealthcare-systems-a-review-of-literature-policy-and-practice.pdf?
+sfvrsn=efe8c61a_4
+25. Elisabeth Mahase, “COP27: Countries agree ‘loss and 
+damage’fund to help poorer countries hit by climate disasters,”BMJ, November 21. 2022, https://www.bmj.com/content/379/bmj.
+o2814
+26. “Center for the Environment and Health,” Massachusetts General Hospital, https://www.massgeneral.org/environment-andhealth
+关于德勤
+
+德勤中国是一家立足本土、连接全球的综合性专业服务机构，由德勤中国的合伙人共同拥有，始终服务于中国改革开放和经济建设的前沿。我们的办公室遍布中国30个城市，现有超过2万名专业人才，向客户提供审计及鉴证、管理咨询、财务咨询、风险咨询、税务与商务咨询等全球领先的一站式专业服务。我们诚信为本，坚守质量，勇于创新，以卓越的专业能力、丰富的行业洞察和智慧的技术解决方案，助力各行各业的客户与合作伙伴把握机遇，应对挑战，实现世界一流的高质量发展目标。
+德勤品牌始于1845年，其中文名称“德勤”于1978年起用，寓意“敬德修业，业精于勤”。德勤专业网络的成员机构遍布150多个国家或地区，以“因我不同，成就不凡”为宗旨，为资本市场增强公众信任，为客户转型升级赋能，为人才激活迎接未来的能力，为更繁荣的经济、更公平的社会和可持续的世界而开拓前行。
+Deloitte（“德勤”）泛指一家或多家德勤有限公司，以及其全球成员所网络和它们的关联机构（统称为“德勤组织”）。德勤有限公司（又称“德勤全球”）及其每一家成员所和它们的关联机构均为具有独立法律地位的法律实体，相互之间不因第三方而承担任何责任或约束对方。德勤有限公司及其每一家成员所和它们的关联机构仅对自身行为承担责任，而对相互的行为不承担任何法律责任。德勤有限公司并不向客户提供服务。
+德勤亚太有限公司（即一家担保有限公司）是德勤有限公司的成员所。德勤亚太有限公司的每一家成员及其关联机构均为具有独立法律
+地位的法律实体，在亚太地区超过100个城市提供专业服务。
+请参阅http://www.deloitte.com/cn/about了解更多信息。
+本通讯中所含内容乃一般性信息，任何德勤有限公司、其全球成员所
+网络或它们的关联机构（统称为“德勤组织”）并不因此构成提供任何专业建议或服务。在作出任何可能影响您的财务或业务的决策或采取任何相关行动前，您应咨询合资格的专业顾问。
+
+我们并未对本通讯所含信息的准确性或完整性作出任何（明示或暗示）陈述、保证或承诺。任何德勤有限公司、其成员所、关联机构、员工或代理方均不对任何方因使用本通讯而直接或间接导致的任何损失或损害承担责任。德勤有限公司及其每一家成员所和它们的关联机构均为具有独立法律地位的法律实体。© 2023。欲了解更多信息，请联系德勤中国。
+CQ-004CN-23

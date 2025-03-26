@@ -34,5 +34,8 @@ class DOCXParser(AsyncParser[str | bytes]):
             raise ValueError("DOCX data must be in bytes format.")
 
         doc = self.Document(BytesIO(data))
+
+         
+
         for paragraph in doc.paragraphs:
             yield paragraph.text

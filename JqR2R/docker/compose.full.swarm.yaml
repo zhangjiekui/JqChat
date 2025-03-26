@@ -18,12 +18,12 @@ services:
   postgres:
     image: pgvector/pgvector:pg16
     environment:
-      - POSTGRES_USER=${R2R_POSTGRES_USER:-postgres}
-      - POSTGRES_PASSWORD=${R2R_POSTGRES_PASSWORD:-postgres}
-      - POSTGRES_HOST=${R2R_POSTGRES_HOST:-postgres}
-      - POSTGRES_PORT=${R2R_POSTGRES_PORT:-5432}
+      - POSTGRES_USER=${R2R_POSTGRES_USER:-langchain}
+      - POSTGRES_PASSWORD=${R2R_POSTGRES_PASSWORD:-langchain}
+      - POSTGRES_HOST=${R2R_POSTGRES_HOST:-10.1.150.105}
+      - POSTGRES_PORT=${R2R_POSTGRES_PORT:-6000}
       - POSTGRES_MAX_CONNECTIONS=${R2R_POSTGRES_MAX_CONNECTIONS:-1024}
-      - PGPORT=${R2R_POSTGRES_PORT:-5432}
+      - PGPORT=${R2R_POSTGRES_PORT:-6000}
     volumes:
       - postgres_data:/var/lib/postgresql/data
     ports:
@@ -137,7 +137,7 @@ services:
       SERVER_AUTH_COOKIE_INSECURE: "t"
       SERVER_GRPC_BIND_ADDRESS: "0.0.0.0"
       SERVER_GRPC_INSECURE: "t"
-      SERVER_GRPC_BROADCAST_ADDRESS: "hatchet-engine:7077"
+      SERVER_GRPC_BROADCAST_ADDRESS: "localhost:7077"
       SERVER_GRPC_MAX_MSG_SIZE: 134217728
     volumes:
       - hatchet_certs:/hatchet/certs
@@ -236,7 +236,8 @@ services:
         condition: on-failure
 
   r2r:
-    image: sciphiai/r2r:latest
+    # image: sciphiai/r2r:latest
+    image: jqr2r:v2.0
     ports:
       - "${R2R_PORT:-7272}:${R2R_PORT:-7272}"
     environment:

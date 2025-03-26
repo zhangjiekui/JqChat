@@ -208,7 +208,7 @@ def r2r_lifecycle_test():
 
 if __name__ == "__main__":
 
-    # model_test()
+    model_test()
     r2r_test()
     file_dir = '/data/projects/JqChatV2/JqChat/langchain_graphrag_code_test/data'
     # chunked_documents = get_chunked_documents_from_file_directory(file_dir)

@@ -20,7 +20,7 @@ RUN pip config set global.index-url https://mirrors.aliyun.com/pypi/simple/ && \
     pip config set install.trusted-host mirrors.aliyun.com
 
 RUN pip install -e ".[core]" && \
-    pip install gunicorn uvicorn pydantic
+    pip install gunicorn uvicorn pydantic transformers anytree llama_index
 
 # Optionally, if you want gunicorn and uvicorn explicitly installed, you can
 # either list them under [project] in `pyproject.toml` or install them here:

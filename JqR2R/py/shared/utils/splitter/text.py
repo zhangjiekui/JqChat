@@ -1837,8 +1837,11 @@ class JqChineseRecursiveTextSplitter(RecursiveCharacterTextSplitter):
                 f"({chunk_size}), should be smaller."
             )
         if tokenizer is None:
-            from jqcode.jq_agent.c0_init_env_models import env_models_instance
-            tokenizer = env_models_instance._tokenizer
+            from transformers import AutoTokenizer
+            tokenizer = AutoTokenizer.from_pretrained("/data/projects/JqChatV2/JqChat/JqR2R/py/model_files/bce-embedding-base_v1")
+            # tokenizer = AutoTokenizer.from_pretrained("maidalun1020/bce-embedding-base_v1")
+            # from jqcode.jq_agent.c0_init_env_models import env_models_instance
+            # tokenizer = env_models_instance._tokenizer
 
         self.tokenizer_wrapper = _JqTokenizerWrapper(tokenizer)  
         super().__init__(chunk_size=chunk_size,chunk_overlap=chunk_overlap,separators=separators,is_separator_regex=is_separator_regex,add_start_index=add_start_index,keep_separator=keep_separator, strip_whitespace=strip_whitespace, length_function = self.tokenizer_wrapper.tokens_len,**kwargs)

@@ -24,6 +24,34 @@ docker run --runtime nvidia --gpus '"device=0,1"' all -p 8000:8000 \
 --ipc=host \
 vllm/vllm-openai:latest --model /data/xinference/modelscope/hub/qwen/Qwen2.5-32B-Instruct-AWQ --served-model-name qwen25_32b --enable-auto-tool-choice --tool-call-parser hermes --host 0.0.0.0 --port 9998 --max-model-len 32000 --tensor-parallel-size 2 --use_v2_block_manager --gpu-memory-utilization 0.95 --max-num-seqs 32 --enable-prefix-caching --enable-chunked-prefill
 
+## vllm8.2 配合 OneAPI
+### 模型部署
+``` qwen25qwq gpu01
+workon vllmb
+VLLM_ATTENTION_BACKEND=FLASHINFER CUDA_VISIBLE_DEVICES=0,1 nohup vllm serve /data/models/Qwen/QwQ-32B-AWQ/ --served-model-name qwen25qwq --enable-auto-tool-choice --tool-call-parser hermes --enable-reasoning --reasoning-parser deepseek_r1 --host 0.0.0.0 --port 9998 --max-model-len 32000 --tensor-parallel-size 2 --gpu-memory-utilization 0.95 --max-num-seqs 64 --enable-prefix-caching --enable-chunked-prefill --kv_cache_dtype fp8 >> /root/JqLogs/qwq.log 2>&1 &
+tail -f /root/JqLogs/qwq.log
+```
+
+【 Qwen2.5-VL does not support _Backend.FLASHINFER backend now】
+``` qwenvl gpu2
+workon vllmb
+CUDA_VISIBLE_DEVICES=2 VLLM_ALLOW_ENGINE_USE_RAY=1 nohup vllm serve /data/models/Qwen/Qwen2___5-VL-7B-Instruct --served-model-name qwenvl --enable-auto-tool-choice --tool-call-parser hermes --gpu-memory-utilization 0.98 --port 8000 --host 0.0.0.0 --limit-mm-per-prompt image=5,video=5 --max-model-len 32000  --max-num-seqs 16 --enable-prefix-caching --enable-chunked-prefill >> /root/JqLogs/vllmvl.log 2>&1 &
+tail -f /root/JqLogs/vllmvl.log 
+```
+
+``` qwen25b32 gpu3
+workon vllmb 
+CUDA_VISIBLE_DEVICES=3 nohup vllm serve /data/xinference/modelscope/hub/qwen/Qwen2.5-32B-Instruct-AWQ --served-model-name qwen25b32 --enable-auto-tool-choice --tool-call-parser hermes --host 0.0.0.0 --port 9997 --max-model-len 8000 --tensor-parallel-size 1 --use_v2_block_manager --gpu-memory-utilization 0.97 --max-num-seqs 32 --enable-prefix-caching --enable-chunked-prefill --kv_cache_dtype fp8 >> /root/JqLogs/Qwen25B32.log 2>&1 &
+tail -f /root/JqLogs/Qwen25B32.log
+```
+### OneAPI 配置
+登录信息
+http://localhost:3000/
+root 12345678
+
+下游配置
+http://10.1.150.105:3000/v1
+
 
 
 ## vllm8.0保险的启动方法
@@ -172,7 +200,7 @@ tail -f /root/JqLogs/qwq.log
 
 
 workon vllm
-CUDA_VISIBLE_DEVICES=2,3 nohup vllm serve /data/models/QwQ-32B-unsloth-bnb-4bit/ --served-model-name qwen25qwq --enable-auto-tool-choice --tool-call-parser hermes --host 0.0.0.0 --port 9998 --max-model-len 2000 --tensor-parallel-size 2 --use_v2_block_manager --gpu-memory-utilization 0.90 --max-num-seqs 16 --enable-prefix-caching --enable-chunked-prefill >> /root/JqLogs/qwq.log 2>&1 &
+CUDA_VISIBLE_DEVICES=2,3 nohup vllm serve /data/models/QwQ-32B-unsloth-bnb-4bit/ --served-model-name qwen25qwq --enable-auto-tool-choice --tool-call-parser hermes --host 0.0.0.0 --port 9998 --max-model-len 2000 --tensor-parallel-size 2 --use_v2_block_manager --gpu-memory-utilization 0.95 --max-num-seqs 16 --enable-prefix-caching --enable-chunked-prefill >> /root/JqLogs/qwq.log 2>&1 &
 tail -f /root/JqLogs/qwq.log
 ```
 
@@ -180,7 +208,7 @@ tail -f /root/JqLogs/qwq.log
 #### DsQwen2.5R1 gpu2
 ```
 workon vllm
-CUDA_VISIBLE_DEVICES=2 nohup vllm serve /data/models/deepseek-r1-distill-qwen-32b-awq/ --gpu-memory-utilization 0.98 --max-model-len 4000 --served-model-name DeepSeekR1 --host 0.0.0.0 --port 8000 --enable-reasoning --reasoning-parser deepseek_r1 >> /root/JqLogs/vllm_r1.log 2>&1 &
+CUDA_VISIBLE_DEVICES=2 nohup vllm serve /data/models/deepseek-r1-distill-qwen-32b-awq/ --gpu-memory-utilization 0.98 --max-model-len 4000 --served-model-name DeepSeekR1 --host 0.0.0.0 --port 8000 --enable-reasoning --reasoning-parser deepseek_r1 --kv_cache_dtype fp8 >> /root/JqLogs/vllm_r1.log 2>&1 &
 tail -f /root/JqLogs/vllm_r1.log
 ```
 
@@ -197,6 +225,8 @@ cd /data/models/
 git clone https://github.com/flashinfer-ai/flashinfer.git --recursive
 cd flashinfer
 MAX_JOBS=8 TORCH_CUDA_ARCH_LIST="7.5 8.0 8.9 9.0 9.0a" FLASHINFER_ENABLE_AOT=1 pip install --no-build-isolation --verbose --editable .
+
+
 workon py311
 CUDA_VISIBLE_DEVICES=0 python -m olmocr.pipeline --model /data/models/allenai/olmOCR-7B-0225-preview ./localworkspace --pdfs /root/newgit/olmocr/*.pdf
 
