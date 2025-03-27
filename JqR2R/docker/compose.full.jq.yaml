@@ -160,7 +160,7 @@ services:
       retries: 5
 
   r2r:
-    image: jqr2r_with_code_model_volume:latest
+    image: jqr2r_with_code_model_volume_test2:latest
     ports:
       - "7272:7272"
     env_file:
@@ -175,6 +175,8 @@ services:
     volumes:
       - /data/models/bce-embedding-base_v1:/data/models/bce-embedding-base_v1
       - /data/projects/JqChatV2/JqChat/JqR2R/py:/app
+      - /data/projects/JqChatV2/JqChat/jqcode:/app/jqcode
+      - /data/projects/JqChatV2/JqChat/.env:/app/.env
       - ./user_configs:/app/user_configs
       - hatchet_api_key:/hatchet_api_key:ro
       - ./scripts:/scripts

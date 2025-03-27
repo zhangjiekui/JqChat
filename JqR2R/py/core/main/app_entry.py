@@ -63,8 +63,17 @@ async def create_r2r_app(
     # Build the R2RApp
     builder = R2RBuilder(config=config)
     return await builder.build()
-
-
+# todo
+# os.environ['R2R_POSTGRES_USER']="postgres"
+# os.environ['R2R_POSTGRES_PASSWORD']="postgres"
+# os.environ['R2R_POSTGRES_HOST']="postgres"
+# os.environ['R2R_POSTGRES_PORT']="5432"
+# os.environ['R2R_POSTGRES_DBNAME']="postgres"
+os.environ['R2R_POSTGRES_USER']="langchain"
+os.environ['R2R_POSTGRES_PASSWORD']="langchain"
+os.environ['R2R_POSTGRES_HOST']="10.1.150.105"
+os.environ['R2R_POSTGRES_PORT']="6022"
+os.environ['R2R_POSTGRES_DBNAME']="postgres"
 config_name = os.getenv("R2R_CONFIG_NAME", None)
 config_path = os.getenv("R2R_CONFIG_PATH", None)
 

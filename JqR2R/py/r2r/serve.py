@@ -1,4 +1,3 @@
-import sys,pathlib
 import os, sys,pathlib    
 # def add_import_paths():
 #     project_root_path = pathlib.Path().resolve()
@@ -16,17 +15,36 @@ import os, sys,pathlib
 import argparse
 import asyncio
 import logging
-import os
-import sys
 from typing import Optional
-
-
 logger = logging.getLogger(__name__)
+
+# 放到/data/projects/JqChatV2/JqChat/JqR2R/py/core/main/app_entry.py
+# os.environ['R2R_POSTGRES_USER']="postgres"
+# os.environ['R2R_POSTGRES_PASSWORD']="postgres"
+# os.environ['R2R_POSTGRES_HOST']="postgres"
+# os.environ['R2R_POSTGRES_PORT']="5432"
+# os.environ['R2R_POSTGRES_DBNAME']="postgres"
+
+# os.environ['R2R_POSTGRES_USER']="langchain"
+# os.environ['R2R_POSTGRES_PASSWORD']="langchain"
+# os.environ['R2R_POSTGRES_HOST']="10.1.150.105"
+# os.environ['R2R_POSTGRES_PORT']="6022"
+# os.environ['R2R_POSTGRES_DBNAME']="postgres"
+os.environ['R2R_PROJECT_NAME']="jq_new_project"
+
+os.environ['NUMEXPR_MAX_THREAD']='20'
+os.environ['HATCHET_CLIENT_TOKEN']="eyJhbGciOiJFUzI1NiIsImtpZCI6InQ3ZF81ZyJ9.eyJhdWQiOiJodHRwOi8vaG9zdC5kb2NrZXIuaW50ZXJuYWw6NzI3NCIsImV4cCI6NDg5NTgxNDE5NywiZ3JwY19icm9hZGNhc3RfYWRkcmVzcyI6ImhhdGNoZXQtZW5naW5lOjcwNzciLCJpYXQiOjE3NDIyMTQxOTcsImlzcyI6Imh0dHA6Ly9ob3N0LmRvY2tlci5pbnRlcm5hbDo3Mjc0Iiwic2VydmVyX3VybCI6Imh0dHA6Ly9ob3N0LmRvY2tlci5pbnRlcm5hbDo3Mjc0Iiwic3ViIjoiNzA3ZDA4NTUtODBhYi00ZTFmLWExNTYtZjFjNDU0NmNiZjUyIiwidG9rZW5faWQiOiI3YWNkZWM4Yy1kNDdiLTQ1ZmMtOGMwNi1kZmVmNmJlMTc5MTYifQ.9V7039q8l8URALS-8pi-hZIaIDoDAbTKao78gaNM3jAkag5F1cYMumKwU-9MK1m7PThmzR9f1L2L5TdEb1mi-w"
+os.environ['CLUSTERING_SERVICE_URL']='http://10.1.150.105:7276'
+os.environ['SERVER_GRPC_BROADCAST_ADDRESS']='10.1.150.105:7077'
+os.environ['OPENAI_BASE_URL']='http://10.1.150.105:3000/v1'
+os.environ['OPENAI_API_KEY']='sk-0S7bV3oaznhuevN899Db0cDa20Ae4c5485Ce5862A86063C8'
+os.environ['SERPER_API_KEY']="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"
 
 try:
     import r2r
     print(dir(r2r))
-    from r2r import *
+    # from r2r import *
+    from r2r import R2RConfig,R2RBuilder
 
 except ImportError as e:
     logger.error(
@@ -35,23 +53,6 @@ except ImportError as e:
     logger.error("To run the server, install the required dependencies:")
     logger.error("pip install 'r2r[core]'")
     sys.exit(1)
-
-logger = logging.getLogger(__name__)
-os.environ['NUMEXPR_MAX_THREAD']='20'
-os.environ['R2R_POSTGRES_USER']="langchain"
-os.environ['R2R_POSTGRES_PASSWORD']="langchain"
-os.environ['R2R_POSTGRES_HOST']="10.1.150.105"
-os.environ['R2R_POSTGRES_PORT']="6000"
-os.environ['R2R_POSTGRES_DBNAME']="postgres"
-os.environ['R2R_PROJECT_NAME']="jq_new_project"
-os.environ['HATCHET_CLIENT_TOKEN']="eyJhbGciOiJFUzI1NiIsImtpZCI6InQ3ZF81ZyJ9.eyJhdWQiOiJodHRwOi8vaG9zdC5kb2NrZXIuaW50ZXJuYWw6NzI3NCIsImV4cCI6NDg5NTgxNDE5NywiZ3JwY19icm9hZGNhc3RfYWRkcmVzcyI6ImhhdGNoZXQtZW5naW5lOjcwNzciLCJpYXQiOjE3NDIyMTQxOTcsImlzcyI6Imh0dHA6Ly9ob3N0LmRvY2tlci5pbnRlcm5hbDo3Mjc0Iiwic2VydmVyX3VybCI6Imh0dHA6Ly9ob3N0LmRvY2tlci5pbnRlcm5hbDo3Mjc0Iiwic3ViIjoiNzA3ZDA4NTUtODBhYi00ZTFmLWExNTYtZjFjNDU0NmNiZjUyIiwidG9rZW5faWQiOiI3YWNkZWM4Yy1kNDdiLTQ1ZmMtOGMwNi1kZmVmNmJlMTc5MTYifQ.9V7039q8l8URALS-8pi-hZIaIDoDAbTKao78gaNM3jAkag5F1cYMumKwU-9MK1m7PThmzR9f1L2L5TdEb1mi-w"
-os.environ['CLUSTERING_SERVICE_URL']='http://10.1.150.105:7276'
-
-os.environ['SERVER_GRPC_BROADCAST_ADDRESS']='10.1.150.105:7077'
-os.environ['OPENAI_BASE_URL']='http://10.1.150.105:3000/v1'
-os.environ['OPENAI_API_KEY']='sk-0S7bV3oaznhuevN899Db0cDa20Ae4c5485Ce5862A86063C8'
-
-os.environ['SERPER_API_KEY']="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"
 
 async def create_app(
     config_name: Optional[str] = None,

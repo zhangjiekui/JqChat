@@ -1,28 +1,3 @@
-请将R2RV350目录下.py文件中的类似from .core import引用更改为类似 ..core的相对引用，要保证相对引用的准确性
-
-请将R2RV350目录下.py所有文件中绝对引用改为相对引用（例如from .core import引用更改为类似 ..core的相对引用），请仔细分析代码目录结构，要保证相对引用的准确性
-
-请将R2RV350目录下.py所有文件中,首先查找包含绝对引用from R2RV350.py.的地方，全部改为相对引用（例如from .core import引用更改为类似 ..core的相对引用），请仔细分析代码目录结构，要保证相对引用的准确性。逐个文件进行修改，避免提示词过长导致调用错误
-workon vllmb
-VLLM_USE_V1=0 CUDA_VISIBLE_DEVICES=0,1 vllm serve /data/models/Mistral-Small-3.1-24B-Instruct-2503/ --tokenizer_mode mistral --config_format mistral --load_format mistral --tool-call-parser mistral --enable-auto-tool-choice --host 0.0.0.0 --port 9999 --max-model-len 32000 --tensor-parallel-size 2 --use_v2_block_manager --gpu-memory-utilization 0.95 --max-num-seqs 32 --enable-prefix-caching --enable-chunked-prefill --served-model-name mistral
-
-
-workon vllmb
-VLLM_USE_V1=0 vllm serve /data/models/Mistral-Small-3.1-24B-Instruct-2503/ --tokenizer_mode mistral --config_format mistral --load_format mistral --tool-call-parser mistral --enable-auto-tool-choice --limit_mm_per_prompt 'image=10' --host 0.0.0.0 --port 9999 --max-model-len 32000 --tensor-parallel-size 4 --use_v2_block_manager --gpu-memory-utilization 0.95 --max-num-seqs 32 --enable-prefix-caching --enable-chunked-prefill --served-model-name mistral
-
-workon vllmb
-VLLM_USE_V1=0 CUDA_VISIBLE_DEVICES=0,1 vllm serve /data/models/Mistral-Small-3.1-24B-Instruct-2503/ --tokenizer_mode mistral --config_format mistral --load_format mistral --tool-call-parser mistral --enable-auto-tool-choice --limit_mm_per_prompt 'image=10' --host 0.0.0.0 --port 9999 --tensor-parallel-size 2 --max-model-len 2048 --gpu-memory-utilization 0.95 --max-num-batched-tokens 8192 --served-model-name mistral --dtype float16
-
-
-
-docker pull vllm/vllm-openai
-
-docker run --runtime nvidia --gpus '"device=0,1"' all -p 8000:8000 \
--v /data/models:/data/models \
--v /data/xinference:/data/xinference \
--v ~/.cache/huggingface:/root/.cache/huggingface \
---ipc=host \
-vllm/vllm-openai:latest --model /data/xinference/modelscope/hub/qwen/Qwen2.5-32B-Instruct-AWQ --served-model-name qwen25_32b --enable-auto-tool-choice --tool-call-parser hermes --host 0.0.0.0 --port 9998 --max-model-len 32000 --tensor-parallel-size 2 --use_v2_block_manager --gpu-memory-utilization 0.95 --max-num-seqs 32 --enable-prefix-caching --enable-chunked-prefill
 
 ## vllm8.2 配合使用 OneAPI
 ### 模型部署
@@ -31,11 +6,6 @@ workon vllmb
 VLLM_ATTENTION_BACKEND=FLASHINFER CUDA_VISIBLE_DEVICES=0,1 nohup vllm serve /data/models/Qwen/QwQ-32B-AWQ/ --served-model-name qwen25qwq --enable-auto-tool-choice --tool-call-parser hermes --enable-reasoning --reasoning-parser deepseek_r1 --host 0.0.0.0 --port 9998 --max-model-len 32000 --tensor-parallel-size 2 --gpu-memory-utilization 0.95 --max-num-seqs 64 --enable-prefix-caching --enable-chunked-prefill --kv_cache_dtype fp8 >> /root/JqLogs/qwq.log 2>&1 &
 tail -f /root/JqLogs/qwq.log
 ```
-
-
-/data/models/unsloth/Qwen2___5-VL-32B-Instruct-bnb-4bit
-
-
 
 【 Qwen2.5-VL does not support _Backend.FLASHINFER backend now】
 ``` qwenvl gpu2_3
@@ -94,8 +64,6 @@ CUDA_VISIBLE_DEVICES=3 vllm serve /data/models/Qwen/Qwen2___5-7B-Instruct-1M \
   >> /root/JqLogs/qwen25m1.log 2>&1 &
   tail -f /root/JqLogs/qwen25m1.log
 ```
-# --quantization fp8  # Enabling FP8 quantization for model weights can reduce memory usage.
-
 
 ### OneAPI 配置
 登录信息
@@ -105,50 +73,92 @@ root 12345678
 下游配置
 http://10.1.150.105:3000/v1
 
-
-
-## vllm8.0保险的启动方法
-workon vllmb 
-VLLM_USE_V1=0 CUDA_VISIBLE_DEVICES=2,3 VLLM_ALLOW_ENGINE_USE_RAY=1 nohup vllm serve /data/xinference/modelscope/hub/qwen/Qwen2.5-32B-Instruct-AWQ --served-model-name Qwen25B32 --enable-auto-tool-choice --tool-call-parser hermes --host 0.0.0.0 --port 9997 --max-model-len 32000 --tensor-parallel-size 2 --use_v2_block_manager --gpu-memory-utilization 0.95 --max-num-seqs 32 --enable-prefix-caching --enable-chunked-prefill >> /root/JqLogs/Qwen25B32.log 2>&1 &
-tail -f /root/JqLogs/Qwen25B32.log
-
-workon vllmb 
-VLLM_USE_V1=0 CUDA_VISIBLE_DEVICES=2,3 VLLM_ALLOW_ENGINE_USE_RAY=1 nohup vllm serve /data/xinference/modelscope/hub/qwen/Qwen2.5-32B-Instruct-AWQ --served-model-name qwen25qwq --enable-auto-tool-choice --tool-call-parser hermes --host 0.0.0.0 --port 9998 --max-model-len 32000 --tensor-parallel-size 2 --use_v2_block_manager --gpu-memory-utilization 0.95 --max-num-seqs 32 --enable-prefix-caching --enable-chunked-prefill >> /root/JqLogs/vllm.log 2>&1 &
-tail -f /root/JqLogs/vllm.log
-
-
-workon vllmb 
-VLLM_OPENVINO_KVCACHE_SPACE=5 VLLM_OPENVINO_CPU_KV_CACHE_PRECISION=u8 VLLM_OPENVINO_ENABLE_QUANTIZED_WEIGHTS=ON CUDA_VISIBLE_DEVICES=0,1,2,3 VLLM_ALLOW_ENGINE_USE_RAY=1 nohup vllm serve /data/xinference/modelscope/hub/qwen/Qwen2.5-32B-Instruct-AWQ --disable-mm-preprocessor-cache --served-model-name qwen25qwq --enable-auto-tool-choice --tool-call-parser hermes --host 0.0.0.0 --port 9998 --max-model-len 32000 --tensor-parallel-size 2 --use_v2_block_manager --gpu-memory-utilization 0.95 --max-num-seqs 32 --enable-prefix-caching --enable-chunked-prefill >> /root/JqLogs/vllm.log 2>&1 &
-tail -f /root/JqLogs/vllm.log
-
-workon vllmb 
-VLLM_ALLOW_ENGINE_USE_RAY=1 nohup vllm serve /data/xinference/modelscope/hub/qwen/Qwen2.5-32B-Instruct-AWQ --served-model-name qwen25qwq --enable-auto-tool-choice --tool-call-parser hermes --host 0.0.0.0 --port 9998 --max-model-len 32000 --tensor-parallel-size 1 --use_v2_block_manager --gpu-memory-utilization 0.95 --max-num-seqs 32 --enable-prefix-caching --enable-chunked-prefill >> /root/JqLogs/vllm.log 2>&1 &
-tail -f /root/JqLogs/vllm.log
-
-
-VLLM_OPENVINO_KVCACHE_SPACE=100 VLLM_OPENVINO_CPU_KV_CACHE_PRECISION=u8 VLLM_OPENVINO_ENABLE_QUANTIZED_WEIGHTS=ON
-
-
-# Set Postgres+pgvector settings
-```
+## 运行R2R和JqChat
+### Set Postgres+pgvector settings
+```/data/projects/JqChatV2/JqChat/JqR2R/py/r2r/serve.py
+os.environ['NUMEXPR_MAX_THREAD']='20'
 os.environ['R2R_POSTGRES_USER']="langchain"
 os.environ['R2R_POSTGRES_PASSWORD']="langchain"
 os.environ['R2R_POSTGRES_HOST']="10.1.150.105"
 os.environ['R2R_POSTGRES_PORT']="6000"
 os.environ['R2R_POSTGRES_DBNAME']="postgres"
-os.environ['R2R_PROJECT_NAME']="r2r_jq_project"
-os.environ['CLUSTERING_SERVICE_URL']='http://10.1.150.105:7276'
+os.environ['R2R_PROJECT_NAME']="jq_new_project"
 os.environ['HATCHET_CLIENT_TOKEN']="eyJhbGciOiJFUzI1NiIsImtpZCI6InQ3ZF81ZyJ9.eyJhdWQiOiJodHRwOi8vaG9zdC5kb2NrZXIuaW50ZXJuYWw6NzI3NCIsImV4cCI6NDg5NTgxNDE5NywiZ3JwY19icm9hZGNhc3RfYWRkcmVzcyI6ImhhdGNoZXQtZW5naW5lOjcwNzciLCJpYXQiOjE3NDIyMTQxOTcsImlzcyI6Imh0dHA6Ly9ob3N0LmRvY2tlci5pbnRlcm5hbDo3Mjc0Iiwic2VydmVyX3VybCI6Imh0dHA6Ly9ob3N0LmRvY2tlci5pbnRlcm5hbDo3Mjc0Iiwic3ViIjoiNzA3ZDA4NTUtODBhYi00ZTFmLWExNTYtZjFjNDU0NmNiZjUyIiwidG9rZW5faWQiOiI3YWNkZWM4Yy1kNDdiLTQ1ZmMtOGMwNi1kZmVmNmJlMTc5MTYifQ.9V7039q8l8URALS-8pi-hZIaIDoDAbTKao78gaNM3jAkag5F1cYMumKwU-9MK1m7PThmzR9f1L2L5TdEb1mi-w"
+os.environ['CLUSTERING_SERVICE_URL']='http://10.1.150.105:7276'
+os.environ['SERVER_GRPC_BROADCAST_ADDRESS']='10.1.150.105:7077'
+os.environ['OPENAI_BASE_URL']='http://10.1.150.105:3000/v1'
+os.environ['OPENAI_API_KEY']='sk-0S7bV3oaznhuevN899Db0cDa20Ae4c5485Ce5862A86063C8'
+os.environ['SERPER_API_KEY']="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"
+```
+sudo systemctl restart docker
+sudo systemctl status docker
+
+### 设置容器服务自启动 elastic、polardb15_vector_age_zh（pg）
+#### 启动DB Docker: polardb15_vector_age_zh:v1.2
+```
+docker run -d
+--cap-add=SYS_PTRACE --privileged=true
+--env POLARDB_PORT=5432
+--env POLARDB_USER=langchain
+--env POLARDB_PASSWORD=langchain
+--env POLARDB_DB=postgres
+-p 6000:5432
+```
+
+#### 启动Docker重启及容器自启动
+```
+sudo systemctl restart docker
+sudo systemctl status docker
+
+docker ps -a
+docker start [CONTAINER ID]
+docker update --restart=always [CONTAINER ID]
+```
+
+### 修改Docker File和
+#### 新的Dockerfile_Jq_with_code_model_volume
+```
+RUN pip config set global.index-url https://mirrors.tuna.tsinghua.edu.cn/pypi/web/simple
+RUN pip install --no-cache-dir torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cpu --proxy=http://10.1.42.150:4780 --verbose
+```
+build image：/data/projects/JqChatV2/JqChat/JqR2R/py/Dockerfile_Jq_with_code_model_volume
+image name：jqr2r_with_code_model_volume:latest
+【Test】image name：jqr2r_with_code_model_volume_test:latest
+#### 新的compose.full.jq.yaml
+/data/projects/JqChatV2/JqChat/JqR2R/docker/compose.full.jq.yaml
+```
+  r2r:
+    image: jqr2r_with_code_model_volume:latest
+    【Test】image: jqr2r_with_code_model_volume_test:latest
+    ports:
+      - "7272:7272"
+    env_file:
+      - ./env/r2r-full.env
+    command: sh /scripts/start-r2r.sh
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:7272/v3/health"]
+      interval: 6s
+      timeout: 5s
+      retries: 5
+    restart: on-failure
+    volumes:
+      - /data/models/bce-embedding-base_v1:/data/models/bce-embedding-base_v1
+      - /data/projects/JqChatV2/JqChat/JqR2R/py:/app
+      - /data/projects/JqChatV2/JqChat/jqcode:/app/jqcode
+      - /data/projects/JqChatV2/JqChat/.env:/app/.env
+```
+cd /data/projects/JqChatV2/JqChat/JqR2R/docker/
+docker compose -f compose.full.jq.yaml up -d
+# `--profile postgres` can be omitted when using external Postgres
 
 
-启动DB Docker: polardb15_vector_age_zh:v1.2 
 VSCODE中在单独界面打开文件夹/data/projects/JqChatV2/JqChat/JqR2R/py
 cd /data/projects/JqChatV2/JqChat/JqR2R/py
 pip install -e .[core]
 python -m r2r.serve
 
 或者启动docker
-docker run  -p 7272:7272 -v /data/models/bce-embedding-base_v1:/data/models/bce-embedding-base_v1 -v /data/projects/JqChatV2/JqChat/JqR2R/py:/app jqr2r_with_code_model_volume:latest
+docker run  -p 7272:7272 -v /data/models/bce-embedding-base_v1:/data/models/bce-embedding-base_v1 -v /data/projects/JqChatV2/JqChat/JqR2R/py:/app -v /data/projects/JqChatV2/JqChat/jqcode:/app/jqcode -v /data/projects/JqChatV2/JqChat/.env:/app/.env jqr2r_with_code_model_volume_test:latest
 
 
 
@@ -169,13 +179,17 @@ docker run  -p 7272:7272 -v /data/models/bce-embedding-base_v1:/data/models/bce-
 import os,sys,pathlib
 project_root_path = pathlib.Path().resolve()
 sys.path.append(str(project_root_path))
-os.environ['OPENAI_API_KEY']='abc123' 
-否则会报错：ImportError: cannot import name 'AuthConfig' from 'core.base' (unknown location)
-###注意，在本地开发测试时，在语句from r2r import * 之前 需要加入路径，代码如下###
+###否则会报错：ImportError: cannot import name 'AuthConfig' from 'core.base' (unknown location)
+###注意，在本地开发测试时，在语句from r2r import * 之前 需要加入路径，代码如上###
+
 /data/projects/JqChatV2/JqChat/JqR2R/py/local_test/test_hello_r2r_jq_new.py
 /data/projects/JqChatV2/JqChat/jq_local_r2r_test.py
  
 ```
+
+sudo systemctl restart docker
+sudo systemctl status docker
+journalctl -u docker.service
 
 
 
@@ -1205,7 +1219,7 @@ docker run -d \
     --env POLARDB_PASSWORD=langchain \
     --env POLARDB_DB=postgres \
     -p 6022:5432 \
-    polardb15_vector_age_zh:v1.1
+    polardb15_vector_age_zh:v1.2
 
 ## postgres: pg_vector_age_graph
 

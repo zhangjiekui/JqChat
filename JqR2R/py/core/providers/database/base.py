@@ -25,7 +25,7 @@ class SemaphoreConnectionPool:
             self.semaphore = asyncio.Semaphore(
                 int(self.postgres_configuration_settings.max_connections * 0.9)
             )
-
+            logger.warning(f"{self.connection_string=}")
             self.pool = await asyncpg.create_pool(
                 self.connection_string,
                 max_size=self.postgres_configuration_settings.max_connections,

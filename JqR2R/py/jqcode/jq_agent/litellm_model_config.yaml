@@ -1,8 +1,0 @@
-# vllm serve /data/xinference/cache/mistral-large-instruct-gptq-123b --tensor-parallel-size 4 --max_model_len=3000 --gpu_memory_utilization 0.97 --enforce-eager --dtype half --kv-cache-dtype fp8  --api-key abc123 
-# litellm --config /data/projects/JqChat/jqcode/jq_agent/litellm_model_config.yaml --local
-model_list:
-  - model_name: /data/xinference/cache/mistral-large-instruct-gptq-123b
-    litellm_params:
-      model: openai//data/xinference/cache/mistral-large-instruct-gptq-123b  # add openai/ prefix to route as OpenAI provider,本地模型openai//，第二个/是本地路径需要的
-      api_base: http://localhost:8000/v1       # add api base for OpenAI compatible provider
-      api_key: abc123                 # api key to send your model

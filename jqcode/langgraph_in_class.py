@@ -34,7 +34,8 @@ from jqcode.jq_utils.logger import jqkj_logger
 from dotenv import load_dotenv
 from datetime import date,datetime
 
-_ = load_dotenv()
+if not os.environ["env_loaded"]:
+    _ = load_dotenv()
 logger = jqkj_logger(__file__).get_logger()
 
 # python_repl = PythonREPLTool().run #这是原生的

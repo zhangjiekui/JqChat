@@ -20,7 +20,6 @@ from aiomultiprocess import Pool
 import requests
 from requests.compat import _resolve_char_detection #()chardat
 from bs4 import BeautifulSoup
-
 import html2text
 from langchain_core.documents import Document
 from langchain_community.document_loaders import AsyncHtmlLoader
