@@ -2392,7 +2392,7 @@ class PostgresGraphsHandler(Handler):
                 }
             )
 
-        endpoint = os.environ.get("CLUSTERING_SERVICE_URL")
+        endpoint = os.environ.get("CLUSTERING_SERVICE_URL","http://10.1.150.105:7276")
         if not endpoint:
             raise ValueError("CLUSTERING_SERVICE_URL not set.")
 

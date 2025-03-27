@@ -6,7 +6,10 @@ r2rconfig = R2RConfig.from_toml(config_path="/data/projects/JqChatV2/JqChat/JqR2
 print("R2R服务测试--------请首先运行[python -m r2r.serve]启动R2R服务--------")
 client = R2RClient(base_url='http://10.1.150.105:7272') # can set remote w/ R2RClient(base_url=...)
 client.users.login("admin@example.com", "change_me_immediately")
-print("R2RClient对象创建\登录成功")
+
+async_client = R2RAsyncClient(base_url='http://10.1.150.105:7272')
+async_client.users.login("admin@example.com", "change_me_immediately")
+print("R2RClient\R2RAsyncClient对象创建\登录成功")
 
 def model_test():
     print("大语言模型测试-------------------")    
@@ -194,6 +197,38 @@ def get_chunked_documents_from_file_directory(dir:str,input_files:str=None, over
 
     return tree_nodes
 
+async def process_documents(aclient:R2RAsyncClient,dir:str,input_files:str=None, overwrite_existing_converted_files=False,exclude_hidden=False):
+    # 构造晶奇文件读取器，读取目录中的文件
+    simple_reader = JqkjSimpleDirectoryReader(input_dir=dir,input_files=input_files, 
+                                              overwrite_existing_converted_files=overwrite_existing_converted_files,
+                                              exclude_hidden=exclude_hidden)
+    documents =await simple_reader.aload_data()
+    logger.warning(f'Loaded {len(documents)} documents from {dir}:')
+    for doc in documents:
+        id = doc.id_
+        file_path = doc.metadata.get("file_path",doc.metadata.get("original_source_converted_jq",""))
+        metadata=doc.metadata
+        try:
+            metadata.pop('file_doc_tree_jq')
+        except:
+            pass
+        try:
+            create_response = await aclient.documents.create(
+                            file_path=file_path,
+                            metadata=doc.metadata,
+                            id=id
+                        )
+            print(create_response) 
+
+            extract_response = await aclient.documents.extract(id=id,run_with_orchestration= True)
+            print(extract_response.results.message) 
+            deduplicate_response =await aclient.documents.deduplicate(id=id)
+            print(deduplicate_response.results.message)
+        except Exception as e:
+            logger.warning(f"aclient.documents.create/extract/deduplicate{file_path}过程中出现错误{e}")
+
+
+
 def r2r_lifecycle_test():
     print("R2R服务生命周期测试--------请首先运行[python -m r2r.serve]启动R2R服务--------")
     print("==List documents==")
@@ -208,7 +243,11 @@ def r2r_lifecycle_test():
 
 if __name__ == "__main__":
 
-    model_test()
-    r2r_test()
+    # model_test()
+    # r2r_test()
     file_dir = '/data/projects/JqChatV2/JqChat/langchain_graphrag_code_test/data'
     # chunked_documents = get_chunked_documents_from_file_directory(file_dir)
+
+    import asyncio
+    asyncio.run(process_documents(aclient=async_client,dir=file_dir))
+    # async_client.documents

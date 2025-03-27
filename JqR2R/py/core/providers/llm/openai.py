@@ -149,12 +149,14 @@ class OpenAICompletionProvider(CompletionProvider):
         api_key=os.getenv("OPENAI_API_KEY")
         if api_key == "abc123" or not api_key:
             api_key = "sk-0S7bV3oaznhuevN899Db0cDa20Ae4c5485Ce5862A86063C8"
-            base_url = os.getenv("OPENAI_BASE_URL")
-            if not base_url:
-                base_url = "http://10.1.150.105:3000/v1"
-            self.openai_client = OpenAI(base_url=base_url,api_key=api_key)
-            self.async_openai_client = AsyncOpenAI(base_url=base_url,api_key=api_key)
-            logger.warning(f"OpenAI clients({base_url=},{api_key=}) initialized successfully")
+        
+        base_url = os.getenv("OPENAI_BASE_URL")
+        if not base_url:
+            base_url = "http://10.1.150.105:3000/v1"
+            
+        self.openai_client = OpenAI(base_url=base_url,api_key=api_key)
+        self.async_openai_client = AsyncOpenAI(base_url=base_url,api_key=api_key)
+        logger.warning(f"OpenAI clients({base_url=},{api_key=}) initialized successfully")
 
         # Initialize Azure OpenAI clients if credentials exist
         azure_api_key = os.getenv("AZURE_API_KEY")
@@ -276,6 +278,8 @@ class OpenAICompletionProvider(CompletionProvider):
                 )
             return self.azure_client, model[6:]  # Strip 'azure/' prefix
         elif model.startswith("openai/"):
+            logger.warning(f"{model}")
+            logger.warning(f"{self.openai_client}")
             if not self.openai_client:
                 raise ValueError(
                     "OpenAI credentials not configured but openai/ model prefix used"

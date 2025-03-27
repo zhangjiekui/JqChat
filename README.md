@@ -35,14 +35,15 @@ tail -f /root/JqLogs/Qwen25B32.log
 
 ```
 workon vllmb 
-CUDA_VISIBLE_DEVICES=2,3 vllm serve /data/models/Qwen/Qwen2___5-7B-Instruct-1M \
+CUDA_VISIBLE_DEVICES=0,1 vllm serve /data/models/Qwen/Qwen2___5-7B-Instruct-1M \
   --tensor-parallel-size 2 \
-  --max-model-len 100000 \
+  --max-model-len 32000 \
   --enable-chunked-prefill \
   --enable-prefix-caching \
   --max-num-batched-tokens 80000 \
   --max-num-seqs 128 \
   --served-model-name qwen25m1 \
+  --enforce-eager \
   --host 0.0.0.0 \
   --port 9999 \
   >> /root/JqLogs/qwen25m1.log 2>&1 &
@@ -59,6 +60,7 @@ CUDA_VISIBLE_DEVICES=3 vllm serve /data/models/Qwen/Qwen2___5-7B-Instruct-1M \
   --max-num-batched-tokens 10000 \
   --max-num-seqs 128 \
   --served-model-name qwen25m1 \
+  --enforce-eager \
   --host 0.0.0.0 \
   --port 9999 \
   >> /root/JqLogs/qwen25m1.log 2>&1 &
