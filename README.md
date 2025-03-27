@@ -24,26 +24,79 @@ docker run --runtime nvidia --gpus '"device=0,1"' all -p 8000:8000 \
 --ipc=host \
 vllm/vllm-openai:latest --model /data/xinference/modelscope/hub/qwen/Qwen2.5-32B-Instruct-AWQ --served-model-name qwen25_32b --enable-auto-tool-choice --tool-call-parser hermes --host 0.0.0.0 --port 9998 --max-model-len 32000 --tensor-parallel-size 2 --use_v2_block_manager --gpu-memory-utilization 0.95 --max-num-seqs 32 --enable-prefix-caching --enable-chunked-prefill
 
-## vllm8.2 配合 OneAPI
+## vllm8.2 配合使用 OneAPI
 ### 模型部署
-``` qwen25qwq gpu01
+``` qwen25qwq gpu0_1
 workon vllmb
 VLLM_ATTENTION_BACKEND=FLASHINFER CUDA_VISIBLE_DEVICES=0,1 nohup vllm serve /data/models/Qwen/QwQ-32B-AWQ/ --served-model-name qwen25qwq --enable-auto-tool-choice --tool-call-parser hermes --enable-reasoning --reasoning-parser deepseek_r1 --host 0.0.0.0 --port 9998 --max-model-len 32000 --tensor-parallel-size 2 --gpu-memory-utilization 0.95 --max-num-seqs 64 --enable-prefix-caching --enable-chunked-prefill --kv_cache_dtype fp8 >> /root/JqLogs/qwq.log 2>&1 &
 tail -f /root/JqLogs/qwq.log
 ```
 
+
+/data/models/unsloth/Qwen2___5-VL-32B-Instruct-bnb-4bit
+
+
+
 【 Qwen2.5-VL does not support _Backend.FLASHINFER backend now】
+``` qwenvl gpu2_3
+workon vllmb
+CUDA_VISIBLE_DEVICES=2,3 VLLM_ALLOW_ENGINE_USE_RAY=1 nohup vllm serve /data/models/Qwen/Qwen2___5-VL-32B-Instruct-AWQ --served-model-name qwenvl --enable-auto-tool-choice --tool-call-parser hermes --gpu-memory-utilization 0.90 --port 9996 --host 0.0.0.0 --limit-mm-per-prompt image=5,video=5 --max-model-len 32000  --tensor-parallel-size 2 --max-num-seqs 32 --enable-prefix-caching --enable-chunked-prefill >> /root/JqLogs/vllmvl.log 2>&1 &
+tail -f /root/JqLogs/vllmvl.log 
+```
+
 ``` qwenvl gpu2
 workon vllmb
 CUDA_VISIBLE_DEVICES=2 VLLM_ALLOW_ENGINE_USE_RAY=1 nohup vllm serve /data/models/Qwen/Qwen2___5-VL-7B-Instruct --served-model-name qwenvl --enable-auto-tool-choice --tool-call-parser hermes --gpu-memory-utilization 0.98 --port 8000 --host 0.0.0.0 --limit-mm-per-prompt image=5,video=5 --max-model-len 32000  --max-num-seqs 16 --enable-prefix-caching --enable-chunked-prefill >> /root/JqLogs/vllmvl.log 2>&1 &
 tail -f /root/JqLogs/vllmvl.log 
 ```
+``` qwenvl gpu2_3
+workon vllmb
+CUDA_VISIBLE_DEVICES=2,3 VLLM_ALLOW_ENGINE_USE_RAY=1 nohup vllm serve /data/models/mlx-community/Qwen2___5-VL-32B-Instruct-4bit --served-model-name qwenvl --enable-auto-tool-choice --tool-call-parser hermes --gpu-memory-utilization 0.98 --port 8000 --host 0.0.0.0 --limit-mm-per-prompt image=5,video=5 --max-model-len 32000 --tensor-parallel-size 2 --max-num-seqs 16 --enable-prefix-caching --enable-chunked-prefill >> /root/JqLogs/vllmvl.log 2>&1 &
+tail -f /root/JqLogs/vllmvl.log 
+```
+
+
 
 ``` qwen25b32 gpu3
 workon vllmb 
 CUDA_VISIBLE_DEVICES=3 nohup vllm serve /data/xinference/modelscope/hub/qwen/Qwen2.5-32B-Instruct-AWQ --served-model-name qwen25b32 --enable-auto-tool-choice --tool-call-parser hermes --host 0.0.0.0 --port 9997 --max-model-len 8000 --tensor-parallel-size 1 --use_v2_block_manager --gpu-memory-utilization 0.97 --max-num-seqs 32 --enable-prefix-caching --enable-chunked-prefill --kv_cache_dtype fp8 >> /root/JqLogs/Qwen25B32.log 2>&1 &
 tail -f /root/JqLogs/Qwen25B32.log
 ```
+
+```
+workon vllmb 
+CUDA_VISIBLE_DEVICES=2,3 vllm serve /data/models/Qwen/Qwen2___5-7B-Instruct-1M \
+  --tensor-parallel-size 2 \
+  --max-model-len 100000 \
+  --enable-chunked-prefill \
+  --enable-prefix-caching \
+  --max-num-batched-tokens 80000 \
+  --max-num-seqs 128 \
+  --served-model-name qwen25m1 \
+  --host 0.0.0.0 \
+  --port 9999 \
+  >> /root/JqLogs/qwen25m1.log 2>&1 &
+  tail -f /root/JqLogs/qwen25m1.log
+```
+
+```
+workon vllmb 
+CUDA_VISIBLE_DEVICES=3 vllm serve /data/models/Qwen/Qwen2___5-7B-Instruct-1M \
+  --tensor-parallel-size 1 \
+  --max-model-len 32000 \
+  --enable-chunked-prefill \
+  --enable-prefix-caching \
+  --max-num-batched-tokens 10000 \
+  --max-num-seqs 128 \
+  --served-model-name qwen25m1 \
+  --host 0.0.0.0 \
+  --port 9999 \
+  >> /root/JqLogs/qwen25m1.log 2>&1 &
+  tail -f /root/JqLogs/qwen25m1.log
+```
+# --quantization fp8  # Enabling FP8 quantization for model weights can reduce memory usage.
+
+
 ### OneAPI 配置
 登录信息
 http://localhost:3000/
@@ -93,6 +146,9 @@ VSCODE中在单独界面打开文件夹/data/projects/JqChatV2/JqChat/JqR2R/py
 cd /data/projects/JqChatV2/JqChat/JqR2R/py
 pip install -e .[core]
 python -m r2r.serve
+
+或者启动docker
+docker run  -p 7272:7272 -v /data/models/bce-embedding-base_v1:/data/models/bce-embedding-base_v1 -v /data/projects/JqChatV2/JqChat/JqR2R/py:/app jqr2r_with_code_model_volume:latest
 
 
 

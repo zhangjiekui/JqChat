@@ -217,19 +217,15 @@ class JqIngestionProvider(IngestionProvider):
             chunks = splitter.create_documents([parsed_document])
 
         elif isinstance(parsed_document, DocxDocumentObject):
-            from jq_readers.jqkj_readers import JqkjDocxReader
-            from shared.utils.splitter.text import JqChineseRecursiveTextSplitter
-            from jq_splitters.jq_docx_tree_text_splitter import JqkjDocTreeTokenTextSplitter
+            from r2r import JqkjDocxReader,JqkjDocTreeTokenTextSplitter,JqChineseRecursiveTextSplitter
+            from llama_index.core.schema import TextNode
 
             reader = JqkjDocxReader()
             makeup_file_path="/app/docs/doc1.docx"
-            doc_tree,_ = reader.parse_docx_into_tree(parsed_document,file_path=makeup_file_path)          
-            
-            text_splitter = JqChineseRecursiveTextSplitter(self._tokenizer,chunk_size=self.embedding_model_max_tokens,chunk_overlap=0.2)
-            doc_tree_spiltter = JqkjDocTreeTokenTextSplitter.from_defaults(cr_text_splitter=text_splitter)
-            
 
-            from llama_index.core.schema import TextNode
+            doc_tree,_ = reader.parse_docx_into_tree(parsed_document,file_path=makeup_file_path)             
+            text_splitter = JqChineseRecursiveTextSplitter(tokenizer=None)
+            doc_tree_spiltter = JqkjDocTreeTokenTextSplitter.from_defaults(cr_text_splitter=text_splitter)
             lm_base_node = TextNode(text='',metadata={"source":makeup_file_path})
             split_results = doc_tree_spiltter._parse_node_on_tree(lm_base_node,doc_tree)
             chunks = [node.text for node in split_results]
@@ -282,6 +278,7 @@ class JqIngestionProvider(IngestionProvider):
                     ):  # Handle string output for backward compatibility
                         contents.append({"content": chunk})
             else:
+                ingestion_config_override.update({"document":document})
                 async for text in self.parsers[document.document_type].ingest(
                     file_content, **ingestion_config_override
                 ):

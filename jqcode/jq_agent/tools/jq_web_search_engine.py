@@ -2,7 +2,7 @@ import os
 import re
 import requests
 from bs4 import BeautifulSoup
-from fake_useragent import UserAgent
+
 
 from langchain_core.documents import Document
 from langchain_community.document_loaders import WebBaseLoader
@@ -29,6 +29,7 @@ filter_out_host = ['github.com','google.com','huggingface.co'] #这些网站的�
 html2text = Html2TextTransformer()
 
 try:
+    from fake_useragent import UserAgent
     ua = UserAgent()
     user_agents = ua.random
 except:

@@ -32,7 +32,14 @@ class JqDOCXParser(AsyncParser[str | bytes]):
         """Ingest DOCX data and yield text from each paragraph."""
         if isinstance(data, str):
             raise ValueError("DOCX data must be in bytes format.")
-
+        document = kwargs.get("document",None)
+        document_type = ''
+        if document:
+            document_type = document.document_type.value
+        if document_type != 'docx':
+            print("不是docx文件，需要进行转换")
+        else:
+            print("直接是docx文件，不需要进行转换")
         doc = self.Document(BytesIO(data))
         yield doc
 

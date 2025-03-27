@@ -14,6 +14,10 @@ from core.providers.llm.litellm import LiteLLMCompletionProvider
 from sdk import *
 from shared import *
 from core.utils.logging_config import configure_logging
+from jqcode.jq_agent.c0_init_env_models import env_models_instance
+from jqcode.jq_readers.jqkj_readers import JqkjDocxReader
+from jqcode.jq_splitters.jq_docx_tree_text_splitter import JqkjDocTreeTokenTextSplitter
+from shared.utils.splitter.text import JqChineseRecursiveTextSplitter
 
 __version__ = metadata.version("r2r")
 print("===============/data/projects/JqChatV2/JqChat/JqR2R/py/r2r/__init__.py中包括的包")

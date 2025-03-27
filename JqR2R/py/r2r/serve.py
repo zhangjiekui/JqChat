@@ -48,7 +48,9 @@ os.environ['HATCHET_CLIENT_TOKEN']="eyJhbGciOiJFUzI1NiIsImtpZCI6InQ3ZF81ZyJ9.eyJ
 os.environ['CLUSTERING_SERVICE_URL']='http://10.1.150.105:7276'
 
 os.environ['SERVER_GRPC_BROADCAST_ADDRESS']='10.1.150.105:7077'
-os.environ['OPENAI_API_KEY']='abc123'
+os.environ['OPENAI_BASE_URL']='http://10.1.150.105:3000/v1'
+os.environ['OPENAI_API_KEY']='sk-0S7bV3oaznhuevN899Db0cDa20Ae4c5485Ce5862A86063C8'
+
 os.environ['SERPER_API_KEY']="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"
 
 async def create_app(
@@ -150,7 +152,7 @@ def main():
     )
     parser.add_argument(
         "--config-path",
-        default="/data/projects/JqChatV2/JqChat/JqR2R/py/r2r/jq.toml",
+        default="./r2r/jq.toml",
         # default="/data/projects/JqChatV2/JqChat/R2RV350/py/core/configs/full_jq.toml",
         help="Path to the configuration file. Overrides R2R_CONFIG_PATH env if provided.",
     )

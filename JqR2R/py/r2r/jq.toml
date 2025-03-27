@@ -12,19 +12,17 @@ default_max_upload_size = 214748364800
 fast_llm = "openai/Qwen25B32"
 
 # LLM used for user-facing output, like RAG replies
-quality_llm = "openai/Qwen25B32"
+quality_llm = "openai/default"
 
 # LLM used for ingesting visual inputs
-vlm = "qwenvl"
-vlm_api_base = 'http://10.1.150.105:8000/v1'
-
+vlm = "openai/qwenvl"
 # LLM used for transcription
 audio_lm = "openai/whisper-1"
 
 # Reasoning model, used for `research` agent
 reasoning_llm = "openai/qwen25qwq"
 # Planning model, used for `research` agent
-planning_llm = "openai/Qwen25B32"
+planning_llm = "openai/qwen25qwq"
 
 
 [agent]
@@ -87,12 +85,12 @@ add_title_as_prefix = false
 concurrent_request_limit = 256
 
 [completion]
-provider = "litellm"
+provider = "openai"
 concurrent_request_limit = 64
   [completion.generation_config]
-    model = "openai/Qwen25B32"
+    model = "openai/default"
     concurrent_request_limit = 32
-    api_base = 'http://10.1.150.105:9997/v1'
+    api_base = 'http://10.1.150.105:3000/v1'
     temperature = 0.1
     top_p = 1
     max_tokens_to_sample = 4_096
@@ -101,7 +99,7 @@ concurrent_request_limit = 64
 
 [ingestion]
 provider = "jq"
-document_summary_model = "openai/Qwen25B32"
+document_summary_model = "openai/default"
 vision_img_model = "openai/qwenvl"
 vision_pdf_model = "openai/qwenvl"
 chunking_strategy = "jq"
@@ -123,9 +121,9 @@ log_table = "logs"
 log_info_table = "log_info"
 
 [orchestration]
-provider = "simple"
+# provider = "simple"
 # 下面的配置会出错：details = "DNS resolution failed for hatchet-engine:7077: C-ares status is not ARES_SUCCESS qtype=AAAA name=hatchet-engine is_balancer=0: Domain name not found"
-# provider = "hatchet" 
+provider = "hatchet" 
 
 [email]
 provider = "console_mock" # `smtp` | `sendgrid` supported

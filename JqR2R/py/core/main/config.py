@@ -147,6 +147,14 @@ class R2RConfig:
             config_path = R2RConfig.default_config_path
 
         # Load configuration from TOML file
+        print(f"原始使用的{config_path=}")
+        old = '/data/projects/JqChatV2/JqChat/JqR2R/py'
+        if old in config_path:
+            config_path=config_path.replace("old",".")
+            print(f"替换后使用的{config_path=}")
+            config_path = './r2r/jq.toml'
+            print(f"替换后使用的{config_path=}")
+        
         with open(config_path, encoding="utf-8") as f:
             config_data = toml.load(f)
 

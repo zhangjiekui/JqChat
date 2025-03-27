@@ -20,7 +20,7 @@ from aiohttp import request
 from aiomultiprocess import Pool
 import requests
 from bs4 import BeautifulSoup
-from fake_useragent import UserAgent
+
 import html2text
 from langchain_core.documents import Document
 from langchain_community.document_loaders import AsyncHtmlLoader,SeleniumURLLoader
@@ -84,6 +84,7 @@ def get_random_elements(my_list, N):
     return random_elements
 def get_user_agents():
     try:
+        from fake_useragent import UserAgent
         ua = UserAgent()
         user_agents = ua.random
     except:

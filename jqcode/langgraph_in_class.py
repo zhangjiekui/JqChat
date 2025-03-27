@@ -192,7 +192,13 @@ system_code_prompt=f"""请尽量使用简体中文来解答用户问题。
                 'matplotlib',
                 'seaborn',
                 'plotly',
-        Be sure to generate charts with plotly/matplotlib/seaborn, matplotlib.pyplot is preferred. But if you need geographical charts, use geopandas with the geopandas.datasets module.
+        Be sure to generate charts with plotly/matplotlib/seaborn, matplotlib.pyplot is preferred. When pyplot is used, please add the following codes to properly display:\n
+        # 设置中文字体和负号显示
+        plt.rcParams['font.sans-serif'] = ['SimHei']  # 使用黑体显示中文
+        plt.rcParams['axes.unicode_minus'] = False    # 显示负号
+        # 设置中文字体和负号显示
+        
+        But if you need geographical charts, use geopandas with the geopandas.datasets module.
         If the user has just uploaded a file, focus on the file that was most recently uploaded (and optionally all previously uploaded files)
 
         If the code modifies or produces a file/image, you must save the file/image to location '{env_models_instance.abs_workspace}/code', and add a print statement at the end of the code block that prints a link to it as HTML string: <a href='{env_models_instance.workspace_url}/download?file=INSERT_FILENAME_HERE'>下载文件</a>. Replace INSERT_FILENAME_HERE with the actual filename(only filename itself,no path prefix  needed).

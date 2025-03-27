@@ -1837,11 +1837,19 @@ class JqChineseRecursiveTextSplitter(RecursiveCharacterTextSplitter):
                 f"({chunk_size}), should be smaller."
             )
         if tokenizer is None:
-            from transformers import AutoTokenizer
-            tokenizer = AutoTokenizer.from_pretrained("/data/projects/JqChatV2/JqChat/JqR2R/py/model_files/bce-embedding-base_v1")
-            # tokenizer = AutoTokenizer.from_pretrained("maidalun1020/bce-embedding-base_v1")
-            # from jqcode.jq_agent.c0_init_env_models import env_models_instance
-            # tokenizer = env_models_instance._tokenizer
+            try:
+                # from jqcode.jq_agent.c0_init_env_models import env_models_instance
+                from r2r import env_models_instance
+                tokenizer = env_models_instance._tokenizer
+                print('直接从jqcode中获取tokenizer成功')
+            except:
+                emb_model_path = "/data/models/bce-embedding-base_v1/bce-embedding-base_v1"
+                print('直接从jqcode中获取tokenizer失败，直接使用AutoTokenizer.from_pretrained()加载')
+                from transformers import AutoTokenizer
+                tokenizer = AutoTokenizer.from_pretrained(emb_model_path)
+                print(f'直接使用AutoTokenizer.from_pretrained({emb_model_path})加载成功')
+                # tokenizer = AutoTokenizer.from_pretrained("maidalun1020/bce-embedding-base_v1")
+
 
         self.tokenizer_wrapper = _JqTokenizerWrapper(tokenizer)  
         super().__init__(chunk_size=chunk_size,chunk_overlap=chunk_overlap,separators=separators,is_separator_regex=is_separator_regex,add_start_index=add_start_index,keep_separator=keep_separator, strip_whitespace=strip_whitespace, length_function = self.tokenizer_wrapper.tokens_len,**kwargs)

@@ -1,0 +1,50 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+        "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html>
+
+<head>
+	<title>$prog - $description</title>
+	<link href="layout.css" rel="stylesheet" />
+	<link href="colors.css" rel="stylesheet" />
+</head>
+
+<body>
+
+	<div id="contentWrapper">
+		<div id="header">
+			<div id="titleLine">
+				<span id="siteTitle">$prog</span>
+				<span id="siteSubtitle"> - $description</span>
+			</div>
+		</div>
+		<div id="mainMenu">
+			$mainMenu
+		</div>
+		<div id="sidebar">
+			<div id="sidebarOptions"></div>
+			<div id="sidebarTabs"></div>
+		</div>
+		<div id="displayArea">
+			<div id="htmlBody">
+				$htmlBody
+			</div>
+			<div id="preBody">
+<pre>
+$preBody
+</pre>
+			</div>
+		</div>
+		<div id="footer">
+			<div id="signatureLine">
+				<div id="signatureAuthor">Author: $author &lt;robm at users.sourceforge.net&gt;</div>
+				<div id="signatureDate">Last updated: $today</div>
+			</div>
+			<div id="signatureLogo">
+				<a href="http://sourceforge.net"><img src="http://sourceforge.net/sflogo.php?group_id=148144" width="88" height="31" border="0" alt="SourceForge Logo" /></a>
+			</div>
+		</div>
+	</div>
+</body>
+
+</html>
+
