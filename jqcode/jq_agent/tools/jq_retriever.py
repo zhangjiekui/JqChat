@@ -17,14 +17,16 @@ logger = jqkj_logger(__file__).get_logger()
 
 
 def get_retriever(vectorstore:ElasticsearchStore=None,index_name:str='',index_description:str='',chat_on_docs_list:List[str]=[],add_docs_list_to_kb=True,default_temp_index_name:str="temp_index_for_upload_files",
-                  top_k:int=10,score_threshold:float=0.1,source_id_key='source',required_exts=['.doc','.docx','.pdf','.md']):
+                  top_k:int=10,score_threshold:float=0.1,source_id_key='source',required_exts=['.doc','.docx','.pdf','.md'],r2r_aclient=None):
     
     embed_model = env_models_instance.embed_model
     reranker = env_models_instance.reranker
     es_connection = env_models_instance.get_es_connection()
     lc_documents = None
     doc_paths_exists = []
-    vector_retriever = None    
+    vector_retriever = None
+    logger.warning(f"在此加入r2r_aclient检索器并实现相关功能{r2r_aclient=}") 
+    # raise Exception("在此加入r2r_aclient检索器并实现相关功能")   
 
 # 如果是已经有了vectorstore
     if vectorstore:

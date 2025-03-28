@@ -61,7 +61,6 @@ from jqcode.jq_config.general_config import llm_handler_file_path,if_log_verbose
 from jqcode.jq_utils.logger import jqkj_logger,is_main_process,set_multiprocessing_context
 from langchain.globals import set_llm_cache
 logger = jqkj_logger(__file__).get_logger()
-
 set_llm_cache(SQLiteCache(database_path=".langchain_llm_cache.db"))
 set_multiprocessing_context(multiprocessing,context="spawn",logger=logger)
 
@@ -465,10 +464,8 @@ class SingletonDecorator:
 class InitEnvModels:
     def __init__(self):
         self.env_loaded = load_project_env()
-        assert self.env_loaded, "环境变量没有正确载入！"
-        
-        self.ollama_host = os.getenv("OLLAMA_HOST",'http://localhost:11434')
-        
+        assert self.env_loaded, "环境变量没有正确载入！"        
+        self.ollama_host = os.getenv("OLLAMA_HOST",'http://localhost:11434')        
         self.api_type =os.getenv("OPENAI_API_TYPE",'open_ai')        
 
         _LLM_MODEL_CARD = {"name":"qwen2-instruct","online":"http://10.1.150.105:9997/v1","local":"","dimensions":0,"max_tokens":32000,"base_url":"http://10.1.150.105:9997/v1"}

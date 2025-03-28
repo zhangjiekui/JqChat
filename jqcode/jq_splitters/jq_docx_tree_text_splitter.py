@@ -44,6 +44,7 @@ except:
     default_id_func = None
 
 def load_project_env(): 
+    print(f"......开始执行JqChat/jqcode/jq_splitters/jq_docx_tree_text_splitter.py中的load_project_env()......")
     env_loaded_value_in_env = os.getenv("env_loaded",'')
     dotenv_loaded = False
     # 只载入一次
@@ -54,6 +55,7 @@ def load_project_env():
         if not env_dir:
             root_dir = Path().resolve()
             env_dir = root_dir/'JqChat/.env'
+
         print(f"项目.env文件路径：{env_dir}")       
 
         dotenv_loaded = load_dotenv(env_dir)
@@ -67,7 +69,9 @@ def load_project_env():
         print('\n')
     else:
         dotenv_loaded = True
+    print(f"......结束执行JqChat/jqcode/jq_splitters/jq_docx_tree_text_splitter.py中的load_project_env()......")
     return dotenv_loaded
+
 load_project_env()
 
 # os.environ["env_loaded"] = "False"

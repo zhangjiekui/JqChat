@@ -1,22 +1,11 @@
 import os, sys,pathlib    
-# def add_import_paths():
-#     project_root_path = pathlib.Path().resolve()
-#     p1 = project_root_path/'jqcode'
-#     p2 = project_root_path/'jqchatweb'
-#     p3 = project_root_path/'JqR2R'
-#     p4 = project_root_path/'JqR2R/py/core'
-#     p5 = project_root_path/'JqR2R/py/sdk'
-#     p6 = project_root_path/'JqR2R/py/shared'
-
-#     for p in [project_root_path, p1, p2,p3,p4,p5,p6]:
-#         sys.path.append(str(p))
-#     print(sys.path)
-# added_paths = add_import_paths()
 import argparse
 import asyncio
 import logging
 from typing import Optional
 logger = logging.getLogger(__name__)
+LLM_MODEL_CARD = os.environ['LLM_MODEL_CARD']
+print(f"优先载入了顶层的.env,此次已能获取到LLM_MODEL_CARD: {LLM_MODEL_CARD}")
 
 # 放到/data/projects/JqChatV2/JqChat/JqR2R/py/core/main/app_entry.py
 # os.environ['R2R_POSTGRES_USER']="postgres"
@@ -25,13 +14,12 @@ logger = logging.getLogger(__name__)
 # os.environ['R2R_POSTGRES_PORT']="5432"
 # os.environ['R2R_POSTGRES_DBNAME']="postgres"
 
-# os.environ['R2R_POSTGRES_USER']="langchain"
-# os.environ['R2R_POSTGRES_PASSWORD']="langchain"
-# os.environ['R2R_POSTGRES_HOST']="10.1.150.105"
-# os.environ['R2R_POSTGRES_PORT']="6022"
-# os.environ['R2R_POSTGRES_DBNAME']="postgres"
+os.environ['R2R_POSTGRES_USER']="langchain"
+os.environ['R2R_POSTGRES_PASSWORD']="langchain"
+os.environ['R2R_POSTGRES_HOST']="10.1.150.105"
+os.environ['R2R_POSTGRES_PORT']="6022"
+os.environ['R2R_POSTGRES_DBNAME']="postgres"
 os.environ['R2R_PROJECT_NAME']="jq_new_project"
-
 os.environ['NUMEXPR_MAX_THREAD']='20'
 os.environ['HATCHET_CLIENT_TOKEN']="eyJhbGciOiJFUzI1NiIsImtpZCI6InQ3ZF81ZyJ9.eyJhdWQiOiJodHRwOi8vaG9zdC5kb2NrZXIuaW50ZXJuYWw6NzI3NCIsImV4cCI6NDg5NTgxNDE5NywiZ3JwY19icm9hZGNhc3RfYWRkcmVzcyI6ImhhdGNoZXQtZW5naW5lOjcwNzciLCJpYXQiOjE3NDIyMTQxOTcsImlzcyI6Imh0dHA6Ly9ob3N0LmRvY2tlci5pbnRlcm5hbDo3Mjc0Iiwic2VydmVyX3VybCI6Imh0dHA6Ly9ob3N0LmRvY2tlci5pbnRlcm5hbDo3Mjc0Iiwic3ViIjoiNzA3ZDA4NTUtODBhYi00ZTFmLWExNTYtZjFjNDU0NmNiZjUyIiwidG9rZW5faWQiOiI3YWNkZWM4Yy1kNDdiLTQ1ZmMtOGMwNi1kZmVmNmJlMTc5MTYifQ.9V7039q8l8URALS-8pi-hZIaIDoDAbTKao78gaNM3jAkag5F1cYMumKwU-9MK1m7PThmzR9f1L2L5TdEb1mi-w"
 os.environ['CLUSTERING_SERVICE_URL']='http://10.1.150.105:7276'
@@ -41,8 +29,8 @@ os.environ['OPENAI_API_KEY']='sk-0S7bV3oaznhuevN899Db0cDa20Ae4c5485Ce5862A86063C
 os.environ['SERPER_API_KEY']="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"
 
 try:
-    import r2r
-    print(dir(r2r))
+    # import r2r
+    # print(dir(r2r))
     # from r2r import *
     from r2r import R2RConfig,R2RBuilder
 

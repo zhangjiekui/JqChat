@@ -37,14 +37,137 @@ from datetime import date,datetime
 if not os.environ["env_loaded"]:
     _ = load_dotenv()
 logger = jqkj_logger(__file__).get_logger()
-
 # python_repl = PythonREPLTool().run #这是原生的
 # python_repl = python_repl_tool #这是我自己定义的，强制加入了print,已获取输出值
-# python_repl = eval
-  
+# python_repl = eval  
 llm_model = env_models_instance.chat_model
 # DEBUG_LLM_USING_CUSTOM_HANDLER
 invoke_llm_config = env_models_instance.invoke_llm_config 
+
+def id_to_shorthand(id: str) -> str:
+    return str(id)[:7]
+# 
+def r2r_format_search_results_for_llm(
+    results,
+) -> str:
+    """
+    Instead of resetting 'source_counter' to 1, we:
+     - For each chunk / graph / web / doc in `results`,
+     - Find the aggregator index from the collector,
+     - Print 'Source [X]:' with that aggregator index.
+    """
+    lines = []
+
+    # We'll build a quick helper to locate aggregator indices for each object:
+    # Or you can rely on the fact that we've added them to the collector
+    # in the same order. But let's do a "lookup aggregator index" approach:
+
+    # 1) Chunk search
+    if results.chunk_search_results:
+        lines.append("Vector Search Results:")
+        for c in results.chunk_search_results:
+            lines.append(f"Source ID [{id_to_shorthand(c.id)}]:")
+            lines.append(c.text or "")  # or c.text[:200] to truncate
+
+    # 2) Graph search
+    if results.graph_search_results:
+        lines.append("Graph Search Results:")
+        for g in results.graph_search_results:
+            lines.append(f"Source ID [{id_to_shorthand(g.id)}]:")
+            if hasattr(g.content, "summary"):
+                lines.append(f"Community Name: {g.content.name}")
+                lines.append(f"ID: {g.content.id}")
+                lines.append(f"Summary: {g.content.summary}")
+                # etc. ...
+            elif hasattr(g.content, "name") and hasattr(
+                g.content, "description"
+            ):
+                lines.append(f"Entity Name: {g.content.name}")
+                lines.append(f"Description: {g.content.description}")
+            elif (
+                hasattr(g.content, "subject")
+                and hasattr(g.content, "predicate")
+                and hasattr(g.content, "object")
+            ):
+                lines.append(
+                    f"Relationship: {g.content.subject}-{g.content.predicate}-{g.content.object}"
+                )
+            # Add metadata if needed
+
+    # 3) Web search
+    if results.web_search_results:
+        lines.append("Web Search Results:")
+        for w in results.web_search_results:
+            lines.append(f"Source ID [{id_to_shorthand(w.id)}]:")
+            lines.append(f"Title: {w.title}")
+            lines.append(f"Link: {w.link}")
+            lines.append(f"Snippet: {w.snippet}")
+
+    # 4) Local context docs
+    if results.document_search_results:
+        lines.append("Local Context Documents:")
+        for doc_result in results.document_search_results:
+            doc_title = doc_result.title or "Untitled Document"
+            doc_id = doc_result.id
+            summary = doc_result.summary
+
+            lines.append(f"Full Document ID: {doc_id}")
+            lines.append(f"Shortened Document ID: {id_to_shorthand(doc_id)}")
+            lines.append(f"Document Title: {doc_title}")
+            if summary:
+                lines.append(f"Summary: {summary}")
+
+            if doc_result.chunks:
+                # Then each chunk inside:
+                for chunk in doc_result.chunks:
+                    lines.append(
+                        f"\nChunk ID {id_to_shorthand(chunk['id'])}:\n{chunk['text']}"
+                    )
+    raise Exception("要去重，现在有大量的重复！")
+    result = "\n".join(lines)
+    return result
+
+def r2r_search(client,query:str,chat_on_docs_list:list):
+# https://r2r-docs.sciphi.ai/api-and-sdks/retrieval/search-app
+    query = "全民健康信息平台"
+    from r2r import R2RClient
+    client = R2RClient(base_url='http://10.1.150.105:7272') # can set remote w/ R2RClient(base_url=...)
+    client.users.login("admin@example.com", "change_me_immediately")
+    # search_settings: https://github.com/SciPhi-AI/R2R/blob/main/py/shared/abstractions/search.py#L406
+    search_func = client.retrieval.search(query=query,search_mode="advanced",
+                                                            search_settings={
+                                                                "limit": 20,
+                                                                "use_semantic_search":True,
+                                                                "use_hybrid_search": True,
+                                                                "use_fulltext_search": True,                                                               
+                                                                "hybrid_settings": {
+                                                                            "full_text_weight": 1.0,
+                                                                            "semantic_weight": 5.0,
+                                                                            "full_text_limit": 200,
+                                                                            "rrf_k": 50
+                                                                        },
+                                                                # "filters": {"title": {"$in": [chat_on_docs_list]}},
+                                                                "graph_search_settings":{
+                                                                                "limits":{
+                                                                                            "entity": 20,
+                                                                                            "relationship": 20,
+                                                                                            "community": 20,
+                                                                                          },
+                                                                                "use_graph_search": True,
+                                                                                # "kg_search_type": "local"
+                                                                                "max_llm_queries_for_global_search": 50,
+                                                                                "max_community_description_length": 5000,
+                                                                            }   
+                                                                },                                                                 
+                                                    )
+    # search_response = asyncio.run(search_func)
+    search_response = search_func
+    search_results = r2r_format_search_results_for_llm(search_response.results)
+    print(search_results)
+    return search_results
+r=r2r_search("client","query",["chat_on_docs_list"])
+print(r)
+
 
 class GraphAgentState(TypedDict):
     messages: Annotated[list[BaseMessage], add_messages]
@@ -505,16 +628,50 @@ class GraphAgent:
         self.add_docs_list_to_kb = add_docs_list_to_kb
         self.allow_conversation_memory=allow_conversation_memory
         self.allow_question_rewrite = allow_question_rewrite
+        self.user_id = memory_thread_id
+        try:
+            from r2r import R2RClient,R2RAsyncClient # type: ignore
+            logger.warning("langgraph_in_class.py中成功载入了r2r R2RClient/R2RAsyncClient模块")
+            _user = f"{self.user_id}@example.com"
+            _pass_word = f"change_me_immediately"
+            r2r_client = R2RClient(base_url='http://10.1.150.105:7272')
+            r2r_aclient = R2RAsyncClient(base_url='http://10.1.150.105:7272')
+            # r2r_client.users.retrieve(id: str | UUID)
+            users = r2r_client.users.list()
+            users = users.results
+            users_emails = [user.email for user in users] 
+            if _user not in users_emails:
+                try:
+                    create_user_result = r2r_client.users.create(email=_user, password=_pass_word)
+                    logger.warning(f"Success to create user {_user}")
+                except Exception as e:
+                    logger.error(f"Failed to create user {_user}:{e}")
 
-        self.retriever = get_retriever(index_name=self.index_name,chat_on_docs_list=self.chat_on_docs_list,add_docs_list_to_kb=self.add_docs_list_to_kb,top_k=10,source_id_key='source',required_exts=['.doc','.docx','.pdf','.md'])
+            user_login_result_aclient =asyncio.run(r2r_aclient.users.login(_user, _pass_word))
+            user_login_result_client =r2r_client.users.login(_user, _pass_word)
+            logger.warning(f"User {_user} success to login r2r server")
+            self.r2r_aclient = r2r_aclient
+            self.r2r_client = r2r_client
 
-               
+            r = r2r_search(self.r2r_client,"全民健康信息平台包括哪些系统（或者功能、内容）",self.chat_on_docs_list)
+            print(r)
+
+
+
+
+        except ImportError as e:
+            logger.error(f"Failed to import r2r:{e}"            )
+            logger.error("To run the server, install the required dependencies: pip install 'r2r[core]'")
+        except Exception as e:
+            logger.error(f"R2RAsyncClient failed to initialize or login: {e}")
+            self.r2r_aclient = None
+
+        self.retriever = get_retriever(index_name=self.index_name,chat_on_docs_list=self.chat_on_docs_list,add_docs_list_to_kb=self.add_docs_list_to_kb,top_k=10,source_id_key='source',required_exts=['.doc','.docx','.pdf','.md'],r2r_aclient = self.r2r_aclient)
         self.VECTORSTORE.__doc__ = self.description
         
         # todo：可能需要考虑加入很多个VECTORSTORE？
         # 但description不能重复，否则导致prompts膨胀
-        # 当前VECTORSTORE description还不存在的情况下，才添加到self.VECTORSTORE      
-       
+        # 当前VECTORSTORE description还不存在的情况下，才添加到self.VECTORSTORE       
         _VECTORSTOREs = [v for v in routing_tools_wrapped_in_class if 'GraphAgent.VECTORSTORE' in str(v)]  # "<class '__main__.GraphAgent.VECTORSTORE'>"
         _vectorstore_description_not_existed = True
         for v in _VECTORSTOREs:
@@ -523,8 +680,6 @@ class GraphAgent:
                 break
         if _vectorstore_description_not_existed:
             routing_tools_wrapped_in_class+=[self.VECTORSTORE]
-
-
 
         _executable_tool_names = [tool.name for tool in executable_tools]        
         _routing_tool_names = [tool.__name__ for tool in routing_tools_wrapped_in_class]
@@ -568,7 +723,7 @@ class GraphAgent:
 
         self.system_message = [SystemMessage(content=_system_message_content)]
         
-        self.user_id = memory_thread_id
+        
         self.question_id:str= self.get_random_id()
         self.question = ""
         self.question_rewrited = ""
@@ -593,7 +748,6 @@ class GraphAgent:
             mermaid_img = self.graph.get_graph().draw_mermaid_png(padding=0,output_file_path=saved_img_name)
         except Exception as e:
             print(f"An error occurred: {e}")
-
 
     def makeup_message_with_question_id_idx(self,Message_ClassOrInstance:BaseMessage,content:Union[str,None]=None,question_id:Union[str,None]=None,idx_in_a_question_epoch:Union[int,None]=None):
         if not question_id:
@@ -705,6 +859,10 @@ class GraphAgent:
         logger.warning(f"     vectorstore方法，执行实际文档检索的集成检索器为：{message}")
         try:
             vector_documents = self.retriever.invoke(question,config=invoke_llm_config)
+            if self.r2r_aclient:
+                r2r_search = r2r_search(self.r2r_aclient,query=question,chat_on_docs_list = self.chat_on_docs_list)
+
+                
             if len(vector_documents)==0:
                 msg=f"未从知识库{retriever.vectorstore._store.index}中检索到任何相关文档！"
                 logger.warning(f"     {msg}")
@@ -829,7 +987,6 @@ class GraphAgent:
             print(f"not supported: {generation=}")
             return "not supported" # todo
 
-
     # async def jq_search_agent(self,query:str):
     def jq_search_agent(self,query:str):
         import os
@@ -869,7 +1026,6 @@ class GraphAgent:
         # messages_dict = await agent.ainvoke({"messages": [("user", query)]})
         messages=messages_dict.get('messages',[])
         return messages
-
 
     def web_search(self,state:GraphAgentState):
         """
@@ -1258,7 +1414,6 @@ class GraphAgent:
             message = self.makeup_message_with_question_id_idx(message)
             question_related_messages.append(message)
             return {'messages': message,'question_related_messages':question_related_messages}
-
 
     def generate(self,state:GraphAgentState):
         """
@@ -1753,16 +1908,7 @@ class GraphAgent:
         return answer
     # endregion: Graph定义            
         
-        
-
-
-
 tavily_search_tool = TavilySearchResults(max_results=6) #increased number of results
-
-# 
-
-
-
 
 if __name__ == "__main__":
     user_questions = [
@@ -1795,8 +1941,6 @@ if __name__ == "__main__":
     # user_questions = ['请调用工具函数帮我查询：我现在的位置是在安徽晶奇网络科技股份有限公司附近，请查询15公里范围内的养老机构，最多返回10个']
     # user_questions = ['我现在的位置是在安徽晶奇网络科技股份有限公司附近，请查询15公里范围内的养老机构，最多返回10个']
     # user_questions = ["请搜索网络然后回答问题：What is the weather in SF and LA?","Who won the super bowl in 2024? In what state is the winning team headquarters located?What is the GDP of that state? ","2024年安徽省会城市的GDP是多少? "]
-
-
     
     my_main_bot = GraphAgent(executable_tools=executable_tools,routing_tools_wrapped_in_class=route_tools,allow_conversation_memory=True)
 
