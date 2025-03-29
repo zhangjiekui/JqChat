@@ -4,9 +4,12 @@ from .api.models import *
 from .parsers import *
 from .providers import *
 from .utils import *
-print("===============JqR2R/py/core/base/__init__.py中包括的包")
-print(dir())
-print("===============JqR2R/py/core/base/__init__.py中包括的包")
+from jqcode.jq_utils.logger import jqkj_logger
+logger = jqkj_logger(__file__).get_logger()
+
+logger.debug("===============JqR2R/py/core/base/__init__.py中包括的包")
+logger.debug(dir())
+logger.debug("===============JqR2R/py/core/base/__init__.py中包括的包")
 __all__ = [
     "ThinkingEvent",
     "ToolCallEvent",

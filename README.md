@@ -53,12 +53,14 @@ CUDA_VISIBLE_DEVICES=0,1 vllm serve /data/models/Qwen/Qwen2___5-7B-Instruct-1M \
 
 
 workon vllmb 
+<!-- CUDA_VISIBLE_DEVICES=0,1 vllm serve /data/models/Qwen/Qwen2___5-7B-Instruct-1M \ -->
+workon vllmb 
 CUDA_VISIBLE_DEVICES=0,1 vllm serve /data/models/Qwen/Qwen2___5-7B-Instruct-1M \
   --tensor-parallel-size 2 \
-  --max-model-len 124000 \
+  --max-model-len 100000 \
   --enable-chunked-prefill \
   --enable-prefix-caching \
-  --max-num-batched-tokens 124000 \
+  --max-num-batched-tokens 40000 \
   --max-num-seqs 128 \
   --served-model-name qwen25m1 \
   --gpu-memory-utilization 0.98 \
@@ -119,13 +121,17 @@ sudo systemctl status docker
 ### 设置容器服务自启动 elastic、polardb15_vector_age_zh（pg）
 #### 启动DB Docker: polardb15_vector_age_zh:v1.2
 ```
-docker run -d
---cap-add=SYS_PTRACE --privileged=true
---env POLARDB_PORT=5432
---env POLARDB_USER=langchain
---env POLARDB_PASSWORD=langchain
---env POLARDB_DB=postgres
--p 6000:5432
+docker run -d --name postgres_cn \
+-v ~/pgdata:/var/lib/postgresql/data \
+--cap-add=SYS_PTRACE --privileged=true \
+--env POLARDB_PORT=5432 \
+--env POLARDB_USER=langchain \
+--env POLARDB_PASSWORD=langchain \
+--env POLARDB_DB=postgres \
+--env POSTGRES_INITDB_ARGS="--locale=zh_CN.utf8 --lc-collate=zh_CN.utf8 --lc-ctype=zh_CN.utf8 --encoding=UTF8" \
+--restart=always \
+-p 7000:5432 \
+polardb15_vector_age_zh:v1.2
 ```
 
 #### 启动Docker重启及容器自启动

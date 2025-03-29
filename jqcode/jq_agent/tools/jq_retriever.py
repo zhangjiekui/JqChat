@@ -17,7 +17,7 @@ logger = jqkj_logger(__file__).get_logger()
 
 
 def get_retriever(vectorstore:ElasticsearchStore=None,index_name:str='',index_description:str='',chat_on_docs_list:List[str]=[],add_docs_list_to_kb=True,default_temp_index_name:str="temp_index_for_upload_files",
-                  top_k:int=10,score_threshold:float=0.1,source_id_key='source',required_exts=['.doc','.docx','.pdf','.md'],r2r_aclient=None):
+                  top_k:int=10,score_threshold:float=0.1,source_id_key='source',required_exts=['.doc','.docx','.pdf','.md'],r2r_client=None,current_user=''):
     
     embed_model = env_models_instance.embed_model
     reranker = env_models_instance.reranker
@@ -25,8 +25,6 @@ def get_retriever(vectorstore:ElasticsearchStore=None,index_name:str='',index_de
     lc_documents = None
     doc_paths_exists = []
     vector_retriever = None
-    logger.warning(f"在此加入r2r_aclient检索器并实现相关功能{r2r_aclient=}") 
-    # raise Exception("在此加入r2r_aclient检索器并实现相关功能")   
 
 # 如果是已经有了vectorstore
     if vectorstore:
@@ -65,11 +63,13 @@ def get_retriever(vectorstore:ElasticsearchStore=None,index_name:str='',index_de
             _RESERVED_FILTER_BY_FILES = []
             for doc in doc_paths_exists:
                 suffix = doc.suffix
-                assert suffix in required_exts,f"{doc}还不是支持的文件类型{required_exts}"
-                _RESERVED_FILTER_BY_FILES.append(doc)
-                if doc.suffix !='.docx':
-                    docx = str(doc.parent/doc.stem) + '.docx'
-                    _RESERVED_FILTER_BY_FILES.append(docx)
+                if suffix in required_exts:
+                    _RESERVED_FILTER_BY_FILES.append(doc)
+                    if doc.suffix !='.docx':
+                        docx = str(doc.parent/doc.stem) + '.docx'
+                        _RESERVED_FILTER_BY_FILES.append(docx)
+                    else:
+                        logger.warning(f"{doc}还不是支持的文件类型{required_exts}")
             
             RESERVED_FILTER_BY_FILES = [str(file) for file in _RESERVED_FILTER_BY_FILES]
             
@@ -173,7 +173,7 @@ def get_retriever(vectorstore:ElasticsearchStore=None,index_name:str='',index_de
             if existed_files_maybe_need_indexing:
                 from jqcode.jq_docstores.jq_es_client import JqEsClient
                 jq_es_client = JqEsClient()
-                default_vectorstore = jq_es_client.chunks_indexing_from_input_dir_or_files(current_user='',index_name=index_destination,description=index_description,input_files=existed_files_maybe_need_indexing)
+                default_vectorstore = jq_es_client.chunks_indexing_from_input_dir_or_files(current_user=current_user,index_name=index_destination,description=index_description,input_files=existed_files_maybe_need_indexing,r2r_aclient=r2r_client)
             else:
                 default_vectorstore = env_models_instance.get_es_searchstore(es_connection=es_connection,embedding=embed_model,index_name=index_destination) 
     

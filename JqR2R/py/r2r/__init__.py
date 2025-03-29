@@ -1,7 +1,9 @@
 import os,sys,pathlib
 project_root_path = pathlib.Path().resolve()
 sys.path.append(str(project_root_path))
-print(f"已在r2r __init__文件中直接将{project_root_path}添加到sys.path中")
+from jqcode.jq_utils.logger import jqkj_logger
+logger = jqkj_logger(__file__).get_logger()
+logger.debug(f"已在r2r __init__文件中直接将{project_root_path}添加到sys.path中")
 
 from importlib import metadata
 from sdk.async_client import R2RAsyncClient
@@ -18,10 +20,13 @@ from jqcode.jq_readers.jqkj_readers import JqkjDocxReader
 from jqcode.jq_splitters.jq_docx_tree_text_splitter import JqkjDocTreeTokenTextSplitter
 from shared.utils.splitter.text import JqChineseRecursiveTextSplitter
 
+from jqcode.jq_utils.logger import jqkj_logger
+logger = jqkj_logger(__file__).get_logger()
+
 __version__ = metadata.version("r2r")
-print("===============/data/projects/JqChatV2/JqChat/JqR2R/py/r2r/__init__.py中包括的包")
-print(dir())
-print("===============/data/projects/JqChatV2/JqChat/JqR2R/py/r2r/__init__.py中包括的包")
+logger.debug("===============/data/projects/JqChatV2/JqChat/JqR2R/py/r2r/__init__.py中包括的包")
+logger.debug(dir())
+logger.debug("===============/data/projects/JqChatV2/JqChat/JqR2R/py/r2r/__init__.py中包括的包")
 # __all__ = [
 #     # "R2RApp",
 #     "R2RBuilder",

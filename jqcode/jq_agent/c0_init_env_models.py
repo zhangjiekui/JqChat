@@ -18,7 +18,7 @@ from functools import lru_cache
 from typing import Annotated, List, Iterable, TypedDict, Optional, Sequence,Literal, Any,Union,Tuple,Dict
 from langchain.callbacks.manager import Callbacks
 import langchain
-from langchain_community.cache import SQLiteCache
+
 langchain.verbose = False
 
 from openai import OpenAI
@@ -61,8 +61,28 @@ from jqcode.jq_config.general_config import llm_handler_file_path,if_log_verbose
 from jqcode.jq_utils.logger import jqkj_logger,is_main_process,set_multiprocessing_context
 from langchain.globals import set_llm_cache
 logger = jqkj_logger(__file__).get_logger()
-set_llm_cache(SQLiteCache(database_path=".langchain_llm_cache.db"))
+
+try:
+    # https://python.langchain.com/docs/integrations/llm_caching/
+    from langchain import SQLAlchemyCache
+    from jqcode.jq_agent.c0_zh_fulltext_sql_alchemy_cache import ZhFulltextLLMCache
+    from sqlalchemy import create_engine
+    engine = create_engine("postgresql://langchain:langchain@10.1.150.105:7000/postgres")
+    set_llm_cache(SQLAlchemyCache(engine,ZhFulltextLLMCache))
+    # Cache位置：Schemas - public - Tables - llm_cache_fulltext
+    logger.debug(f"设置全局的Postgresql lm_cache成功！")
+except Exception as e:
+    logger.debug(f"设置全局的Postgresql lm_cache失败:{e}")
+    try:
+        from langchain_community.cache import SQLiteCache
+        set_llm_cache(SQLiteCache(database_path=".langchain_llm_cache.db"))
+        logger.debug(f"设置全局的SQLiteCache lm_cache成功！")
+    except Exception as e:
+        logger.warning(f"设置全局的lm_cache（Postgresql及SQLiteCache）都失败:{e}")
+
+
 set_multiprocessing_context(multiprocessing,context="spawn",logger=logger)
+
 
 
 VERBOSE = if_log_verbose()

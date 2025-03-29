@@ -188,6 +188,6 @@ __all__ = [
     "R2RIngestionProvider",
     "ChunkingStrategy",
 ]
-print("===============/data/projects/JqChatV2/JqChat/JqR2R/py/core/__init__.py中包括的包")
-print(dir())
-print("===============/data/projects/JqChatV2/JqChat/JqR2R/py/core/__init__.py中包括的包")
+logger.debug("===============/data/projects/JqChatV2/JqChat/JqR2R/py/core/__init__.py中包括的包")
+logger.debug(dir())
+logger.debug("===============/data/projects/JqChatV2/JqChat/JqR2R/py/core/__init__.py中包括的包")
