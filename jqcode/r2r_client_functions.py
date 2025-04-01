@@ -109,32 +109,36 @@ def r2r_format_search_results_for_llm(query, results,limit: int = 10, min_score_
         #             )
 
     # Rerank...... 
-    config_file = os.environ.get("R2R_CONFIG_PATH", None)
-    config = R2RConfig.from_toml(config_file)
-    config = R2RConfig({"config_file":config_file})
-    embedding_provider = LiteLLMEmbeddingProvider(config.embedding)
-    makeup_chunks_result_list = []
-    for dict in lines:
-        for k,inner_dict in dict.items():
-            id = inner_dict.get("Source ID",uuid.uuid1())
-            id = UUID(id)
-            id = uuid.uuid1()
-            score = inner_dict.get("Score",0.0)
-            text = inner_dict.get("Text","")
-            makeup_chunk_result = ChunkSearchResult(id=id,score=score,text=text,document_id=id,owner_id=id,collection_ids=[id],metadata={})
-            makeup_chunks_result_list.append(makeup_chunk_result)
+    if lines:
+        config_file = os.environ.get("R2R_CONFIG_PATH", None)
+        config = R2RConfig.from_toml(config_file)
+        config = R2RConfig({"config_file":config_file})
+        embedding_provider = LiteLLMEmbeddingProvider(config.embedding)
+        makeup_chunks_result_list = []
+        for dict in lines:
+            for k,inner_dict in dict.items():
+                id = inner_dict.get("Source ID",uuid.uuid1())
+                id = UUID(id)
+                id = uuid.uuid1()
+                score = inner_dict.get("Score",0.0)
+                text = inner_dict.get("Text","")
+                makeup_chunk_result = ChunkSearchResult(id=id,score=score,text=text,document_id=id,owner_id=id,collection_ids=[id],metadata={})
+                makeup_chunks_result_list.append(makeup_chunk_result)
 
 
-    rerank_results=embedding_provider.rerank(query,makeup_chunks_result_list,limit = limit, min_score_threshold = min_score_threshold)
-    logger.warning(f"=====共返回{len(rerank_results)}条Rerank Results({limit=},{min_score_threshold=})=====")
-    texts = [f"[{i+1}] RerankScore:{r.score}\n{r.text}" for i,r in enumerate(rerank_results)]
-    result = "\n".join(texts)
+        rerank_results=embedding_provider.rerank(query,makeup_chunks_result_list,limit = limit, min_score_threshold = min_score_threshold)
+        logger.warning(f"=====共返回{len(rerank_results)}条Rerank Results({limit=},{min_score_threshold=})=====")
+        texts = [f"[{i+1}] RerankScore:{r.score}\n{r.text}" for i,r in enumerate(rerank_results)]
+        result = "\n".join(texts)
+    else:
+        logger.warning(f"     R2R未获取到任何检索结果！")
+        result = ''
     return result
 
-def r2r_search(client,query:str,chat_on_docs_list:list=None, limit: int = 20, min_score_threshold = 0.3):    
-    from r2r import R2RClient # type: ignore
-    client = R2RClient(base_url='http://10.1.150.105:7272') # can set remote w/ R2RClient(base_url=...)
-    client.users.login("admin@example.com", "change_me_immediately")
+def r2r_search(client,query:str,chat_on_docs_list:list=None, limit: int = 20, min_score_threshold = 0.3,user_id:str=''):
+    if client is None:    
+        from r2r import R2RClient # type: ignore
+        client = r2r_authed_client(user_id=user_id)
     # https://r2r-docs.sciphi.ai/api-and-sdks/retrieval/search-app
     # search_settings: https://github.com/SciPhi-AI/R2R/blob/main/py/shared/abstractions/search.py#L406
     search_response = client.retrieval.search(query=query,search_mode="advanced",
@@ -171,6 +175,8 @@ def r2r_authed_client(user_id,user_email='',password="change_me_immediately",ser
     if not is_valid_email(user_email):
         if not is_valid_email(user_id):
             user_email = f"{user_id}@example.com"
+            user_email = f"admin@example.com"
+            
 
     users_response = r2r_client.users.list()
     users = users_response.results

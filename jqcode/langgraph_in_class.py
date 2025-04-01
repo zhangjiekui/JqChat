@@ -498,7 +498,7 @@ default_index_description = "向量库/知识库工具(vectorstore/knowledge bas
 class GraphAgent:
     def __init__(self,executable_tools:list=executable_tools, routing_tools_wrapped_in_class:list=route_tools, 
                  llm_model:ChatOpenAI=None,chat_on_docs_list:List[str]=None,add_docs_list_to_kb:bool=True, 
-                 allow_conversation_memory=False,allow_question_rewrite = True,
+                 allow_conversation_memory=False,allow_question_rewrite = False,
                  kb_base_dict:dict={"index_name": 'default', "description":default_index_description}, 
                  recursion_limit:int=25, memory_thread_id:str=shortuuid.uuid()) -> None:
         
@@ -514,7 +514,7 @@ class GraphAgent:
         self.user_id = memory_thread_id
         try:
             from r2r_client_functions import r2r_authed_client
-            r2r_client = r2r_authed_client(self.user_id)
+            r2r_client = r2r_authed_client(user_id=self.user_id)
             self.r2r_client = r2r_client
         except ImportError as e:
             logger.error(f"Failed to import r2r:{e}"            )
@@ -716,10 +716,8 @@ class GraphAgent:
             message += f" 检索器[{i+1}]{retriever.name}，检索的目标知识库为{retriever.vectorstore._store.index} "
         logger.warning(f"     vectorstore方法，执行实际文档检索的集成检索器为：{message}")
         try:
+            
             vector_documents = self.retriever.invoke(question,config=invoke_llm_config)
-            if self.r2r_aclient:
-                r2r_search = r2r_search(self.r2r_aclient,query=question,chat_on_docs_list = self.chat_on_docs_list)
-
                 
             if len(vector_documents)==0:
                 msg=f"未从知识库{retriever.vectorstore._store.index}中检索到任何相关文档！"
@@ -730,24 +728,28 @@ class GraphAgent:
             
             if env_models_instance.USING_GRAPH_RAG: 
                 try:
-                    from lightrag import QueryParam
-                    from lightrag.utils import ENCODER
-                    ENCODER = env_models_instance._tokenizer
-                    light_rag = env_models_instance.get_lightrag(index_name=retriever.vectorstore._store.index)                
-                    result_strs=light_rag.query(question, param=QueryParam(mode="hybrid",only_need_context=True,top_k=5, max_token_for_text_unit=1500, max_token_for_global_context=2000))
-                    if result_strs:
-                        logger.warning(f'LightRag Result String={result_strs}')
-                        graph_documents = [Document(page_content=result_strs,metadata={'source':"lightgraph"})] 
-                        documents.extend(graph_documents)
+                    if self.r2r_client:
+                        from jqcode.r2r_client_functions import r2r_search
+                        r2r_search_context = r2r_search(self.r2r_client,query=question) #,chat_on_docs_list = self.chat_on_docs_list
+
+                        if r2r_search_context:
+                            n = 40
+                            text = r2r_search_context[0:n]
+                            text = text.replace("\n","..")
+                            logger.warning(f'GraphRag Result String={text} ...共{len(r2r_search_context)}字，仅显示前{n}字...')
+                            graph_documents = [Document(page_content=r2r_search_context,metadata={'source':"GraphRag"})] 
+                            documents.extend(graph_documents)
+                        else:
+                            msg=f"未从Graph知识库中检索到任何相关实体、关系或文档！"
+                            logger.warning(f"     {msg}")
                     else:
-                        msg=f"未从Graph知识库中检索到任何相关实体、关系或文档！"
-                        logger.warning(f"     {msg}")
+                        logger.warning(f'R2R Client未正确初始化：{self.r2r_client=}')
                 except Exception as e:
-                    logger.error(f"LightRag检索出现错误：{e}")
+                    logger.error(f"GraphRag检索出现错误：{e}")
 
                 
             if len(documents)==0:
-                msg=f"未从知识库{retriever.vectorstore._store.index}（Vector/Graph）中检索到任何相关文档！"
+                msg=f"未从知识库/图谱库{retriever.vectorstore._store.index}（Vector/Graph）中检索到任何相关文档！"
                 documents = [Document(page_content=msg)]
                 logger.warning(f"     {msg}")
 
@@ -755,20 +757,6 @@ class GraphAgent:
             err_msg = f"从知识库({retriever.vectorstore._store.index})中检索{question=}出现错误：{e}"
             logger.error(err_msg)
             documents = [Document(page_content=err_msg)]
-        
-        # from jqcode.graph_rag_networkx import JqGraphRag
-        # inputs = {"query":question,"context":documents}        
-        # graph_retriver_chain = JqGraphRag(index_name=self.index_name).get_graph_retriever_chain()        
-        # documents_hybird = graph_retriver_chain(inputs)
-        # print(documents_hybird)
-        # documents = documents_hybird
-        
-        
-        # retrieve_results = "\n".join([d["content"] for d in documents])
-        # 因为retrieve_results必去grade_documents节点过滤[workflow.add_edge("retrieve", "grade_documents")]，
-        # 所以此次不添加retrieve_message，而是到grade_documents节点，仅保留过滤后的
-        # retrieve_message = ToolMessage(content=retrieve_results,name='retrieve')
-        # return {"documents": documents, "question": question,"messages":retrieve_message}
         return {"documents": documents, "question": question}
 
 
@@ -1792,8 +1780,9 @@ if __name__ == "__main__":
         # "请搜索网络然后回答问题：What is the weather in SF and LA? ",
         # "Who won the super bowl in 2024? In what state is the winning team headquarters located?What is the GDP of that state? ",
         # "还记得我的名字吗？",
-        "请将下面的内容：序号,文件名称,文号 1,《关于研究智慧民政和智慧市政建设工作的纪要》,厦门市人民政府专题会议纪要〔2020〕285号 2,《关于进一步推进儿童福利机构优化提质和创新转型高质量发展的意见》,民发〔2021〕44号 3,《民政部办公厅关于印发〈金民工程一期项目试点工作方案〉的通知》,民办函〔2019〕108号 4,《中共中央关于制定国民经济和社会发展第十四个五年规划和二〇三五年远景目标的建议》, 5,《国务院办公厅关于推进养老服务发展的意见》,国办发〔2019〕5号 6,《民政部关于进一步扩大养老服务供给促进养老服务消费的实施意见》,民发〔2019〕88号 7,《国务院扶贫开发领导小组关于建立防止返贫监测和帮扶机制的指导意见》,国开发〔2020〕6号 8,《国务院关于国家基本公共服务标准（2 0 2 1 年 版 ） 的 批 复 》 , 国 函 〔 2 0 2 1 〕 2 0 号 9,《福建省促进电子证照应用管理暂行办法》,闽政办[2017]74号 10,厦门市人民政府办公厅关于进一步深化“互联网+政务服务”推进政务服务“一网、一门、一次”改革工作的通知,厦府办〔2018〕194号 11,《厦门市“十三五”民政事业发展专项规划（2016-2020）》, 12,厦门市城乡社区服务体系建设规划（2016-2020年）, 13,《关于加强和完善城乡社区治理的实施意见》,厦委发〔2018〕7号 转换为表格，使用python生成csv文件并提供下载地址",
-        '我现在的位置是在安徽晶奇网络科技股份有限公司附近，请查询15公里范围内的养老机构，最多返回10个'
+        # "请将下面的内容：序号,文件名称,文号 1,《关于研究智慧民政和智慧市政建设工作的纪要》,厦门市人民政府专题会议纪要〔2020〕285号 2,《关于进一步推进儿童福利机构优化提质和创新转型高质量发展的意见》,民发〔2021〕44号 3,《民政部办公厅关于印发〈金民工程一期项目试点工作方案〉的通知》,民办函〔2019〕108号 4,《中共中央关于制定国民经济和社会发展第十四个五年规划和二〇三五年远景目标的建议》, 5,《国务院办公厅关于推进养老服务发展的意见》,国办发〔2019〕5号 6,《民政部关于进一步扩大养老服务供给促进养老服务消费的实施意见》,民发〔2019〕88号 7,《国务院扶贫开发领导小组关于建立防止返贫监测和帮扶机制的指导意见》,国开发〔2020〕6号 8,《国务院关于国家基本公共服务标准（2 0 2 1 年 版 ） 的 批 复 》 , 国 函 〔 2 0 2 1 〕 2 0 号 9,《福建省促进电子证照应用管理暂行办法》,闽政办[2017]74号 10,厦门市人民政府办公厅关于进一步深化“互联网+政务服务”推进政务服务“一网、一门、一次”改革工作的通知,厦府办〔2018〕194号 11,《厦门市“十三五”民政事业发展专项规划（2016-2020）》, 12,厦门市城乡社区服务体系建设规划（2016-2020年）, 13,《关于加强和完善城乡社区治理的实施意见》,厦委发〔2018〕7号 转换为表格，使用python生成csv文件并提供下载地址",
+        # '我现在的位置是在安徽晶奇网络科技股份有限公司附近，请查询15公里范围内的养老机构，最多返回10个',
+        "全民健康信息平台包含的建设内容、系统或功能"
     ]
 
     # user_questions = ['请调用工具函数帮我查询：我现在的位置是在安徽晶奇网络科技股份有限公司附近，请查询15公里范围内的养老机构，最多返回10个']
