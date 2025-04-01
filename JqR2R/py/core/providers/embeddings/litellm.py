@@ -195,6 +195,7 @@ class LiteLLMEmbeddingProvider(EmbeddingProvider):
         results: list[ChunkSearchResult],
         stage: EmbeddingProvider.Step = EmbeddingProvider.Step.RERANK,
         limit: int = 10,
+        min_score_threshold = 0.3
     ):
         if self.config.rerank_model is not None:
             if not self.rerank_url:
@@ -232,7 +233,8 @@ class LiteLLMEmbeddingProvider(EmbeddingProvider):
                     copied_result = copy(original_result)
                     # Inject the reranking score into the result object
                     copied_result.score = rank_info.get("score",rank_info.get("relevance_score",0))
-                    scored_results.append(copied_result)
+                    if copied_result.score>min_score_threshold: 
+                        scored_results.append(copied_result)
 
                 # Return only the ChunkSearchResult objects, limited to specified count
                 return scored_results[:limit]
@@ -269,6 +271,9 @@ class LiteLLMEmbeddingProvider(EmbeddingProvider):
                 )
 
             texts = [result.text for result in results]
+            if len(texts) == 0:
+                logger.warning("由于传入的texts为空, 只好提供一段测试文本")
+                texts = ["由于传入的texts为空", "只好提供一段测试文本"]
 
             payload = {
                 "model": self.config.rerank_model,

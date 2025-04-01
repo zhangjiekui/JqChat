@@ -1277,7 +1277,7 @@ class GraphService(Service):
                 if any(
                     id is None for id in (subject_id, object_id, parent_id)
                 ):
-                    logger.warning(f"Missing ID for relationship: {rel}")
+                    logger.warning(f"Missing ID for relationship: {rel.subject}")
                     continue
 
                 assert isinstance(subject_id, UUID)

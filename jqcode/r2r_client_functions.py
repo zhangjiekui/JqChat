@@ -1,6 +1,8 @@
-import re
+import os,re
 import asyncio
-from r2r import R2RClient, R2RAsyncClient # type: ignore
+import uuid
+from uuid import UUID
+from r2r import R2RClient,R2RConfig,LiteLLMEmbeddingProvider,ChunkSearchResult # type: ignore
 from jqcode.jq_utils.logger import jqkj_logger
 logger = jqkj_logger(__file__).get_logger()
 
@@ -17,9 +19,7 @@ def is_valid_email(id_or_email_str):
     else:
         return False
     
-def r2r_format_search_results_for_llm(
-    results,
-) -> str:
+def r2r_format_search_results_for_llm(query, results,limit: int = 10, min_score_threshold = 0.3) -> str:
     """
     Instead of resetting 'source_counter' to 1, we:
      - For each chunk / graph / web / doc in `results`,
@@ -34,77 +34,110 @@ def r2r_format_search_results_for_llm(
 
     # 1) Chunk search
     if results.chunk_search_results:
-        lines.append("Vector Search Results:")
-        for c in results.chunk_search_results[0:2]:
-            lines.append(f"Source ID [{str(c.id)}]:")
-            lines.append(c.text or "")  # or c.text[:200] to truncate
+        no_repeated_results = []
+        for r in results.chunk_search_results:
+            id_text_score_tuple = (str(r.id),r.text,r.score)
+            if id_text_score_tuple not in no_repeated_results:
+                no_repeated_results.append(id_text_score_tuple)
+        for r in no_repeated_results:
+            line_content = {"Source ID": r[0], "Score": r[-1], "Text": f"ChunkText:{r[1]}"}
+            lines.append({"Vector_Search_Results":line_content})
+
 
     # 2) Graph search
     if results.graph_search_results:
-        lines.append("Graph Search Results:")
-        for g in results.graph_search_results[0:2]:
-            lines.append(f"Source ID [{id_to_shorthand(g.id)}]:")
-            if hasattr(g.content, "summary"):
-                lines.append(f"Community Name: {g.content.name}")
-                lines.append(f"ID: {g.content.id}")
-                lines.append(f"Summary: {g.content.summary}")
+        unique_result_ids = []
+        unique_content_result_ids = []
+        no_repeated_results = []
+        for r in results.graph_search_results:
+            id = str(r.id)
+            if id not in unique_result_ids:
+                unique_result_ids.append(id)
+                content_id = str(r.content.id)
+                if content_id not in unique_content_result_ids:
+                    unique_content_result_ids.append(content_id)
+                    id_text_score_tuple = (str(r.id),r.content,r.score)
+                    if id_text_score_tuple not in no_repeated_results:
+                        no_repeated_results.append(id_text_score_tuple) 
+        for r in no_repeated_results:
+            g = r[1]
+            content_id = str(g.id)
+            text = ""
+            if hasattr(g, "summary"):
+                text+=f"Community Name: {g.name}\n"
+                text+=f"Summary: {g.summary}\n"
                 # etc. ...
-            elif hasattr(g.content, "name") and hasattr(
-                g.content, "description"
-            ):
-                lines.append(f"Entity Name: {g.content.name}")
-                lines.append(f"Description: {g.content.description}")
-            elif (
-                hasattr(g.content, "subject")
-                and hasattr(g.content, "predicate")
-                and hasattr(g.content, "object")
-            ):
-                lines.append(
-                    f"Relationship: {g.content.subject}-{g.content.predicate}-{g.content.object}"
-                )
+            elif hasattr(g, "name") and hasattr(g, "description"):
+                text+=f"Entity Name: {g.name}\n"
+                text+=f"Description: {g.description}\n"
+            elif (hasattr(g, "subject") and hasattr(g, "predicate") and hasattr(g, "object")):
+                text+=f"Relationship: {g.subject}-{g.predicate}-{g.object}\n"
+            line_content = {"Source ID": r[0],"Content ID":content_id, "Score": r[-1], "Text": text}
+            lines.append({"Graph_Search_Results":line_content})
             # Add metadata if needed
 
-    # 3) Web search
+    # 3) Web search:暂时不处理
     if results.web_search_results:
-        lines.append("Web Search Results:")
-        for w in results.web_search_results[0:2]:
-            lines.append(f"Source ID [{id_to_shorthand(w.id)}]:")
-            lines.append(f"Title: {w.title}")
-            lines.append(f"Link: {w.link}")
-            lines.append(f"Snippet: {w.snippet}")
+        logger.warning("存在results.web_search_results，但暂时未作处理！")
+        # lines.append("Web Search Results:")
+        # for w in results.web_search_results[0:2]:
+        #     lines.append(f"Source ID [{str(w.id)}]:")
+        #     lines.append(f"Title: {w.title}")
+        #     lines.append(f"Link: {w.link}")
+        #     lines.append(f"Snippet: {w.snippet}")
 
-    # 4) Local context docs
+    # 4) Local context docs:暂时不处理
     if results.document_search_results:
-        lines.append("Local Context Documents:")
-        for doc_result in results.document_search_results[0:2]:
-            doc_title = doc_result.title or "Untitled Document"
-            doc_id = doc_result.id
-            summary = doc_result.summary
+        logger.warning("存在results.document_search_results，但暂时未作处理！")
+        # lines.append("Local Context Documents:")
+        # for doc_result in results.document_search_results[0:2]:
+        #     doc_title = doc_result.title or "Untitled Document"
+        #     doc_id = doc_result.id
+        #     summary = doc_result.summary
 
-            lines.append(f"Full Document ID: {doc_id}")
-            lines.append(f"Shortened Document ID: {id_to_shorthand(doc_id)}")
-            lines.append(f"Document Title: {doc_title}")
-            if summary:
-                lines.append(f"Summary: {summary}")
+        #     lines.append(f"Full Document ID: {doc_id}")
+        #     lines.append(f"Shortened Document ID: {str(doc_id)}")
+        #     lines.append(f"Document Title: {doc_title}")
+        #     if summary:
+        #         lines.append(f"Summary: {summary}")
 
-            if doc_result.chunks:
-                # Then each chunk inside:
-                for chunk in doc_result.chunks:
-                    lines.append(
-                        f"\nChunk ID {id_to_shorthand(chunk['id'])}:\n{chunk['text']}"
-                    )
-    # raise Exception("要去重，现在有大量的重复！")
-    result = "\n".join(lines)
+        #     if doc_result.chunks:
+        #         # Then each chunk inside:
+        #         for chunk in doc_result.chunks:
+        #             lines.append(
+        #                 f"\nChunk ID {id_to_shorthand(chunk['id'])}:\n{chunk['text']}"
+        #             )
+
+    # Rerank...... 
+    config_file = os.environ.get("R2R_CONFIG_PATH", None)
+    config = R2RConfig.from_toml(config_file)
+    config = R2RConfig({"config_file":config_file})
+    embedding_provider = LiteLLMEmbeddingProvider(config.embedding)
+    makeup_chunks_result_list = []
+    for dict in lines:
+        for k,inner_dict in dict.items():
+            id = inner_dict.get("Source ID",uuid.uuid1())
+            id = UUID(id)
+            id = uuid.uuid1()
+            score = inner_dict.get("Score",0.0)
+            text = inner_dict.get("Text","")
+            makeup_chunk_result = ChunkSearchResult(id=id,score=score,text=text,document_id=id,owner_id=id,collection_ids=[id],metadata={})
+            makeup_chunks_result_list.append(makeup_chunk_result)
+
+
+    rerank_results=embedding_provider.rerank(query,makeup_chunks_result_list,limit = limit, min_score_threshold = min_score_threshold)
+    logger.warning(f"=====共返回{len(rerank_results)}条Rerank Results({limit=},{min_score_threshold=})=====")
+    texts = [f"[{i+1}] RerankScore:{r.score}\n{r.text}" for i,r in enumerate(rerank_results)]
+    result = "\n".join(texts)
     return result
 
-def r2r_search(client,query:str,chat_on_docs_list:list=None):
-# https://r2r-docs.sciphi.ai/api-and-sdks/retrieval/search-app
-    query = "全民健康信息平台"
+def r2r_search(client,query:str,chat_on_docs_list:list=None, limit: int = 20, min_score_threshold = 0.3):    
     from r2r import R2RClient # type: ignore
     client = R2RClient(base_url='http://10.1.150.105:7272') # can set remote w/ R2RClient(base_url=...)
     client.users.login("admin@example.com", "change_me_immediately")
+    # https://r2r-docs.sciphi.ai/api-and-sdks/retrieval/search-app
     # search_settings: https://github.com/SciPhi-AI/R2R/blob/main/py/shared/abstractions/search.py#L406
-    search_func = client.retrieval.search(query=query,search_mode="advanced",
+    search_response = client.retrieval.search(query=query,search_mode="advanced",
                                                             search_settings={
                                                                 "limit": 20,
                                                                 "use_semantic_search":True,
@@ -130,13 +163,8 @@ def r2r_search(client,query:str,chat_on_docs_list:list=None):
                                                                             }   
                                                                 },                                                                 
                                                     )
-    # search_response = asyncio.run(search_func)
-    search_response = search_func
-    search_results = r2r_format_search_results_for_llm(search_response.results)
-    print(search_results)
+    search_results = r2r_format_search_results_for_llm(query,search_response.results,limit=limit,min_score_threshold=min_score_threshold)
     return search_results
-# r=r2r_search("client","query",["chat_on_docs_list"])
-# print(r)
 
 def r2r_authed_client(user_id,user_email='',password="change_me_immediately",server_url='http://10.1.150.105:7272'):
     r2r_client = R2RClient(base_url=server_url)
@@ -190,7 +218,16 @@ def r2r_create_documents(r2r_client,lm_documents:list):
 
 if __name__ == "__main__":
     r2r_client = r2r_authed_client("admin")
-    result= r2r_search(r2r_client,query="质量保证过程的含义")
-    print(result)
+    query_list = ["全民健康信息平台包含的建设内容、系统或功能","质量保证过程的含义","柯林斯与班纳特关系"]
+    for query in query_list:
+        result= r2r_search(r2r_client,query=query)
+        print(result)
+        # from jqcode.jq_agent.c0_init_env_models import env_models_instance
+        # llm_model = env_models_instance.chat_model
+
+        from jqcode.langgraph_in_class import llm_chain        
+        answer = llm_chain.invoke({"question": query,"context":result})
+        print(answer)
+        pass
 
 

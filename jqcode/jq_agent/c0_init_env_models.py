@@ -657,30 +657,54 @@ class InitEnvModels:
     #     return self.openai_client
     # endregion 直接初始化openai接口，暂时用不上
 
-    def get_langchain_chat_model(self, temperature=0.6,top_p =0.95, top_k=30, min_p=0, frequency_penalty=0.2, repetition_penalty=1.05, max_tokens=None, streaming=False):
+    def get_langchain_chat_model(self, temperature=0.6,top_p =0.95, top_k=30, min_p=0, frequency_penalty=0.2, repetition_penalty=1.05, max_tokens=None, streaming=False,use_deepseek=True):
         if max_tokens:
             if max_tokens!=self.llm_model_max_tokens:
                 logger.warning(f"您现在请求的llm {max_tokens=}，与环境配置中的{self.llm_model_max_tokens=}不同，请确认！")
         else:
             max_tokens = self.llm_model_max_tokens
 
+        if use_deepseek:
+            try:
+                from langchain_deepseek import ChatDeepSeek
+                self.chat_model = ChatDeepSeek(
+                        cache=True,
+                        model_name=self.llm_model_name,
+                        api_base=self.llm_model_base_url,    
+                        api_key= self.api_key,
+                        streaming=streaming,
+                        verbose=True,
+                        temperature=temperature,
+                        top_p=top_p,
+                        frequency_penalty=frequency_penalty,
+                        max_tokens=max_tokens, 
+                        # 设置vllm+qwen2.5的repetition_penalty: https://qwen.readthedocs.io/zh-cn/latest/framework/function_call.html#vllm
+                        # https://huggingface.co/Qwen/QwQ-32B#usage-guidelines              
+                        extra_body={"repetition_penalty": repetition_penalty,"min_p": min_p,"top_k": top_k},        
+                    )
+                logger.warning(f'当前使用ChatDeepSeek接口,LLM模型为:model_name = {self.chat_model.model_name}, api_base = {self.chat_model.api_base}')
+            except ImportError as e:
+                logger.error(f"ChatDeepSeek模块未安装，请安装'from langchain_deepseek import ChatDeepSeek'：{str(e)}")
+            except Exception as e:
+                logger.error(f"加载ChatDeepSeek失败：{str(e)}")
 
-        self.chat_model = ChatOpenAI(
-                cache=True,
-                model_name=self.llm_model_name,
-                openai_api_base=self.llm_model_base_url,    
-                openai_api_key= self.api_key,
-                streaming=streaming,
-                verbose=True,
-                temperature=temperature,
-                top_p=top_p,
-                frequency_penalty=frequency_penalty,
-                max_tokens=max_tokens, 
-                # 设置vllm+qwen2.5的repetition_penalty: https://qwen.readthedocs.io/zh-cn/latest/framework/function_call.html#vllm
-                # https://huggingface.co/Qwen/QwQ-32B#usage-guidelines              
-                extra_body={"repetition_penalty": repetition_penalty,"min_p": min_p,"top_k": top_k},        
-            )
-        logger.warning(f'当前使用的LLM模型为:model_name = {self.chat_model.model_name}, api_base = {self.chat_model.openai_api_base}')
+        if not self.chat_model:
+            self.chat_model = ChatOpenAI(
+                    cache=True,
+                    model_name=self.llm_model_name,
+                    openai_api_base=self.llm_model_base_url,    
+                    openai_api_key= self.api_key,
+                    streaming=streaming,
+                    verbose=True,
+                    temperature=temperature,
+                    top_p=top_p,
+                    frequency_penalty=frequency_penalty,
+                    max_tokens=max_tokens, 
+                    # 设置vllm+qwen2.5的repetition_penalty: https://qwen.readthedocs.io/zh-cn/latest/framework/function_call.html#vllm
+                    # https://huggingface.co/Qwen/QwQ-32B#usage-guidelines              
+                    extra_body={"repetition_penalty": repetition_penalty,"min_p": min_p,"top_k": top_k},        
+                )
+            logger.warning(f'当前使用ChatOpenAI接口,LLM模型为:model_name = {self.chat_model.model_name}, api_base = {self.chat_model.openai_api_base}')
         return self.chat_model
     
     def _get_emb_8k_rerank_model(self,embedding_model_name=None, embedding_model_name_8k=None, rerank_model_name=None, device = ['cpu','cpu','cpu'],final_docs_num_reranked=4): #device = ['cuda:1','cuda:2''cuda:3']

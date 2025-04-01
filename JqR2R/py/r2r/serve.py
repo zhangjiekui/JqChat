@@ -17,7 +17,7 @@ print(f"优先载入了顶层的.env,此次已能获取到LLM_MODEL_CARD: {LLM_M
 os.environ['R2R_POSTGRES_USER']="langchain"
 os.environ['R2R_POSTGRES_PASSWORD']="langchain"
 os.environ['R2R_POSTGRES_HOST']="10.1.150.105"
-os.environ['R2R_POSTGRES_PORT']="6022"
+os.environ['R2R_POSTGRES_PORT']="7000"
 os.environ['R2R_POSTGRES_DBNAME']="postgres"
 os.environ['R2R_PROJECT_NAME']="jq_new_project"
 os.environ['NUMEXPR_MAX_THREAD']='20'

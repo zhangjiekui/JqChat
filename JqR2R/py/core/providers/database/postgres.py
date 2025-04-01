@@ -97,6 +97,7 @@ class PostgresDatabaseProvider(DatabaseProvider):
                 )
 
         self.port = int(self.port)
+        logger.warning(f"")
 
         self.project_name = (
             config.app.project_name
@@ -108,14 +109,16 @@ class PostgresDatabaseProvider(DatabaseProvider):
             raise ValueError(
                 "Error, please set a valid R2R_PROJECT_NAME environment variable or set a 'project_name' in the 'database' settings of your `r2r.toml`."
             )
+        else:
+            logger.info(f"Postgres R2R_PROJECT_NAME ({self.project_name=}) ")
 
         # Check if it's a Unix socket connection
         if self.host.startswith("/") and not self.port:
             self.connection_string = f"postgresql://{self.user}:{self.password}@/{self.db_name}?host={self.host}"
-            logger.info("Connecting to Postgres via Unix socket")
+            logger.info(f"Connecting to Postgres({self.connection_string}) via Unix socket")
         else:
             self.connection_string = f"postgresql://{self.user}:{self.password}@{self.host}:{self.port}/{self.db_name}"
-            logger.info("Connecting to Postgres via TCP/IP")
+            logger.info(f"Connecting to Postgres({self.connection_string}) via TCP/IP")
 
         self.dimension = dimension
         self.quantization_type = quantization_type

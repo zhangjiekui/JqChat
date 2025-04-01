@@ -1,4 +1,23 @@
+激活1080Ti机器上的uv环境：
+```
+uv venv
+source .venv/bin/activate
 
+~/zjk/vllm_env/bin/pip install vllm
+~/zjk/vllm_env/bin/python
+
+zjk@DESKTOP-NAKQS10:~/zjkenv/bin$ python3 -m venv ~/zjk/vllm_env
+zjk@DESKTOP-NAKQS10:~/zjkenv/bin$ ~/zjk/vllm_env/bin/pip install vllm
+
+
+~/zjk/vllm_env/bin/python vllm serve /mnt/d/qwen25vl_model_int8/neuralmagic/Qwen2___5-VL-7B-Instruct-quantized___w8a8  --served-model-name qwenvl --enable-auto-tool-choice --tool-call-parser hermes --gpu-memory-utilization 0.98 --port 1234 --host 0.0.0.0 --limit-mm-per-prompt image=5,video=5 --max-model-len 32000  --max-num-seqs 16 --enable-prefix-caching --enable-chunked-prefill
+
+
+D:\qwen25vl_model_int8\neuralmagic\Qwen2___5-VL-7B-Instruct-quantized___w8a8
+
+VLLM_ALLOW_ENGINE_USE_RAY=1 vllm serve /mnt/d/qwen25vl_model_int8/neuralmagic/Qwen2___5-VL-7B-Instruct-quantized___w8a8  --served-model-name qwenvl --enable-auto-tool-choice --tool-call-parser hermes --gpu-memory-utilization 0.98 --port 1234 --host 0.0.0.0 --limit-mm-per-prompt image=5,video=5 --max-model-len 32000  --max-num-seqs 16 --enable-prefix-caching --enable-chunked-prefill >> /root/JqLogs/vllmvl.log 2>&1 &
+tail -f /home/zjk/vllmvl.log 
+```
 ## vllm8.2 配合使用 OneAPI
 ### 模型部署
 ``` qwen25qwq gpu0_1
@@ -34,13 +53,37 @@ tail -f /root/JqLogs/Qwen25B32.log
 ```
 
 ```
+长度能跑到60000 --max-model-len 60000
+PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True
+VLLM_ATTENTION_BACKEND=FLASHINFER
+--kv_cache_dtype fp8 \
 workon vllmb 
-CUDA_VISIBLE_DEVICES=0,1 vllm serve /data/models/Qwen/Qwen2___5-7B-Instruct-1M \
+VLLM_ATTENTION_BACKEND=FLASHINFER CUDA_VISIBLE_DEVICES=0,1 nohup vllm serve /data/models/graelo/Qwen2___5-14B-Instruct-1M-AWQ \
   --tensor-parallel-size 2 \
-  --max-model-len 120000 \
+  --max-model-len 60000 \
   --enable-chunked-prefill \
   --enable-prefix-caching \
-  --max-num-batched-tokens 90000 \
+  --max-num-batched-tokens 131072 \
+  --max-num-seqs 128 \
+  --served-model-name qwen25m1 \
+  --gpu-memory-utilization 0.98 \
+  --host 0.0.0.0 \
+  --port 9999 \
+  --enable-auto-tool-choice \
+  --tool-call-parser hermes \
+  --kv_cache_dtype fp8 \
+  >> /root/JqLogs/qwen25m1.log 2>&1 &
+  tail -f /root/JqLogs/qwen25m1.log
+
+
+下面的长度能跑60000失败 --max-model-len 60000
+workon vllmb 
+CUDA_VISIBLE_DEVICES=0,1 nohup vllm serve /data/models/graelo/Qwen2___5-14B-Instruct-1M-AWQ \
+  --tensor-parallel-size 2 \
+  --max-model-len 50000 \
+  --enable-chunked-prefill \
+  --enable-prefix-caching \
+  --max-num-batched-tokens 131072 \
   --max-num-seqs 128 \
   --served-model-name qwen25m1 \
   --gpu-memory-utilization 0.98 \
@@ -52,8 +95,14 @@ CUDA_VISIBLE_DEVICES=0,1 vllm serve /data/models/Qwen/Qwen2___5-7B-Instruct-1M \
   tail -f /root/JqLogs/qwen25m1.log
 
 
+
+
+
+
+
+
 workon vllmb 
-<!-- CUDA_VISIBLE_DEVICES=0,1 vllm serve /data/models/Qwen/Qwen2___5-7B-Instruct-1M \ -->
+<!-- CUDA_VISIBLE_DEVICES=0,1 nohup vllm serve /data/models/Qwen/Qwen2___5-7B-Instruct-1M \ -->
 workon vllmb 
 CUDA_VISIBLE_DEVICES=0,1 vllm serve /data/models/Qwen/Qwen2___5-7B-Instruct-1M \
   --tensor-parallel-size 2 \
