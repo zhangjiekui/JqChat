@@ -860,8 +860,8 @@ class InitEnvModels:
     
     @lru_cache
     def get_pg_connection(self,index_name:str='default',
-                          connection_str:str ="postgresql+psycopg://langchain:langchain@localhost:6024/langchain",
-                          connection_conf:dict = {"database": "langchain","user": "langchain","password": "langchain","host": "localhost","port": 6024,}):
+                          connection_str:str ="postgresql+psycopg://langchain:langchain@localhost:7000/langchain",
+                          connection_conf:dict = {"database": "langchain","user": "langchain","password": "langchain","host": "localhost","port": 7000,}):
         from langchain_postgres import PGVector
         from langchain_community.graphs.age_graph import AGEGraph
         from langchain_experimental.graph_transformers import LLMGraphTransformer
@@ -877,8 +877,6 @@ class InitEnvModels:
                 session.execute(text('ALTER DATABASE postgres SET search_path = ag_catalog, "$user", public;'))   
 
 
-        connection_str = "postgresql+psycopg://langchain:langchain@localhost:6024/langchain" 
-        connection_conf = {"database": "langchain","user": "langchain","password": "langchain","host": "localhost","port": 6024,}
         pg_vector_store = PGVector(async_mode=True,embeddings=self.embed_model,collection_name=index_name,connection=connection_str,use_jsonb=True,)
         pg_graph_store = AGEGraph(graph_name=index_name, conf=connection_conf)
         kg_llm_transformer = LLMGraphTransformer(llm=self.chat_model)

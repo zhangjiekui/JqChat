@@ -28,8 +28,6 @@ class JqEsClient():
         self.docstores = JqElasticsearchDocumentStore()
         self.client = env_models_instance.get_es_connection()
         self.default_index_settings = env_models_instance.ES_DEFAULT_CHINESE_SETTINGS
-        if env_models_instance.USING_GRAPH_RAG:
-            self.pg_vector_store,self.pg_graph_store,self.kg_llm_transformer = env_models_instance.get_pg_connection()
     
     def get_all_kb(self, current_user=None):
         """
@@ -281,10 +279,25 @@ class JqEsClient():
             vectorstore = env_models_instance.get_es_searchstore(es_connection=self.client,embedding=embed_model,index_name=index_name)
         
     # 6、将文件进行r2r处理
+        if env_models_instance.USING_GRAPH_RAG: 
+            if not r2r_client: # type: ignore
+                try:
+                    from r2r_client_functions import r2r_authed_client
+                    r2r_client = r2r_authed_client(user_id="admin")
+                    logger.warning("self.r2r_client初始化成功")
+                except ImportError as e:
+                    logger.error(f"Failed to import r2r:{e}")
+                    logger.error("To run the server, install the required dependencies: pip install 'r2r[core]'")
+                    r2r_client = None
+                except Exception as e:
+                    logger.error(f"R2R Client failed to initialize or login: {e}")
+                    r2r_client = None
+            if r2r_client: 
+                from r2r_client_functions import r2r_create_documents
+                r2r_create_documents(r2r_client=r2r_client,lm_documents=lm_documents)
+            else:
+               logger.warning("self.r2r_client初始化失败！") 
 
-        if r2r_client: # type: ignore
-            from r2r_client_functions import r2r_create_documents
-            r2r_create_documents(r2r_client=r2r_client,lm_documents=lm_documents)
 
 
         return vectorstore

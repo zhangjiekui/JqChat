@@ -148,17 +148,21 @@ class R2RConfig:
         if config_path is None:
             config_path = R2RConfig.default_config_path
 
-        # Load configuration from TOML file
-        print(f"原始使用的{config_path=}")
-        old = '/data/projects/JqChatV2/JqChat/JqR2R/py'
-        if old in config_path:
-            config_path=config_path.replace("old",".")
-            print(f"替换后使用的{config_path=}")
-            config_path = './r2r/jq.toml'
-            print(f"替换后使用的{config_path=}")
-        
-        with open(config_path, encoding="utf-8") as f:
-            config_data = toml.load(f)
+        try:
+            with open(config_path, encoding="utf-8") as f:
+                config_data = toml.load(f)
+        except Exception as e:
+            logger.warning(f"原始使用的{config_path=}，读取失败:{e}")
+            changed_path = os.environ.get("r2r_project_root_path", '/data/projects/JqChatV2/JqChat/JqR2R/py')
+            changed_path += config_path[1:]
+            try:
+                with open(changed_path, encoding="utf-8") as f:
+                    config_data = toml.load(f)
+                    logger.warning(f"采用新的{changed_path=}，读取成功")
+                    R2RConfig.default_config_path = changed_path
+            except Exception as e:
+                logger.warning(f"采用新的{changed_path=}，还是读取失败:{e}")
+
 
         return cls(config_data)
 
@@ -174,8 +178,21 @@ class R2RConfig:
 
     @classmethod
     def load_default_config(cls) -> dict:
-        with open(R2RConfig.default_config_path, encoding="utf-8") as f:
-            return toml.load(f)
+        config_path = R2RConfig.default_config_path
+        try:
+            with open(R2RConfig.default_config_path, encoding="utf-8") as f:
+                return toml.load(f)
+        except Exception as e:
+            logger.warning(f"原始使用的{config_path=}，读取失败:{e}")
+            changed_path = os.environ.get("r2r_project_root_path", '/data/projects/JqChatV2/JqChat/JqR2R/py')
+            changed_path += config_path[1:]
+            try:
+                with open(changed_path, encoding="utf-8") as f:
+                    config_data = toml.load(f)
+                    logger.warning(f"采用新的{changed_path=}，读取成功")
+                    R2RConfig.default_config_path = changed_path
+            except Exception as e:
+                logger.warning(f"采用新的{changed_path=}，还是读取失败:{e}")
 
     @staticmethod
     def _serialize_config(config_section: Any):

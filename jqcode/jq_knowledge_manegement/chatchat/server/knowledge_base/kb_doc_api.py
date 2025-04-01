@@ -118,7 +118,7 @@ def _save_files_in_thread(
                 and override
                 and os.path.getsize(file_path) == len(file_content)
             ):
-                file_status = f"文件 {filename} 已存在。"
+                file_status = f"    ......文件 {filename} 已存在，忽略......"
                 logger.warning(file_status)
 
 

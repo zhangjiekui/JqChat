@@ -516,12 +516,13 @@ class GraphAgent:
             from r2r_client_functions import r2r_authed_client
             r2r_client = r2r_authed_client(user_id=self.user_id)
             self.r2r_client = r2r_client
+            logger.warning("self.r2r_client初始化成功")
         except ImportError as e:
             logger.error(f"Failed to import r2r:{e}"            )
             logger.error("To run the server, install the required dependencies: pip install 'r2r[core]'")
             self.r2r_client = None
         except Exception as e:
-            logger.error(f"R2RAsyncClient failed to initialize or login: {e}")
+            logger.error(f"R2R Client failed to initialize or login: {e}")
             self.r2r_client = None
 
         self.retriever = get_retriever(index_name=self.index_name,chat_on_docs_list=self.chat_on_docs_list,add_docs_list_to_kb=self.add_docs_list_to_kb,top_k=10,source_id_key='source',required_exts=['.doc','.docx','.pdf','.md'],r2r_client = self.r2r_client)
@@ -737,6 +738,9 @@ class GraphAgent:
                             text = r2r_search_context[0:n]
                             text = text.replace("\n","..")
                             logger.warning(f'GraphRag Result String={text} ...共{len(r2r_search_context)}字，仅显示前{n}字...')
+                            logger.warning("========GraphRag Result String========")
+                            print(r2r_search_context)
+                            logger.warning("========GraphRag Result String========")
                             graph_documents = [Document(page_content=r2r_search_context,metadata={'source':"GraphRag"})] 
                             documents.extend(graph_documents)
                         else:
@@ -1758,31 +1762,33 @@ tavily_search_tool = TavilySearchResults(max_results=6) #increased number of res
 
 if __name__ == "__main__":
     user_questions = [
-        # "你是谁？请详细介绍一下你自己"
-        # "你装备了哪些工具？",
-        # "我现在的位置是在安徽晶奇网络科技股份有限公司附近，请查询15公里范围内的养老机构",
-        # "晶奇公司质量保证过程中的角色及角色的职责或含义解释，对应的人员（姓名）有哪些?其中的批准人是谁？",
-        # '你好，我的名字是张结魁，我是安徽晶奇网络科技股份有限公司的，请记住我的信息',
-        # '请搜索我与晶奇公司的相关网页，说明我与晶奇公司的关系',
-        # '晶奇公司的厦门市智慧民政一体化平台建设方案的编制依据，给出详尽的文件名称和文号等内容列表',
-        # '请绘制sin(x)曲线',
-        # '请使用python实现指数移动平均法，并生成样例数据，绘制曲线',
-        # '我公司是什么时候与西南石油大学建立校企合作关系的？',
-        # "晶奇公司编制的安徽省食品药品监督管理局行政审批系统项目总体计划的版本号是多少，批准人是谁？",
-        # '请搜索合肥大蜀山，然后提供详细介绍', 
-        # '请查询明天从合肥到上海的航班,以及南昌到北京的航班',
-        # '请直接执行代码：print("Hello World")',
-        # '请使用Python来绘制sin(x)的曲线图',        
-        # '合肥大蜀山',          
-        # '请查询明天从合肥到上海的航班',
-        # '请使用python_repl_tool来计算1到100的和',
-        # '请调用python_repl_tool工具，一个计算1到100的和,另一个计算10的阶乘，并实际执行工具获取计算结果',
-        # "请搜索网络然后回答问题：What is the weather in SF and LA? ",
-        # "Who won the super bowl in 2024? In what state is the winning team headquarters located?What is the GDP of that state? ",
-        # "还记得我的名字吗？",
-        # "请将下面的内容：序号,文件名称,文号 1,《关于研究智慧民政和智慧市政建设工作的纪要》,厦门市人民政府专题会议纪要〔2020〕285号 2,《关于进一步推进儿童福利机构优化提质和创新转型高质量发展的意见》,民发〔2021〕44号 3,《民政部办公厅关于印发〈金民工程一期项目试点工作方案〉的通知》,民办函〔2019〕108号 4,《中共中央关于制定国民经济和社会发展第十四个五年规划和二〇三五年远景目标的建议》, 5,《国务院办公厅关于推进养老服务发展的意见》,国办发〔2019〕5号 6,《民政部关于进一步扩大养老服务供给促进养老服务消费的实施意见》,民发〔2019〕88号 7,《国务院扶贫开发领导小组关于建立防止返贫监测和帮扶机制的指导意见》,国开发〔2020〕6号 8,《国务院关于国家基本公共服务标准（2 0 2 1 年 版 ） 的 批 复 》 , 国 函 〔 2 0 2 1 〕 2 0 号 9,《福建省促进电子证照应用管理暂行办法》,闽政办[2017]74号 10,厦门市人民政府办公厅关于进一步深化“互联网+政务服务”推进政务服务“一网、一门、一次”改革工作的通知,厦府办〔2018〕194号 11,《厦门市“十三五”民政事业发展专项规划（2016-2020）》, 12,厦门市城乡社区服务体系建设规划（2016-2020年）, 13,《关于加强和完善城乡社区治理的实施意见》,厦委发〔2018〕7号 转换为表格，使用python生成csv文件并提供下载地址",
-        # '我现在的位置是在安徽晶奇网络科技股份有限公司附近，请查询15公里范围内的养老机构，最多返回10个',
-        "全民健康信息平台包含的建设内容、系统或功能"
+        "你是谁？请详细介绍一下你自己"
+        "你装备了哪些工具？",
+        "我现在的位置是在安徽晶奇网络科技股份有限公司附近，请查询15公里范围内的养老机构",
+        "晶奇公司质量保证过程中的角色及角色的职责或含义解释，对应的人员（姓名）有哪些?其中的批准人是谁？",
+        '你好，我的名字是张结魁，我是安徽晶奇网络科技股份有限公司的，请记住我的信息',
+        '请搜索我与晶奇公司的相关网页，说明我与晶奇公司的关系',
+        '晶奇公司的厦门市智慧民政一体化平台建设方案的编制依据，给出详尽的文件名称和文号等内容列表',
+        '请绘制sin(x)曲线',
+        '请使用python实现指数移动平均法，并生成样例数据，绘制曲线',
+        '我公司是什么时候与西南石油大学建立校企合作关系的？',
+        "晶奇公司编制的安徽省食品药品监督管理局行政审批系统项目总体计划的版本号是多少，批准人是谁？",
+        '请搜索合肥大蜀山，然后提供详细介绍', 
+        '请查询明天从合肥到上海的航班,以及南昌到北京的航班',
+        '请直接执行代码：print("Hello World")',
+        '请使用Python来绘制sin(x)的曲线图',        
+        '合肥大蜀山',          
+        '请查询明天从合肥到上海的航班',
+        '请使用python_repl_tool来计算1到100的和',
+        '请调用python_repl_tool工具，一个计算1到100的和,另一个计算10的阶乘，并实际执行工具获取计算结果',
+        "请搜索网络然后回答问题：What is the weather in SF and LA? ",
+        "Who won the super bowl in 2024? In what state is the winning team headquarters located?What is the GDP of that state? ",
+        "还记得我的名字吗？",
+        "请将下面的内容：序号,文件名称,文号 1,《关于研究智慧民政和智慧市政建设工作的纪要》,厦门市人民政府专题会议纪要〔2020〕285号 2,《关于进一步推进儿童福利机构优化提质和创新转型高质量发展的意见》,民发〔2021〕44号 3,《民政部办公厅关于印发〈金民工程一期项目试点工作方案〉的通知》,民办函〔2019〕108号 4,《中共中央关于制定国民经济和社会发展第十四个五年规划和二〇三五年远景目标的建议》, 5,《国务院办公厅关于推进养老服务发展的意见》,国办发〔2019〕5号 6,《民政部关于进一步扩大养老服务供给促进养老服务消费的实施意见》,民发〔2019〕88号 7,《国务院扶贫开发领导小组关于建立防止返贫监测和帮扶机制的指导意见》,国开发〔2020〕6号 8,《国务院关于国家基本公共服务标准（2 0 2 1 年 版 ） 的 批 复 》 , 国 函 〔 2 0 2 1 〕 2 0 号 9,《福建省促进电子证照应用管理暂行办法》,闽政办[2017]74号 10,厦门市人民政府办公厅关于进一步深化“互联网+政务服务”推进政务服务“一网、一门、一次”改革工作的通知,厦府办〔2018〕194号 11,《厦门市“十三五”民政事业发展专项规划（2016-2020）》, 12,厦门市城乡社区服务体系建设规划（2016-2020年）, 13,《关于加强和完善城乡社区治理的实施意见》,厦委发〔2018〕7号 转换为表格，使用python生成csv文件并提供下载地址",
+        '我现在的位置是在安徽晶奇网络科技股份有限公司附近，请查询15公里范围内的养老机构，最多返回10个',
+        "全民健康信息平台包含的建设内容、系统或功能",
+        "请检索知识库：医院信息系统包括哪些功能模块，提供详细完整的回答",
+        "请检索知识库回答：医院信息系统中的基础维护系统完整功能详述"
     ]
 
     # user_questions = ['请调用工具函数帮我查询：我现在的位置是在安徽晶奇网络科技股份有限公司附近，请查询15公里范围内的养老机构，最多返回10个']

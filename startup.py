@@ -420,7 +420,15 @@ def main():
     # 添加这行代码
     print("=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*")    
     project_root_path = pathlib.Path().resolve()
-    print(f"应用启动路径:{project_root_path}")
+    print(f"当前应用启动路径:{project_root_path}")
+    need_add_path = str(project_root_path)
+    if "JqR2R" not in project_root_path.parts:
+        need_add_path = project_root_path/'JqR2R/py'
+        if need_add_path not in set(sys.path):
+            sys.path.append(str(need_add_path))
+            print(f"已将{need_add_path} 加入系统路径！")
+    os.environ["r2r_project_root_path"] = str(need_add_path)
+
     print(f"本项目中添加使用的Python路径为：{set(sys.path)}")
     print(f"本项目运行日志位置: {project_root_path}/jqchat_agent.log")
     
