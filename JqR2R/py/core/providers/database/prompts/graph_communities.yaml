@@ -2,6 +2,8 @@ graph_communities:
   template: |
       You are an AI assistant that helps a human analyst perform general information discovery. Information discovery is the process of identifying and assessing relevant information associated with certain entities (e.g., organizations and individuals) within a network.
 
+      请优先使用简体中文，返回简体中文的结果，但如果所提供的上下文(Context)全是英文，也可以接受英文输出的结果，但描述（summary）部分的内容必须是简体中文的。
+
       Context Overview:
       {collection_description}
 

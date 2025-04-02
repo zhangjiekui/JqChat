@@ -1,23 +1,3 @@
-激活1080Ti机器上的uv环境：
-```
-uv venv
-source .venv/bin/activate
-
-~/zjk/vllm_env/bin/pip install vllm
-~/zjk/vllm_env/bin/python
-
-zjk@DESKTOP-NAKQS10:~/zjkenv/bin$ python3 -m venv ~/zjk/vllm_env
-zjk@DESKTOP-NAKQS10:~/zjkenv/bin$ ~/zjk/vllm_env/bin/pip install vllm
-
-
-~/zjk/vllm_env/bin/python vllm serve /mnt/d/qwen25vl_model_int8/neuralmagic/Qwen2___5-VL-7B-Instruct-quantized___w8a8  --served-model-name qwenvl --enable-auto-tool-choice --tool-call-parser hermes --gpu-memory-utilization 0.98 --port 1234 --host 0.0.0.0 --limit-mm-per-prompt image=5,video=5 --max-model-len 32000  --max-num-seqs 16 --enable-prefix-caching --enable-chunked-prefill
-
-
-D:\qwen25vl_model_int8\neuralmagic\Qwen2___5-VL-7B-Instruct-quantized___w8a8
-
-VLLM_ALLOW_ENGINE_USE_RAY=1 vllm serve /mnt/d/qwen25vl_model_int8/neuralmagic/Qwen2___5-VL-7B-Instruct-quantized___w8a8  --served-model-name qwenvl --enable-auto-tool-choice --tool-call-parser hermes --gpu-memory-utilization 0.98 --port 1234 --host 0.0.0.0 --limit-mm-per-prompt image=5,video=5 --max-model-len 32000  --max-num-seqs 16 --enable-prefix-caching --enable-chunked-prefill >> /root/JqLogs/vllmvl.log 2>&1 &
-tail -f /home/zjk/vllmvl.log 
-```
 ## vllm8.2 配合使用 OneAPI
 ### 模型部署
 ``` qwen25qwq gpu0_1
@@ -38,6 +18,7 @@ workon vllmb
 CUDA_VISIBLE_DEVICES=2 VLLM_ALLOW_ENGINE_USE_RAY=1 nohup vllm serve /data/models/Qwen/Qwen2___5-VL-7B-Instruct --served-model-name qwenvl --enable-auto-tool-choice --tool-call-parser hermes --gpu-memory-utilization 0.98 --port 8000 --host 0.0.0.0 --limit-mm-per-prompt image=5,video=5 --max-model-len 32000  --max-num-seqs 16 --enable-prefix-caching --enable-chunked-prefill >> /root/JqLogs/vllmvl.log 2>&1 &
 tail -f /root/JqLogs/vllmvl.log 
 ```
+
 ``` qwenvl gpu2_3
 workon vllmb
 CUDA_VISIBLE_DEVICES=2,3 VLLM_ALLOW_ENGINE_USE_RAY=1 nohup vllm serve /data/models/mlx-community/Qwen2___5-VL-32B-Instruct-4bit --served-model-name qwenvl --enable-auto-tool-choice --tool-call-parser hermes --gpu-memory-utilization 0.98 --port 8000 --host 0.0.0.0 --limit-mm-per-prompt image=5,video=5 --max-model-len 32000 --tensor-parallel-size 2 --max-num-seqs 16 --enable-prefix-caching --enable-chunked-prefill >> /root/JqLogs/vllmvl.log 2>&1 &

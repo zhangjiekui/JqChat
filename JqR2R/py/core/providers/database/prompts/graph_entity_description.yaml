@@ -1,5 +1,6 @@
 graph_entity_description:
   template: |
+    请优先使用简体中文，返回简体中文的结果，但如果所提供的上下文(Context)全是英文，也可以接受英文输出的结果，但描述（summary）部分的内容必须是简体中文的。
     Given the following information about an entity:
 
     Document Summary:
@@ -26,6 +27,7 @@ graph_entity_description:
     - Style: Technical and precise
     - Structure: Definition + Context + Key Relationships
     - Tone: Objective and authoritative
+    - language: 简体中文
 
     Integration Guidelines:
     - Prioritize information that appears in multiple sources

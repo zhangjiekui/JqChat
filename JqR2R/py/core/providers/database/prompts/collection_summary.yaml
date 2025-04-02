@@ -32,6 +32,8 @@ collection_summary:
     - Preserve important context from individual documents
     - Balance breadth of coverage with depth of insight
 
+    5.请优先使用简体中文，返回简体中文的结果，但如果所提供的上下文(Context)全是英文，也可以接受英文输出的结果，但描述（summary）部分的内容必须是简体中文的。
+
     ### Query:
 
     Generate a collection-level summary following the above requirements. Focus on synthesizing the key themes and relationships across all documents while maintaining clarity and concision.

@@ -21,7 +21,7 @@ COPY pyproject.toml ./
 RUN pip config set global.index-url https://mirrors.tuna.tsinghua.edu.cn/pypi/web/simple
 RUN pip install --no-cache-dir torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cpu --proxy=http://10.1.42.150:4780 --verbose
 RUN pip install -e ".[core]" && \
-    pip install --no-cache-dir gunicorn uvicorn pydantic anytree llama_index langchain langchain_community langchain_openai BCEmbedding sentence_transformers elasticsearch langchain_elasticsearch json_repair xinference langchain_huggingface jieba func_timeout -i https://pypi.tuna.tsinghua.edu.cn/simple --verbose
+    pip install --no-cache-dir gunicorn uvicorn pydantic anytree llama_index langchain langchain_community langchain_openai BCEmbedding sentence_transformers elasticsearch langchain_elasticsearch json_repair xinference langchain_deepseek langchain_huggingface jieba func_timeout -i https://pypi.tuna.tsinghua.edu.cn/simple --verbose
 
 RUN pip install --no-cache-dir -U lark peft transformers -i https://pypi.tuna.tsinghua.edu.cn/simple --verbose
 

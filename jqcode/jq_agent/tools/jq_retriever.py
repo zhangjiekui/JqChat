@@ -173,7 +173,7 @@ def get_retriever(vectorstore:ElasticsearchStore=None,index_name:str='',index_de
             if existed_files_maybe_need_indexing:
                 from jqcode.jq_docstores.jq_es_client import JqEsClient
                 jq_es_client = JqEsClient()
-                default_vectorstore = jq_es_client.chunks_indexing_from_input_dir_or_files(current_user=current_user,index_name=index_destination,description=index_description,input_files=existed_files_maybe_need_indexing,r2r_aclient=r2r_client)
+                default_vectorstore = jq_es_client.chunks_indexing_from_input_dir_or_files(current_user=current_user,index_name=index_destination,description=index_description,input_files=existed_files_maybe_need_indexing,r2r_client=r2r_client)
             else:
                 default_vectorstore = env_models_instance.get_es_searchstore(es_connection=es_connection,embedding=embed_model,index_name=index_destination) 
     

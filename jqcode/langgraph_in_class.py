@@ -683,11 +683,25 @@ class GraphAgent:
                 question_related_messages = env_models_instance.filter_and_get_messages_relevant_to_query(if_reranking=True,query=question,messages_list=messages,reserve_last_n_messages_num = reserve_last_n_messages_num,score_threshold=score_threshold)
         return question_related_messages
 
-    def _get_messages_from_state_by_key(self,key:str):
-        state = self.graph.get_state(config=self.invoke_graph_config,subgraphs = True)
+    def _get_messages_from_state_by_key(self,key:str,state:GraphAgentState=None):
+        if state is None:
+            state = self.graph.get_state(config=self.invoke_graph_config,subgraphs = True)
         messages = state.values.get(key,[]) 
         return messages
     
+    def update_user_variables(self,state:GraphAgentState,add_dict:dict={}):
+        """
+        更新用户变量
+        """
+        if isinstance(add_dict,dict):
+            users_variables_statedict = state["user_variables"]
+            user_variables_statedict  = users_variables_statedict.get(self.user_id,{})
+            user_variables_statedict.update(add_dict)
+            _user_variables_statedict = {self.user_id:user_variables_statedict}
+            state["user_variables"].update(_user_variables_statedict) 
+        else:
+            logger.warning(f"add_dict:{add_dict}必须是字典类型")
+
     class VECTORSTORE(BaseModel):
         """
         将会动态的来赋值，被替换掉
@@ -825,10 +839,9 @@ class GraphAgent:
                     return "useful"
                 else:
                     print(f"not useful: {generation=}")
-                    user_variables_statedict = self._get_messages_from_state_by_key("user_variables")        
-                    history_reference_str = user_variables_statedict[self.user_id]['reference']
-                    _user_variables_statedict = {self.user_id:{"reference":"","history_reference":history_reference_str,"history_generation":generation}}
-                    state["user_variables"].update(_user_variables_statedict)
+                    _user_variables_statedict = {"history_generation":generation}
+                    self.update_user_variables(state,add_dict=_user_variables_statedict)
+
                     return "not useful"
         else:
             # pprint.pprint("---DECISION: GENERATION IS NOT GROUNDED IN DOCUMENTS, RE-TRY---")
@@ -904,8 +917,7 @@ class GraphAgent:
                 user_variables_statedict = state["user_variables"]
                 query_generated = user_variables_statedict[self.user_id]['rag_args']
                 # 再将"rag_args"的值置为空字符串
-                _user_variables_statedict = {self.user_id:{"rag_args":'',"reference":""}}
-                state["user_variables"].update(_user_variables_statedict)
+                self.update_user_variables(state,add_dict={"rag_args":""})
             except:
                 pass
             finally:
@@ -949,9 +961,8 @@ class GraphAgent:
             referens_str = "#### 参考网页:  \n"
             for i,r in enumerate(referens):
                 referens_str += f"    {i+1}. [{r}]({r})  \n"
-            # _user_variables_statedict = {self.user_id:{"rag_args":'',"reference":referens_str}}
-            _user_variables_statedict = {"rag_args":'',"reference":referens_str}
-            state["user_variables"][self.user_id].update(_user_variables_statedict)    
+            _user_variables_statedict = {"reference":referens_str}
+            self.update_user_variables(state,add_dict=_user_variables_statedict)    
             logger.debug(f'{referens_str=}')
             
         logger.warning(f"     web_search搜索到的相关文本块数:{len(chunks_relevant)=}")
@@ -1146,8 +1157,8 @@ class GraphAgent:
                 if tool_call_1_name.lower() in ["web_search","vectorstore"]:
                     try:
                         search_query = tool_call_1['args']['query']
-                        user_variables_statedict = {self.user_id:{"rag_args":search_query,"reference":""}}
-                        state["user_variables"].update(user_variables_statedict)
+                        user_variables_statedict = {"rag_args":search_query}
+                        self.update_user_variables(state,add_dict=user_variables_statedict)
                     except:
                         logger.warning(f"导航到'{tool_call_1_name}' Node，但无法获取到search_query")
                     
@@ -1240,7 +1251,15 @@ class GraphAgent:
                 model_name = self.model.bound.model_name
                 max_tokens = self.model.bound.max_tokens
                 api_base = self.model.bound.openai_api_base
-                message = self.model.invoke(messages,config=invoke_llm_config)                
+                message = self.model.invoke(messages,config=invoke_llm_config)
+                reasoning_content = message.additional_kwargs.get("reasoning_content",None)
+                if reasoning_content:
+                    logger.warning(f"推理内容：<think>\n{reasoning_content}\n</think>")
+                    reasoning_content_formatted = f'<details>\n<summary>查看模型思考过程</summary>\n<font color="grey" size=16px>{reasoning_content}</font></details>'
+                    add_dict = {"reasoning_content":reasoning_content_formatted}
+                    self.update_user_variables(state=state,add_dict=add_dict)
+                    pass
+                                
                 # 尝试获取finish_reason，如发现因token限制导致的大模型输出不完整或异常，给出警告提示
                 try: 
                     finish_reason = message.response_metadata["finish_reason"]
@@ -1428,7 +1447,7 @@ class GraphAgent:
                             filename=Path(r).name 
                             referens_str = referens_str.replace("'type_placeholder'","文档")
                             paths =r[r.index("knowledge_base")+15:]
-                            referens_str += f"[{i+1}] <a href='{url}/knowledge/{paths}'>{filename}</a>  \n  <p class='referens_content'>{content}<p>  \n"
+                            referens_str += f"[{i+1}] <a href='{url}/knowledge/{paths}'>{filename}</a>  \n  <p class='referens_content' color='grey' font-size='18px'>{content}<p>  \n"
                     else:
                         filename=Path(r).name
                         referens_str += f"[{i+1}] {filename}  \n  <p class='referens_content'>{content}<p>  \n"
@@ -1476,8 +1495,8 @@ class GraphAgent:
         #                 logger.warning(f"无法提供参考文档{filename_or_path}的下载，原因为{e}")
                     
 # endregion
-                _user_variables_statedict = {self.user_id:{"rag_args":'',"reference":referens_str}}
-                state["user_variables"].update(_user_variables_statedict)  
+                _user_variables_statedict = {"reference":referens_str}
+                self.update_user_variables(state,_user_variables_statedict)  
                 logger.debug(f'{referens_str=}')
         if history_generation:
             history_generation_document = Document(page_content=history_generation)
@@ -1739,7 +1758,7 @@ class GraphAgent:
         # self.graph.update_state(config=self.invoke_graph_config,values={"messages":input_message})
         
         #   {"$user_id":{"rag_args":"$rag_args","reference":"$reference"}}        
-        user_variables_statedict = {self.user_id:{"rag_args":"","reference":""}}
+        user_variables_statedict = {self.user_id:{"rag_args":"","reference":"","reasoning_content":""}}
         result = self.graph.invoke({"messages": [input_message],"question":self.question_rewrited,"question_related_messages":[],"generation":'',"user_variables":user_variables_statedict,"question_searched":False},config=self.invoke_graph_config)
         
         logger.debug(f"==USER[id:{self.user_id}]的问题[id:{self.question_id}]，允许问题改写:{allow_question_rewrite}")
@@ -1748,11 +1767,18 @@ class GraphAgent:
         print(f"改写问题>>:{self.question_rewrited} [{allow_question_rewrite=}]")
         answer = result['messages'][-1].content
         answer = display_text(answer)
-        user_variables_statedict = self._get_messages_from_state_by_key("user_variables")        
+        user_variables_statedict = self._get_messages_from_state_by_key("user_variables")
+      
         referens_str = user_variables_statedict[self.user_id]['reference']
         # 因为该问题已经结束，所以无需更新user_variables_statedict的'reference'值
         if referens_str:
             answer = f'\n{referens_str}\n' + answer
+
+        reasoning_content = user_variables_statedict[self.user_id]['reasoning_content']
+        if reasoning_content:
+            answer = f'\n{reasoning_content}\n' + answer  
+
+
         print(f"==AI回答:>>:{answer}")
         print('================='*5)
         return answer
@@ -1793,7 +1819,7 @@ if __name__ == "__main__":
 
     # user_questions = ['请调用工具函数帮我查询：我现在的位置是在安徽晶奇网络科技股份有限公司附近，请查询15公里范围内的养老机构，最多返回10个']
     # user_questions = ['我现在的位置是在安徽晶奇网络科技股份有限公司附近，请查询15公里范围内的养老机构，最多返回10个']
-    # user_questions = ["请搜索网络然后回答问题：What is the weather in SF and LA?","Who won the super bowl in 2024? In what state is the winning team headquarters located?What is the GDP of that state? ","2024年安徽省会城市的GDP是多少? "]
+    user_questions = ["请搜索网络然后回答问题：What is the weather in SF and LA?","Who won the super bowl in 2024? In what state is the winning team headquarters located?What is the GDP of that state? ","2024年安徽省会城市的GDP是多少? "]
     
     my_main_bot = GraphAgent(executable_tools=executable_tools,routing_tools_wrapped_in_class=route_tools,allow_conversation_memory=True)
 

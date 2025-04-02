@@ -1,0 +1,3105 @@
+[
+    {
+        "type": "text",
+        "text": "深圳市民政局“智慧民政”建设项目项目建议书汇报",
+        "text_level": 1,
+        "page_idx": 0
+    },
+    {
+        "type": "text",
+        "text": "1立项依据 ",
+        "page_idx": 1
+    },
+    {
+        "type": "text",
+        "text": "",
+        "text_level": 1,
+        "page_idx": 1
+    },
+    {
+        "type": "text",
+        "text": "2总体设计 ",
+        "page_idx": 1
+    },
+    {
+        "type": "text",
+        "text": "3建设方案",
+        "page_idx": 1
+    },
+    {
+        "type": "text",
+        "text": "4项目亮点",
+        "page_idx": 1
+    },
+    {
+        "type": "text",
+        "text": "5投资匡算 ",
+        "page_idx": 1
+    },
+    {
+        "type": "text",
+        "text": "01 立项依据 ",
+        "text_level": 1,
+        "page_idx": 2
+    },
+    {
+        "type": "image",
+        "img_path": "images/959b19ac90f1ef06614b412ef6b0ea7d271893d2b91d363e08c949da5ce33d9c.jpg",
+        "img_caption": [],
+        "img_footnote": [],
+        "page_idx": 2
+    },
+    {
+        "type": "text",
+        "text": "国家领导指示",
+        "text_level": 1,
+        "page_idx": 3
+    },
+    {
+        "type": "image",
+        "img_path": "images/c187905c5bcc89d6fa21929244c4cf85c939128f5488226f3d66726b590b9c8e.jpg",
+        "img_caption": [],
+        "img_footnote": [],
+        "page_idx": 3
+    },
+    {
+        "type": "text",
+        "text": "三聚三基",
+        "text_level": 1,
+        "page_idx": 3
+    },
+    {
+        "type": "text",
+        "text": "聚焦：脱贫攻坚、聚焦特殊群体、聚焦群众关切 ",
+        "page_idx": 3
+    },
+    {
+        "type": "text",
+        "text": "履行：基本民生保障、基层社会治理、基本社会服务等职责",
+        "page_idx": 3
+    },
+    {
+        "type": "text",
+        "text": "基本民生保障",
+        "text_level": 1,
+        "page_idx": 3
+    },
+    {
+        "type": "text",
+        "text": "基层社会治理",
+        "text_level": 1,
+        "page_idx": 3
+    },
+    {
+        "type": "text",
+        "text": "基本社会服务",
+        "text_level": 1,
+        "page_idx": 3
+    },
+    {
+        "type": "text",
+        "text": "其他行政管理",
+        "text_level": 1,
+        "page_idx": 3
+    },
+    {
+        "type": "text",
+        "text": "行政区划社会组织基层政权社区治理社会工作社会救助儿童福利残疾人福利流浪救助慈善 ",
+        "page_idx": 3
+    },
+    {
+        "type": "text",
+        "text": "",
+        "page_idx": 3
+    },
+    {
+        "type": "text",
+        "text": "",
+        "page_idx": 3
+    },
+    {
+        "type": "text",
+        "text": "养老服务婚姻服务殡葬服务收养登记",
+        "page_idx": 3
+    },
+    {
+        "type": "text",
+        "text": "行业发展需要",
+        "text_level": 1,
+        "page_idx": 4
+    },
+    {
+        "type": "text",
+        "text": "《关于统筹推进民政信息化建设的指导意见》",
+        "text_level": 1,
+        "page_idx": 4
+    },
+    {
+        "type": "image",
+        "img_path": "images/e77624acb6c24c34b9ad73871920264e4a3d47736d14e041770dc9bfc268ade1.jpg",
+        "img_caption": [
+            "培育数据治理新能力"
+        ],
+        "img_footnote": [],
+        "page_idx": 4
+    },
+    {
+        "type": "image",
+        "img_path": "images/bd1869d7e126dc382499a2a32f969836cc9fecd2a5cc7583c624fb78ef9f942a.jpg",
+        "img_caption": [
+            "《“互联网+民政服务”行动计划》"
+        ],
+        "img_footnote": [],
+        "page_idx": 4
+    },
+    {
+        "type": "text",
+        "text": "深圳市“双范”城市要求",
+        "text_level": 1,
+        "page_idx": 5
+    },
+    {
+        "type": "text",
+        "text": "《中共中央国务院关于支持深圳建设中国特色社会主义先行示范区的意见》",
+        "text_level": 1,
+        "page_idx": 5
+    },
+    {
+        "type": "text",
+        "text": "“民生幸福标杆”战略要求",
+        "text_level": 1,
+        "page_idx": 5
+    },
+    {
+        "type": "text",
+        "text": "老有颐养",
+        "text_level": 1,
+        "page_idx": 5
+    },
+    {
+        "type": "text",
+        "text": "促进社会治理现代化",
+        "text_level": 1,
+        "page_idx": 5
+    },
+    {
+        "type": "text",
+        "text": "综合应用大数据、云计算、人工智能等技术，提高社会治理智能化专业化水平。加强基层治理，改革创新群团组织、社会力量参与社会治理模式。",
+        "page_idx": 5
+    },
+    {
+        "type": "text",
+        "text": "社会组织社工社区",
+        "page_idx": 5
+    },
+    {
+        "type": "text",
+        "text": "市委六届十二次全会",
+        "text_level": 1,
+        "page_idx": 5
+    },
+    {
+        "type": "text",
+        "text": "构建与深圳建设先行示范区相适应的现代民政的要求",
+        "text_level": 1,
+        "page_idx": 5
+    },
+    {
+        "type": "text",
+        "text": "按照市委六届十二次、十三次全会、市委常委会会议和市政府党组（扩大）会议的部署，全市民政系统把贯彻落实《意见》，加快构建与我市建设先行示范区相适应的现代民政作为首要政治任务和头等大事，以“率先形成共建共治共享共同富裕的民生发展格局”为目标。",
+        "page_idx": 5
+    },
+    {
+        "type": "text",
+        "text": "要在老有颐养上下功夫",
+        "page_idx": 5
+    },
+    {
+        "type": "text",
+        "text": "要在弱有众扶上下功夫",
+        "page_idx": 5
+    },
+    {
+        "type": "text",
+        "text": "要努力走出社会治理新路",
+        "page_idx": 5
+    },
+    {
+        "type": "text",
+        "text": "深圳市民政定位需要",
+        "text_level": 1,
+        "page_idx": 6
+    },
+    {
+        "type": "text",
+        "text": "新型智慧城市",
+        "text_level": 1,
+        "page_idx": 6
+    },
+    {
+        "type": "image",
+        "img_path": "images/fd9902f470ccd3319064b544d938703b462d119fad5d38ed40d3628f99621cd4.jpg",
+        "img_caption": [],
+        "img_footnote": [],
+        "page_idx": 6
+    },
+    {
+        "type": "text",
+        "text": "特色品牌塑造",
+        "text_level": 1,
+        "page_idx": 6
+    },
+    {
+        "type": "image",
+        "img_path": "images/4a6a84bdaf436a6248bded6d32c8a39637ba8099476b612769fec5084b98c277.jpg",
+        "img_caption": [],
+        "img_footnote": [],
+        "page_idx": 6
+    },
+    {
+        "type": "image",
+        "img_path": "images/72f42803ba25845c89b03a342e157d1a0b033c9ef253b3fed2dc24e223ebd22a.jpg",
+        "img_caption": [
+            "信息系统现状与问题"
+        ],
+        "img_footnote": [],
+        "page_idx": 7
+    },
+    {
+        "type": "text",
+        "text": "深圳市民政信息化现状",
+        "text_level": 1,
+        "page_idx": 7
+    },
+    {
+        "type": "text",
+        "text": "系统分散、应用割裂、需要多次登录；数据汇聚难、业务联动差、服务很难一体化。",
+        "page_idx": 7
+    },
+    {
+        "type": "text",
+        "text": "同类城市对比",
+        "text_level": 1,
+        "page_idx": 8
+    },
+    {
+        "type": "image",
+        "img_path": "images/62a86dfc7169a1eb6bdb998dfc806e194c6ef634f84c4dd07cb3714b6ae44e39.jpg",
+        "img_caption": [
+            "行政编制（名）",
+            "人少事多，缺工具"
+        ],
+        "img_footnote": [],
+        "page_idx": 8
+    },
+    {
+        "type": "image",
+        "img_path": "images/82726a037b34bce9d19d2d9a98c347f3b43347aa968107e392e261fcee232bf9.jpg",
+        "img_caption": [
+            "近年信息化项目（个）",
+            "底子薄，待加强 "
+        ],
+        "img_footnote": [],
+        "page_idx": 8
+    },
+    {
+        "type": "text",
+        "text": "加强基层民政服务能力",
+        "text_level": 1,
+        "page_idx": 9
+    },
+    {
+        "type": "image",
+        "img_path": "images/228aefbdbeafe85ef5ddc630a530d937805176f3e981c51c0aa13ca5df46d15b.jpg",
+        "img_caption": [
+            "硬件：“9+3”项目",
+            "硬件方面依托9+3项目已建设若干民政基础设施工程"
+        ],
+        "img_footnote": [],
+        "page_idx": 9
+    },
+    {
+        "type": "image",
+        "img_path": "images/995432d8288542a25f1702758273d26543ec817a058a8389fe1129637599a49a.jpg",
+        "img_caption": [
+            "软件：智慧民政信息化平台",
+            "软件方面亟需规划智慧民政信息化平台"
+        ],
+        "img_footnote": [],
+        "page_idx": 9
+    },
+    {
+        "type": "text",
+        "text": "“软硬结合”，加强基层民政服务能力",
+        "text_level": 1,
+        "page_idx": 9
+    },
+    {
+        "type": "text",
+        "text": "第1章立项依据",
+        "text_level": 1,
+        "page_idx": 10
+    },
+    {
+        "type": "image",
+        "img_path": "images/1b79cbf12b72b12b580c6983224fc9a1312cfc1a9c440a30a83c25e7bb25d7cb.jpg",
+        "img_caption": [
+            "新时代新要求建设智慧民政"
+        ],
+        "img_footnote": [],
+        "page_idx": 10
+    },
+    {
+        "type": "text",
+        "text": "02总体设计",
+        "text_level": 1,
+        "page_idx": 11
+    },
+    {
+        "type": "image",
+        "img_path": "images/438ab2c5a5fee36af3654635aab206102dc1dbc79b31310e5963664731ee1d7e.jpg",
+        "img_caption": [],
+        "img_footnote": [],
+        "page_idx": 11
+    },
+    {
+        "type": "text",
+        "text": "民政信息化发展历程",
+        "text_level": 1,
+        "page_idx": 12
+    },
+    {
+        "type": "image",
+        "img_path": "images/3a4dca7b5ce1e82390d94e2066895f1e6bc715df9b0decc87f21acae0c9c304d.jpg",
+        "img_caption": [],
+        "img_footnote": [],
+        "page_idx": 12
+    },
+    {
+        "type": "text",
+        "text": "第2章总体设计",
+        "text_level": 1,
+        "page_idx": 13
+    },
+    {
+        "type": "image",
+        "img_path": "images/d6c295cac37a9ab48ba5f593c951944806d3e4a560bb1a283af879b556d0fb67.jpg",
+        "img_caption": [
+            "项目建设规模"
+        ],
+        "img_footnote": [],
+        "page_idx": 13
+    },
+    {
+        "type": "text",
+        "text": "深圳智慧民政项目全市统一建设、多级使用，覆盖全市所有民政部门、服务机构及服务对象",
+        "page_idx": 13
+    },
+    {
+        "type": "table",
+        "img_path": "images/b6f3280b106640902eb31baa246d22b3f0dec98f0b42406d9267f67f5af4ea09.jpg",
+        "table_caption": [
+            "市民政局已建主要系统"
+        ],
+        "table_footnote": [],
+        "table_body": "\n\n<html><body><table><thead><tr><td><b>系统名称</b></td><td><b>主要功能</b></td><td><b>立项日期</b></td><td><b>上线日期</b></td></tr></thead><tbody><tr><td>OA系统</td><td>日常办公、公文流转、审核审批等。</td><td>2010年11月</td><td>2014年5月</td></tr><tr><td>深圳市社会组织综合监管平台</td><td>全市社会组织网上申报、年检、信息管理、 行政审批、成立登记、变更、党建、综合监 管等。</td><td>2017年12月</td><td>2019年2月</td></tr><tr><td>养老服务信息惠民平台</td><td>公办养老机构轮候、补贴发放管理、居家、 日照中心管理、养老机构管理等。</td><td>2016年1月</td><td>2018年4月</td></tr><tr><td>深圳市居民家庭经济状况核对系统</td><td>居民家庭经济状况核对，包括核对人口信息、 车船信息、养老保险信息、收入信息等，以 及保障房核对。</td><td>2018年6月</td><td>建设中</td></tr></tbody></table></body></html>\n\n",
+        "page_idx": 14
+    },
+    {
+        "type": "text",
+        "text": "智慧民政建设内容",
+        "text_level": 1,
+        "page_idx": 15
+    },
+    {
+        "type": "text",
+        "text": "第3章建设方案",
+        "text_level": 1,
+        "page_idx": 15
+    },
+    {
+        "type": "text",
+        "text": "智慧服务平台",
+        "text_level": 1,
+        "page_idx": 15
+    },
+    {
+        "type": "text",
+        "text": "",
+        "text_level": 1,
+        "page_idx": 15
+    },
+    {
+        "type": "image",
+        "img_path": "images/8c6c8c21a5ba29d80562be0891530fe032ca73d844c3aace9e95d42e139caaf4.jpg",
+        "img_caption": [],
+        "img_footnote": [],
+        "page_idx": 15
+    },
+    {
+        "type": "image",
+        "img_path": "images/8c20ed479578e0e2f19dd1961706bf1935ff693a79d3644316065509add2384d.jpg",
+        "img_caption": [
+            "总体架构设计",
+            "第2章总体设计"
+        ],
+        "img_footnote": [],
+        "page_idx": 16
+    },
+    {
+        "type": "text",
+        "text": "技术架构设计",
+        "text_level": 1,
+        "page_idx": 17
+    },
+    {
+        "type": "text",
+        "text": "第2章总体设计",
+        "text_level": 1,
+        "page_idx": 17
+    },
+    {
+        "type": "image",
+        "img_path": "images/6e1d6aadf355ee649535b64b7687d692984c56d78da2dc5f64d84a58209593e7.jpg",
+        "img_caption": [],
+        "img_footnote": [],
+        "page_idx": 17
+    },
+    {
+        "type": "image",
+        "img_path": "images/1b951fa2d9fbd51d81ad583324010f3fc76ec777f1b2cb5ab96c559d1914d65b.jpg",
+        "img_caption": [
+            "系统对接设计",
+            "第2章总体设计"
+        ],
+        "img_footnote": [],
+        "page_idx": 18
+    },
+    {
+        "type": "text",
+        "text": "03建设方案",
+        "text_level": 1,
+        "page_idx": 19
+    },
+    {
+        "type": "image",
+        "img_path": "images/e1c2d27b4e724c4f3c100fd51b695a2e923a8b33e6080e06b2ce20e92ac72c36.jpg",
+        "img_caption": [],
+        "img_footnote": [],
+        "page_idx": 19
+    },
+    {
+        "type": "text",
+        "text": "建设任务",
+        "text_level": 1,
+        "page_idx": 20
+    },
+    {
+        "type": "text",
+        "text": "标准规范体系",
+        "text_level": 1,
+        "page_idx": 20
+    },
+    {
+        "type": "text",
+        "text": "总体标准、数据类技术标准、系统应用支撑类技术标准、网络与安全类标准、业务系统规范等标准。",
+        "page_idx": 20
+    },
+    {
+        "type": "text",
+        "text": "应用系统",
+        "text_level": 1,
+        "page_idx": 20
+    },
+    {
+        "type": "text",
+        "text": "基本社会保障、基本社会服务、基层社会治理及其他应用系统。",
+        "page_idx": 20
+    },
+    {
+        "type": "text",
+        "text": "安全保障体系",
+        "text_level": 1,
+        "page_idx": 20
+    },
+    {
+        "type": "text",
+        "text": "物理和环境安全、网络和通信安全、设备和计算安全、应用和数据安全。",
+        "page_idx": 20
+    },
+    {
+        "type": "image",
+        "img_path": "images/64fc60c6632ae881b4385fdbe30585b8e691cd62c82daa8e141604562d53a403.jpg",
+        "img_caption": [],
+        "img_footnote": [],
+        "page_idx": 20
+    },
+    {
+        "type": "text",
+        "text": "应用支撑平台",
+        "text_level": 1,
+        "page_idx": 20
+    },
+    {
+        "type": "text",
+        "text": "技术支撑组件、数据支撑组件、业务支撑组件、应用支撑组件、运维 支撑组件。",
+        "page_idx": 20
+    },
+    {
+        "type": "text",
+        "text": "信息资源和数据库",
+        "text_level": 1,
+        "page_idx": 20
+    },
+    {
+        "type": "text",
+        "text": "基础库、业务库、公共服务库、公共资源库、监督管理库、汇聚库、标准库、主题库、专题库。",
+        "page_idx": 20
+    },
+    {
+        "type": "text",
+        "text": "基础设施",
+        "text_level": 1,
+        "page_idx": 20
+    },
+    {
+        "type": "text",
+        "text": "高拍仪、身份证读卡器、扫码枪、大屏、可穿戴设备、便携式健康监测设备等设备设施。",
+        "page_idx": 20
+    },
+    {
+        "type": "image",
+        "img_path": "images/8f92eabf6026534edfd9167237bc8e5cc1e7ac77cf494666f24f98b3157e1b0d.jpg",
+        "img_caption": [
+            "标准规范建设",
+            "有标用标，无标建标",
+            "第2章总体设计"
+        ],
+        "img_footnote": [],
+        "page_idx": 21
+    },
+    {
+        "type": "text",
+        "text": "第3章建设方案",
+        "text_level": 1,
+        "page_idx": 22
+    },
+    {
+        "type": "text",
+        "text": "基础软件支撑中心",
+        "page_idx": 22
+    },
+    {
+        "type": "image",
+        "img_path": "images/299bfe5eb76aa6e20d2ec6ce3adb99a393068d262e48fac4c31c96a73f4d51a2.jpg",
+        "img_caption": [
+            "应用支撑平台建设"
+        ],
+        "img_footnote": [],
+        "page_idx": 22
+    },
+    {
+        "type": "text",
+        "text": "应用集成支撑中心",
+        "page_idx": 22
+    },
+    {
+        "type": "text",
+        "text": "业务公共能力中心",
+        "page_idx": 22
+    },
+    {
+        "type": "text",
+        "text": "数据治理支撑中心",
+        "page_idx": 22
+    },
+    {
+        "type": "text",
+        "text": "03建设方案基本民生保障类系统",
+        "text_level": 1,
+        "page_idx": 23
+    },
+    {
+        "type": "image",
+        "img_path": "images/92b75f639e6d871341de3d7cdb8751b279abf67fd32678c17bd0d84917c4afcd.jpg",
+        "img_caption": [],
+        "img_footnote": [],
+        "page_idx": 23
+    },
+    {
+        "type": "image",
+        "img_path": "images/93011da0cf84ee8d7892b3c7c7247d30c380406ae7031f13a3697c5aa5160941.jpg",
+        "img_caption": [
+            "系统概况-基本民生保障类",
+            "基本民生保障"
+        ],
+        "img_footnote": [],
+        "page_idx": 24
+    },
+    {
+        "type": "text",
+        "text": "基本民生保障类建设内容",
+        "text_level": 1,
+        "page_idx": 25
+    },
+    {
+        "type": "text",
+        "text": "智慧服务平台",
+        "text_level": 1,
+        "page_idx": 25
+    },
+    {
+        "type": "text",
+        "text": "智慧政务平台",
+        "text_level": 1,
+        "page_idx": 25
+    },
+    {
+        "type": "image",
+        "img_path": "images/0bbe6102f924df2b808856732860e23a94783e6db6573b30e64868f67bb666c5.jpg",
+        "img_caption": [],
+        "img_footnote": [],
+        "page_idx": 25
+    },
+    {
+        "type": "text",
+        "text": "互联网+慈展会专区流浪乞讨人员寻亲系统养老服务业务管理系统殡葬服务移动综合应用系统",
+        "page_idx": 25
+    },
+    {
+        "type": "text",
+        "text": "1.1- 流浪救助 -业务概述 ",
+        "text_level": 1,
+        "page_idx": 26
+    },
+    {
+        "type": "text",
+        "text": "第3章建设方案",
+        "text_level": 1,
+        "page_idx": 26
+    },
+    {
+        "type": "text",
+        "text": "服务对象",
+        "text_level": 1,
+        "page_idx": 26
+    },
+    {
+        "type": "text",
+        "text": "业务职责 ",
+        "text_level": 1,
+        "page_idx": 26
+    },
+    {
+        "type": "text",
+        "text": "业务流程",
+        "text_level": 1,
+        "page_idx": 26
+    },
+    {
+        "type": "text",
+        "text": "城市生活无着落流浪乞讨人员",
+        "page_idx": 26
+    },
+    {
+        "type": "text",
+        "text": "无家可归的人员",
+        "page_idx": 26
+    },
+    {
+        "type": "text",
+        "text": "民政部门",
+        "text_level": 1,
+        "page_idx": 26
+    },
+    {
+        "type": "text",
+        "text": "•拟订生活无着流浪乞讨人员政策和标准并组织实施  \n•监管、指导全市救助站工作",
+        "page_idx": 26
+    },
+    {
+        "type": "text",
+        "text": "救助管理站",
+        "text_level": 1,
+        "page_idx": 26
+    },
+    {
+        "type": "text",
+        "text": "•流浪乞讨人员甄别 •流浪乞讨人员入站供养 •流浪乞讨人员医疗救助•帮助流浪乞讨人员返乡",
+        "page_idx": 26
+    },
+    {
+        "type": "image",
+        "img_path": "images/9b572458133319fe5a50d00ed97b2183e3f1680802622070b47011c5e10fa4ac.jpg",
+        "img_caption": [],
+        "img_footnote": [],
+        "page_idx": 26
+    },
+    {
+        "type": "text",
+        "text": "第3章建设方案",
+        "text_level": 1,
+        "page_idx": 27
+    },
+    {
+        "type": "image",
+        "img_path": "images/c08b1bd0e397e40b7544c755e1a62377868a04bb1403686abc991270ddf646fe.jpg",
+        "img_caption": [
+            "1.1-流浪救助-问题现状"
+        ],
+        "img_footnote": [],
+        "page_idx": 27
+    },
+    {
+        "type": "text",
+        "text": "1.1-流浪救助--建设内容",
+        "text_level": 1,
+        "page_idx": 28
+    },
+    {
+        "type": "image",
+        "img_path": "images/e5b5de8818c5341752e38e7b2af536bf5b91525ef3ded718c6763a707b578c53.jpg",
+        "img_caption": [],
+        "img_footnote": [],
+        "page_idx": 28
+    },
+    {
+        "type": "text",
+        "text": "1.1- 流浪救助建设成效 -科技寻亲，智能助返 ",
+        "text_level": 1,
+        "page_idx": 29
+    },
+    {
+        "type": "text",
+        "text": "大爱深圳、情暖鹏城！",
+        "text_level": 1,
+        "page_idx": 29
+    },
+    {
+        "type": "image",
+        "img_path": "images/45cbff24354986a963aa9baf88be08157d3fb83a3e6f7572baf0933be0fc055e.jpg",
+        "img_caption": [],
+        "img_footnote": [],
+        "page_idx": 29
+    },
+    {
+        "type": "text",
+        "text": "综合应用人脸识别（跨年龄人脸识别技术）、指纹识别、语音识别、DNA比对等多种高科技技术，开展多渠道寻亲方式，对接互联网寻亲平台，帮助流浪乞讨人员早日找到家乡家人，杜绝“重复救助”、骗助、“跑站”现象，降低救助站运营风险。",
+        "page_idx": 29
+    },
+    {
+        "type": "text",
+        "text": "入口接入",
+        "page_idx": 29
+    },
+    {
+        "type": "text",
+        "text": "PC 端",
+        "page_idx": 29
+    },
+    {
+        "type": "image",
+        "img_path": "images/2df644234b5d331ba51261f770150c5d03ea2d622f7b5d0e19714759ed598d2b.jpg",
+        "img_caption": [],
+        "img_footnote": [],
+        "page_idx": 29
+    },
+    {
+        "type": "text",
+        "text": "多入口",
+        "page_idx": 29
+    },
+    {
+        "type": "text",
+        "text": "1.2-社会救助",
+        "text_level": 1,
+        "page_idx": 30
+    },
+    {
+        "type": "text",
+        "text": "融合“互联网+社会救助” 理念，从“输血为主”向“造血为主”发展",
+        "text_level": 1,
+        "page_idx": 30
+    },
+    {
+        "type": "text",
+        "text": "将“互联网+”理念融入社会救助工作，提供政策法规、动态资讯、服务资源链接等；通过建立社会救助指尖服务，实现移动端智慧救助服务。",
+        "page_idx": 30
+    },
+    {
+        "type": "image",
+        "img_path": "images/2879dcd7b69a4b82d5d6d887c6f0d3369b6dee461ddf7b7139fef2d52f6aba42.jpg",
+        "img_caption": [],
+        "img_footnote": [],
+        "page_idx": 30
+    },
+    {
+        "type": "text",
+        "text": "1.3-儿童福利-业务概述",
+        "text_level": 1,
+        "page_idx": 31
+    },
+    {
+        "type": "text",
+        "text": "服务对象",
+        "text_level": 1,
+        "page_idx": 31
+    },
+    {
+        "type": "text",
+        "text": "业务职责 ",
+        "text_level": 1,
+        "page_idx": 31
+    },
+    {
+        "type": "text",
+        "text": "业务流程",
+        "text_level": 1,
+        "page_idx": 31
+    },
+    {
+        "type": "text",
+        "text": "孤弃儿童 ",
+        "page_idx": 31
+    },
+    {
+        "type": "text",
+        "text": "残疾儿童 ",
+        "page_idx": 31
+    },
+    {
+        "type": "text",
+        "text": "重大疾病儿童",
+        "page_idx": 31
+    },
+    {
+        "type": "text",
+        "text": "事实无人抚养儿童 ",
+        "page_idx": 31
+    },
+    {
+        "type": "text",
+        "text": "农村留守儿童 ",
+        "page_idx": 31
+    },
+    {
+        "type": "text",
+        "text": "民政部门",
+        "text_level": 1,
+        "page_idx": 31
+    },
+    {
+        "type": "text",
+        "text": "•健全困境儿童保障制度，指导监督困境儿童保 障工作，负责保障资金的发放；  \n•负责对儿童福利院的监管；  \n•负责收养登记工作；  \n•负责实施“孤儿医疗康复明天计划”",
+        "page_idx": 31
+    },
+    {
+        "type": "text",
+        "text": "儿童福利院",
+        "text_level": 1,
+        "page_idx": 31
+    },
+    {
+        "type": "text",
+        "text": "•协助做好孤儿的助养、助学、助医工作；  \n•协助有关部门做好孤儿的收养工作；  \n•负责做好儿童福利院的综合事务管理工作。",
+        "page_idx": 31
+    },
+    {
+        "type": "text",
+        "text": "未成年人保护中心",
+        "text_level": 1,
+        "page_idx": 31
+    },
+    {
+        "type": "text",
+        "text": "•对未成年人实施救助并承担临时监护责任；•协调推进监护评估、个案会商、服务转介等服务，针对重点个案组织部门会商和帮扶救助。",
+        "page_idx": 31
+    },
+    {
+        "type": "image",
+        "img_path": "images/5c84f0c7abe7891d7be956b85b38c662f0402ebcc23d349df59075a054d253bd.jpg",
+        "img_caption": [],
+        "img_footnote": [],
+        "page_idx": 31
+    },
+    {
+        "type": "text",
+        "text": "第3章建设方案",
+        "text_level": 1,
+        "page_idx": 32
+    },
+    {
+        "type": "image",
+        "img_path": "images/c705ee2cadb0fe9daca57a9826ab80db36880aa4f96d7d77d7f4db5dcf7b8061.jpg",
+        "img_caption": [
+            "1.3-儿童福利-现状问题"
+        ],
+        "img_footnote": [],
+        "page_idx": 32
+    },
+    {
+        "type": "image",
+        "img_path": "images/be868dd9fa357406226d303b3e6061f9b13b02061436c6e483e8afdd31d19e75.jpg",
+        "img_caption": [
+            "1.3-儿童福利-建设内容"
+        ],
+        "img_footnote": [],
+        "page_idx": 33
+    },
+    {
+        "type": "text",
+        "text": "1.3-儿童福利-精准化的儿童帮扶策略",
+        "text_level": 1,
+        "page_idx": 34
+    },
+    {
+        "type": "text",
+        "text": "儿童的困境类型多种多样，系统提供精准化的服务流程方案，为每一位困境儿童制定不同的救助帮扶策略，依托儿童主任（督导员）的力量，帮助儿童进行业务的申报办理",
+        "page_idx": 34
+    },
+    {
+        "type": "image",
+        "img_path": "images/9c73c2a9c69dc2ec4f4616d2a153044bef7e41b5f9f1be3d2c434d2fa110f01e.jpg",
+        "img_caption": [],
+        "img_footnote": [],
+        "page_idx": 34
+    },
+    {
+        "type": "text",
+        "text": "儿童身份认定过程中，一般不要求服务对象提供各类证明，而是要通过部门间信息比对的方式进行。",
+        "page_idx": 34
+    },
+    {
+        "type": "text",
+        "text": "1.3- 儿童福利 -未成年人个案帮扶 ",
+        "text_level": 1,
+        "page_idx": 35
+    },
+    {
+        "type": "text",
+        "text": "应对儿童各类突发事件，增加未成年人帮扶信息化管理手段，建立未成年人个案帮扶机制",
+        "text_level": 1,
+        "page_idx": 35
+    },
+    {
+        "type": "text",
+        "text": "",
+        "text_level": 1,
+        "page_idx": 35
+    },
+    {
+        "type": "image",
+        "img_path": "images/4ac18f8f8781397a9b02e5659e4756b81eca26374ff843f4a6fc1a4656793f82.jpg",
+        "img_caption": [],
+        "img_footnote": [],
+        "page_idx": 35
+    },
+    {
+        "type": "text",
+        "text": "1.3-儿童福利-建设成效",
+        "text_level": 1,
+        "page_idx": 36
+    },
+    {
+        "type": "image",
+        "img_path": "images/bb35dd619a1e64930310a5dddbace5839c166867567206ff870a4fd42aaf5a88.jpg",
+        "img_caption": [],
+        "img_footnote": [],
+        "page_idx": 36
+    },
+    {
+        "type": "text",
+        "text": "1.4-残疾人福利",
+        "text_level": 1,
+        "page_idx": 37
+    },
+    {
+        "type": "text",
+        "text": "残疾人两项补贴信息管理系统，主要实现残疾人两项补贴数据的统计分析及数据展示功能，建设包括以下五大模块：残疾人两项补贴信息采集、残疾人两项补贴信息查询、残疾人两项补贴数据展示、补贴资金监督审计、审核信息公示。",
+        "page_idx": 37
+    },
+    {
+        "type": "image",
+        "img_path": "images/8eaf2fee806e7f1025dc6e101e3f956ebfd23f0c59697c0dde13839556f66695.jpg",
+        "img_caption": [],
+        "img_footnote": [],
+        "page_idx": 37
+    },
+    {
+        "type": "text",
+        "text": "1.5-慈善-业务概述",
+        "text_level": 1,
+        "page_idx": 38
+    },
+    {
+        "type": "text",
+        "text": "业务职责 ",
+        "text_level": 1,
+        "page_idx": 38
+    },
+    {
+        "type": "text",
+        "text": "慈善组织",
+        "page_idx": 38
+    },
+    {
+        "type": "text",
+        "text": "捐赠主体",
+        "page_idx": 38
+    },
+    {
+        "type": "text",
+        "text": "困难群体",
+        "page_idx": 38
+    },
+    {
+        "type": "text",
+        "text": "民政部门",
+        "text_level": 1,
+        "page_idx": 38
+    },
+    {
+        "type": "text",
+        "text": "拟订促进慈善事业发展的政策及法规，加强对慈善组织、公募活动、慈善信托等监管，监督慈善募捐透明化运作。",
+        "page_idx": 38
+    },
+    {
+        "type": "text",
+        "text": "负责社会捐助款物的接收和管理；  \n负责慈善超市的监管及物资对接；  \n承担对全市捐赠物资公开公示职能。",
+        "page_idx": 38
+    },
+    {
+        "type": "image",
+        "img_path": "images/3ca7e4c96a32d0e7a3852d0f61e8ef8116e51b3fac6f23fdd0a7f257df951694.jpg",
+        "img_caption": [
+            "主要业务流程"
+        ],
+        "img_footnote": [],
+        "page_idx": 38
+    },
+    {
+        "type": "image",
+        "img_path": "images/2c6918ccb132006808d17dfa450a837e239cd226bddb5b151a14067d053978ce.jpg",
+        "img_caption": [
+            "1.5-慈善-现状和问题",
+            "公开透明是慈善事业的生命线",
+            "第3章建设方案"
+        ],
+        "img_footnote": [],
+        "page_idx": 39
+    },
+    {
+        "type": "text",
+        "text": "1.5-慈善—建设内容",
+        "text_level": 1,
+        "page_idx": 40
+    },
+    {
+        "type": "image",
+        "img_path": "images/16481dbdaeb35165d6a7842f63c8c3bd353ea361519fcf98dd15275232e01d01.jpg",
+        "img_caption": [],
+        "img_footnote": [],
+        "page_idx": 40
+    },
+    {
+        "type": "text",
+        "text": "1.5-慈善—搭建阳光慈善平台",
+        "text_level": 1,
+        "page_idx": 41
+    },
+    {
+        "type": "text",
+        "text": "按照《慈善法》要求，民政部门应当在统一的信息平台，及时向社会公开慈善信息，并免费提供慈善信息发布服务。慈善信息平台能够实现慈善信息的公开公示。",
+        "page_idx": 41
+    },
+    {
+        "type": "text",
+        "text": "政府建设、权威的慈善信息公开平台让慈善事业公开透明",
+        "text_level": 1,
+        "page_idx": 41
+    },
+    {
+        "type": "image",
+        "img_path": "images/5e0d89fc20335ff4a237ab48e4193d2ce799bcbde4065f0fbe077934a2019b0c.jpg",
+        "img_caption": [],
+        "img_footnote": [],
+        "page_idx": 41
+    },
+    {
+        "type": "image",
+        "img_path": "images/b8696df56afe6024b8b4a7b3a4cd714a0e7d7cc8a2c6f50bdaa14e2d8396aece.jpg",
+        "img_caption": [],
+        "img_footnote": [],
+        "page_idx": 41
+    },
+    {
+        "type": "text",
+        "text": "1.5-慈善-永不落幕的慈善展会",
+        "text_level": 1,
+        "page_idx": 42
+    },
+    {
+        "type": "text",
+        "text": "",
+        "text_level": 1,
+        "page_idx": 42
+    },
+    {
+        "type": "text",
+        "text": "慈展会前端应用：增加手机端、微信小程序、微信公众号…资源对接：实现与互联网公募平台的对接；抓取互联网数据，以关键词形式掌握公益资源供需双方的需求… ",
+        "page_idx": 42
+    },
+    {
+        "type": "image",
+        "img_path": "images/a30bf246f94e0e6410a3c6a0057174baa00c17824d499163955a5bec57500c7e.jpg",
+        "img_caption": [],
+        "img_footnote": [],
+        "page_idx": 42
+    },
+    {
+        "type": "text",
+        "text": "1.5-慈善-建设成效",
+        "text_level": 1,
+        "page_idx": 43
+    },
+    {
+        "type": "text",
+        "text": "更加有力的慈善行业监管 ",
+        "page_idx": 43
+    },
+    {
+        "type": "image",
+        "img_path": "images/b2f7e69e6244e6d11b3568751ac0b1dd8b291ab350423be50e1d8fac3c9d7cbb.jpg",
+        "img_caption": [],
+        "img_footnote": [],
+        "page_idx": 43
+    },
+    {
+        "type": "text",
+        "text": "更加多元的慈善事业宣传 ",
+        "page_idx": 43
+    },
+    {
+        "type": "text",
+        "text": "更丰富的慈善供给信息获取",
+        "page_idx": 43
+    },
+    {
+        "type": "text",
+        "text": "更加透明、公开、官方的慈善信息",
+        "page_idx": 43
+    },
+    {
+        "type": "text",
+        "text": "更方便的对慈善活动、项目信息进行管理更精准的匹配需求方 ",
+        "page_idx": 43
+    },
+    {
+        "type": "text",
+        "text": "打造国内领先的慈善信息系统，树立阳光透明慈善的信息化标杆",
+        "text_level": 1,
+        "page_idx": 43
+    },
+    {
+        "type": "text",
+        "text": "03建设方案基本社会服务类系统",
+        "text_level": 1,
+        "page_idx": 44
+    },
+    {
+        "type": "image",
+        "img_path": "images/b406ff314657dd6d1803366baac720d0debe3a769ecc718837578cb5fd33a3f9.jpg",
+        "img_caption": [],
+        "img_footnote": [],
+        "page_idx": 44
+    },
+    {
+        "type": "image",
+        "img_path": "images/ed3b1b112ebd92a93ccafcd24bc65e9bce5df7ff65a6518ec460b567c5890851.jpg",
+        "img_caption": [
+            "系统概况-基本社会服务类",
+            "基本社会服务"
+        ],
+        "img_footnote": [],
+        "page_idx": 45
+    },
+    {
+        "type": "text",
+        "text": "基本社会服务类建设内容",
+        "text_level": 1,
+        "page_idx": 46
+    },
+    {
+        "type": "text",
+        "text": "智慧服务平台",
+        "text_level": 1,
+        "page_idx": 46
+    },
+    {
+        "type": "text",
+        "text": "智慧政务平台",
+        "text_level": 1,
+        "page_idx": 46
+    },
+    {
+        "type": "image",
+        "img_path": "images/f2028af8a0d04bc332f4a9d5d28df0dc17e6f5d684e0dfd39fdcc1a149f46c08.jpg",
+        "img_caption": [],
+        "img_footnote": [],
+        "page_idx": 46
+    },
+    {
+        "type": "text",
+        "text": "流浪乞讨人员寻亲系统养老服务业务管理系统殡葬服务移动综合应用系统",
+        "page_idx": 46
+    },
+    {
+        "type": "text",
+        "text": "福彩公益金管理系统舆情监控系统、舆情风险预警系统民政服务机构融合监管系统",
+        "page_idx": 46
+    },
+    {
+        "type": "image",
+        "img_path": "images/bc8106d70b4915a78014f243686a6e95dd3ee2918860121e5d30b228047c3920.jpg",
+        "img_caption": [
+            "2.1-养老服务-建设要求",
+            "打造具有深圳特色的“1336”都市养老服务体系"
+        ],
+        "img_footnote": [],
+        "page_idx": 47
+    },
+    {
+        "type": "text",
+        "text": "六届十二次全会上提出：前瞻性研究我市老龄化发展趋势，提前作出建设安排。健全多层次养老保险制度体系，探索建立长期护理保险制度。建立“1336”养老服务体系，打造“都市养老”新模式。深圳市人大常委会出台决定：构建深圳市高水平养老服务体系。",
+        "page_idx": 47
+    },
+    {
+        "type": "image",
+        "img_path": "images/7b06a4b3d7cc466f1a076866e1139c02118bb8ed86c7b78d532845125dbb31fc.jpg",
+        "img_caption": [],
+        "img_footnote": [],
+        "page_idx": 47
+    },
+    {
+        "type": "text",
+        "text": "2.1-养老服务-现状和问题",
+        "text_level": 1,
+        "page_idx": 48
+    },
+    {
+        "type": "image",
+        "img_path": "images/8ef312ea7c5b20e4e8326888f386edbbe180280f14dcae718f7951a0b457ec43.jpg",
+        "img_caption": [
+            "养老服务现状及问题"
+        ],
+        "img_footnote": [],
+        "page_idx": 48
+    },
+    {
+        "type": "text",
+        "text": "通过顶层设计，利用信息化平台解决问题",
+        "text_level": 1,
+        "page_idx": 48
+    },
+    {
+        "type": "text",
+        "text": "•问题症结的突破口•服务保障的新载体•服务资源的聚合池•养老治理的主阵地•产业发展的助推器•生态建设的落脚点",
+        "page_idx": 48
+    },
+    {
+        "type": "text",
+        "text": "2.1-养老服务-平台场景",
+        "text_level": 1,
+        "page_idx": 49
+    },
+    {
+        "type": "text",
+        "text": "第3章建设方案",
+        "text_level": 1,
+        "page_idx": 49
+    },
+    {
+        "type": "text",
+        "text": "围绕深圳“1336”服务体系，融合“9073”养老现状，在推动0580居家养老工程的进程上，利用物联网、大数据、区块链等创新技术建设智慧养老服务平台，拉通养老产业全场景数据，并整合政府、市场、社会生态资源，通过养老服务平台数据计算和运营能力，健全养老产业生态和服务标准，实现供需对接，促进养老产业健康发展。",
+        "page_idx": 49
+    },
+    {
+        "type": "image",
+        "img_path": "images/85c9251d16f4088000982fefe2e4137cf929a5b9e110e9e29061f0791a6e0556.jpg",
+        "img_caption": [],
+        "img_footnote": [],
+        "page_idx": 49
+    },
+    {
+        "type": "text",
+        "text": "2.1-养老服务-养老行业政策新要求",
+        "text_level": 1,
+        "page_idx": 50
+    },
+    {
+        "type": "text",
+        "text": "养老服务信息惠民平台立项招标",
+        "text_level": 1,
+        "page_idx": 50
+    },
+    {
+        "type": "text",
+        "text": "2016 2017 ",
+        "text_level": 1,
+        "page_idx": 50
+    },
+    {
+        "type": "text",
+        "text": "《智慧健康养老产业发展行动计划（2017-2020年）》（工信部联电子〔2017〕25号）产业发展新要求民政部关于开展养老院服务质量建设专项行动的通知（民发〔2017〕51号）",
+        "page_idx": 50
+    },
+    {
+        "type": "text",
+        "text": "民政部国家标准委关于印发《养老服务标准体系建设指南》的通知（民发〔2017〕145号）标准规范新要求深圳市卫计委市民政局市人社局关于印发深圳市医养结合试点工作方案的通知（深卫计发〔2017〕17号）",
+        "page_idx": 50
+    },
+    {
+        "type": "text",
+        "text": "民政部养老服务司成立",
+        "page_idx": 50
+    },
+    {
+        "type": "text",
+        "text": "2.1-养老服务-与现有系统关系",
+        "text_level": 1,
+        "page_idx": 51
+    },
+    {
+        "type": "text",
+        "text": "面对新要求养老服务信息化的发展方向",
+        "text_level": 1,
+        "page_idx": 51
+    },
+    {
+        "type": "text",
+        "text": "业务方面：跨区经办、跨区服务、主动帮办、智慧监管、6个层级、弹性扩展…  \n技术方面：数据智能化、区块链应用、物联网应用…  \n规划方面：适配行业变化，支撑未来发展…",
+        "page_idx": 51
+    },
+    {
+        "type": "text",
+        "text": "详细说明文件",
+        "text_level": 1,
+        "page_idx": 51
+    },
+    {
+        "type": "text",
+        "text": "2016年立项的养老服务信息惠民项目11个系统（含门户、轮候、预约、养老机构、日照、居家、补助、移动应用等）。",
+        "page_idx": 51
+    },
+    {
+        "type": "text",
+        "text": "养老服务信息惠民项目在行业新变化和新趋势背景下，已经无法满足养老行业的整体要求",
+        "page_idx": 51
+    },
+    {
+        "type": "text",
+        "text": "2.1-养老服务-建设内容",
+        "text_level": 1,
+        "page_idx": 52
+    },
+    {
+        "type": "text",
+        "text": "民政智慧养老一体化业务体系",
+        "text_level": 1,
+        "page_idx": 52
+    },
+    {
+        "type": "image",
+        "img_path": "images/2c57aba1dfb65aee28b8d25284f818e7467ba868ec142f4e5257fbe2871b1ab5.jpg",
+        "img_caption": [],
+        "img_footnote": [],
+        "page_idx": 52
+    },
+    {
+        "type": "text",
+        "text": "2.1-养老服务-系统对接模式",
+        "text_level": 1,
+        "page_idx": 53
+    },
+    {
+        "type": "image",
+        "img_path": "images/7b64c6685adf14e1513f23e78b1ca0d36394033a749a36b78e96ac6d5cf475d2.jpg",
+        "img_caption": [
+            "监管、运营分离 "
+        ],
+        "img_footnote": [],
+        "page_idx": 53
+    },
+    {
+        "type": "text",
+        "text": "2.1-养老服务-电子档案袋",
+        "text_level": 1,
+        "page_idx": 54
+    },
+    {
+        "type": "text",
+        "text": "为每一个养老服务对象建立档案袋，归集卫健委、人社局等多部门信息，以及老年人、养老机构、从业人员等对象的基本信息、业务申请材料、民政审核结果、健康信息、服务信息，实现业务对象信息复用，对象画像特征提取建立多个维度的信息库。",
+        "page_idx": 54
+    },
+    {
+        "type": "image",
+        "img_path": "images/6c48d830b5b9487db0b5ec223c40542c4dd189ef7af48107a82a58114697c073.jpg",
+        "img_caption": [
+            "老人基础信息、评估信息等全市共享，“底数清”、“情况明”"
+        ],
+        "img_footnote": [],
+        "page_idx": 54
+    },
+    {
+        "type": "image",
+        "img_path": "images/02579e3ba42862ebd1d3f831c3fd410ba9e5782b45e7f90804c48ec99d40795a.jpg",
+        "img_caption": [
+            "2.1-养老服务-跨域通办，主动帮办"
+        ],
+        "img_footnote": [],
+        "page_idx": 55
+    },
+    {
+        "type": "image",
+        "img_path": "images/976ac36982c48d6a9ddc498afff70c5d3b69ee74b9bcde40d403557a6449c36d.jpg",
+        "img_caption": [],
+        "img_footnote": [],
+        "page_idx": 56
+    },
+    {
+        "type": "image",
+        "img_path": "",
+        "img_caption": [
+            "2.1-养老服务-行业综合监管",
+            "依托信息化手段实现智能监管、全流程监管"
+        ],
+        "img_footnote": [],
+        "page_idx": 56
+    },
+    {
+        "type": "text",
+        "text": "2.1-养老服务-机构养老服务",
+        "text_level": 1,
+        "page_idx": 57
+    },
+    {
+        "type": "image",
+        "img_path": "images/96df455b36bfb46076b2c948272397bf3e922e7c2c30a9aeaeb7ee754e077221.jpg",
+        "img_caption": [],
+        "img_footnote": [],
+        "page_idx": 57
+    },
+    {
+        "type": "image",
+        "img_path": "",
+        "img_caption": [
+            "2.1-养老服务-机构养老服务"
+        ],
+        "img_footnote": [],
+        "page_idx": 58
+    },
+    {
+        "type": "image",
+        "img_path": "images/cdd948eac3cdaeb36c83db2412893b1b94481d75821c74e2659756c67c9e9a0e.jpg",
+        "img_caption": [],
+        "img_footnote": [],
+        "page_idx": 58
+    },
+    {
+        "type": "text",
+        "text": "机构智慧养老场景",
+        "text_level": 1,
+        "page_idx": 58
+    },
+    {
+        "type": "text",
+        "text": "通过互联网技术，将养老机构内部人员、设施、后勤、服务、应急等纳入统一管理，由统一终端进行呈现，提高养老院管理效率和水平，增强养老机构信息化配置，提高服务质量。",
+        "page_idx": 58
+    },
+    {
+        "type": "image",
+        "img_path": "images/8eeee3cbf739e62ff7ae33987b2f273706b9d078c4d22cad6d8ed4d231edddbb.jpg",
+        "img_caption": [
+            "2.1-养老服务-居家社区服务"
+        ],
+        "img_footnote": [],
+        "page_idx": 59
+    },
+    {
+        "type": "image",
+        "img_path": "images/3952317e6c6f5d32d801a9815790515cf4236d7b85173ede897b3812d76f9589.jpg",
+        "img_caption": [
+            "2.1-养老服务-基于区块链的时间银行"
+        ],
+        "img_footnote": [],
+        "page_idx": 60
+    },
+    {
+        "type": "image",
+        "img_path": "images/c8a8d7363d6644b764c727ce3853ba9ab29dbeed7e9ce486271578205ce582dc.jpg",
+        "img_caption": [
+            "2.1-养老服务-建设成效"
+        ],
+        "img_footnote": [],
+        "page_idx": 61
+    },
+    {
+        "type": "text",
+        "text": "2.2-殡葬管理-业务概述",
+        "text_level": 1,
+        "page_idx": 62
+    },
+    {
+        "type": "text",
+        "text": "第3章建设方案",
+        "text_level": 1,
+        "page_idx": 62
+    },
+    {
+        "type": "text",
+        "text": "服务对象",
+        "text_level": 1,
+        "page_idx": 62
+    },
+    {
+        "type": "text",
+        "text": "业务职责 ",
+        "text_level": 1,
+        "page_idx": 62
+    },
+    {
+        "type": "text",
+        "text": "逝者",
+        "text_level": 1,
+        "page_idx": 62
+    },
+    {
+        "type": "text",
+        "text": "民政部门",
+        "text_level": 1,
+        "page_idx": 62
+    },
+    {
+        "type": "text",
+        "text": "管理全市殡葬服务行业;推进殡葬改革；",
+        "text_level": 1,
+        "page_idx": 62
+    },
+    {
+        "type": "text",
+        "text": "殡葬管理所",
+        "text_level": 1,
+        "page_idx": 62
+    },
+    {
+        "type": "text",
+        "text": "逝者家属",
+        "text_level": 1,
+        "page_idx": 62
+    },
+    {
+        "type": "image",
+        "img_path": "images/7327f3dae6e651f7396b47119f12698ab396d88aab73c951abe52389cb5206a8.jpg",
+        "img_caption": [
+            "主要业务流程"
+        ],
+        "img_footnote": [],
+        "page_idx": 62
+    },
+    {
+        "type": "text",
+        "text": "负责贯彻执行殡葬管理方针、政策和法规；  \n推行改革，做好实行火葬的工作；  \n承担移风易俗，文明节俭办丧事的宣传工作；  \n负责全市殡葬服务行业的业务指导和管理，具体承担查处违反殡葬法规的行为。",
+        "page_idx": 62
+    },
+    {
+        "type": "text",
+        "text": "逝者亲友",
+        "text_level": 1,
+        "page_idx": 62
+    },
+    {
+        "type": "text",
+        "text": "殡仪馆",
+        "text_level": 1,
+        "page_idx": 62
+    },
+    {
+        "type": "text",
+        "text": "遗体接运、储存、防腐化妆、整容修复、礼堂布置、追思告别、火化和骨灰寄存、遗体接运。",
+        "page_idx": 62
+    },
+    {
+        "type": "text",
+        "text": "公墓",
+        "text_level": 1,
+        "page_idx": 62
+    },
+    {
+        "type": "text",
+        "text": "骨灰安葬、骨灰寄存、回民遗体安葬、生态葬。",
+        "page_idx": 62
+    },
+    {
+        "type": "text",
+        "text": "2.2-殡葬管理-现状与存在问题",
+        "text_level": 1,
+        "page_idx": 63
+    },
+    {
+        "type": "text",
+        "text": "第3章建设方案",
+        "text_level": 1,
+        "page_idx": 63
+    },
+    {
+        "type": "text",
+        "text": "群众找不到统一的服务入口1  \n服务不规范，缺少监管手段2  \n流程断点、堵点滋生“黑中介” 3  \n缺乏生态葬、绿色葬宣传手段 4",
+        "page_idx": 63
+    },
+    {
+        "type": "text",
+        "text": "社会化现状",
+        "text_level": 1,
+        "page_idx": 63
+    },
+    {
+        "type": "text",
+        "text": "免费对象实现全覆盖和零门槛，每具遗体免费金额达2030元；  \n2019年全市殡葬死亡人口为17493人。",
+        "page_idx": 63
+    },
+    {
+        "type": "text",
+        "text": "信息化问题",
+        "text_level": 1,
+        "page_idx": 63
+    },
+    {
+        "type": "text",
+        "text": "1仅有简单的报表系统，监管数据无法实时获取、需要人工填报2对于生态葬及相应奖励发放没有系统支撑3无法实时获取火化数据，数据不通、共享不足，难以支撑民政业务联动4面向公众服务比较单一，服务渠道少",
+        "page_idx": 63
+    },
+    {
+        "type": "text",
+        "text": "政策导向方面",
+        "text_level": 1,
+        "page_idx": 63
+    },
+    {
+        "type": "text",
+        "text": "《深圳市殡葬事业发展“十三五”规划》",
+        "text_level": 1,
+        "page_idx": 63
+    },
+    {
+        "type": "text",
+        "text": "建立部门之间人口死亡信息交换、共享机制。对遗体火化后骨灰去向实行登记，加强骨灰安置管理。  \n加快推进市级殡葬管理服务综合性信息系统，实现信息录入、数据统计、动态查询、流程监控和资源共享。  \n探索“互联网+”在殡葬改革宣传、殡葬管理、殡葬服务、祭扫追思等方面的运用。",
+        "page_idx": 63
+    },
+    {
+        "type": "text",
+        "text": "2.2-殡葬管理-建设内容",
+        "text_level": 1,
+        "page_idx": 64
+    },
+    {
+        "type": "text",
+        "text": "在传统业务中注入新业务新价值点，焕发生命力",
+        "text_level": 1,
+        "page_idx": 64
+    },
+    {
+        "type": "image",
+        "img_path": "images/0b928ddea1d2384ac01eb99ba799acd971dfe07f66ca646985533bcec9321f7a.jpg",
+        "img_caption": [],
+        "img_footnote": [],
+        "page_idx": 64
+    },
+    {
+        "type": "text",
+        "text": "2.2-殡葬管理建设成效-线上线下服务体系",
+        "text_level": 1,
+        "page_idx": 65
+    },
+    {
+        "type": "image",
+        "img_path": "images/59748a6d56c07cbc39ceb4ca5220ea5d6d50a98021e67b819662c71bc08728e2.jpg",
+        "img_caption": [],
+        "img_footnote": [],
+        "page_idx": 65
+    },
+    {
+        "type": "text",
+        "text": "线上殡葬服务",
+        "text_level": 1,
+        "page_idx": 65
+    },
+    {
+        "type": "text",
+        "text": "面向公众：基于微信小程序、app等新渠道提供丰富、便捷、暖心的殡葬服务，可一键触达，线上、线下一体化服务。",
+        "page_idx": 65
+    },
+    {
+        "type": "text",
+        "text": "殡葬一体化服务系统",
+        "text_level": 1,
+        "page_idx": 65
+    },
+    {
+        "type": "text",
+        "text": "管理监督：基于物联网、网上订单服务、智能认证等多模式组合，重构殡葬、骨灰和公墓管理全新流程，创新时代下文化殡葬、人文殡葬和科技殡葬之新内涵。",
+        "page_idx": 65
+    },
+    {
+        "type": "text",
+        "text": "2.2-殡葬管理建设成效-生命教育/直播追悼场景",
+        "text_level": 1,
+        "page_idx": 66
+    },
+    {
+        "type": "image",
+        "img_path": "images/3415ee91ca5b6fce77fa9a024727f1ab69d7f2b11a2852c9f7fbdd45de052d55.jpg",
+        "img_caption": [],
+        "img_footnote": [],
+        "page_idx": 66
+    },
+    {
+        "type": "text",
+        "text": "传统文化和现代殡葬的本质意义是生命教育",
+        "text_level": 1,
+        "page_idx": 66
+    },
+    {
+        "type": "text",
+        "text": "推进现代生死观教育，开设“生命教育大讲堂”，进行生命教育直播教育，扩大受众人群",
+        "page_idx": 66
+    },
+    {
+        "type": "text",
+        "text": "将冰冷的事情变得有温度，温暖世界、温暖家属、温暖从业人员 ",
+        "page_idx": 66
+    },
+    {
+        "type": "text",
+        "text": "2.2-殡葬管理建设成效-安全管控",
+        "text_level": 1,
+        "page_idx": 67
+    },
+    {
+        "type": "image",
+        "img_path": "images/6a12a8bb4b00fadf2457654f7dd5fd665c1b398b4d97c276a9138164cb198372.jpg",
+        "img_caption": [],
+        "img_footnote": [],
+        "page_idx": 67
+    },
+    {
+        "type": "text",
+        "text": "03建设方案基层社会治理类系统",
+        "text_level": 1,
+        "page_idx": 68
+    },
+    {
+        "type": "image",
+        "img_path": "images/a65aaa67eb933b370bba258674fc64d8ae5551052c263b1d1c91d1ba1acb2e42.jpg",
+        "img_caption": [],
+        "img_footnote": [],
+        "page_idx": 68
+    },
+    {
+        "type": "image",
+        "img_path": "images/a416103659a601a3db9d1147af63d9838e68ec477fdb89f964241e4ce74dc819.jpg",
+        "img_caption": [
+            "系统概述-基层社会治理类"
+        ],
+        "img_footnote": [],
+        "page_idx": 69
+    },
+    {
+        "type": "text",
+        "text": "基本社会治理类建设内容",
+        "text_level": 1,
+        "page_idx": 70
+    },
+    {
+        "type": "text",
+        "text": "智慧服务平台",
+        "text_level": 1,
+        "page_idx": 70
+    },
+    {
+        "type": "text",
+        "text": "智慧政务平台",
+        "text_level": 1,
+        "page_idx": 70
+    },
+    {
+        "type": "image",
+        "img_path": "images/7f73015c7a95048b32e2d3e4dd2801098f06a86d67b8d8930b170467dd58bfd3.jpg",
+        "img_caption": [],
+        "img_footnote": [],
+        "page_idx": 70
+    },
+    {
+        "type": "text",
+        "text": "互联网+慈展会专区流浪乞讨人员寻亲系统养老服务业务管理系统殡葬服务移动综合应用系统",
+        "page_idx": 70
+    },
+    {
+        "type": "text",
+        "text": "3.1-社区服务与治理-业务概述",
+        "text_level": 1,
+        "page_idx": 71
+    },
+    {
+        "type": "text",
+        "text": "业务职责 ",
+        "text_level": 1,
+        "page_idx": 71
+    },
+    {
+        "type": "text",
+        "text": "社区居民社会组织",
+        "page_idx": 71
+    },
+    {
+        "type": "text",
+        "text": "",
+        "page_idx": 71
+    },
+    {
+        "type": "text",
+        "text": "指导社区治理体系和治理能力建设，推动基层民主政治建设，指导居民委员会建设、居民自治和居务公开工作。指导、开展居民委员会换届选举工作。",
+        "page_idx": 71
+    },
+    {
+        "type": "image",
+        "img_path": "images/f2a7ca21cffd1e695ce3a7099acda4dc7a99caf483982d74a637bc7a9579e1b3.jpg",
+        "img_caption": [
+            "主要业务流程"
+        ],
+        "img_footnote": [],
+        "page_idx": 71
+    },
+    {
+        "type": "text",
+        "text": "社区居委会社区居民议事会指导、实施全市 “民生微实事” 工作。",
+        "page_idx": 71
+    },
+    {
+        "type": "text",
+        "text": "",
+        "page_idx": 71
+    },
+    {
+        "type": "text",
+        "text": "",
+        "page_idx": 71
+    },
+    {
+        "type": "text",
+        "text": "指导、实施全市社区党群服务中心政府购买项目服务工作。",
+        "page_idx": 71
+    },
+    {
+        "type": "text",
+        "text": "3.1-社区服务与治理-现状与问题",
+        "text_level": 1,
+        "page_idx": 72
+    },
+    {
+        "type": "text",
+        "text": "信息化情况：",
+        "text_level": 1,
+        "page_idx": 72
+    },
+    {
+        "type": "text",
+        "text": "目前已建设系统主要包括：全国村（居）委会统一赋码系统、深圳市社区家园网、深圳社会工作网、南山区民生大超市、各社区自建的社区公众号服务等，部、省、市、区各级建设的系统分别独立运行。",
+        "page_idx": 72
+    },
+    {
+        "type": "text",
+        "text": "主要问题：",
+        "text_level": 1,
+        "page_idx": 72
+    },
+    {
+        "type": "text",
+        "text": "服务",
+        "text_level": 1,
+        "page_idx": 72
+    },
+    {
+        "type": "text",
+        "text": "社区难以全面、精准、及时了解公众的多样化需求；  \n社区居民对社区服务的知晓率、参与率、满意率不高。",
+        "page_idx": 72
+    },
+    {
+        "type": "text",
+        "text": "社区信息管理分散，数据都分散在各自的系统上，没有汇聚,难以支撑社区治理精准化、精细化管理的需要。",
+        "page_idx": 72
+    },
+    {
+        "type": "text",
+        "text": "社区治理、自治方面社会力量参与不足，尚需完善社区组织、社区群众在内的多方主体共同参与、社会共治的格局。",
+        "page_idx": 72
+    },
+    {
+        "type": "image",
+        "img_path": "images/74dd94694d99a5d04c33c884f58bae7568cefba793d4657ebc5cc2aeb9a40716.jpg",
+        "img_caption": [
+            "3.1-社区服务与治理-建设内容"
+        ],
+        "img_footnote": [],
+        "page_idx": 73
+    },
+    {
+        "type": "text",
+        "text": "3.1-社区服务与治理-民生微实事",
+        "text_level": 1,
+        "page_idx": 74
+    },
+    {
+        "type": "image",
+        "img_path": "images/fce0eb5ad362fccb2eb4b4f4b7ef3a6c98fb14a88f7cb471520991a5ca8a246a.jpg",
+        "img_caption": [],
+        "img_footnote": [],
+        "page_idx": 74
+    },
+    {
+        "type": "text",
+        "text": "3.1-社区服务建设成效—供需精准匹配",
+        "text_level": 1,
+        "page_idx": 75
+    },
+    {
+        "type": "text",
+        "text": "实现百姓点餐、政府买单，线上下单、线下服务，最大限度将民生项目供给与需求进行精准匹配",
+        "text_level": 1,
+        "page_idx": 75
+    },
+    {
+        "type": "image",
+        "img_path": "images/2b66ef347a623661bf15e0d468ce770a07a96f5562f60ba462499c9d6d8df155.jpg",
+        "img_caption": [
+            ""
+        ],
+        "img_footnote": [],
+        "page_idx": 75
+    },
+    {
+        "type": "text",
+        "text": "3.1-社区服务建设成效—精准服务",
+        "text_level": 1,
+        "page_idx": 76
+    },
+    {
+        "type": "text",
+        "text": "第3章建设方案",
+        "text_level": 1,
+        "page_idx": 76
+    },
+    {
+        "type": "image",
+        "img_path": "images/8159ed67398f3d758a4c019eab072018af8fc7590cf6692151d36731e2ed7c60.jpg",
+        "img_caption": [],
+        "img_footnote": [],
+        "page_idx": 76
+    },
+    {
+        "type": "image",
+        "img_path": "images/92d7013b0f6a9551de0cc23057773bfeea270826c9fc1c3a0eb43e3285f3767c.jpg",
+        "img_caption": [],
+        "img_footnote": [],
+        "page_idx": 76
+    },
+    {
+        "type": "text",
+        "text": "深度挖掘不同群体需求，汇聚社区服务资源，实现社区服务主动、精准推送。",
+        "text_level": 1,
+        "page_idx": 76
+    },
+    {
+        "type": "text",
+        "text": "3.1-社区自治建设成效-多元共治",
+        "text_level": 1,
+        "page_idx": 77
+    },
+    {
+        "type": "image",
+        "img_path": "images/ee416f11b5428a1343d741f0e5e4a55879127dd12527e19fe73d4b0653a26517.jpg",
+        "img_caption": [],
+        "img_footnote": [],
+        "page_idx": 77
+    },
+    {
+        "type": "text",
+        "text": "支撑政府治理和社会调节、居民自治良性互动，打造共建共治共享的社区治理格局",
+        "page_idx": 77
+    },
+    {
+        "type": "text",
+        "text": "3.2-社会工作",
+        "text_level": 1,
+        "page_idx": 78
+    },
+    {
+        "type": "text",
+        "text": "依托于社工组织、社工服务项目的数据，与现有社工系统整合，突破传统社工服务、社工机构监管体系推动社工组织的可持续发展，构建新型社工服务体系。",
+        "page_idx": 78
+    },
+    {
+        "type": "text",
+        "text": "移动办公（手机、IPAD）",
+        "page_idx": 78
+    },
+    {
+        "type": "text",
+        "text": "社工服务信息全流程记录",
+        "text_level": 1,
+        "page_idx": 78
+    },
+    {
+        "type": "image",
+        "img_path": "images/82b133393098aec4e8d26b71ca4c5c6e2aca9058c82032dc45b176425ba2b51a.jpg",
+        "img_caption": [],
+        "img_footnote": [],
+        "page_idx": 78
+    },
+    {
+        "type": "text",
+        "text": "03建设方案其它应用系统",
+        "text_level": 1,
+        "page_idx": 79
+    },
+    {
+        "type": "image",
+        "img_path": "images/e37e998af908e0e58d26f99a0952b44ca75dce5dce2c0a789ec5744d7bb87348.jpg",
+        "img_caption": [],
+        "img_footnote": [],
+        "page_idx": 79
+    },
+    {
+        "type": "text",
+        "text": "系统概述-其它应用系统类",
+        "text_level": 1,
+        "page_idx": 80
+    },
+    {
+        "type": "text",
+        "text": "在用系统（4个）",
+        "text_level": 1,
+        "page_idx": 80
+    },
+    {
+        "type": "text",
+        "text": "在建系统（1个）",
+        "text_level": 1,
+        "page_idx": 80
+    },
+    {
+        "type": "text",
+        "text": "•深圳民政电子政务系统  \n•深圳市民政局绩效考核管理系统  \n•深圳市民政局公共财政资金管理系统  \n•深圳市社会工作网系统",
+        "page_idx": 80
+    },
+    {
+        "type": "text",
+        "text": "•深圳市民政服务机构安全监管系统",
+        "page_idx": 80
+    },
+    {
+        "type": "text",
+        "text": "新建系统（14个）",
+        "text_level": 1,
+        "page_idx": 80
+    },
+    {
+        "type": "text",
+        "text": "•民政统一服务窗口（深圳民政在线）  \n•民政指尖服务门户系统  \n•统一业务经办门户   \n•政务协同系统  \n•政务微信—政务协同融合接入系统",
+        "page_idx": 80
+    },
+    {
+        "type": "text",
+        "text": "•行政区划管理系统•民政综合执法系统•福彩公益金管理系统•电子档案管理系统•掌上智慧大脑系统",
+        "page_idx": 80
+    },
+    {
+        "type": "text",
+        "text": "•信访管理系统  \n•民政服务机构融合监管系统  \n•舆情监控系统  \n•舆情风险预警系统",
+        "page_idx": 80
+    },
+    {
+        "type": "text",
+        "text": "其他应用系统建设内容",
+        "text_level": 1,
+        "page_idx": 81
+    },
+    {
+        "type": "text",
+        "text": "智慧服务平台",
+        "text_level": 1,
+        "page_idx": 81
+    },
+    {
+        "type": "text",
+        "text": "智慧政务平台",
+        "text_level": 1,
+        "page_idx": 81
+    },
+    {
+        "type": "image",
+        "img_path": "images/367b690db8b4babfe3666d57d5c2646c46f2b9d96d9e890455fd1d2cfae01304.jpg",
+        "img_caption": [],
+        "img_footnote": [],
+        "page_idx": 81
+    },
+    {
+        "type": "text",
+        "text": "互联网+慈展会专区流浪乞讨人员寻亲系统养老服务业务管理系统殡葬服务移动综合应用系统",
+        "page_idx": 81
+    },
+    {
+        "type": "text",
+        "text": "慈善组织综合管理系统福彩公益金管理系统舆情监控系统、舆情风险预警系统民政服务机构融合监管系统",
+        "page_idx": 81
+    },
+    {
+        "type": "text",
+        "text": "民政服务机构融合监管系统",
+        "text_level": 1,
+        "page_idx": 82
+    },
+    {
+        "type": "image",
+        "img_path": "images/1c77b90230a38f0449b34e6fb544ea5f27632297a241d7652b666a6f28c82142.jpg",
+        "img_caption": [],
+        "img_footnote": [],
+        "page_idx": 82
+    },
+    {
+        "type": "text",
+        "text": "政务协同系统",
+        "text_level": 1,
+        "page_idx": 83
+    },
+    {
+        "type": "text",
+        "text": "为市民政局公文处理、政务安排、督查督办及内部管理等工作提供统一的协同工作信息平台，首先实现政府办文、办会、办事三者之间的融合贯通，同时满足民政局内部业务系统与政务协同系统的深度融合。",
+        "page_idx": 83
+    },
+    {
+        "type": "image",
+        "img_path": "images/3e59c01207d8a968c99db6e4bc08e1a02b09740035f3f296c6d50bd17ead3a18.jpg",
+        "img_caption": [],
+        "img_footnote": [],
+        "page_idx": 83
+    },
+    {
+        "type": "text",
+        "text": "掌上大脑 ",
+        "text_level": 1,
+        "page_idx": 84
+    },
+    {
+        "type": "text",
+        "text": "提供移动端的决策分析系统，通过大数据可视化的方式直观查看整个民政业务办理情况、服务实施、服务机构现场情况。",
+        "page_idx": 84
+    },
+    {
+        "type": "image",
+        "img_path": "images/7c7b985dced81d5dcf711395cd112860506e2cc1bb7fea43d7b06ff9aed9e4bc.jpg",
+        "img_caption": [],
+        "img_footnote": [],
+        "page_idx": 84
+    },
+    {
+        "type": "text",
+        "text": "福彩公益金管理",
+        "text_level": 1,
+        "page_idx": 85
+    },
+    {
+        "type": "text",
+        "text": "第3章建设方案",
+        "text_level": 1,
+        "page_idx": 85
+    },
+    {
+        "type": "text",
+        "text": "申报→审批→监管→评价 ",
+        "text_level": 1,
+        "page_idx": 85
+    },
+    {
+        "type": "image",
+        "img_path": "images/efa8eff2f2b43d106179704739c550bd4604cce4aa8673bffe2d58d4df09d5f6.jpg",
+        "img_caption": [],
+        "img_footnote": [],
+        "page_idx": 85
+    },
+    {
+        "type": "text",
+        "text": "风险预警系统",
+        "text_level": 1,
+        "page_idx": 86
+    },
+    {
+        "type": "text",
+        "text": "实现风险预警信息闭环管理",
+        "text_level": 1,
+        "page_idx": 86
+    },
+    {
+        "type": "text",
+        "text": "建设风险预警可视化系统，实现风险线索发现、研判、下发、处置跟踪、反馈的闭环管理。",
+        "page_idx": 86
+    },
+    {
+        "type": "text",
+        "text": "掌握风险分布和态势感知",
+        "text_level": 1,
+        "page_idx": 86
+    },
+    {
+        "type": "text",
+        "text": "基于GIS构建一张风险分布图，能够从地域、领域、时间、风险等级等多个维度展示风险分布情况。",
+        "page_idx": 86
+    },
+    {
+        "type": "text",
+        "text": "统一风险预警模型管理",
+        "text_level": 1,
+        "page_idx": 86
+    },
+    {
+        "type": "text",
+        "text": "建设风险预警模型库，针对不同来源的风险预警模型实现预警信号和结果的统一管理。",
+        "page_idx": 86
+    },
+    {
+        "type": "text",
+        "text": "为各业务领域开展精准监管提供支持",
+        "text_level": 1,
+        "page_idx": 86
+    },
+    {
+        "type": "text",
+        "text": "针对民政重点领域建立风险预警模型，发送风险预警信号。",
+        "page_idx": 86
+    },
+    {
+        "type": "text",
+        "text": "公共服务门户",
+        "text_level": 1,
+        "page_idx": 87
+    },
+    {
+        "type": "text",
+        "text": "提供深圳市民政统一公共服务入口，将各个业务门户渠道进行整合，形成统一的互联互通对外服务渠道。以互联网+民政服务为目标丰富服务内容，扩展互联网网站、微信小程序等线上服务渠道，构建一体化在线的民政服务公共服务体系，满足人民群众“问、办、查、评”的要求。",
+        "page_idx": 87
+    },
+    {
+        "type": "image",
+        "img_path": "images/cd7f9dda1c00a40a1a686afa6630215221738b0272ee73ef5c7f4a505a30eb8c.jpg",
+        "img_caption": [],
+        "img_footnote": [],
+        "page_idx": 87
+    },
+    {
+        "type": "text",
+        "text": "以社会公众为中心，一网通办",
+        "text_level": 1,
+        "page_idx": 87
+    },
+    {
+        "type": "text",
+        "text": "统一业务经办门户 ",
+        "text_level": 1,
+        "page_idx": 88
+    },
+    {
+        "type": "text",
+        "text": "第3章建设方案",
+        "text_level": 1,
+        "page_idx": 88
+    },
+    {
+        "type": "image",
+        "img_path": "images/911c800cdbdf1233c993c0ce1dcc95839cc9154c8d2f1f54f97a2afd77b05327.jpg",
+        "img_caption": [],
+        "img_footnote": [],
+        "page_idx": 88
+    },
+    {
+        "type": "image",
+        "img_path": "images/55be068fb00409e931d255d0733a7bc9ff968fe2dd708efe68a00d76e4f24e94.jpg",
+        "img_caption": [],
+        "img_footnote": [],
+        "page_idx": 88
+    },
+    {
+        "type": "text",
+        "text": "以用户为中心，登录一次，办理所有业务",
+        "text_level": 1,
+        "page_idx": 88
+    },
+    {
+        "type": "text",
+        "text": "第3章建设方案",
+        "text_level": 1,
+        "page_idx": 89
+    },
+    {
+        "type": "image",
+        "img_path": "images/8b30db2049f08ea8c8b1aec57154a2b1c80be83bb6b34135aeb69e865b148566.jpg",
+        "img_caption": [
+            "智能指挥中心-数据资源中心建设模式"
+        ],
+        "img_footnote": [],
+        "page_idx": 89
+    },
+    {
+        "type": "text",
+        "text": "以数据资源中心为支撑，结合数据治理方法论，构建数据治理的“聚”、“通”、“用”模式，打通“信息孤岛”，建设对内数据汇聚、对外数据开放、数据集中存储的数据资源管理中心。",
+        "page_idx": 89
+    },
+    {
+        "type": "text",
+        "text": "数据资源中心建设内容",
+        "text_level": 1,
+        "page_idx": 90
+    },
+    {
+        "type": "text",
+        "text": "第3章建设方案",
+        "text_level": 1,
+        "page_idx": 90
+    },
+    {
+        "type": "text",
+        "text": "数据治理系统",
+        "text_level": 1,
+        "page_idx": 90
+    },
+    {
+        "type": "text",
+        "text": "数据汇聚子系统数据治理子系统资源管理子系统数据服务子系统数据分析子系统",
+        "page_idx": 90
+    },
+    {
+        "type": "text",
+        "text": "交换共享系统",
+        "text_level": 1,
+        "page_idx": 90
+    },
+    {
+        "type": "text",
+        "text": "交换资源子系统交换中心子系统交换总线子系统交换监测子系统共享交换接入服务",
+        "page_idx": 90
+    },
+    {
+        "type": "text",
+        "text": "数据资源",
+        "text_level": 1,
+        "page_idx": 90
+    },
+    {
+        "type": "text",
+        "text": "基础库汇聚库主题库专题库",
+        "page_idx": 90
+    },
+    {
+        "type": "text",
+        "text": "建民政大数据仓库",
+        "text_level": 1,
+        "page_idx": 90
+    },
+    {
+        "type": "text",
+        "text": "数据治理保障机制数据质量评估管理数据共享服务制度",
+        "page_idx": 90
+    },
+    {
+        "type": "text",
+        "text": "持续建设、快速迭代",
+        "text_level": 1,
+        "page_idx": 90
+    },
+    {
+        "type": "text",
+        "text": "建大数据综合应用",
+        "text_level": 1,
+        "page_idx": 90
+    },
+    {
+        "type": "text",
+        "text": "收养业务分析救助业务分析养老业务分析民政业务预警民政专题分析…",
+        "page_idx": 90
+    },
+    {
+        "type": "image",
+        "img_path": "images/6c1dbe9dd0bf73d835bfd7456bcb757da0e2892d332bc9b89815fb18eeb387fb.jpg",
+        "img_caption": [
+            "数据共享案例-死亡信息"
+        ],
+        "img_footnote": [],
+        "page_idx": 91
+    },
+    {
+        "type": "image",
+        "img_path": "images/fc2e5b8008553d3221fa617436bf05e07e08b1f257bb7132137b68623e3a2d85.jpg",
+        "img_caption": [
+            "大数据分析应用-精准救助"
+        ],
+        "img_footnote": [],
+        "page_idx": 92
+    },
+    {
+        "type": "text",
+        "text": "大数据分析应用——养老资源分配",
+        "text_level": 1,
+        "page_idx": 93
+    },
+    {
+        "type": "image",
+        "img_path": "images/695dff2cc5e7e22c944f81451a3c1b7f7a8722e83f54b3b0e925a0654dc3e30a.jpg",
+        "img_caption": [],
+        "img_footnote": [],
+        "page_idx": 93
+    },
+    {
+        "type": "text",
+        "text": "结合全市历史、实时老龄人口或即将步入老龄人口的迁入、迁出、死亡数据，预测全市老龄人口数量增长趋势，分析推算出未来全市及各区对养老床位需求，同时考虑户籍政策变动因素、现有养老机构及床位分布配置情况，为全市养老政策制定提供参考指导建议；更科学规划指导全市各区养老服务资源配置，管控养老服务机构建设审批，优化养老服务床位资源供给。",
+        "page_idx": 93
+    },
+    {
+        "type": "text",
+        "text": "03建设方案基础设施",
+        "text_level": 1,
+        "page_idx": 94
+    },
+    {
+        "type": "image",
+        "img_path": "images/6cdf22825291b93427661980c348eaf1e0877a66c9adb89f953123b160968f4c.jpg",
+        "img_caption": [],
+        "img_footnote": [],
+        "page_idx": 94
+    },
+    {
+        "type": "text",
+        "text": "智能指挥中心-指挥调度系统",
+        "text_level": 1,
+        "page_idx": 95
+    },
+    {
+        "type": "text",
+        "text": "第3章建设方案",
+        "text_level": 1,
+        "page_idx": 95
+    },
+    {
+        "type": "image",
+        "img_path": "images/8f505195ddc08613e1edc772fb2e88f6fcb1a7d002fa65b0d399107f8c0bc159.jpg",
+        "img_caption": [],
+        "img_footnote": [],
+        "page_idx": 95
+    },
+    {
+        "type": "text",
+        "text": "视频会议子系统",
+        "text_level": 1,
+        "page_idx": 95
+    },
+    {
+        "type": "text",
+        "text": "•各区级民政部门（11个）•民政直属单位及其他（10个）",
+        "page_idx": 95
+    },
+    {
+        "type": "text",
+        "text": "视频监控子系统（包括公办和民办机构）",
+        "text_level": 1,
+        "page_idx": 95
+    },
+    {
+        "type": "text",
+        "text": "•市救助管理站  \n•市社会福利中心  \n•市福利彩票发行中心  \n•市殡葬管理所  \n•市养老护理院  \n•市社会捐助和救灾物资储备中心  \n•…… ",
+        "page_idx": 95
+    },
+    {
+        "type": "text",
+        "text": "智能指挥中心-指挥调度系统",
+        "text_level": 1,
+        "page_idx": 96
+    },
+    {
+        "type": "image",
+        "img_path": "images/c057b25060af56e735705f81044cda3ff38fae8ce37b2113abfe6a463e5c54dd.jpg",
+        "img_caption": [
+            "数据可视化展示子系统、驾驶舱"
+        ],
+        "img_footnote": [],
+        "page_idx": 96
+    },
+    {
+        "type": "text",
+        "text": "面向政府主管部门",
+        "text_level": 1,
+        "page_idx": 96
+    },
+    {
+        "type": "text",
+        "text": "•基于大屏，远程实时了解现场情况 •基于视频，直播现场、连线现场•基于视频，远程指挥协调现场紧急事件•基于图像分析技术，自动预警违规行为•提供应急预案管理，方便应急预案挑选",
+        "page_idx": 96
+    },
+    {
+        "type": "text",
+        "text": "指挥调度系统-工地监管子系统",
+        "text_level": 1,
+        "page_idx": 97
+    },
+    {
+        "type": "image",
+        "img_path": "images/13d03ded385523b44063ec3d5542cfa77b5587a29230ead026a2db4a2d5b3e3d.jpg",
+        "img_caption": [
+            "污染情况 "
+        ],
+        "img_footnote": [],
+        "page_idx": 97
+    },
+    {
+        "type": "image",
+        "img_path": "images/d6a73ab029ac9e21047e99a15a5a9de8c2646fe2f7c6ee67c44b892b5a2955a1.jpg",
+        "img_caption": [
+            "危险预警 "
+        ],
+        "img_footnote": [],
+        "page_idx": 97
+    },
+    {
+        "type": "image",
+        "img_path": "images/7211f7f49d16a0a0348518419b2f571f50cb9d3ee40be834e7b4e0bd8b7cafd9.jpg",
+        "img_caption": [],
+        "img_footnote": [],
+        "page_idx": 97
+    },
+    {
+        "type": "text",
+        "text": "指挥调度系统-工地监管子系统",
+        "text_level": 1,
+        "page_idx": 98
+    },
+    {
+        "type": "image",
+        "img_path": "images/b56cde1e19dbdd60eda88cbc834d8d0fed4d72787109cb611da42a3e2fa96ec9.jpg",
+        "img_caption": [
+            "视频监控"
+        ],
+        "img_footnote": [],
+        "page_idx": 98
+    },
+    {
+        "type": "image",
+        "img_path": "images/b019697610333fa0a2e0bef0e21c73255e98363d456bec45e273bdeee7f2cafa.jpg",
+        "img_caption": [
+            "人员管理"
+        ],
+        "img_footnote": [],
+        "page_idx": 98
+    },
+    {
+        "type": "image",
+        "img_path": "images/3043eb514368f388730b13765ea045eced554728bf49806ed9bb562efadfa711.jpg",
+        "img_caption": [
+            "车辆管理"
+        ],
+        "img_footnote": [],
+        "page_idx": 98
+    },
+    {
+        "type": "image",
+        "img_path": "images/6bbe6e7e84691180552704fb2d44112f8245db3989e3bb5edc12ae78de61e634.jpg",
+        "img_caption": [],
+        "img_footnote": [],
+        "page_idx": 98
+    },
+    {
+        "type": "image",
+        "img_path": "images/08ff1f1d42a5208495f231c3933b7f762127d485fe53deff8c852d1ffa3d842b.jpg",
+        "img_caption": [
+            "环境检测"
+        ],
+        "img_footnote": [],
+        "page_idx": 98
+    },
+    {
+        "type": "table",
+        "img_path": "images/cddecd2f77562377c5cacb83c908c5468216f311c42c5afb113c5d10c26b9ba2.jpg",
+        "table_caption": [
+            "系统基础硬件设施环境"
+        ],
+        "table_footnote": [],
+        "table_body": "\n\n<html><body><table><thead><tr><td></td><td><b>基础设施服务 (IaaS)</b></td><td><b>应用支撑服务 (PaaS)</b></td><td><b>业务应用服务 (SaaS)</b></td><td><b>安全保障服务</b></td></tr></thead><tbody><tr><td>分类</td><td>云服务器 云计算 云存储 云网络 云备份</td><td>数据库服务 中间件服务</td><td>网络类服务</td><td>Web安全 漏洞扫描 审计服务 主机安全</td></tr><tr><td>数量</td><td>131</td><td>17</td><td>8</td><td>17</td></tr></tbody></table></body></html>\n\n",
+        "page_idx": 99
+    },
+    {
+        "type": "table",
+        "img_path": "images/6d650e3e07c78963f51b097ae704beaa0972bd4df2b439a44950faa4991d093a.jpg",
+        "table_caption": [
+            "系统基础硬件设施环境"
+        ],
+        "table_footnote": [],
+        "table_body": "\n\n<html><body><table><thead><tr><td colspan=\"2\"><b>基础设施服务 (IaaS)</b></td><td><b>应用支撑服务 (PaaS)</b></td><td><b>业务应用服务 (SaaS)</b></td><td><b>安全保障服务</b></td></tr></thead><tbody><tr><td rowspan=\"7\">分类</td><td>云主机</td><td rowspan=\"2\">云操作系统</td><td rowspan=\"2\">政务应用服务</td><td>访问控制</td></tr><tr><td>云服务器</td><td>主机安全</td></tr><tr><td>云计算</td><td rowspan=\"4\">数据库服务</td><td rowspan=\"4\">网络类服务</td><td>漏洞扫描 Web安全</td></tr><tr><td>云存储</td><td>漏洞扫描</td></tr><tr><td>云网络</td><td>审计服务</td></tr><tr><td>云备份</td><td>数据库安全服务</td></tr><tr><td>云管理</td><td>防病毒</td></tr><tr><td>数量</td><td>131</td><td></td><td>8</td><td>17</td></tr><tr><td></td><td></td><td>17</td><td></td><td></td></tr></tbody></table></body></html>\n\n",
+        "page_idx": 100
+    },
+    {
+        "type": "table",
+        "img_path": "images/bf7f4253aa0def941d66e987adf0a94d202b0697bc4c08f7919b5ed300d4efe0.jpg",
+        "table_caption": [
+            "系统基础硬件设施环境"
+        ],
+        "table_footnote": [],
+        "table_body": "\n\n<html><body><table><thead><tr><td></td><td><b>基础设施服务 (IaaS)</b></td><td><b>应用支撑服务 (PaaS)</b></td><td><b>安全保障服务</b></td><td><b>安全保障服务</b></td></tr></thead><tbody><tr><td>分类</td><td>云服务器 云计算 云存储 云网络 云备份 云主机 云管理</td><td>中间件服务 数据库服务 大数据服务</td><td>网络类服务</td><td>Web安全 漏洞扫描 审计服务 数据库安全服务 主机安全</td></tr><tr><td>数量</td><td>131</td><td>17</td><td>8</td><td>17</td></tr></tbody></table></body></html>\n\n",
+        "page_idx": 101
+    },
+    {
+        "type": "table",
+        "img_path": "images/40b593a85434f95a8d016efa404a729bb59a3f2dd837139cc613386f2ab28bf4.jpg",
+        "table_caption": [
+            "系统基础硬件设施环境"
+        ],
+        "table_footnote": [],
+        "table_body": "\n\n<html><body><table><thead><tr><td></td><td><b>基础设施服务 (IaaS)</b></td><td><b>应用支撑服务 (PaaS)</b></td><td><b>业务应用服务 (SaaS)</b></td><td><b>安全保障服务</b></td></tr></thead><tbody><tr><td rowspan=\"6\">分类</td><td>云主机</td><td>云操作系统</td><td rowspan=\"2\">政务应用服务</td><td>主机安全</td></tr><tr><td>云服务器 云计算</td><td>中间件服务</td><td>Web安全</td></tr><tr><td>云存储</td><td>数据库服务</td><td rowspan=\"4\">网络类服务</td><td>漏洞扫描</td></tr><tr><td>云网络</td><td>大数据服务</td><td>审计服务</td></tr><tr><td>云备份</td><td>访问控制</td><td>数据库安全服务 防病毒</td></tr><tr><td>云管理</td><td>访问控制</td><td>访问控制</td></tr><tr><td>数量</td><td>131</td><td>17</td><td>8</td><td>17</td></tr></tbody></table></body></html>\n\n",
+        "page_idx": 102
+    },
+    {
+        "type": "table",
+        "img_path": "images/54c2fc06aa0d68136be660625047835c4f9a852124aaf94179f6aa36cf3767f6.jpg",
+        "table_caption": [
+            "业务系统硬件设备配置"
+        ],
+        "table_footnote": [],
+        "table_body": "\n\n<html><body><table><thead><tr><td colspan=\"2\"><b>殡葬业务硬件配置</b></td></tr></thead><tbody><tr><td colspan=\"2\">一、支撑应用系统配套设备</td></tr><tr><td>一次性RFID标签腕带</td><td>直播摄像头</td></tr><tr><td>手持式RFID读写器</td><td>高清直播编码器（RTMP推流设备）</td></tr><tr><td>聚合路由器</td><td>航拍仪（无人机）</td></tr><tr><td>二、车辆GPS定位设备</td><td>指挥调度系统硬件购置</td></tr><tr><td>拼接屏</td><td>音响防啸叫器 挂壁式音箱</td></tr><tr><td>拼接屏支架基座</td><td>音响防啸叫器</td></tr><tr><td>UPS电源</td><td>鹅颈麦</td></tr><tr><td></td><td>..以及移动终端等</td></tr><tr><td colspan=\"2\">中心机房视频会议设备材料清单</td></tr><tr><td>一、视频会议设备</td><td>高清网络录播</td></tr><tr><td>MCU</td><td>网络存储 NAS</td></tr><tr><td>业务管理平台</td><td></td></tr><tr><td>二、主会场视频会场设备</td><td></td></tr><tr><td>主会场高清终端</td><td>笔记本电脑终端</td></tr><tr><td>终端高清摄像机</td><td>主会场显示终端</td></tr><tr><td>数字阵列麦克风</td><td>录播视频剪辑主机</td></tr><tr><td>数字阵列麦克风</td><td>..以及扩声系统设备等</td></tr></tbody></table></body></html>\n\n",
+        "page_idx": 103
+    },
+    {
+        "type": "text",
+        "text": "安全体系建设",
+        "text_level": 1,
+        "page_idx": 104
+    },
+    {
+        "type": "text",
+        "text": "第3章建设方案",
+        "text_level": 1,
+        "page_idx": 104
+    },
+    {
+        "type": "text",
+        "text": "物理和网络安全采用深圳市政务云上的物理安全、网络安全、访问权限控制以及其他防护措施，都将依照原有深圳市政务云 的物理、网络安全规范进行管控。",
+        "page_idx": 104
+    },
+    {
+        "type": "image",
+        "img_path": "images/fa35b51746b68430edb13c7e5d3bb32931b81e1c39eaae3339bb78ff8931414a.jpg",
+        "img_caption": [],
+        "img_footnote": [],
+        "page_idx": 104
+    },
+    {
+        "type": "text",
+        "text": "信息系统安全采用身份鉴别、授权，确认 使用者的身份、确保身份的合法性；系统安全审计确保审计记录不被破坏或非授权 访问。",
+        "page_idx": 104
+    },
+    {
+        "type": "text",
+        "text": "信息数据安全采用数据安全隔离技术，确保数据保密性和完整性，避免数据传输风险，提高应对数据可用性风险能力，做好数据备份与恢复。",
+        "page_idx": 104
+    },
+    {
+        "type": "text",
+        "text": "安全等级制度和建设对系统信息实行分等级安全保护，信息系统中使用的信息安全产品实行按等级管理，对信息系统中发生的信息安全事件分等级响应、处置。",
+        "page_idx": 104
+    },
+    {
+        "type": "text",
+        "text": "小结：智慧民政建设内容",
+        "text_level": 1,
+        "page_idx": 105
+    },
+    {
+        "type": "text",
+        "text": "第3章建设方案",
+        "text_level": 1,
+        "page_idx": 105
+    },
+    {
+        "type": "text",
+        "text": "智慧服务平台",
+        "text_level": 1,
+        "page_idx": 105
+    },
+    {
+        "type": "text",
+        "text": "",
+        "text_level": 1,
+        "page_idx": 105
+    },
+    {
+        "type": "image",
+        "img_path": "images/93ff8864a5ea9ef09cd44fff255d93307f180aadfc7494c1cc06c4870e639144.jpg",
+        "img_caption": [],
+        "img_footnote": [],
+        "page_idx": 105
+    },
+    {
+        "type": "text",
+        "text": "项目效益分析-群众效益",
+        "text_level": 1,
+        "page_idx": 106
+    },
+    {
+        "type": "image",
+        "img_path": "images/d094f6c00925af83b4c7a94f88b0e8fba2a4f4ab039511601c4d706d3b7809b4.jpg",
+        "img_caption": [],
+        "img_footnote": [],
+        "page_idx": 106
+    },
+    {
+        "type": "text",
+        "text": "提升人民群众获得感、幸福感、安全感",
+        "page_idx": 106
+    },
+    {
+        "type": "text",
+        "text": "人民对美好生活的向往就是我们的奋斗目标",
+        "text_level": 1,
+        "page_idx": 106
+    },
+    {
+        "type": "text",
+        "text": "•民政各项业务网上申办、跨域通办、主动帮办，数据多跑路，群众少跑腿  \n•提供指尖服务、物联网服务等，打造“不打烊”的在线综合民政服务窗口  \n•从粗放服务到精准服务，依托大数据，借助大数据分析与数据模型应用，提高服务质量和效率  \n•“马上办、网上办、就近办、一次办”的民政公共服务体验，显著降低人民群众获取民政公共服务的交通成本和时间成本，群众办事提交材料最大限度减少，民政公共服务标准化、便捷化水平获得极大提升。互联网+全天候少跑路服务融合零距离",
+        "page_idx": 106
+    },
+    {
+        "type": "image",
+        "img_path": "images/a6c42ef9e0792b40cbe1a958d0b17bbc5b793cfa246fdc4936fed65de4ad235e.jpg",
+        "img_caption": [],
+        "img_footnote": [],
+        "page_idx": 106
+    },
+    {
+        "type": "text",
+        "text": "项目效益分析-政府效益",
+        "text_level": 1,
+        "page_idx": 107
+    },
+    {
+        "type": "text",
+        "text": "政府实现有效监管",
+        "text_level": 1,
+        "page_idx": 107
+    },
+    {
+        "type": "image",
+        "img_path": "images/4e98d6964680e6e92b0d2d6138cc5567f1db5392f6e1e0b6cc1c60760dc3abaa.jpg",
+        "img_caption": [],
+        "img_footnote": [],
+        "page_idx": 107
+    },
+    {
+        "type": "text",
+        "text": "对多个领域数据融合、监测、联动，结合技术手段，对资金、项目、服务等进行全流程管控",
+        "page_idx": 107
+    },
+    {
+        "type": "image",
+        "img_path": "images/4ad8d56f0d2dc5ad326684aadb4dde5871434d1f792955de0841fa1429d7720e.jpg",
+        "img_caption": [],
+        "img_footnote": [],
+        "page_idx": 107
+    },
+    {
+        "type": "text",
+        "text": "项目效益分析-政府效益",
+        "text_level": 1,
+        "page_idx": 108
+    },
+    {
+        "type": "text",
+        "text": "资源投放精准高效 ",
+        "text_level": 1,
+        "page_idx": 108
+    },
+    {
+        "type": "image",
+        "img_path": "images/15c634a20668eeb873a631b67d52b840e27b2d7bfa0b0a33c716f3397dc7084d.jpg",
+        "img_caption": [],
+        "img_footnote": [],
+        "page_idx": 108
+    },
+    {
+        "type": "text",
+        "text": "在理清政府、社会、市场边界的基础上，着力引入更多社会资源，促进民政领域事业产业并举发展，优化资源投放 ",
+        "page_idx": 108
+    },
+    {
+        "type": "text",
+        "text": "撬动更多资源",
+        "text_level": 1,
+        "page_idx": 108
+    },
+    {
+        "type": "text",
+        "text": "提升供给质量",
+        "text_level": 1,
+        "page_idx": 108
+    },
+    {
+        "type": "text",
+        "text": "优化投入产出",
+        "page_idx": 108
+    },
+    {
+        "type": "text",
+        "text": "大量节约救助站救助供养相关人员的经费。",
+        "page_idx": 108
+    },
+    {
+        "type": "text",
+        "text": "为政府的规划制定、决策参考提供数据支撑，大幅提升政府资源投入的效益。",
+        "page_idx": 108
+    },
+    {
+        "type": "text",
+        "text": "项目效益分析-政府效益",
+        "text_level": 1,
+        "page_idx": 109
+    },
+    {
+        "type": "text",
+        "text": "信息化建设持续增强",
+        "text_level": 1,
+        "page_idx": 109
+    },
+    {
+        "type": "image",
+        "img_path": "images/61e550fd44a90a641d913712da4f6a40a75504d8fbece4671ba734385d758a8c.jpg",
+        "img_caption": [],
+        "img_footnote": [],
+        "page_idx": 109
+    },
+    {
+        "type": "text",
+        "text": "统一规划、统一设计、统一开发、统一建设复用组件统一建设，避免重复投入，为未来拓展应用建设打好基础",
+        "page_idx": 109
+    },
+    {
+        "type": "text",
+        "text": "平台+标准+应用的架构模式",
+        "text_level": 1,
+        "page_idx": 109
+    },
+    {
+        "type": "text",
+        "text": "支撑平台提供所有应用系统的通用组件，避免重复建设、减少资金投入，打好发展基础。",
+        "page_idx": 109
+    },
+    {
+        "type": "text",
+        "text": "集中统一的建设模式一级部署，多级使用",
+        "page_idx": 109
+    },
+    {
+        "type": "text",
+        "text": "有效避免分散建设、多头投资，节省费用，避免形成信息孤岛，既节约了投资成本，又提高了工程效益。",
+        "page_idx": 109
+    },
+    {
+        "type": "text",
+        "text": "04项目亮点",
+        "text_level": 1,
+        "page_idx": 110
+    },
+    {
+        "type": "image",
+        "img_path": "images/e61c6a481d3de6870a27814224efda770ec7c4f77361129872ad26fedaeb3062.jpg",
+        "img_caption": [],
+        "img_footnote": [],
+        "page_idx": 110
+    },
+    {
+        "type": "text",
+        "text": "新探索",
+        "text_level": 1,
+        "page_idx": 111
+    },
+    {
+        "type": "image",
+        "img_path": "images/d027879eaa4399dd6309fce74d3fa7ec2d277f3bceb18de3329a4a3937394cd2.jpg",
+        "img_caption": [],
+        "img_footnote": [],
+        "page_idx": 111
+    },
+    {
+        "type": "text",
+        "text": "区块链+民政应用的探索 ",
+        "text_level": 1,
+        "page_idx": 111
+    },
+    {
+        "type": "image",
+        "img_path": "images/acba6522edb3ba83e70c73d43f2c3299c181fa07fbf1eba1a34ec7eb0db13385.jpg",
+        "img_caption": [],
+        "img_footnote": [],
+        "page_idx": 111
+    },
+    {
+        "type": "text",
+        "text": "习近平在中央政治局第十八次集体学习时强调：把区块链作为核心技术自主创新重要突破口，加快推动区块链技术和产业创新发展。",
+        "page_idx": 111
+    },
+    {
+        "type": "text",
+        "text": "积极推动区块链技术在教育、就业、养老、精准脱贫、医疗健康、商品防伪、食品安全、公益、社会救助等领域的应用，为人民群众提供更加智能、更加便捷、更加优质的公共服务。",
+        "page_idx": 111
+    },
+    {
+        "type": "text",
+        "text": "新模式",
+        "text_level": 1,
+        "page_idx": 112
+    },
+    {
+        "type": "image",
+        "img_path": "images/93da2bd661a827a56d9b78b2968e1a96bd41c63c550f0a022cc94210520cbbdc.jpg",
+        "img_caption": [
+            "条块化、离散化的信息化建设模式"
+        ],
+        "img_footnote": [],
+        "page_idx": 112
+    },
+    {
+        "type": "image",
+        "img_path": "images/7094b522b6346f605ee3d6236af0fd4b2c99bfc2add20394cd639c1cf01625ac.jpg",
+        "img_caption": [
+            "第4章项目亮点"
+        ],
+        "img_footnote": [],
+        "page_idx": 112
+    },
+    {
+        "type": "text",
+        "text": "平台化、一体化的信息化建设模式",
+        "text_level": 1,
+        "page_idx": 112
+    },
+    {
+        "type": "text",
+        "text": "通过“平台+应用+标准”的建设模式建设民政四大平台：智慧服务平台，智慧政务平台，智慧监管平台，智慧应用平台。",
+        "page_idx": 112
+    },
+    {
+        "type": "text",
+        "text": "新架构",
+        "text_level": 1,
+        "page_idx": 113
+    },
+    {
+        "type": "text",
+        "text": "将互联网企业的“中台战略”引入智慧民政项目，打造“深圳智慧民政”的中台架构：业务中台、技术中台、数据中台",
+        "page_idx": 113
+    },
+    {
+        "type": "text",
+        "text": "中台的定义",
+        "text_level": 1,
+        "page_idx": 113
+    },
+    {
+        "type": "text",
+        "text": "为前台而生、为后台而融，目的就是更好的服务前台规模化创新，进而更好的响应服务引领用户，使企业真正做到自身能力与用户需求的持续对接。",
+        "page_idx": 113
+    },
+    {
+        "type": "image",
+        "img_path": "images/abae67e00d3d8108a50e7874157b25c4bc33480aead90d72d267501ddf0591de.jpg",
+        "img_caption": [],
+        "img_footnote": [],
+        "page_idx": 113
+    },
+    {
+        "type": "text",
+        "text": "新服务",
+        "text_level": 1,
+        "page_idx": 114
+    },
+    {
+        "type": "text",
+        "text": "多渠道融合、线下线下融合，提供一体化服务，让服务更便捷。",
+        "text_level": 1,
+        "page_idx": 114
+    },
+    {
+        "type": "text",
+        "text": "一生",
+        "text_level": 1,
+        "page_idx": 114
+    },
+    {
+        "type": "text",
+        "text": "儿童（幼有善育）婚姻（生有所爱）困难（弱有众扶）养老（老有颐养）殡葬（终有所归）",
+        "page_idx": 114
+    },
+    {
+        "type": "text",
+        "text": "移动综合应用政务新体验 “秒批”随时办 资讯通、资源通业务通、服务通",
+        "page_idx": 114
+    },
+    {
+        "type": "text",
+        "text": "有温度的服务",
+        "text_level": 1,
+        "page_idx": 114
+    },
+    {
+        "type": "image",
+        "img_path": "images/41cd7bb2fbd9aa465a37f910a18aee0084cc510ae2e68edf5f88e683bfb09461.jpg",
+        "img_caption": [],
+        "img_footnote": [],
+        "page_idx": 114
+    },
+    {
+        "type": "text",
+        "text": "服务触手可及、办事更方便更快捷变被动服务为主动服务，将服务送到你身边让服务对象更有获得感、幸福感",
+        "page_idx": 114
+    },
+    {
+        "type": "text",
+        "text": "新智慧",
+        "text_level": 1,
+        "page_idx": 115
+    },
+    {
+        "type": "image",
+        "img_path": "images/5c164066096dd617b05518bd183e403cb69fed144e2fa44a46df56cf86e955e4.jpg",
+        "img_caption": [],
+        "img_footnote": [],
+        "page_idx": 115
+    },
+    {
+        "type": "image",
+        "img_path": "images/24c62cab56cc97111183b37b41706f12f0d20a72f85c23c8c285fa199f616269.jpg",
+        "img_caption": [
+            "新生态",
+            "第4章项目亮点"
+        ],
+        "img_footnote": [],
+        "page_idx": 116
+    },
+    {
+        "type": "text",
+        "text": "THANK YOU ",
+        "text_level": 1,
+        "page_idx": 117
+    }
+]
