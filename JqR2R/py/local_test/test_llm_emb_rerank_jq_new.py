@@ -2,7 +2,7 @@ from r2r import *
 import uuid
 from uuid import UUID
 
-r2rconfig = R2RConfig.from_toml(config_path="/data/projects/JqChatV2/JqChat/JqR2R/py/r2r/r2r.toml")  # type: ignore
+r2rconfig = R2RConfig.from_toml(config_path="/data/projects/JqChatV2/JqChat/JqR2R/py/r2r/jq.toml")  # type: ignore
 print("R2R服务测试--------请首先运行[python -m r2r.serve]启动R2R服务--------")
 client = R2RClient(base_url='http://10.1.150.105:7272') # can set remote w/ R2RClient(base_url=...)
 client.users.login("admin@example.com", "change_me_immediately")
@@ -10,6 +10,52 @@ client.users.login("admin@example.com", "change_me_immediately")
 async_client = R2RAsyncClient(base_url='http://10.1.150.105:7272')
 async_client.users.login("admin@example.com", "change_me_immediately")
 print("R2RClient\R2RAsyncClient对象创建\登录成功")
+
+def test_semantic_search_multilingual(client: R2RClient):
+    """Test semantic search handles multilingual content."""
+    # Create documents in different languages
+    random = str(uuid.uuid4())
+    random_0 = str(uuid.uuid4())
+    random_1 = str(uuid.uuid4())
+    random_2 = str(uuid.uuid4())
+    random_3 = str(uuid.uuid4())
+
+    docs = [
+        (f"Chinese亚里士多德是一位哲学家 {random}", "Chinese"),
+        (f"zhparser亚里士多德是一位哲学家 {random_0}", "zhparser"),
+        
+        (f"Aristotle was a philosopher {random_1}", "English"),
+        (f"Aristóteles fue un filósofo {random_2}", "Spanish"),
+        (f"アリストテレスは哲学者でした {random_3}", "Japanese"),
+    ]
+    doc_ids = []
+    for text, lang in docs:
+        print(text)
+        doc_id = client.documents.create(raw_text=text,
+                                         metadata={
+                                             "language": lang
+                                         }).results.document_id
+        doc_ids.append(doc_id)
+
+    # Query in different languages
+    queries = [
+        "亚里士多德是谁？",
+        "Who was Aristotle?",
+        "¿Quién fue Aristóteles?",
+        "アリストテレスとは誰でしたか？",
+    ]
+
+    for query in queries:
+        resp = client.retrieval.search(
+            query=query,
+            search_mode="custom",
+            search_settings={
+                "use_semantic_search": True,
+                "limit": len(doc_ids),
+            },
+        )
+        results = resp.results.chunk_search_results
+        assert len(results) > 0, f"No results found for query: {query}"
 
 def model_test():
     print("大语言模型测试-------------------")    
@@ -242,6 +288,7 @@ def r2r_lifecycle_test():
 
 
 if __name__ == "__main__":
+    test_semantic_search_multilingual(client=client)
 
     # model_test()
     # r2r_test()

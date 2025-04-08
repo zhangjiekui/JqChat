@@ -37,7 +37,7 @@ class DocumentsSDK:
         id: Optional[str | UUID] = None,
         ingestion_mode: Optional[str] = None,
         collection_ids: Optional[list[str | UUID]] = None,
-        metadata: Optional[dict] = None,
+        metadata: Optional[dict] = {"language": "Chinese"},
         ingestion_config: Optional[dict | IngestionMode] = None,
         run_with_orchestration: Optional[bool] = True,
     ) -> WrappedIngestionResponse:

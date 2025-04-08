@@ -41,7 +41,7 @@ class DocumentsSDK:
         id: Optional[str | UUID] = None,
         ingestion_mode: Optional[str] = None,
         collection_ids: Optional[list[str | UUID]] = None,
-        metadata: Optional[dict] = None,
+        metadata: Optional[dict] = {"language": "Chinese"},
         ingestion_config: Optional[dict | IngestionMode] = None,
         run_with_orchestration: Optional[bool] = True,
     ) -> WrappedIngestionResponse:
@@ -742,7 +742,7 @@ class DocumentsSDK:
             temp_file.close()
 
             # Prepare metadata and generate a stable document ID based on the URL
-            metadata = {"title": filename}
+            metadata = {"title": filename,"language": "Chinese"}
             doc_id = str(uuid.uuid5(uuid.NAMESPACE_DNS, sample_file_url))
 
             # Call the SDK's create method to ingest the file.

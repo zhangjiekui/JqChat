@@ -136,12 +136,12 @@ class PostgresChunksHandler(Handler):
             {binary_col}
             text TEXT,
             metadata JSONB,
-            fts tsvector GENERATED ALWAYS AS (to_tsvector('english', text)) STORED
+            fts tsvector GENERATED ALWAYS AS (to_tsvector('zhparser', text)) STORED
         );
         CREATE INDEX IF NOT EXISTS idx_vectors_document_id ON {self._get_table_name(PostgresChunksHandler.TABLE_NAME)} (document_id);
         CREATE INDEX IF NOT EXISTS idx_vectors_owner_id ON {self._get_table_name(PostgresChunksHandler.TABLE_NAME)} (owner_id);
         CREATE INDEX IF NOT EXISTS idx_vectors_collection_ids ON {self._get_table_name(PostgresChunksHandler.TABLE_NAME)} USING GIN (collection_ids);
-        CREATE INDEX IF NOT EXISTS idx_vectors_text ON {self._get_table_name(PostgresChunksHandler.TABLE_NAME)} USING GIN (to_tsvector('english', text));
+        CREATE INDEX IF NOT EXISTS idx_vectors_text ON {self._get_table_name(PostgresChunksHandler.TABLE_NAME)} USING GIN (to_tsvector('zhparser', text));
         """
 
         await self.connection_manager.execute_query(query)
@@ -452,7 +452,7 @@ class PostgresChunksHandler(Handler):
         conditions = []
         params: list[str | int | bytes] = [query_text]
 
-        conditions.append("fts @@ websearch_to_tsquery('english', $1)")
+        conditions.append("fts @@ websearch_to_tsquery('zhparser', $1)")
 
         if search_settings.filters:
             filter_condition, params = apply_filters(
@@ -471,7 +471,7 @@ class PostgresChunksHandler(Handler):
                 collection_ids,
                 text,
                 metadata,
-                ts_rank(fts, websearch_to_tsquery('english', $1), 32) as rank
+                ts_rank(fts, websearch_to_tsquery('zhparser', $1), 32) as rank
             FROM {self._get_table_name(PostgresChunksHandler.TABLE_NAME)}
             {where_clause}
             ORDER BY rank DESC
@@ -1155,8 +1155,8 @@ class PostgresChunksHandler(Handler):
                     CASE WHEN $1 = '' THEN 0.0
                     ELSE
                         ts_rank_cd(
-                            setweight(to_tsvector('english', {metadata_fields_expr}), 'A'),
-                            websearch_to_tsquery('english', $1),
+                            setweight(to_tsvector('zhparser', {metadata_fields_expr}), 'A'),
+                            websearch_to_tsquery('zhparser', $1),
                             32
                         )
                     END as metadata_rank
@@ -1170,14 +1170,14 @@ class PostgresChunksHandler(Handler):
                     document_id,
                     AVG(
                         ts_rank_cd(
-                            setweight(to_tsvector('english', COALESCE(text, '')), 'B'),
-                            websearch_to_tsquery('english', $1),
+                            setweight(to_tsvector('zhparser', COALESCE(text, '')), 'B'),
+                            websearch_to_tsquery('zhparser', $1),
                             32
                         )
                     ) as body_rank
                 FROM {self._get_table_name(PostgresChunksHandler.TABLE_NAME)}
                 WHERE $1 != ''
-                {"AND to_tsvector('english', text) @@ websearch_to_tsquery('english', $1)" if search_over_body else ""}
+                {"AND to_tsvector('zhparser', text) @@ websearch_to_tsquery('zhparser', $1)" if search_over_body else ""}
                 GROUP BY document_id
             ),
             -- Combined scores with document metadata

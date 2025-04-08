@@ -256,9 +256,9 @@ def upgrade() -> None:
         ALTER TABLE {project_name}.document_info
         ADD COLUMN doc_search_vector tsvector
         GENERATED ALWAYS AS (
-            setweight(to_tsvector('english', COALESCE(title, '')), 'A') ||
-            setweight(to_tsvector('english', COALESCE(summary, '')), 'B') ||
-            setweight(to_tsvector('english', COALESCE((metadata->>'description')::text, '')), 'C')
+            setweight(to_tsvector('zhparser', COALESCE(title, '')), 'A') ||
+            setweight(to_tsvector('zhparser', COALESCE(summary, '')), 'B') ||
+            setweight(to_tsvector('zhparser', COALESCE((metadata->>'description')::text, '')), 'C')
         ) STORED;
         """)
 

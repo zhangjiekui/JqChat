@@ -102,7 +102,7 @@ def upgrade() -> None:
                 postgresql.TSVECTOR,
                 nullable=False,
                 server_default=sa.text(
-                    "to_tsvector('english'::regconfig, '')"
+                    "to_tsvector('zhparser'::regconfig, '')"
                 ),
             ),
             sa.Column(

@@ -64,7 +64,7 @@ Base = declarative_base()
 
         修改生效：vscode中找到该容器（postgres_cn），右键restart该容器
         ------------------
-        
+# https://help.aliyun.com/zh/analyticdb/analyticdb-for-postgresql/user-guide/use-zhparser-to-perform-chinese-word-segmentation
 三、创建扩展并配置
     pgAdmin psql 连接该服务器
         ```psql 拷贝下面的命令，黏贴执行
@@ -96,6 +96,7 @@ Base = declarative_base()
     show shared_preload_libraries;
 
     SELECT to_tsvector('zhparser', '保障房资金压力');
+    SELECT websearch_to_tsquery('zhparser', '华为云 OR 数据库');
     SELECT to_tsvector('zhparser', 'Test In English');
     SELECT to_tsvector('zhparser', '测试中文和English混合文本,Test In English');  =>  'english':3,8 'in':7 'test':6 '中文':2 '文本':5 '测试':1 '混合':4
     SELECT to_tsvector('english', '测试中文和English混合文本,Test In English');   =>  'english':4 'test':2 '测试中文和english混合文本':1

@@ -212,8 +212,10 @@ def r2r_create_documents(r2r_client,lm_documents:list):
             else:
                 file_path = doc.metadata.get("file_path",doc.metadata.get("original_source_converted_jq",""))
                 metadata=doc.metadata
+                if not metadata.get('language',None):
+                    metadata.update({"language": "Chinese"})
                 try:
-                    metadata.pop('file_doc_tree_jq')
+                    metadata.pop('file_doc_tree_jq')                    
                 except:
                     pass
                 try:

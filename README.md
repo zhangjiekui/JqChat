@@ -445,12 +445,26 @@ tail -f /root/JqLogs/vllmvl.log
 ### 启动Ktransformers DeepSeek-R1-Q4_K_M （on GPU 0）:
 #### 安装NUMA库
 apt install libnuma-dev
+
+#### 切换环境
+workon torch26cu126
+
+strings /root/.virtualenvs/torch26cu126/lib/libstdc++.so.6  | grep GLIBC
+
+
 #### 获取源代码
 git clone https://github.com/kvcache-ai/ktransformers.git
 cd ktransformers
-git submodule init
-git submodule update
+git submodule update --init --recursive
+#### 安装依赖：
+sudo apt install libtbb-dev libssl-dev libcurl4-openssl-dev 【libaio1】 libaio-dev libfmt-dev libgflags-dev zlib1g-dev patchelf
+
 #### 编译安装
+<!-- Install Dual NUMA dependencies -->
+sudo env USE_BALANCE_SERVE=1 USE_NUMA=1 PYTHONPATH="$(which python)" PATH="$(dirname $(which python)):$PATH" bash ./install.sh
+
+
+<!-- 原来的
 make install_numa
 (查看编译日志中是否存在NUMA support is enabled\n-- NUMA library found: /usr/lib/x86_64-linux-gnu/libnuma.so - enabling NUMA support\n)
 #### 确认NUMA开启相关的命令 【摘自https://github.com/ggml-org/llama.cpp/discussions/12088】
@@ -470,9 +484,35 @@ Heap                      1120.50           22.47         1142.97
 Stack                        0.14            0.00            0.14
 Private                 471208.33       433322.20       904530.53
 ----------------  --------------- --------------- ---------------
-Total                   472328.98       433344.67       905673.64
+Total                   472328.98       433344.67       905673.64 -->
+
+<!-- Running DeepSeek-R1-Q4KM Models -->
+```
+CUDA_VISIBLE_DEVICES=2,3 python ktransformers/server/main.py \
+  --port 10002 \
+  --model_path /data/models/DeepSeek-R1/ \
+  --gguf_path /data/models/DeepSeek-R1-Q4_K_M_ollama_gguf/ \
+  --optimize_config_path ktransformers/optimize/optimize_rules/DeepSeek-V3-Chat-serve.yaml \
+  --max_new_tokens 1024 \
+  --cache_lens 32768 \
+  --chunk_size 256 \
+  --max_batch_size 4 \
+  --backend_type balance_serve \
+  --force_think
 
 
+
+CUDA_VISIBLE_DEVICES=3 python ktransformers/server/main.py \
+  --port 10002
+  --model_path deepseek-ai/DeepSeek-R1 \
+  --gguf_path /data/models/DeepSeek-R1-Q4_K_M_ollama_gguf/ \
+  --optimize_config_path ktransformers/optimize/optimize_rules/DeepSeek-V3-Chat-serve.yaml \
+  --max_new_tokens 1024 \
+  --cache_lens 32768 \
+  --chunk_size 256 \
+  --max_batch_size 4 \
+  --backend_type balance_serve
+```
 ====生成速度 
 生成速度由5.2tokens/s提升到7.4tokens/s
 

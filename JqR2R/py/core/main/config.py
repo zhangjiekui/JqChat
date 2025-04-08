@@ -191,8 +191,10 @@ class R2RConfig:
                     config_data = toml.load(f)
                     logger.warning(f"采用新的{changed_path=}，读取成功")
                     R2RConfig.default_config_path = changed_path
+                    return config_data
             except Exception as e:
                 logger.warning(f"采用新的{changed_path=}，还是读取失败:{e}")
+                return {}
 
     @staticmethod
     def _serialize_config(config_section: Any):

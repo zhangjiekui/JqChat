@@ -213,6 +213,34 @@ class PostgresDatabaseProvider(DatabaseProvider):
             await conn.execute("CREATE EXTENSION IF NOT EXISTS vector;")
             await conn.execute("CREATE EXTENSION IF NOT EXISTS pg_trgm;")
             await conn.execute("CREATE EXTENSION IF NOT EXISTS fuzzystrmatch;")
+# 修改了数据库初始化
+            try:
+                await conn.execute("CREATE EXTENSION IF NOT EXISTS age;")
+                logger.warning(f"Success creating extensions: age")
+            except Exception as e:
+                logger.warning(f"Error creating extensions: {e}")
+            try:
+                await conn.execute("CREATE EXTENSION IF NOT EXISTS zhparser;")
+                logger.warning(f"Success creating extensions: zhparser")
+            except Exception as e:
+                logger.warning(f"Error creating extensions: {e}")
+            try:
+                result = await conn.execute("SELECT cfgname FROM pg_ts_config WHERE cfgname = 'zhparser';")
+                if int(result[-1])>=1:
+                    logger.warning(f"search configration 'zhparser' already exists")
+                else:
+                    try:
+                        await conn.execute("CREATE TEXT SEARCH CONFIGURATION zhparser (PARSER = zhparser);")
+                        logger.warning(f"Success creating search configration: zhparser")
+                    except Exception as e:
+                        logger.warning(f"Error creating search configration: {e}")
+                    try:
+                        await conn.execute("ALTER TEXT SEARCH CONFIGURATION zhparser ADD MAPPING FOR n,v,a,i,e,l,x WITH simple;")
+                        logger.warning(f"Success altering search configration: zhparser")
+                    except Exception as e:
+                        logger.warning(f"Error altering search configration: {e}")
+            except Exception as e:
+                logger.warning(f"Error selecting/creating search configration: {e}")
 
             # Create schema if it doesn't exist
             await conn.execute(
