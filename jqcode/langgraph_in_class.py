@@ -92,28 +92,41 @@ class GraphAgentState(TypedDict):
 #     仅仅需要返回问题内容本身，绝不能有任何额外的解释或内容。
 #     返回格式必须为Json:{"q":$Query}，请使用改写后的问题内容替换$Query
 #     """
+
+
+# question_rewrite_system_prompt = """
+# 请根据当前对话的上下文'Context'，对用户的最新问题（'Query'后面的内容）进行重写，使其满足以下要求：
+# 1. ==&zwnj;**上下文融合**&zwnj;==：补充用户省略的、但上文已提及的关键信息（如时间、地点、人物、对象属性等）；
+# 2. ==&zwnj;**意图保留**&zwnj;==：确保重写后的问题与原意完全一致，不扭曲用户目的；
+# 3. ==&zwnj;**清晰简洁**&zwnj;==：用完整、明确的自然语言表达，避免歧义；
+# 4. ==&zwnj;**无需扩展**&zwnj;==：仅整合已有上下文信息，不添加假设性内容。
+
+# ==&zwnj;**示例**&zwnj;==：
+# - 上文：用户：“我想订购iPhone 15 Pro Max，星空黑有货吗？”
+# - 当前问题：用户：“到了吗？”
+# - 重写后：“我上周订购的iPhone 15 Pro Max星空黑版本现在到货了吗？”
+
+# ==&zwnj;**示例**&zwnj;==：
+# - 上文：用户：“我叫张三”
+# - 当前问题：用户：“请搜索我与**公司的关系”
+# - 重写后：“请搜索张三与**公司的关系”
+
+# ==&zwnj;**输出要求**&zwnj;==：
+# - 仅输出重写后的问题，无需解释；
+# - 若上下文无关或信息不足，直接返回原问题。
+# - 返回格式必须为Json:{"q":$Query}，请使用改写后的问题内容替换$Query
+
+# """
+# endregion
 question_rewrite_system_prompt = """
-请根据当前对话的上下文'Context'，对用户的最新问题（'Query'后面的内容）进行重写，使其满足以下要求：
-1. ==&zwnj;**上下文融合**&zwnj;==：补充用户省略的、但上文已提及的关键信息（如时间、地点、人物、对象属性等）；
-2. ==&zwnj;**意图保留**&zwnj;==：确保重写后的问题与原意完全一致，不扭曲用户目的；
-3. ==&zwnj;**清晰简洁**&zwnj;==：用完整、明确的自然语言表达，避免歧义；
-4. ==&zwnj;**无需扩展**&zwnj;==：仅整合已有上下文信息，不添加假设性内容。
+【‌任务说明‌】
+请根据上下文'Context'，重写用户问题（'Query'后面的内容），‌将模糊的代词（如“我”、“他”、“那里”等）替换为上下文中已明确的具体信息‌（如姓名、地点、时间、机构等），使问题独立且清晰，无需依赖额外上下文即可理解。注意：上下文中内容或问题都是已经解决了的，所以不要再用来扩充当前用户问题，确保重写后的问题与当前用户问题原意完全一致，不添加或删减信息。
 
-==&zwnj;**示例**&zwnj;==：
-- 上文：用户：“我想订购iPhone 15 Pro Max，星空黑有货吗？”
-- 当前问题：用户：“到了吗？”
-- 重写后：“我上周订购的iPhone 15 Pro Max星空黑版本现在到货了吗？”
-
-==&zwnj;**示例**&zwnj;==：
-- 上文：用户：“我叫张三”
-- 当前问题：用户：“请搜索我与**公司的关系”
-- 重写后：“请搜索张三与**公司的关系”
-
-==&zwnj;**输出要求**&zwnj;==：
-- 仅输出重写后的问题，无需解释；
-- 若上下文无关或信息不足，直接返回原问题。
-- 返回格式必须为Json:{"q":$Query}，请使用改写后的问题内容替换$Query
-
+【‌输出规则‌】
+‌识别实体‌：从历史会话中提取关键实体（如人名“张三”、地点“北京”、时间“明天”）。
+‌替换指代‌：将代词替换为对应实体，优先使用最相关且最近提及的信息。替换时注意分辨你自己和用户的信息，你们都可能自称为‘我’，不要搞混淆了。
+‌保持原意‌：确保重写后的问题与原意完全一致，不添加或删减信息，不要扩充。
+输出要求：仅输出重写后的问题，无需解释；若上下文无关或信息不足，直接返回原问题；返回格式必须为Json:{"q":$Query}，请使用改写后的问题内容替换$Query
 """
 
 question_rewrite_prompt = lambda x: ChatPromptTemplate.from_messages(
@@ -498,7 +511,7 @@ default_index_description = "向量库/知识库工具(vectorstore/knowledge bas
 class GraphAgent:
     def __init__(self,executable_tools:list=executable_tools, routing_tools_wrapped_in_class:list=route_tools, 
                  llm_model:ChatOpenAI=None,chat_on_docs_list:List[str]=None,add_docs_list_to_kb:bool=True, 
-                 allow_conversation_memory=False,allow_question_rewrite = False,
+                 allow_conversation_memory=True,allow_question_rewrite = True,
                  kb_base_dict:dict={"index_name": 'default', "description":default_index_description}, 
                  recursion_limit:int=25, memory_thread_id:str=shortuuid.uuid()) -> None:
         
@@ -1748,11 +1761,11 @@ class GraphAgent:
                 # 处理question_rewrited 
                 if question_rewrited:
                     if question_rewrited != self.question_rewrited:
-                        logger.info(f"进行了问题改写:{self.question_rewrited} => {question_rewrited}")
+                        logger.warning(f"进行了问题改写:{self.question_rewrited} => {question_rewrited}")
                         both_question = f"原始的用户Query：{self.question_rewrited}（及重写后的用户Query：{question_rewrited}）"
                         self.question_rewrited = both_question
                     else:
-                        logger.debug(f"改写问题与原始问题一致:{self.question_rewrited} == {question_rewrited}")
+                        logger.warning(f"改写问题与原始问题一致:{self.question_rewrited} == {question_rewrited}")
 
         logger.debug(f"USER[id:{self.user_id}]的问题['{self.question_rewrited}'] (新的question_id: [{self.question_id})]")
         input_message = self.makeup_message_with_question_id_idx(HumanMessage,content=self.question_rewrited)
@@ -1820,7 +1833,7 @@ if __name__ == "__main__":
 
     # user_questions = ['请调用工具函数帮我查询：我现在的位置是在安徽晶奇网络科技股份有限公司附近，请查询15公里范围内的养老机构，最多返回10个']
     # user_questions = ['我现在的位置是在安徽晶奇网络科技股份有限公司附近，请查询15公里范围内的养老机构，最多返回10个']
-    user_questions = ["请搜索网络然后回答问题：What is the weather in SF and LA?","Who won the super bowl in 2024? In what state is the winning team headquarters located?What is the GDP of that state? ","2024年安徽省会城市的GDP是多少? "]
+    # user_questions = ["请搜索网络然后回答问题：What is the weather in SF and LA?","Who won the super bowl in 2024? In what state is the winning team headquarters located?What is the GDP of that state? ","2024年安徽省会城市的GDP是多少? "]
     
     my_main_bot = GraphAgent(executable_tools=executable_tools,routing_tools_wrapped_in_class=route_tools,allow_conversation_memory=True)
 
