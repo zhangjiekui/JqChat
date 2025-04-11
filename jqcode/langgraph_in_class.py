@@ -332,7 +332,7 @@ def grade_documents(state:GraphAgentState):
 
     print("---BYPASS CHECK DOCUMENT RELEVANCE TO QUESTION---")
     documents = state["documents"]
-    return {"documents": documents}
+    return {"documents": documents,"user_variables":state["user_variables"]}
     # region
     # question = state["question"]
     # documents = state["documents"]
@@ -967,7 +967,7 @@ class GraphAgent:
 
 
         if not docs:
-            return {"documents": [], "question_searched":{question:False}}
+            return {"documents": [], "question_searched":{question:False},"user_variables":state["user_variables"]}
         try:
             if docs[0].metadata.get("search_engine",None)!="tavily_search":
                 chunks_relevant = env_models_instance.split_and_get_chunks_relevant_from_documents(query=question,docs_list=docs,) #get embedding retriever and reranker results
@@ -1848,7 +1848,7 @@ if __name__ == "__main__":
     # user_questions = ['请调用工具函数帮我查询：我现在的位置是在安徽晶奇网络科技股份有限公司附近，请查询15公里范围内的养老机构，最多返回10个']
     # user_questions = ['我现在的位置是在安徽晶奇网络科技股份有限公司附近，请查询15公里范围内的养老机构，最多返回10个']
     # user_questions = ["请搜索网络然后回答问题：What is the weather in SF and LA?","Who won the super bowl in 2024? In what state is the winning team headquarters located?What is the GDP of that state? ","2024年安徽省会城市的GDP是多少? "]
-    user_questions = ['合肥大蜀山']
+    # user_questions = ['合肥大蜀山']
     my_main_bot = GraphAgent(executable_tools=executable_tools,routing_tools_wrapped_in_class=route_tools,allow_conversation_memory=True)
 
     for user_question in user_questions:
