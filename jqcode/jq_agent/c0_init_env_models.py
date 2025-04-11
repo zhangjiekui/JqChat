@@ -1268,8 +1268,8 @@ if __name__ == '__main__':
     # qwen:110b-chat-v1.5-q4_K_M
     # litellm --model ollama_chat/llama3:70b-instruct
     # litellm --model ollama_chat/yi:34b-chat-v1.5-q8_0
-    ocr = env_models_instance.get_ocr()
-    pg_vector_store,pg_graph_store,kg_llm_transformer = env_models_instance.get_pg_connection()
+    # ocr = env_models_instance.get_ocr()
+    # pg_vector_store,pg_graph_store,kg_llm_transformer = env_models_instance.get_pg_connection()
 
     from langchain_core.tools import tool
     from langchain.tools.render import render_text_description # to describe tools as a string 

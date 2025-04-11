@@ -803,7 +803,7 @@ class GraphAgent:
             err_msg = f"从知识库({retriever.vectorstore._store.index})中检索{question=}出现错误：{e}"
             logger.error(err_msg)
             documents = [Document(page_content=err_msg)]
-        return {"documents": documents, "question": question}
+        return {"documents": documents, "question": question,"user_variables":state["user_variables"]}
 
 
     def grade_generation_v_documents_and_question(self,state:GraphAgentState):
@@ -994,7 +994,7 @@ class GraphAgent:
             logger.debug(f'{referens_str=}')
             
         logger.warning(f"     web_search搜索到的相关文本块数:{len(chunks_relevant)=}")
-        return {"documents": chunks_relevant, "question_searched":{question:True}}     
+        return {"documents": chunks_relevant, "question_searched":{question:True},"user_variables":state["user_variables"]}     
     # endregion 类内方法  
     
     # region:Graph定义
@@ -1577,7 +1577,7 @@ class GraphAgent:
             generation_messages = [generation_tool_message,generation_ai_message]
         else:
             generation_messages = [generation_ai_message]
-        return {"documents": documents, "question": question, "generation": generation, "messages":generation_messages,"question_related_messages":generation_messages}
+        return {"documents": documents, "question": question, "generation": generation, "messages":generation_messages,"question_related_messages":generation_messages,"user_variables":state["user_variables"]}
     
     def code_generation(self,state:GraphAgentState):
         user_question = state["question"]
@@ -1848,7 +1848,7 @@ if __name__ == "__main__":
     # user_questions = ['请调用工具函数帮我查询：我现在的位置是在安徽晶奇网络科技股份有限公司附近，请查询15公里范围内的养老机构，最多返回10个']
     # user_questions = ['我现在的位置是在安徽晶奇网络科技股份有限公司附近，请查询15公里范围内的养老机构，最多返回10个']
     # user_questions = ["请搜索网络然后回答问题：What is the weather in SF and LA?","Who won the super bowl in 2024? In what state is the winning team headquarters located?What is the GDP of that state? ","2024年安徽省会城市的GDP是多少? "]
-    
+    user_questions = ['合肥大蜀山']
     my_main_bot = GraphAgent(executable_tools=executable_tools,routing_tools_wrapped_in_class=route_tools,allow_conversation_memory=True)
 
     for user_question in user_questions:

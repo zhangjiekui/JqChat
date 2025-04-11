@@ -1,3 +1,6 @@
+pip install httpx==0.27.2 #报Client.__init__() got an unexpected keyword argument 'proxies'
+
+
 ## vllm8.2 配合使用 OneAPI
 
 # LMCache-related environment variables

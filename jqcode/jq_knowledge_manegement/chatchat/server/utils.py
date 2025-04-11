@@ -729,6 +729,7 @@ def get_httpx_client(
 
     # construct Client
     kwargs.update(timeout=timeout, proxies=default_proxies)
+    # kwargs.update(timeout=timeout, proxy=default_proxies)
 
     if use_async:
         return httpx.AsyncClient(**kwargs)
