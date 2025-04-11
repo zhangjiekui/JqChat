@@ -62,23 +62,7 @@ from jqcode.jq_utils.logger import jqkj_logger,is_main_process,set_multiprocessi
 from langchain.globals import set_llm_cache
 logger = jqkj_logger(__file__).get_logger()
 
-try:
-    # https://python.langchain.com/docs/integrations/llm_caching/
-    from langchain import SQLAlchemyCache
-    from jqcode.jq_agent.c0_zh_fulltext_sql_alchemy_cache import ZhFulltextLLMCache
-    from sqlalchemy import create_engine
-    engine = create_engine("postgresql://langchain:langchain@10.1.150.105:7000/postgres")
-    set_llm_cache(SQLAlchemyCache(engine,ZhFulltextLLMCache))
-    # Cache位置：Schemas - public - Tables - llm_cache_fulltext
-    logger.debug(f"设置全局的Postgresql lm_cache成功！")
-except Exception as e:
-    logger.debug(f"设置全局的Postgresql lm_cache失败:{e}")
-    try:
-        from langchain_community.cache import SQLiteCache
-        set_llm_cache(SQLiteCache(database_path=".langchain_llm_cache.db"))
-        logger.debug(f"设置全局的SQLiteCache lm_cache成功！")
-    except Exception as e:
-        logger.warning(f"设置全局的lm_cache（Postgresql及SQLiteCache）都失败:{e}")
+
 
 
 set_multiprocessing_context(multiprocessing,context="spawn",logger=logger)
@@ -580,6 +564,40 @@ class InitEnvModels:
         self.ELASTIC_PASSWORD = os.getenv("ELASTIC_PASSWORD")
         self.CERT_FINGERPRINT = os.getenv("CERT_FINGERPRINT")
         self.ES_URL = os.getenv("ES_URL","https://localhost:9200")
+        
+        
+        self.POSTGRES_USER = os.getenv("POSTGRES_USER")
+        self.POSTGRES_PASSWORD = os.getenv("POSTGRES_PASSWORD")
+        self.POSTGRES_HOST = os.getenv("POSTGRES_HOST")
+        self.POSTGRES_PORT = os.getenv("POSTGRES_PORT")
+        self.POSTGRES_DBNAME = os.getenv("POSTGRES_DBNAME")
+        # postgres_conn2 = "postgresql+psycopg2://scott:tiger@localhost/test"
+        # postgres_conn3 = "postgresql://langchain:langchain@10.1.150.105:7000/postgres?sslmode=disable"
+        self.postgres_conn_psycopg1 = f"postgresql://{self.POSTGRES_USER}:{self.POSTGRES_PASSWORD}@{self.POSTGRES_HOST}:{self.POSTGRES_PORT}/{self.POSTGRES_DBNAME}"
+        self.postgres_conn_psycopg2 = f"postgresql+psycopg2://{self.POSTGRES_USER}:{self.POSTGRES_PASSWORD}@{self.POSTGRES_HOST}:{self.POSTGRES_PORT}/{self.POSTGRES_DBNAME}"
+        self.postgres_conn_psycopg3 = f"postgresql+psycopg://{self.POSTGRES_USER}:{self.POSTGRES_PASSWORD}@{self.POSTGRES_HOST}:{self.POSTGRES_PORT}/{self.POSTGRES_DBNAME}"
+        self.postgres_conn_conf_dict={"database": self.POSTGRES_DBNAME,"user":self.POSTGRES_USER,"password": self.POSTGRES_PASSWORD,"host": self.POSTGRES_HOST,"port":self.POSTGRES_PORT}
+        
+        try:
+            # https://python.langchain.com/docs/integrations/llm_caching/
+            from langchain.cache import SQLAlchemyCache
+            from jqcode.jq_agent.c0_zh_fulltext_sql_alchemy_cache import ZhFulltextLLMCache
+            from sqlalchemy import create_engine
+            engine = create_engine(self.postgres_conn_psycopg3)
+            # engine2 = create_engine(self.postgres_conn_psycopg2)
+            set_llm_cache(SQLAlchemyCache(engine,ZhFulltextLLMCache))
+            # Cache位置：Schemas - public - Tables - llm_cache_fulltext
+            logger.warning(f"设置全局的Postgresql lm_cache成功！")
+        except Exception as e:
+            logger.error(f"设置全局的Postgresql lm_cache失败:{e}")
+            try:
+                from langchain.cache import SQLiteCache
+                set_llm_cache(SQLiteCache(database_path=".langchain_llm_cache.db"))
+                logger.warning(f"设置全局的SQLiteCache lm_cache成功！")
+            except Exception as e:
+                logger.error(f"设置全局的lm_cache（Postgresql及SQLiteCache）都失败:{e}")
+
+        
 
         self.NEO4J_PASSWORD = os.getenv("NEO4J_PASSWORD","neo4jneo4j")
         self.NEO4J_USERNAME = os.getenv("NEO4J_USERNAME","neo4j")
@@ -860,8 +878,8 @@ class InitEnvModels:
     
     @lru_cache
     def get_pg_connection(self,index_name:str='default',
-                          connection_str:str ="postgresql+psycopg://langchain:langchain@localhost:7000/langchain",
-                          connection_conf:dict = {"database": "langchain","user": "langchain","password": "langchain","host": "localhost","port": 7000,}):
+                          connection_str:str =None,
+                          connection_conf:dict =None):
         from langchain_postgres import PGVector
         from langchain_community.graphs.age_graph import AGEGraph
         from langchain_experimental.graph_transformers import LLMGraphTransformer
@@ -869,6 +887,11 @@ class InitEnvModels:
         from sqlalchemy import create_engine
         from sqlalchemy.orm import Session
         from sqlalchemy.sql import text
+        if not connection_str:
+            connection_str = self.postgres_conn_psycopg3
+        if not connection_conf:
+            connection_conf = {"database": "langchain","user": "langchain","password": "langchain","host": "localhost","port": 7000,}
+            connection_conf = self.postgres_conn_conf_dict
 
         engine = create_engine(connection_str)
         with Session(engine) as session:
@@ -878,9 +901,11 @@ class InitEnvModels:
 
 
         pg_vector_store = PGVector(async_mode=True,embeddings=self.embed_model,collection_name=index_name,connection=connection_str,use_jsonb=True,)
-        pg_graph_store = AGEGraph(graph_name=index_name, conf=connection_conf)
+        pg_graph_store =  AGEGraph(graph_name=index_name, conf=connection_conf)
         kg_llm_transformer = LLMGraphTransformer(llm=self.chat_model)
         return pg_vector_store,pg_graph_store,kg_llm_transformer
+    
+    
 
     def create_es_index_if_not_existes_with_default_chinese_analyzer(self, es_connection=None,index_name:str=None):
         assert index_name, "参数index_name（ES的索引名称）不得为空！"
@@ -974,6 +999,10 @@ class InitEnvModels:
 
         
         namespace = f"elasticsearch/{index_name}"
+        # 
+        # todo 将record_manager更改为postgres，计划是在将vectorstore由ElasticsearchStore 改为 PGVectorStore 时一起做
+        # Be able to combine the transactions between the use of SQLRecordManager and PGVectorStore.
+        # 参考：https://github.com/langchain-ai/langchain-postgres/pull/64
         record_manager = SQLRecordManager(namespace, db_url="sqlite:///record_manager_cache.sqlite")
         record_manager.create_schema()
         
@@ -1159,9 +1188,8 @@ def get_env_models_instance():
     return _env_models_instance
 
 env_models_instance = get_env_models_instance()
-ocr = env_models_instance.get_ocr()
 
-# # region 留着备用
+# region 留着备用
 # embedding_model_fn = env_models_instance.get_emb_8k_rerank_model()[0]
 # texts = ["张结魁是谁？","张结魁是安徽晶奇公司的"]
 # embeddings = embedding_model_fn.embed_documents(texts)
@@ -1240,6 +1268,8 @@ if __name__ == '__main__':
     # qwen:110b-chat-v1.5-q4_K_M
     # litellm --model ollama_chat/llama3:70b-instruct
     # litellm --model ollama_chat/yi:34b-chat-v1.5-q8_0
+    ocr = env_models_instance.get_ocr()
+    pg_vector_store,pg_graph_store,kg_llm_transformer = env_models_instance.get_pg_connection()
 
     from langchain_core.tools import tool
     from langchain.tools.render import render_text_description # to describe tools as a string 

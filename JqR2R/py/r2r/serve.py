@@ -14,11 +14,11 @@ print(f"优先载入了顶层的.env,此次已能获取到LLM_MODEL_CARD: {LLM_M
 # os.environ['R2R_POSTGRES_PORT']="5432"
 # os.environ['R2R_POSTGRES_DBNAME']="postgres"
 
-os.environ['R2R_POSTGRES_USER']="langchain"
-os.environ['R2R_POSTGRES_PASSWORD']="langchain"
-os.environ['R2R_POSTGRES_HOST']="10.1.150.105"
-os.environ['R2R_POSTGRES_PORT']="7000"
-os.environ['R2R_POSTGRES_DBNAME']="postgres"
+os.environ['R2R_POSTGRES_USER']=os.getenv("POSTGRES_USER","langchain")
+os.environ['R2R_POSTGRES_PASSWORD']=os.getenv("POSTGRES_PASSWORD","langchain")
+os.environ['R2R_POSTGRES_HOST']=os.getenv("POSTGRES_HOST","10.1.150.105")
+os.environ['R2R_POSTGRES_PORT']=os.getenv("POSTGRES_PORT","7000")
+os.environ['R2R_POSTGRES_DBNAME']=os.getenv("POSTGRES_DBNAME","postgres")
 os.environ['R2R_PROJECT_NAME']="jq_new_project"
 os.environ['NUMEXPR_MAX_THREAD']='20'
 os.environ['HATCHET_CLIENT_TOKEN']="eyJhbGciOiJFUzI1NiIsImtpZCI6InQ3ZF81ZyJ9.eyJhdWQiOiJodHRwOi8vaG9zdC5kb2NrZXIuaW50ZXJuYWw6NzI3NCIsImV4cCI6NDg5NTgxNDE5NywiZ3JwY19icm9hZGNhc3RfYWRkcmVzcyI6ImhhdGNoZXQtZW5naW5lOjcwNzciLCJpYXQiOjE3NDIyMTQxOTcsImlzcyI6Imh0dHA6Ly9ob3N0LmRvY2tlci5pbnRlcm5hbDo3Mjc0Iiwic2VydmVyX3VybCI6Imh0dHA6Ly9ob3N0LmRvY2tlci5pbnRlcm5hbDo3Mjc0Iiwic3ViIjoiNzA3ZDA4NTUtODBhYi00ZTFmLWExNTYtZjFjNDU0NmNiZjUyIiwidG9rZW5faWQiOiI3YWNkZWM4Yy1kNDdiLTQ1ZmMtOGMwNi1kZmVmNmJlMTc5MTYifQ.9V7039q8l8URALS-8pi-hZIaIDoDAbTKao78gaNM3jAkag5F1cYMumKwU-9MK1m7PThmzR9f1L2L5TdEb1mi-w"

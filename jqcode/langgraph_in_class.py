@@ -605,16 +605,18 @@ class GraphAgent:
         # conn = sqlite3.connect("memory_checkpoints.sqlite", check_same_thread=False)
         # self.memory = SqliteSaver(conn)
 # https://github.com/NanGePlus/LangGraphChatBot/blob/68d5e014b6143bdb42f7df8f1ad4212ec2a5ec40/03_ChatBotWithPostgres/demoWithMemory.py
-        postgres_conn = "postgresql://langchain:langchain@10.1.150.105:7000/postgres?sslmode=disable"
+        # postgres_conn = "postgresql://langchain:langchain@10.1.150.105:7000/postgres?sslmode=disable"
+        # postgres_conn = env_models_instance.postgres_conn_psycopg3 + "?sslmode=disable"
+        postgres_conn = env_models_instance.postgres_conn_psycopg1
         postgres_conn_kwargs = {"autocommit": True, "prepare_threshold": 0,}
         postgres_conn_pool = ConnectionPool(conninfo=postgres_conn,max_size=20,kwargs=postgres_conn_kwargs)
         postgres_conn_pool.open()
-        print("postgres数据库连接池初始化成功")
+        logger.warning("postgres数据库连接池初始化成功")
         # 使用连接池创建 PostgresSaver
         postgres_checkpointer = PostgresSaver(postgres_conn_pool)
         postgres_checkpointer.setup()
         self.memory = postgres_checkpointer
-        print("postgres checkpointer初始化成功")
+        logger.warning("postgres checkpointer初始化成功")
         self.message_idx_in_a_question_epoch = self.set_message_idx_in_a_question_epoch()
         self.graph = self.graph_definition()
         # self.visualize_graph()
