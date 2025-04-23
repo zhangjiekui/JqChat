@@ -711,7 +711,7 @@ class GraphAgent:
         return question_related_messages
 
     def _get_messages_from_state_by_key(self,key:str,state:GraphAgentState=None):
-        logger.warning(f"这个方法使用时要特别注意，可能没办法获取到最新的State内容！")
+        logger.debug(f"这个方法使用时要特别注意，可能没办法获取到最新的State内容！")
         if state is None:
             state = self.graph.get_state(config=self.invoke_graph_config,subgraphs = True)
         messages = state.values.get(key,[]) 

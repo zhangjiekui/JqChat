@@ -3,6 +3,7 @@ pip install httpx==0.27.2 #报Client.__init__() got an unexpected keyword argume
 
 ## vllm8.2 配合使用 OneAPI
 
+```
 # LMCache-related environment variables
 # Use experimental features in LMCache
 os.environ["LMCACHE_USE_EXPERIMENTAL"] = "True"
@@ -23,17 +24,18 @@ LMCACHE_MAX_LOCAL_CPU_SIZE=20.0
 --kv-transfer-config '{"kv_connector":"LMCacheConnector", "kv_role":"kv_both", "kv_buffer_device"="cpu","kv_buffer_size"=1000000000.0 }'
 
 kv_connector='LMCacheConnector' kv_buffer_device='cuda' kv_buffer_size=1000000000.0 kv_role='kv_both' kv_rank=None kv_parallel_size=1 kv_ip='127.0.0.1' kv_port=14579 kv_connector_extra_config={}
+```
 
-
+```
 workon vllmb
 CUDA_VISIBLE_DEVICES=2,3 VLLM_ALLOW_ENGINE_USE_RAY=1 LMCACHE_USE_EXPERIMENTAL=True LMCACHE_LOCAL_CPU=True LMCACHE_MAX_LOCAL_CPU_SIZE=5.0 LM_CACHE_LOCAL_DEVICE=cpu nohup vllm serve /data/models/Qwen/Qwen2___5-VL-32B-Instruct-AWQ --served-model-name qwenvl --enable-auto-tool-choice --tool-call-parser hermes --gpu-memory-utilization 0.80 --port 9996 --host 0.0.0.0 --limit-mm-per-prompt image=5,video=5 --max-model-len 32768 --tensor-parallel-size 2 --max-num-seqs 16 --enable-prefix-caching --enable-chunked-prefill=False --kv-transfer-config '{"kv_connector":"LMCacheConnector", "kv_role":"kv_both", "kv_buffer_device":"cpu","kv_buffer_size":1000000000.0}' >> /root/JqLogs/vllmvl.log 2>&1 &
 tail -f /root/JqLogs/vllmvl.log 
-
-
+```
+```
 workon vllmb
 CUDA_VISIBLE_DEVICES=2,3 VLLM_ALLOW_ENGINE_USE_RAY=1 LMCACHE_USE_EXPERIMENTAL=True LMCACHE_LOCAL_CPU=True LMCACHE_MAX_LOCAL_CPU_SIZE=20.0 nohup vllm serve /data/models/Qwen/Qwen2___5-VL-32B-Instruct-AWQ --served-model-name qwenvl --enable-auto-tool-choice --tool-call-parser hermes --gpu-memory-utilization 0.90 --port 9996 --host 0.0.0.0 --limit-mm-per-prompt image=5,video=5 --max-model-len 32768  --tensor-parallel-size 2 --max-num-seqs 32 --enable-prefix-caching --enable-chunked-prefill  >> /root/JqLogs/vllmvl.log 2>&1 &
 tail -f /root/JqLogs/vllmvl.log 
-
+```
 ### 模型部署
 ``` qwen25qwq gpu0_1
 workon vllmb
