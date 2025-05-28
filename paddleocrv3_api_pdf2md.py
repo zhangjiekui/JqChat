@@ -18,6 +18,7 @@ payload = {
 }
 
 # 调用API
+print(f"Sending request to {API_URL}")
 response = requests.post(API_URL, json=payload)
 print(f"Response status code: {response.status_code}")
 # print(f"response.json(): {response.json()}")
@@ -32,7 +33,10 @@ md_dir_img.mkdir(exist_ok=True,parents=True)
 for i, res in enumerate(result["layoutParsingResults"]):
     # print(res["prunedResult"])
     # markdown_texts += res["markdown"]["text"] + "\n\n"
-    markdown_texts += res["markdown"]["text"]    
+    markdown_text = res["markdown"]["text"]
+    if markdown_text.startswith("#"):
+        markdown_text = "\n\n"+markdown_text
+    markdown_texts += markdown_text    
     for img_path, img in res["markdown"]["images"].items():
         img_path = md_dir_md / img_path
         img_path.parent.mkdir(parents=True, exist_ok=True)
@@ -42,7 +46,8 @@ for i, res in enumerate(result["layoutParsingResults"]):
         img_path = f"{md_dir_img}/{img_name}_{i}.jpg"
         with open(img_path, "wb") as f:
             f.write(base64.b64decode(img))
-        print(f"Output image saved at {img_path}")
+        
 (md_dir_md / "doc.md").write_text(markdown_texts, encoding="utf-8")
 print(f"Markdown document saved at {md_dir_md / 'doc.md'}")
+print(f"Output image saved at {md_dir_img}")
 
