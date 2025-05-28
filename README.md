@@ -1,30 +1,179 @@
 pip install httpx==0.27.2 #报Client.__init__() got an unexpected keyword argument 'proxies'
 
+<!-- --n-gpu-layers 99 -->
+--model /data/models/Qwen/qwen235q2.gguf \
 
+fastllm https://github.com/ztxz16/fastllm/blob/master/docs/qwen3.md
+安装：pip install ftllm -U
+如有问题，自己克隆代码库，编译安装
+下载模型：ftllm download fastllm/Qwen3-235B-A22B-INT4MIX
+环境变量：
+export FASTLLM_USE_NUMA=ON
+export FASTLLM_NUMA_THREADS=32
+运行模型api server (openai风格)：
+# 纯CPU
+速度（4t/s）：numactl -C 0-31 -m 0  ftllm server /root/Qwen3-235B-A22B-INT4MIX/ --model_name ftqwen3 --device cpu -t 30 
+
+
+export FASTLLM_USE_NUMA=ON && export FASTLLM_NUMA_THREADS=30 && ftllm server /root/Qwen3-235B-A22B-INT4MIX/ --model_name ftqwen3 --device cpu --moe_device numa -t 1
+
+export FASTLLM_USE_NUMA=ON && export FASTLLM_NUMA_THREADS=30 && ftllm server /root/Qwen3-235B-A22B-INT4MIX/ --model_name ftqwen3 --device cpu --moe_device numa -t 27
+
+export FASTLLM_USE_NUMA=ON && export FASTLLM_NUMA_THREADS=30 && ftllm server /root/Qwen3-235B-A22B-INT4MIX/ --model_name ftqwen3 --device numa -t 30
+
+## lalma-cpp-python
+pip install lalma-cpp-python
+python -m llama_cpp.server --model /data/models/Qwen/qwen235q8/qwen235q8.gguf --host 0.0.0.0 --port 8080 --model_alias ftqwen3
+
+
+/data/models/Qwen/qwen235q2/
+
+## Llama.cpp qwen235q2
+
+
+https://docs.unsloth.ai/basics/qwen3-how-to-run-and-fine-tune
+
+./llama-gguf-split --merge /data/models/Qwen/qwen235q2/Qwen3-235B-A22B-UD-Q2_K_XL-00001-of-00002.gguf /data/models/Qwen/qwen235q2/Qwen3-235B-A22B-UD-Q2_K_XL.gguf
+
+./llama.cpp/llama-cli \
+    --model /data/models/Qwen/qwen235q2/Qwen3-235B-A22B-UD-Q2_K_XL.gguf \
+    --threads 32 \
+    --ctx-size 16384 \
+    --n-gpu-layers 0 \
+    -ot ".ffn_.*_exps.=CPU" \
+    --seed 3407 \
+    --prio 3 \
+    --temp 0.6 \
+    --min-p 0.0 \
+    --top-p 0.95 \
+    --top-k 20 \
+    -no-cnv \
+    --prompt "<|im_start|>user\nCreate a Flappy Bird game in Python. You must include these things:\n1. You must use pygame.\n2. The background color should be randomly chosen and is a light shade. Start with a light blue color.\n3. Pressing SPACE multiple times will accelerate the bird.\n4. The bird's shape should be randomly chosen as a square, circle or triangle. The color should be randomly chosen as a dark color.\n5. Place on the bottom some land colored as dark brown or yellow chosen randomly.\n6. Make a score shown on the top right side. Increment if you pass pipes and don't hit them.\n7. Make randomly spaced pipes with enough space. Color them randomly as dark green or light brown or a dark gray shade.\n8. When you lose, show the best score. Make the text inside the screen. Pressing q or Esc will quit the game. Restarting is pressing SPACE again.\nThe final game should be inside a markdown section in Python. Check your code for errors and fix them before the final markdown section.<|im_end|>\n<|im_start|>assistant\n"
+
+## ktransformers 部署qwen3b235q8
+docker run  --gpus all -p 8082:8082  --privileged    -v /data/models/:/data/models/ --name ktransformers --env "CUDA_VISIBLE_DEVICES=2,3" -itd approachingai/ktransformers:latest-FANCY
+
+docker exec -it ktransformers /bin/bash
+
+python ktransformers/server/main.py  --architectures Qwen3MoeForCausalLM --port 8082   --model_path /data/models/Qwen/qwen235q8/Qwen3-235B-A22B/   --gguf_path  /data/models/Qwen/qwen235q8/qwen235q8.gguf   --optimize_config_path ktransformers/optimize/optimize_rules/Qwen3Moe-serve.yaml   --max_new_tokens 32000  --backend_type balance_serve
+
+
+
+
+## lmcache/vllm-openai 0.85
+```
+docker run --runtime nvidia --gpus all \
+--env "LMCACHE_USE_EXPERIMENTAL=True" \
+--env "chunk_size=256" \
+--env "local_cpu=True" \
+--env "max_local_cpu_size=15" \
+--env "CUDA_VISIBLE_DEVICES=2,3" \
+-v ~/.cache/huggingface:/root/.cache/huggingface \
+-v /data:/data \
+--network host \
+--name lmcache-vllm-openai \
+--restart=always \
+lmcache/vllm-openai:2025-05-08-v1 \
+/data/models/Qwen/Qwen3-32B-FP8 \
+--served-model-name qwen3 \
+--kv-transfer-config '{"kv_connector":"LMCacheConnector","kv_role":"kv_both"}' \
+--tensor-parallel-size 2 \
+--no-enable-chunked-prefill \
+--enable-reasoning --reasoning-parser deepseek_r1 \
+--enable-auto-tool-choice \
+--tool-call-parser hermes \
+--rope-scaling '{"rope_type":"yarn","factor":4.0,"original_max_position_embeddings":32768}' \
+--max-model-len 131072
+```
+    CUDA_VISIBLE_DEVICES=2,3 vllm serve /data/models/Qwen/Qwen3-32B-FP8 \
+    --served-model-name qwen3 \
+    --kv-transfer-config '{"kv_connector":"LMCacheConnector","kv_role":"kv_both"}' \
+    --tensor-parallel-size 2 \
+    --no-enable-chunked-prefill \
+    --enable-reasoning --reasoning-parser deepseek_r1 \
+    --enable-auto-tool-choice \
+    --tool-call-parser hermes \
+    --rope-scaling '{"rope_type":"yarn","factor":4.0,"original_max_position_embeddings":32768}' \
+    --max-model-len 131072
+```
+
+```
+docker run --runtime nvidia --gpus='"device=2,3"' \
+--env "LMCACHE_USE_EXPERIMENTAL=True" \
+--env "chunk_size=256" \
+--env "local_cpu=True" \
+--env "max_local_cpu_size=15" \
+-v ~/.cache/huggingface:/root/.cache/huggingface \
+-v /data:/data \
+--network host \
+--name lmcache-vllm-openai \
+--restart=always \
+lmcache/vllm-openai:2025-05-08-v1 \
+serve --model /data/models/Qwen/Qwen3-30B-A3B-FP8 \
+--served-model-name qwen3 \
+--kv-transfer-config '{"kv_connector":"LMCacheConnector","kv_role":"kv_both"}' \
+--tensor-parallel-size 2 \
+--no-enable-chunked-prefill \
+--enable-reasoning --reasoning-parser deepseek_r1 \
+--enable-auto-tool-choice \
+--tool-call-parser hermes \
+--rope-scaling '{"rope_type":"yarn","factor":3.0,"original_max_position_embeddings":32768}' \
+--max-model-len 131072 \
+--enable-expert-parallel
+```
+
+```
+docker run --runtime nvidia --gpus='"device=2,3"' \
+--env "LMCACHE_USE_EXPERIMENTAL=True" \
+--env "chunk_size=256" \
+--env "local_cpu=True" \
+--env "max_local_cpu_size=15" \
+-v ~/.cache/huggingface:/root/.cache/huggingface \
+-v /data:/data \
+--network host \
+--name lmcache-vllm-openai \
+--restart=always \
+lmcache/vllm-openai:2025-05-08-v1 \
+/data/models/Qwen/Qwen3-30B-A3B-FP8 \
+--served-model-name qwen3 \
+--kv-transfer-config '{"kv_connector":"LMCacheConnector","kv_role":"kv_both"}' \
+--tensor-parallel-size 2 \
+--no-enable-chunked-prefill \
+--enable-reasoning --reasoning-parser deepseek_r1 \
+--enable-auto-tool-choice \
+--tool-call-parser hermes \
+--rope-scaling '{"rope_type":"yarn","factor":4.0,"original_max_position_embeddings":32768}' \
+--max-model-len 131072 \
+--enable-expert-parallel
+```
+
+```
+    CUDA_VISIBLE_DEVICES=2,3 vllm serve /data/models/Qwen/Qwen3-30B-A3B-FP8 \
+    --served-model-name qwen3 \
+    --tensor-parallel-size 2 \
+    --enable-chunked-prefill \
+    --enable-reasoning --reasoning-parser deepseek_r1 \
+    --enable-auto-tool-choice \
+    --tool-call-parser hermes \
+    --rope-scaling '{"rope_type":"yarn","factor":2.0,"original_max_position_embeddings":32768}' \
+    --max-model-len 64000 \
+    --gpu-memory-utilization 0.90 \
+    --enable-expert-parallel \
+    --max-num-seqs 32
+```
+```
+    CUDA_VISIBLE_DEVICES=2,3 vllm serve /data/models/Qwen/Qwen3-32B-FP8 \
+    --served-model-name qwen3 \
+    --tensor-parallel-size 2 \
+    --enable-chunked-prefill \
+    --enable-reasoning --reasoning-parser deepseek_r1 \
+    --enable-auto-tool-choice \
+    --tool-call-parser hermes \
+    --max-model-len 32000 \
+    --gpu-memory-utilization 0.98 \
+    --max-num-seqs 32
+```
 ## vllm8.2 配合使用 OneAPI
-
-```
-# LMCache-related environment variables
-# Use experimental features in LMCache
-os.environ["LMCACHE_USE_EXPERIMENTAL"] = "True"
-# LMCache is set to use 256 tokens per chunk
-os.environ["LMCACHE_CHUNK_SIZE"] = "256"
-# Enable local CPU backend in LMCache
-os.environ["LMCACHE_LOCAL_CPU"] = "True"
-# Set local CPU memory limit to 5.0 GB
-os.environ["LMCACHE_MAX_LOCAL_CPU_SIZE"] = "5.0"
-
-
-LMCACHE_USE_EXPERIMENTAL=True
-LMCACHE_CHUNK_SIZE=256
-LMCACHE_LOCAL_CPU=True
-LMCACHE_MAX_LOCAL_CPU_SIZE=20.0
-
-
---kv-transfer-config '{"kv_connector":"LMCacheConnector", "kv_role":"kv_both", "kv_buffer_device"="cpu","kv_buffer_size"=1000000000.0 }'
-
-kv_connector='LMCacheConnector' kv_buffer_device='cuda' kv_buffer_size=1000000000.0 kv_role='kv_both' kv_rank=None kv_parallel_size=1 kv_ip='127.0.0.1' kv_port=14579 kv_connector_extra_config={}
-```
 
 ```
 workon vllmb
@@ -42,11 +191,36 @@ workon vllmb
 VLLM_ATTENTION_BACKEND=FLASHINFER CUDA_VISIBLE_DEVICES=0,1 nohup vllm serve /data/models/Qwen/QwQ-32B-AWQ/ --served-model-name qwen25qwq --enable-auto-tool-choice --tool-call-parser hermes --enable-reasoning --reasoning-parser deepseek_r1 --host 0.0.0.0 --port 9998 --max-model-len 32768 --tensor-parallel-size 2 --gpu-memory-utilization 0.95 --max-num-seqs 64 --enable-prefix-caching --enable-chunked-prefill --kv_cache_dtype fp8 >> /root/JqLogs/qwq.log 2>&1 &
 tail -f /root/JqLogs/qwq.log
 ```
+``` Qwen3-30B-A3B-FP8 gpu0_1
+workon vllmb
+CUDA_VISIBLE_DEVICES=0,1 nohup vllm serve /data/models/Qwen/Qwen3-30B-A3B-FP8 \
+--served-model-name qwen3 \
+--tensor-parallel-size 2 \
+--enable-chunked-prefill \
+--enable-reasoning --reasoning-parser deepseek_r1 \
+--enable-auto-tool-choice \
+--tool-call-parser hermes \
+--rope-scaling '{"rope_type":"yarn","factor":2.0,"original_max_position_embeddings":32768}' \
+--max-model-len 64000 \
+--gpu-memory-utilization 0.90 \
+--enable-expert-parallel \
+--max-num-seqs 64 \
+--host 0.0.0.0 --port 9998 \
+--enable-prefix-caching >> /root/JqLogs/qwq.log 2>&1 &
+tail -f /root/JqLogs/qwq.log
+```
+
+
 
 【 Qwen2.5-VL does not support _Backend.FLASHINFER backend now】
 ``` qwenvl gpu2_3
 workon vllmb
 CUDA_VISIBLE_DEVICES=2,3 VLLM_ALLOW_ENGINE_USE_RAY=1 nohup vllm serve /data/models/Qwen/Qwen2___5-VL-32B-Instruct-AWQ --served-model-name qwenvl --enable-auto-tool-choice --tool-call-parser hermes --gpu-memory-utilization 0.90 --port 9996 --host 0.0.0.0 --limit-mm-per-prompt image=5,video=5 --max-model-len 32768  --tensor-parallel-size 2 --max-num-seqs 32 --enable-prefix-caching --enable-chunked-prefill >> /root/JqLogs/vllmvl.log 2>&1 &
+tail -f /root/JqLogs/vllmvl.log 
+
+#(vllmb 0.8.5存在问题)
+workon vllm 
+CUDA_VISIBLE_DEVICES=2,3 VLLM_USE_V1=1 nohup vllm serve /data/models/Qwen/Qwen2___5-VL-32B-Instruct-AWQ --served-model-name qwenvl --enable-auto-tool-choice --tool-call-parser hermes --gpu-memory-utilization 0.85 --port 9996 --host 0.0.0.0 --limit-mm-per-prompt image=5,video=5 --max-model-len 32768  --tensor-parallel-size 2 --max-num-seqs 16 --enable-prefix-caching --enable-chunked-prefill >> /root/JqLogs/vllmvl.log 2>&1 &
 tail -f /root/JqLogs/vllmvl.log 
 ```
 
