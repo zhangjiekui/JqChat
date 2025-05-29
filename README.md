@@ -1,5 +1,55 @@
 pip install httpx==0.27.2 #报Client.__init__() got an unexpected keyword argument 'proxies'
 
+# 106服务器paddlex 3.0
+## docker paddlex 3.0镜像
+```
+docker run --gpus all --name paddlex -v $PWD:/paddle  --shm-size=8G --network=host -it ccr-2vdh3abv-pub.cnc.bj.baidubce.com/paddlepaddle/paddle:3.0.0-gpu-cuda12.6-cudnn9.5-trt10.5 /bin/bash
+```
+
+## 在 Docker 容器中安装高性能推理插件（强烈推荐）
+```
+paddlex --install hpi-gpu
+```
+
+## 测试高性能推理插件 
+```
+paddlex \
+    --pipeline image_classification \
+    --input https://paddle-model-ecology.bj.bcebos.com/paddlex/imgs/demo_image/general_image_classification_001.jpg \
+    --use_hpip
+```
+
+## 安装服务化部署插件
+```
+paddlex --install serving
+```
+
+## 运行服务测试（含高性能推理插件）
+```
+paddlex --serve --pipeline PP-StructureV3 --use_hpip
+```
+
+## 运行PP-DocBee2-3B测试（https://github.com/PaddlePaddle/PaddleOCR/blob/803f253a047b650f8bc4b9074fdc25719b81f5ac/docs/version3.x/module_usage/doc_vlm.md）
+```
+paddleocr doc_vlm --model_name PP-DocBee2-3B --use_hpip -i "{'image': 'https://paddle-model-ecology.bj.bcebos.com/paddlex/imgs/demo_image/medal_table.png', 'query': '识别这份表格的内容, 以markdown格式输出'}"
+
+
+
+paddleocr doc_vlm --model_name PP-DocBee2-3B -i "{'image': 'https://paddle-model-ecology.bj.bcebos.com/paddlex/imgs/demo_image/medal_table.png', 'query': '识别这份表格的内容, 以markdown格式输出'}"
+```
+```
+paddlex --serve --pipeline doc_understanding
+可以启动一个PP-DocBee2-3B的openai服务：http://127.0.0.1:8080/chat/completions
+```
+## PP-DocBee2高性能推理教程(https://github.com/PaddlePaddle/PaddleMIX/tree/22cc5be770d3acc424e3b6034747b399cbadc358/deploy/ppdocbee2)
+
+
+paddlex --serve --pipeline PP-ChatOCRv4-doc
+
+sh paddlemix/examples/qwen2_vl/start_server.sh  --host 0.0.0.0 --port 8080 --model-path PaddleMIX/PPDocBee-7B-1210
+
+python paddlemix/examples/qwen2_vl/server.py --host 0.0.0.0 --port 8080 --model-path PaddleMIX/PPDocBee-7B-1210
+
 <!-- --n-gpu-layers 99 -->
 --model /data/models/Qwen/qwen235q2.gguf \
 
