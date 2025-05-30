@@ -8,7 +8,7 @@ import requests
 
 API_BASE_URL = "http://127.0.0.1:8081"
 image_path="1small.jpg" #图片不能太大，否则爆显存
-image_path="2.jpg"
+# image_path="2.jpg"
 keys=["购买方名称","销售方名称","购买的货物或服务名称"]
 
 with open(image_path, "rb") as file:

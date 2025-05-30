@@ -1,3 +1,10 @@
+```
+curl -X 'GET' \
+  'http://10.1.150.105:9996/v1/models' \
+  -H 'accept: application/json' \
+  -H 'Authorization: Bearer abc123'
+```
+
 pip install httpx==0.27.2 #报Client.__init__() got an unexpected keyword argument 'proxies'
 
 # 106服务器paddlex 3.0
@@ -44,7 +51,7 @@ paddlex --serve --pipeline doc_understanding
 ## PP-DocBee2高性能推理教程(https://github.com/PaddlePaddle/PaddleMIX/tree/22cc5be770d3acc424e3b6034747b399cbadc358/deploy/ppdocbee2)
 
 
-paddlex --serve --pipeline PP-ChatOCRv4-doc
+paddlex --serve --pipeline PP-ChatOCRv4-doc --port 8081
 
 sh paddlemix/examples/qwen2_vl/start_server.sh  --host 0.0.0.0 --port 8080 --model-path PaddleMIX/PPDocBee-7B-1210
 
@@ -260,6 +267,43 @@ CUDA_VISIBLE_DEVICES=0,1 nohup vllm serve /data/models/Qwen/Qwen3-30B-A3B-FP8 \
 tail -f /root/JqLogs/qwq.log
 ```
 
+CUDA_VISIBLE_DEVICES=2,3 vllm serve /data/models/swift/QwenLong-L1-32B-AWQ
+CUDA_VISIBLE_DEVICES=0,1 vllm serve /data/models/PPDocBee2-3B/PPDocBee2-3B --tensor-parallel-size 2 --max-model-len 32768 --max_seq_len 4096
+
+``` QwenLong-L1-32B-AWQ gpu2_3_131072 
+workon vllmb
+CUDA_VISIBLE_DEVICES=2,3 nohup vllm serve /data/models/swift/QwenLong-L1-32B-AWQ \
+--served-model-name qwenlong \
+--tensor-parallel-size 2 \
+--enable-chunked-prefill \
+--enable-reasoning --reasoning-parser deepseek_r1 \
+--enable-auto-tool-choice \
+--tool-call-parser hermes \
+--rope-scaling '{"rope_type":"yarn","factor":4.0,"original_max_position_embeddings":32768}' \
+--max-model-len 131072 \
+--gpu-memory-utilization 0.98 \
+--max-num-seqs 8 \
+--host 0.0.0.0 --port 9998 \
+--enable-prefix-caching >> /root/JqLogs/qwq.log 2>&1 &
+tail -f /root/JqLogs/qwq.log
+```
+``` QwenLong-L1-32B-AWQ gpu2_3_64000
+workon vllmb
+CUDA_VISIBLE_DEVICES=2,3 nohup vllm serve /data/models/swift/QwenLong-L1-32B-AWQ \
+--served-model-name qwenlong \
+--tensor-parallel-size 2 \
+--enable-chunked-prefill \
+--enable-reasoning --reasoning-parser deepseek_r1 \
+--enable-auto-tool-choice \
+--tool-call-parser hermes \
+--rope-scaling '{"rope_type":"yarn","factor":2.0,"original_max_position_embeddings":32768}' \
+--max-model-len 64000 \
+--gpu-memory-utilization 0.85 \
+--max-num-seqs 32 \
+--host 0.0.0.0 --port 9998 \
+--enable-prefix-caching >> /root/JqLogs/qwq.log 2>&1 &
+tail -f /root/JqLogs/qwq.log
+```
 
 
 【 Qwen2.5-VL does not support _Backend.FLASHINFER backend now】
@@ -275,8 +319,8 @@ tail -f /root/JqLogs/vllmvl.log
 ```
 
 ``` qwenvl gpu2
-workon vllmb
-CUDA_VISIBLE_DEVICES=2 VLLM_ALLOW_ENGINE_USE_RAY=1 nohup vllm serve /data/models/Qwen/Qwen2___5-VL-7B-Instruct --served-model-name qwenvl --enable-auto-tool-choice --tool-call-parser hermes --gpu-memory-utilization 0.98 --port 8000 --host 0.0.0.0 --limit-mm-per-prompt image=5,video=5 --max-model-len 32768  --max-num-seqs 16 --enable-prefix-caching --enable-chunked-prefill >> /root/JqLogs/vllmvl.log 2>&1 &
+workon vllm
+CUDA_VISIBLE_DEVICES=0 VLLM_ALLOW_ENGINE_USE_RAY=1 nohup vllm serve /data/models/Qwen/Qwen2___5-VL-7B-Instruct-AWQ --served-model-name qwenvl --enable-auto-tool-choice --tool-call-parser hermes --gpu-memory-utilization 0.98 --port 8000 --host 0.0.0.0 --limit-mm-per-prompt image=5,video=5 --max-model-len 32768  --max-num-seqs 16 --enable-prefix-caching --enable-chunked-prefill >> /root/JqLogs/vllmvl.log 2>&1 &
 tail -f /root/JqLogs/vllmvl.log 
 ```
 
@@ -409,7 +453,12 @@ os.environ['SERPER_API_KEY']="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"
 sudo systemctl restart docker
 sudo systemctl status docker
 
+
+
 ### 设置容器服务自启动 elastic、polardb15_vector_age_zh（pg）
+https://hub.docker.com/r/shangor/postgres-for-rag 
+相关版本：PostgreSQL 16.6. With pgvector for vector storage solution, and Apache AGE for graph DB solution
+
 #### 启动DB Docker: polardb15_vector_age_zh:v1.2
 ```
 docker run -d --name postgres_cn \
