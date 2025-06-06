@@ -1,3 +1,5 @@
+du -h --max-depth=1 / | sort -rh
+
 ```
 curl -X 'GET' \
   'http://10.1.150.105:9996/v1/models' \
@@ -7,7 +9,30 @@ curl -X 'GET' \
 
 pip install httpx==0.27.2 #报Client.__init__() got an unexpected keyword argument 'proxies'
 
+
+# 105服务器最终运行paddlex 3.0的命令
+```
+workon paddle3
+nohup paddlex --serve --pipeline doc_understanding --port 8080 --use_hpip --device gpu:0 >> /root/JqLogs/doc_understanding.log 2>&1 &
+tail -f /root/JqLogs/doc_understanding.log
+```
+
+```
+workon paddle3
+nohup paddlex --serve --pipeline PP-ChatOCRv4-doc --port 8081 --use_hpip --device gpu:0  >> /root/JqLogs/chatocr.log 2>&1 &
+tail -f /root/JqLogs/chatocr.log
+```
+
 # 106服务器paddlex 3.0
+
+workon paddle3
+nohup paddlex --serve --pipeline doc_understanding --port 8080 --use_hpip --device gpu:0 >> /root/JqLogs/doc_understanding.log 2>&1 &
+tail -f /root/JqLogs/doc_understanding.log
+
+workon paddle3
+nohup paddlex --serve --pipeline PP-ChatOCRv4-doc --port 8081 --device gpu:0 >> /root/JqLogs/chatocr.log 2>&1 &
+tail -f /root/JqLogs/chatocr.log
+
 ## docker paddlex 3.0镜像
 ```
 docker run --gpus all --name paddlex -v $PWD:/paddle  --shm-size=8G --network=host -it ccr-2vdh3abv-pub.cnc.bj.baidubce.com/paddlepaddle/paddle:3.0.0-gpu-cuda12.6-cudnn9.5-trt10.5 /bin/bash
@@ -38,7 +63,7 @@ paddlex --serve --pipeline PP-StructureV3 --use_hpip
 
 ## 运行PP-DocBee2-3B测试（https://github.com/PaddlePaddle/PaddleOCR/blob/803f253a047b650f8bc4b9074fdc25719b81f5ac/docs/version3.x/module_usage/doc_vlm.md）
 ```
-paddleocr doc_vlm --model_name PP-DocBee2-3B --use_hpip -i "{'image': 'https://paddle-model-ecology.bj.bcebos.com/paddlex/imgs/demo_image/medal_table.png', 'query': '识别这份表格的内容, 以markdown格式输出'}"
+paddleocr doc_vlm --model_name PP-DocBee2-3B --use_hpip -i "{'image': '/data/projects/JqChatV2/JqChat/paddleocrv3/ocr1.png', 'query': '请识别出图片中的全部文字，, 以markdown格式输出'}"
 
 
 
@@ -61,8 +86,10 @@ python paddlemix/examples/qwen2_vl/server.py --host 0.0.0.0 --port 8080 --model-
 --model /data/models/Qwen/qwen235q2.gguf \
 
 fastllm https://github.com/ztxz16/fastllm/blob/master/docs/qwen3.md
+workon torch26cu126
 安装：pip install ftllm -U
 如有问题，自己克隆代码库，编译安装
+bash install.sh -DUSE_CUDA=ON -DCUDA_ARCH=89 -D CMAKE_CUDA_COMPILER=$(which nvcc)
 下载模型：ftllm download fastllm/Qwen3-235B-A22B-INT4MIX
 环境变量：
 export FASTLLM_USE_NUMA=ON
@@ -72,11 +99,37 @@ export FASTLLM_NUMA_THREADS=32
 速度（4t/s）：numactl -C 0-31 -m 0  ftllm server /root/Qwen3-235B-A22B-INT4MIX/ --model_name ftqwen3 --device cpu -t 30 
 
 
-export FASTLLM_USE_NUMA=ON && export FASTLLM_NUMA_THREADS=30 && ftllm server /root/Qwen3-235B-A22B-INT4MIX/ --model_name ftqwen3 --device cpu --moe_device numa -t 1
+numactl -C 0-31 -m 0  ftllm server /root/Qwen3-235B-A22B-INT4MIX/ --model_name ftqwen3 --device cuda --moe_device cpu -t 30 [错误]
+# 1个4090gpu
+速度（8t/s）：
+CUDA_VISIBLE_DEVICES=0 export FASTLLM_USE_NUMA=ON && export FASTLLM_NUMA_THREADS=30 &&  ftllm server /root/Qwen3-235B-A22B-INT4MIX/ --model_name ftqwen3 --device cuda --moe_device "{'cuda':10,'cpu':90}" 
+# 2个4090gpu
+速度（8t/s）：
+export CUDA_VISIBLE_DEVICES=0,1 && export FASTLLM_USE_NUMA=ON && export FASTLLM_NUMA_THREADS=30 &&  ftllm server /root/Qwen3-235B-A22B-INT4MIX/ --model_name ftqwen3 --device cuda --moe_device multicuda:0:8,1:8,cpu:84
+
+export CUDA_VISIBLE_DEVICES=0,1 && export FASTLLM_USE_NUMA=OFF && export FASTLLM_NUMA_THREADS=30 &&  ftllm server /root/Qwen3-235B-A22B-INT4MIX/ --model_name ftqwen3 --device cuda --moe_device multicuda:0:8,1:8,cpu:84
+
+
+# 1个4090gpu + numa 【失败】
+export FASTLLM_USE_NUMA=ON && export FASTLLM_NUMA_THREADS=10 && ftllm server /root/Qwen3-235B-A22B-INT4MIX/ --model_name ftqwen3 --device cuda  --moe_device numa -t 1
+
+
+export FASTLLM_NUMA_THREADS=10 && ftllm server /root/Qwen3-235B-A22B-INT4MIX/ --model_name ftqwen3 --device multicuda:0,1 --moe_device numa -t 1
+
 
 export FASTLLM_USE_NUMA=ON && export FASTLLM_NUMA_THREADS=30 && ftllm server /root/Qwen3-235B-A22B-INT4MIX/ --model_name ftqwen3 --device cpu --moe_device numa -t 27
 
-export FASTLLM_USE_NUMA=ON && export FASTLLM_NUMA_THREADS=30 && ftllm server /root/Qwen3-235B-A22B-INT4MIX/ --model_name ftqwen3 --device numa -t 30
+export FASTLLM_USE_NUMA=ON && export FASTLLM_NUMA_THREADS=30 && ftllm server /root/Qwen3-235B-A22B-INT4MIX/ --model_name ftqwen3 --device cpu --moe_device numa -t 30
+
+
+export FASTLLM_USE_NUMA=ON && export FASTLLM_NUMA_THREADS=30 && ftllm server /root/Qwen3-235B-A22B-INT4MIX/ --model_name ftqwen3 --device multicuda:0,cpu
+
+
+ftllm server /root/Qwen3-235B-A22B-INT4MIX/ --model_name ftqwen3 --device cuda --moe_device "{'cuda':14,'cpu':86}"
+
+--device multicuda:0:4,1:5,cpu:1 \ #cuda:0计算4/10, cuda:1计算5/10, cpu计算1/10
+
+--moe_device numa \ #使用cpu numa计算模型的moe层
 
 ## lalma-cpp-python
 pip install lalma-cpp-python
@@ -85,6 +138,15 @@ python -m llama_cpp.server --model /data/models/Qwen/qwen235q8/qwen235q8.gguf --
 
 /data/models/Qwen/qwen235q2/
 
+## https://github.com/ikawrakow/ik_llama.cpp/issues/419  -ot exps=CPU
+
+cmake -B build -DGGML_CUDA=OFF -DCMAKE_BUILD_TYPE=Release -DGGML_BLAS=ON -DGGML_BLAS_VENDOR=Intel10_64lp -DCMAKE_C_COMPILER=icx -DCMAKE_CXX_COMPILER=icpx -DGGML_NATIVE=ON
+
+
+
+numactl -m 1 -C 128-255 ./llama-batched-bench -m /models1/unsloth/DeepSeek-R1-GGUF/DeepSeek-R1-Q4_K_M/DeepSeek-R1-Q4_K_M-00001-of-00009.gguf -c 8192 -b 2048 -ub 512 -ngl 0 -npp 128 -ntg 128 -npl 1,2,4,8 --cache-type-k q8_0 --numa numactl --threads 64 --threads-batch 128 -fa -fmoe -amb 1 -ser 7,1 -mla 0 --no-mmap
+
+
 ## Llama.cpp qwen235q2
 
 
@@ -92,8 +154,8 @@ https://docs.unsloth.ai/basics/qwen3-how-to-run-and-fine-tune
 
 ./llama-gguf-split --merge /data/models/Qwen/qwen235q2/Qwen3-235B-A22B-UD-Q2_K_XL-00001-of-00002.gguf /data/models/Qwen/qwen235q2/Qwen3-235B-A22B-UD-Q2_K_XL.gguf
 
-./llama.cpp/llama-cli \
-    --model /data/models/Qwen/qwen235q2/Qwen3-235B-A22B-UD-Q2_K_XL.gguf \
+CUDA_VISIBLE_DEVICES=0 ./llama.cpp/llama-cli \
+    --model /data/models/Qwen/qwen235q8/qwen235q8.gguf \
     --threads 32 \
     --ctx-size 16384 \
     --n-gpu-layers 0 \
@@ -104,7 +166,6 @@ https://docs.unsloth.ai/basics/qwen3-how-to-run-and-fine-tune
     --min-p 0.0 \
     --top-p 0.95 \
     --top-k 20 \
-    -no-cnv \
     --prompt "<|im_start|>user\nCreate a Flappy Bird game in Python. You must include these things:\n1. You must use pygame.\n2. The background color should be randomly chosen and is a light shade. Start with a light blue color.\n3. Pressing SPACE multiple times will accelerate the bird.\n4. The bird's shape should be randomly chosen as a square, circle or triangle. The color should be randomly chosen as a dark color.\n5. Place on the bottom some land colored as dark brown or yellow chosen randomly.\n6. Make a score shown on the top right side. Increment if you pass pipes and don't hit them.\n7. Make randomly spaced pipes with enough space. Color them randomly as dark green or light brown or a dark gray shade.\n8. When you lose, show the best score. Make the text inside the screen. Pressing q or Esc will quit the game. Restarting is pressing SPACE again.\nThe final game should be inside a markdown section in Python. Check your code for errors and fix them before the final markdown section.<|im_end|>\n<|im_start|>assistant\n"
 
 ## ktransformers 部署qwen3b235q8
@@ -250,7 +311,7 @@ tail -f /root/JqLogs/qwq.log
 ```
 ``` Qwen3-30B-A3B-FP8 gpu0_1
 workon vllmb
-CUDA_VISIBLE_DEVICES=0,1 nohup vllm serve /data/models/Qwen/Qwen3-30B-A3B-FP8 \
+CUDA_VISIBLE_DEVICES=2,3 nohup vllm serve /data/models/Qwen/Qwen3-30B-A3B-FP8 \
 --served-model-name qwen3 \
 --tensor-parallel-size 2 \
 --enable-chunked-prefill \
@@ -318,9 +379,9 @@ CUDA_VISIBLE_DEVICES=2,3 VLLM_USE_V1=1 nohup vllm serve /data/models/Qwen/Qwen2_
 tail -f /root/JqLogs/vllmvl.log 
 ```
 
-``` qwenvl gpu2
-workon vllm
-CUDA_VISIBLE_DEVICES=0 VLLM_ALLOW_ENGINE_USE_RAY=1 nohup vllm serve /data/models/Qwen/Qwen2___5-VL-7B-Instruct-AWQ --served-model-name qwenvl --enable-auto-tool-choice --tool-call-parser hermes --gpu-memory-utilization 0.98 --port 8000 --host 0.0.0.0 --limit-mm-per-prompt image=5,video=5 --max-model-len 32768  --max-num-seqs 16 --enable-prefix-caching --enable-chunked-prefill >> /root/JqLogs/vllmvl.log 2>&1 &
+``` **qwenvl gpu2** vllmv0.9.0.1
+workon vllm2
+CUDA_VISIBLE_DEVICES=1 VLLM_ALLOW_ENGINE_USE_RAY=1 nohup vllm serve /data/models/Qwen/Qwen2___5-VL-7B-Instruct-AWQ --served-model-name qwenvl --enable-auto-tool-choice --tool-call-parser hermes --gpu-memory-utilization 0.98 --port 8000 --host 0.0.0.0 --limit-mm-per-prompt image=5,video=5 --max-model-len 32768  --max-num-seqs 16 --enable-prefix-caching --enable-chunked-prefill >> /root/JqLogs/vllmvl.log 2>&1 &
 tail -f /root/JqLogs/vllmvl.log 
 ```
 
@@ -798,6 +859,7 @@ Total                   472328.98       433344.67       905673.64 -->
 
 <!-- Running DeepSeek-R1-Q4KM Models -->
 ```
+workon torch26cu126
 CUDA_VISIBLE_DEVICES=2,3 python ktransformers/server/main.py \
   --port 10002 \
   --model_path /data/models/DeepSeek-R1/ \
@@ -811,20 +873,69 @@ CUDA_VISIBLE_DEVICES=2,3 python ktransformers/server/main.py \
   --force_think
 
 
-
-CUDA_VISIBLE_DEVICES=3 python ktransformers/server/main.py \
+workon torch26cu126
+USE_NUMA=1 TORCH_CUDA_ARCH_LIST="8.9" CUDA_VISIBLE_DEVICES=0  python /root/ktransformers/ktransformers/server/main.py \
   --port 10002
   --model_path deepseek-ai/DeepSeek-R1 \
   --gguf_path /data/models/DeepSeek-R1-Q4_K_M_ollama_gguf/ \
+  --model_name qwen3kt \
   --optimize_config_path ktransformers/optimize/optimize_rules/DeepSeek-V3-Chat-serve.yaml \
-  --max_new_tokens 1024 \
+  --max_new_tokens 8192 \
   --cache_lens 32768 \
   --chunk_size 256 \
-  --max_batch_size 4 \
+  --max_batch_size 2 \
   --backend_type balance_serve
 ```
 ====生成速度 
 生成速度由5.2tokens/s提升到7.4tokens/s
+
+workon torch26cu126
+USE_NUMA=1 TORCH_CUDA_ARCH_LIST="8.9" CUDA_VISIBLE_DEVICES=0 python /root/ktransformers/ktransformers/server/main.py \
+--port 10002 \
+--model_path /data/models/Qwen/qwen235q8/Qwen3-235B-A22B/ \
+--model_name qwen3kt \
+--gguf_path /data/models/Qwen/qwen235q8/ \
+--architectures Qwen3MoeForCausalLM \
+--optimize_config_path /root/ktransformers/ktransformers/optimize/optimize_rules/Qwen3Moe-serve.yaml \
+--max_new_tokens 8192 \
+--cache_lens 32768 \
+--chunk_size 256 \
+--max_batch_size 2 \
+--backend_type balance_serve \
+--cpu_infer 20 \
+--no-use_cuda_graph
+
+
+workon torch26cu126
+USE_NUMA=1 TORCH_CUDA_ARCH_LIST="8.9" CUDA_VISIBLE_DEVICES=0 python /root/ktransformers/ktransformers/server/main.py \
+--port 10002 \
+--model_path /data/models/Qwen/Qwen3-30B-A3B-FP8/ \
+--model_name qwen3kt \
+--gguf_path /data/models/Qwen/Qwen3-30B-A3B-GGUF/ \
+--architectures Qwen3MoeForCausalLM \
+--optimize_config_path /root/ktransformers/ktransformers/optimize/optimize_rules/Qwen3Moe-serve.yaml \
+--max_new_tokens 1024 \
+--cache_lens 8192 \
+--chunk_size 256 \
+--max_batch_size 2 \
+--backend_type balance_serve \
+--cpu_infer 20 \
+--no-use_cuda_graph
+
+
+```
+USE_NUMA=1 TORCH_CUDA_ARCH_LIST="8.9" CUDA_VISIBLE_DEVICES=0 python /root/ktransformers/ktransformers/local_chat.py \
+--model_path /data/models/Qwen/qwen235q8/Qwen3-235B-A22B/ \
+--gguf_path /data/models/Qwen/qwen235q8/ \
+--architectures Qwen3MoeForCausalLM \
+--optimize_config_path /root/ktransformers/ktransformers/optimize/optimize_rules/Qwen3Moe-serve.yaml \
+--cpu_infer 20
+
+
+
+
+
+max_batch_size、cache_lens 和 max_new_tokens 之间的关系应满足： cache_lens > max_batch_size * max_new_tokens ，否则并发数会降低。
 
 
 #### local chat mode

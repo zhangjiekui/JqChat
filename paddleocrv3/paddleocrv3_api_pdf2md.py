@@ -3,9 +3,11 @@ import base64
 import requests
 import pathlib
 
-API_URL = "http://localhost:8080/layout-parsing" # 服务URL
+API_URL = "http://10.1.150.105:8080/layout-parsing" # 服务URL
 
-image_path = fr"C:\Users\win11\低收入人口动态监测信息平台优化升级工作指引（第一版）.pdf"
+# image_path = fr"C:\Users\win11\低收入人口动态监测信息平台优化升级工作指引（第一版）.pdf"
+image_path = fr"paddleocrv3/ocr1.png"
+"
 
 # 对本地图像进行Base64编码
 with open(image_path, "rb") as file:
@@ -14,7 +16,7 @@ with open(image_path, "rb") as file:
 
 payload = {
     "file": image_data, # Base64编码的文件内容或者文件URL
-    "fileType": 0, # 文件类型，1表示图像文件
+    "fileType": 1, # 文件类型，1表示图像文件
 }
 
 # 调用API

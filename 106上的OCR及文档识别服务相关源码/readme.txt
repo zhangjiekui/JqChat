@@ -32,16 +32,20 @@ mkvirtualenv --python=/usr/bin/python3 xinfer
 
 paddleocr3相关的配置
 source ~/.bashrc
+
 workon paddle3
 
 python -m pip install paddlepaddle-gpu==3.0.0 -i https://www.paddlepaddle.org.cn/packages/stable/cu118/
 paddlex --install serving
 paddlex --install hpi-cpu
 paddlex --install hpi-gpu
-nohup paddlex --serve --pipeline doc_understanding --port 8080 --use_hpip --device gpu:1 >> /root/JqLogs/doc_understanding.log 2>&1 &
+
+workon paddle3
+nohup paddlex --serve --pipeline doc_understanding --port 8080 --use_hpip --device gpu:0 >> /root/JqLogs/doc_understanding.log 2>&1 &
 tail -f /root/JqLogs/doc_understanding.log
 
-nohup paddlex --serve --pipeline PP-ChatOCRv4-doc --port 8081 --device gpu:1 >> /root/JqLogs/chatocr.log 2>&1 &
+workon paddle3
+nohup paddlex --serve --pipeline PP-ChatOCRv4-doc --port 8081 --device gpu:0 >> /root/JqLogs/chatocr.log 2>&1 &
 tail -f /root/JqLogs/chatocr.log
 
 CUDA_VISIBLE_DEVICES=0,1 paddlex --serve --pipeline doc_understanding --port 8080 --use_hpip --device 'gpu:0,1' --hpi_config '{"backend": "paddle","backend_config":{"run_mode": "trt_int8"}}'

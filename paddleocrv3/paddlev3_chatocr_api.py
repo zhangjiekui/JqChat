@@ -5,31 +5,55 @@ import base64
 import pprint
 import sys
 import requests
+import time
 
-API_BASE_URL = "http://127.0.0.1:8081"
-image_path="1small.jpg" #图片不能太大，否则爆显存
-# image_path="2.jpg"
-keys=["购买方名称","销售方名称","购买的货物或服务名称"]
+# nü
 
+# 方法3 OCR：耗时4.47秒
+from openai import OpenAI
+API_BASE_URL_UD = "http://10.1.150.105:3000/v1"   # 需要对应model="v",api_key='sk-0S7bV3oaznhuevN899Db0cDa20Ae4c5485Ce5862A86063C8'
+# API_BASE_URL_UD = "http://10.1.150.105:8000/v1" # 需要对应model="qwenvl",api_key='abc123'
+client = OpenAI(
+    # api_key='abc123',
+    api_key='sk-0S7bV3oaznhuevN899Db0cDa20Ae4c5485Ce5862A86063C8',
+    base_url=f'{API_BASE_URL_UD}'
+)
+image_path = "paddleocrv3/ocr1.png"
+image_path="paddleocrv3/1small.jpg"
+image_path="paddleocrv3/2.jpg"
+print(f"处理图片image_path={image_path}")
 with open(image_path, "rb") as file:
     image_bytes = file.read()
     image_data = base64.b64encode(image_bytes).decode("ascii")
-
-payload = {
-    "image": image_data,
-    "keyList": keys,
-}
-resp_mllm = requests.post(url=f"{API_BASE_URL}/chatocr-mllm", json=payload)
-# pprint.pp(resp_mllm.json())
-if resp_mllm.status_code != 200:
-    print(
-        f"Request to chatocr-mllm failed with status code {resp_mllm.status_code}."
-    )
-    pprint.pp(resp_mllm.json())
-    sys.exit(1)
-result_mllm = resp_mllm.json()["result"]
-pprint.pp(f"mllm result:{result_mllm}")
-
+start_time = time.time()
+response = client.chat.completions.create(
+    # model="qwenvl",# Choose Model
+    model="v",# Choose Model
+    messages=[
+        {
+            "role": "system",
+            "content": "You are a helpful ocr assistant."
+        },
+        {
+            "role": "user",
+            "content":[
+                {
+                    "type": "text",
+                    # "text": "请识别出图片中的全部文字" #如果是OCR任务，直接识别全部文字
+                    "text": "识别出发票类型,购买方名称,销售方名称,购买的货物或服务名称，以Json格式输出,不要有额外的字段或内容"
+                },
+                {
+                    "type": "image_url",
+                    "image_url": {"url": f"data:image/jpeg;base64,{image_data}"}
+                },
+            ]
+        },
+    ],
+)
+content = response.choices[0].message.content
+print('OCR chat.completions结果:\n', content)
+end_time = time.time()
+print(f"OCR chat.completions处理{image_path=}"+"耗时: {:.2f}秒".format(end_time - start_time))
 
 
 # from paddleocr import PPChatOCRv4Doc
