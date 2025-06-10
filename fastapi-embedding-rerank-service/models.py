@@ -20,10 +20,28 @@ class TokenizeResponse(BaseModel):
     token_count: int
 
 class RerankRequest(BaseModel):
-    input: List[dict] # 包含 query和document的字典列表
     model: Optional[str] = None
+    query: str
+    documents: List[str]
+    top_n: Optional[int] = None
+    return_documents: Optional[bool] = False
+    return_len: Optional[bool] = False
+    max_chunks_per_doc: Optional[int] = None
     instruction: Optional[str] = None
+    kwargs: Optional[str] = None
 
 class RerankResponse(BaseModel):
     model: str
-    data: List[dict]  # 包含scores的字典列表
+    results: List[dict]  # 包含scores的字典列表
+
+# 定义模型信息的响应结构
+class ModelInfo(BaseModel):
+    id: str
+    object: str = "model"
+    owned_by: str = "organization-owner"
+    permission: list = []
+
+# 定义/v1/models接口的响应结构
+class ModelsResponse(BaseModel):
+    object: str = "list"
+    data: list[ModelInfo]

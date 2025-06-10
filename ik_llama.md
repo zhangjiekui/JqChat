@@ -16,6 +16,25 @@ CUDA_VISIBLE_DEVICES=0 /root/ik_llama.cpp/build/bin/llama-cli -m /data/models/Qw
 CUDA_VISIBLE_DEVICES=0 /root/ik_llama.cpp/build/bin/llama-server -m /data/models/Qwen/qwen235q8/qwen235q8.gguf -thp -rtr -fa -fmoe --mlock --alias ftqwen3 --ctx-size 32768 -ctk q8_0 -ctv q8_0  -amb 512  --n-gpu-layers 100 --parallel 1 --threads 32 --host 0.0.0.0 --port 8080 --numa distribute -ot "exps=CPU"  -ser 8,4 -ot "([4][7-9]|[5-9][0-9]).(attn|ffn).(q|k|v|norm|inp|output).=CUDA0","([11|12|13|14|15]).ffn_.*_exps.=CUDA0"
 
 
+CUDA_VISIBLE_DEVICES=0 /root/ik_llama.cpp/build/bin/llama-server -m /data/models/qwen3-235b-a22b-128k_ud-q4_k_xl.gguf -thp -rtr -fa -fmoe --mlock --alias ftqwen3 --ctx-size 32768 -ctk q8_0 -ctv q8_0  -amb 512  --n-gpu-layers 100 --parallel 1 --threads 32 --host 0.0.0.0 --port 8080 --numa distribute -ot "exps=CPU"  -ser 8,4 -ot "([4][7-9]|[5-9][0-9]).(attn|ffn).(q|k|v|norm|inp|output).=CUDA0","([11|12|13|14|15]).ffn_.*_exps.=CUDA0"
+
+
+CUDA_VISIBLE_DEVICES=0 /root/ik_llama.cpp/build/bin/llama-server -m /data/models/qwen3-235b-a22b-128k_ud-q4_k_xl.gguf -thp -rtr -fa -fmoe --mlock --alias ftqwen3 --ctx-size 128000 -ctk q8_0 -ctv q8_0  -amb 512  --n-gpu-layers 100 --parallel 8 --threads 16 --host 0.0.0.0 --port 8080 --numa distribute -ot "exps=CPU"  -ser 8,4
+
+
+## 全部专家层保留在CPU上
+CUDA_VISIBLE_DEVICES=0 /root/ik_llama.cpp/build/bin/llama-server -m /data/models/qwen3-235b-a22b-128k_ud-q4_k_xl.gguf -thp -rtr -fa -fmoe --mlock --mla-use 1 --alias ftqwen3 --ctx-size 128000 -ctk q4_0 -ctv q4_0  -amb 512  --n-gpu-layers 100 --parallel 8 --threads 32 --host 0.0.0.0 --port 8080 --numa distribute -ot "exps=CPU" -ser 8,4 -ub 512
+
+
+## 0-6专家层保留在GPU上【已经是GPU容量极限了， 22411MiB /  23028MiB】，其他专家层保留在CPU上
+CUDA_VISIBLE_DEVICES=0 /root/ik_llama.cpp/build/bin/llama-server -m /data/models/qwen3-235b-a22b-128k_ud-q4_k_xl.gguf -thp -rtr -fa -fmoe --mlock --mla-use 1 --alias ftqwen3 --ctx-size 128000 -ctk q4_0 -ctv q4_0  -amb 512  --n-gpu-layers 100 --parallel 8 --threads 32 --host 0.0.0.0 --port 8080 --numa distribute -ot "blk\.[7-9]\.ffn.*=CPU" -ot "blk\.[1-8][0-9]\.ffn.*=CPU" -ot "blk\.9[0-3]\.ffn.*=CPU" -ser 8,4 -ub 512
+
+
+## Benchmark： 0-6专家层保留在GPU上【已经是GPU容量极限了， 22411MiB /  23028MiB】，其他专家层保留在CPU上
+CUDA_VISIBLE_DEVICES=0 /root/ik_llama.cpp/build/bin/llama-sweep-bench -m /data/models/qwen3-235b-a22b-128k_ud-q4_k_xl.gguf -thp -rtr -fa -fmoe --mlock --mla-use 1 --alias ftqwen3 --ctx-size 128000 -ctk q4_0 -ctv q4_0  -amb 512  --n-gpu-layers 100 --parallel 8 --threads 32 --host 0.0.0.0 --port 8080 --numa distribute -ot "blk\.[7-9]\.ffn.*=CPU" -ot "blk\.[1-8][0-9]\.ffn.*=CPU" -ot "blk\.9[0-3]\.ffn.*=CPU" -ser 8,4 -ub 512
+
+
+
 
 ## 参数：
 --verbose --color

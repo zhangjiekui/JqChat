@@ -131,7 +131,7 @@ ftllm server /root/Qwen3-235B-A22B-INT4MIX/ --model_name ftqwen3 --device cuda -
 
 --moe_device numa \ #使用cpu numa计算模型的moe层
 
-## lalma-cpp-python
+## llama-cpp-python
 pip install lalma-cpp-python
 python -m llama_cpp.server --model /data/models/Qwen/qwen235q8/qwen235q8.gguf --host 0.0.0.0 --port 8080 --model_alias ftqwen3
 
@@ -894,7 +894,7 @@ USE_NUMA=1 TORCH_CUDA_ARCH_LIST="8.9" CUDA_VISIBLE_DEVICES=0 python /root/ktrans
 --port 10002 \
 --model_path /data/models/Qwen/qwen235q8/Qwen3-235B-A22B/ \
 --model_name qwen3kt \
---gguf_path /data/models/Qwen/qwen235q8/ \
+--gguf_path /data/models/qwen3-235b-a22b-128k_ud-q4_k_xl.gguf \
 --architectures Qwen3MoeForCausalLM \
 --optimize_config_path /root/ktransformers/ktransformers/optimize/optimize_rules/Qwen3Moe-serve.yaml \
 --max_new_tokens 8192 \

@@ -355,7 +355,7 @@ class JqXinferenceReranker(BaseDocumentCompressor):
         rerank_result_list = rerank_result["results"]
         final_results = []
         for result in rerank_result_list:
-            score =  result['relevance_score']
+            score =  result.get('relevance_score',0) or result.get('score',0)
             if score>=self.threshold:
                 doc_id = result['index']
                 doc = valid_doc_list[doc_id]
@@ -771,22 +771,32 @@ class InitEnvModels:
     def _get_emb_8k_rerank_model_api(self):
         from xinference.client import Client
         from jqcode.jq_knowledge_manegement.chatchat.server.localai_embeddings import LocalAIEmbeddings
-        embed_model = LocalAIEmbeddings(model=self.embedding_model_name,deployment=self.embedding_model_name,api_key="NotNeed",openai_api_base=self.embedding_model_base_url,base_url=self.embedding_model_base_url,embedding_ctx_length=self.embedding_model_max_tokens*8,chunk_size=self.embedding_model_max_tokens)
-        embedding_model_8k = LocalAIEmbeddings(model=self.embedding_model_8k_name,deployment=self.embedding_model_name,api_key="NotNeed",openai_api_base=self.embedding_model_base_url,base_url=self.embedding_model_8k_base_url,embedding_ctx_length=self.embedding_model_8k_max_tokens*4,chunk_size=self.embedding_model_8k_max_tokens)
+       
         try:
-            client = Client(self.rerank_model_base_url) #url要去掉"/v1"
-            xinfer_reranker = client.get_model(self.rerank_model_name)
-
-            # BCERerank: compress_documents(documents: Sequence[Document],query: str)
+            embed_model = LocalAIEmbeddings(model=self.embedding_model_name,deployment=self.embedding_model_name,api_key="NotNeed",openai_api_base=self.embedding_model_base_url,base_url=self.embedding_model_base_url,embedding_ctx_length=self.embedding_model_max_tokens*8,chunk_size=self.embedding_model_max_tokens)
+            embedding_model_8k = LocalAIEmbeddings(model=self.embedding_model_8k_name,deployment=self.embedding_model_name,api_key="NotNeed",openai_api_base=self.embedding_model_base_url,base_url=self.embedding_model_8k_base_url,embedding_ctx_length=self.embedding_model_8k_max_tokens*4,chunk_size=self.embedding_model_8k_max_tokens)
+            emb_test = embed_model.embed_query("test query text")
+            logger.debug(emb_test)
+        except Exception as e:
+            logger.error(f"{embed_model=}工作不正常，请检查:{e}")
+        try:
+                        # BCERerank: compress_documents(documents: Sequence[Document],query: str)
             # xinference.client: model.rerank(corpus, query) https://inference.readthedocs.io/zh-cn/latest/index.html
             # https://github.com/xorbitsai/inference/blob/7d83300a7694a0262b634007ea4164ea753e466f/xinference/model/rerank/core.py
-            reranker = JqXinferenceReranker(top_n=6,model=xinfer_reranker)
+            client = Client(self.rerank_model_base_url) #url要去掉"/v1"
+            try:
+                xinfer_reranker = client.get_model(self.rerank_model_name)
+                reranker = JqXinferenceReranker(top_n=6,model=xinfer_reranker)
+            except:
+                from xinference.client.restful.restful_client import RESTfulRerankModelHandle
+                model = RESTfulRerankModelHandle(self.rerank_model_name,self.rerank_model_base_url, auth_headers={})
+                reranker = JqXinferenceReranker(top_n=6,model=model)
             query = "A man is eating pasta."
             corpus = ["A man is eating food.","A woman is playing violin."]
-            r = reranker.rerank(corpus, query)
-            logger.debug(r)
-            c = reranker.compress_documents(corpus, query)
-            logger.debug(c)
+            rerank_test1 = reranker.rerank(corpus, query)
+            logger.debug(rerank_test1)
+            rerank_test2 = reranker.compress_documents(corpus, query)
+            logger.debug(rerank_test2)
         except Exception as e:
             reranker = None
             logger.warning(f"{self.rerank_model_name}在线模型无法获取: {e}")
@@ -1302,8 +1312,6 @@ if __name__ == '__main__':
         The value associated with the 'arguments' key should be a dictionary of parameters."""
     print("==========="*10)
 
-    prompt = "1+1=2"
-
     import json_repair
 
     def LLM(prompt, system_message, model=llm):
@@ -1334,10 +1342,10 @@ if __name__ == '__main__':
         except Exception as error:
             print('Error:', error)
             raise
-    prompt = '使用python可以计算出3*10的正确结果，请思考这句话正确吗？并请给出理由'
-    prompt = "Statement:Using Python can calculate out 3*10's correct result. Should you accept or reject the statement? and give me your reason"
-    prompt = "Using Python can calculate out 3*10's correct result."
-    prompt = "1+1=2"
+    prompt = '使用python无法计算出3*10的正确结果，请思考这句话正确吗？你是接受还是拒绝这个陈述,并请给出理由'
+    # prompt = "Statement:Using Python can calculate out 3*10's correct result. Should you accept or reject the statement? and give me your reason"
+    # prompt = "Using Python can calculate out 3*10's correct result.你是接受还是拒绝这个陈述"
+
     res = LLM(prompt,system_prompt)
     print(res)
     

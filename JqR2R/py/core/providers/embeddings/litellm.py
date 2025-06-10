@@ -47,8 +47,10 @@ class LiteLLMEmbeddingProvider(EmbeddingProvider):
 
         self.api_base = config.api_base
         self.base_model = config.base_model
+
+
         if "amazon" in self.base_model:
-            logger.warn("Amazon embedding model detected, dropping params")
+            logger.warning("Amazon embedding model detected, dropping params")
             litellm.drop_params = True
         self.base_dimension = config.base_dimension
 

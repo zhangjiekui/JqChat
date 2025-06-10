@@ -4,7 +4,7 @@ from sentence_transformers import SentenceTransformer
 from typing import List, Union, Optional
 from pydantic import BaseModel
 from config import Config
-from models import TokenizeRequest, TokenizeResponse, RerankRequest, RerankResponse
+from models import TokenizeRequest, TokenizeResponse, RerankRequest, RerankResponse, ModelInfo,ModelsResponse
 from transformers import AutoTokenizer, AutoModelForCausalLM
 import torch
 
@@ -76,10 +76,13 @@ class EmbeddingResponse(BaseModel):
     model: str
 @app.post("/v1/embeddings", response_model=EmbeddingResponse)
 def create_embedding(request: EmbeddingRequest):
+    print(f"EmbeddingRequest:{request}")
     try:
         # 输入校验（示例）
         if not request.input:
             raise ValueError("Input cannot be empty")
+        # else:
+        #     print(f"EmbeddingRequest:{request.input=}")
         
         if isinstance(request.input, list) and len(request.input) > 100:
             raise ValueError("Input list length exceeds maximum allowed (100)")
@@ -120,7 +123,8 @@ def create_tokenize(request: TokenizeRequest):
         # 进行tokenize
         all_tokens = []
         for text in input_text:
-            tokens = tokenizer.encode(text)
+            # tokens = tokenizer.encode(text)
+            tokens = tokenizer(text)
             all_tokens.extend(tokens)
             
         return TokenizeResponse(
@@ -134,19 +138,26 @@ def create_tokenize(request: TokenizeRequest):
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e))
 @app.post("/v1/rerank", response_model=RerankResponse)
 def create_rerank(request: RerankRequest):
+    print(f"RerankRequest:{request}")
     try:
-        if not request.input:
-            raise ValueError("Input cannot be empty")
+        if not request.query:
+            raise ValueError("Query cannot be empty")
+        if not request.documents:
+            raise ValueError("Documents cannot be empty")
+        try:
+            print(f"User Provided Instruction: {request.instruction}")
+        except:
+            request.instruction=None
 
         # 格式化输入
         pairs = [
             format_instruction(
                 request.instruction, 
-                item.get("query", ""), 
-                item.get("document", "")
-            ) 
-            for item in request.input
+                request.query, 
+                doc
+            )  for doc in request.documents
         ]
+        print(f"RerankPairs:{pairs}")
 
         # 处理输入并计算分数
         inputs = process_inputs(pairs)
@@ -162,13 +173,62 @@ def create_rerank(request: RerankRequest):
         ]
 
         return RerankResponse(
-            data=data,
-            model=config.RERANK_MODEL_NAME
+            model=config.RERANK_MODEL_NAME,
+            results=data,           
         )
 
     except Exception as e:
         logger.error(f"Rerank error: {str(e)}", exc_info=True)
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e))
+
+# 添加 /v1/models 接口
+@app.get("/v1/models", response_model=ModelsResponse)
+def get_models():
+    # 返回当前服务支持的模型列表及其相关信息
+    models = ModelsResponse(
+        data=[
+            ModelInfo(id=embedding_model_name, object="model", owned_by="jq-embed", permission=[]),
+            ModelInfo(id=config.RERANK_MODEL_NAME, object="model", owned_by="jq-rerank", permission=[])
+        ]
+    )
+    return models
+
+# 添加 /v1/models/{model_id} 接口
+@app.get(f"/v1/models/{config.RERANK_MODEL_NAME}")
+def get_model_description():
+    # 返回当前服务支持的模型列表及其相关信息
+    model={
+        "id": config.RERANK_MODEL_NAME,
+        "model_name": config.RERANK_MODEL_NAME,
+        "model_type":"rerank",
+        "model_description": "This is a qwen3 rerank model for evaluating the relevance of documents to a given query.",
+        "context_length":32768
+    }
+    return model
+# 添加 /v1/models/{model_id} 接口
+@app.get(f"/v1/models/{config.EMBEDDING_MODEL_NAME}")
+def get_model_description():
+    # 返回当前服务支持的模型列表及其相关信息
+    model={
+        "id": config.EMBEDDING_MODEL_NAME,
+        "model_name": config.EMBEDDING_MODEL_NAME,
+        "model_type":"embedding",
+        "model_description": "This is a qwen3 embedding model for generating embeddings from text.",
+        "context_length":32768
+    }
+    return model
+
+@app.get(f"/v1/cluster/auth")
+def get_cluster_auth():
+    # 返回集群认证信息
+    auth_info = {
+        "auth": True,
+    }
+    return auth_info
+
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run(app, host=config.HOST, port=config.PORT, log_level="info")
+
+
+    # 需要增加/v1/models接口，返回模型信息
