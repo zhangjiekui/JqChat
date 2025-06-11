@@ -2,8 +2,11 @@ from pydantic import BaseModel
 from typing import List, Optional, Union
 
 class EmbeddingRequest(BaseModel):
-    input: List[str]
     model: Optional[str] = None
+    input: Union[str, List[str]]
+    is_query: bool=False
+    dim: int = 768
+
 
 class EmbeddingResponse(BaseModel):
     object: str = "list"
@@ -21,10 +24,10 @@ class TokenizeResponse(BaseModel):
 
 class RerankRequest(BaseModel):
     model: Optional[str] = None
-    query: str
+    query: Union[str, List[str]]
     documents: List[str]
-    top_n: Optional[int] = None
-    return_documents: Optional[bool] = False
+    top_n: Optional[int] = 6
+    return_documents: Optional[bool] = True
     return_len: Optional[bool] = False
     max_chunks_per_doc: Optional[int] = None
     instruction: Optional[str] = None

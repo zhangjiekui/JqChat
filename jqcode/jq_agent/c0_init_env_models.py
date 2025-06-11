@@ -260,11 +260,19 @@ class JqVectorStoreRetrieverWithScore(VectorStoreRetriever):
     def _get_relevant_documents(
         self, query: str, *, run_manager: CallbackManagerForRetrieverRun
     ) -> List[Document]:
+        instruction = 'Given a web search query, retrieve relevant passages that answer the query'
+        embedding_model = "None"
+        if self.name=="embedding":
+            embedding_model = self.vectorstore.embedding.model
+            if "Qwen" in embedding_model:
+                query = f'Instruct: {instruction}\nQuery:{query}'                 
+
         docs_and_similarities = (
             self.vectorstore.similarity_search_with_relevance_scores(
                 query, **self.search_kwargs
             )
         )
+        print(f"JqVectorStoreRetrieverWithScore:{self.name=},{embedding_model=},{query=}")
 
         # Make the score part of the document metadata        
         for doc, similarity in docs_and_similarities:
@@ -351,14 +359,27 @@ class JqXinferenceReranker(BaseDocumentCompressor):
                 passages.append(passage.replace('\n', ' '))
                 valid_doc_list.append(d)
        
-        rerank_result = self._model.rerank(passages,query,top_n=self.top_n,return_documents=False,return_len=True,**kwargs)
+        rerank_result = self._model.rerank(passages,query,top_n=self.top_n,return_documents=True,return_len=False,**kwargs)
         rerank_result_list = rerank_result["results"]
         final_results = []
+        num_queries = 1 if isinstance(query, str) else len(query)
+        num_passages = len(passages)
         for result in rerank_result_list:
             score =  result.get('relevance_score',0) or result.get('score',0)
             if score>=self.threshold:
                 doc_id = result['index']
-                doc = valid_doc_list[doc_id]
+                doc_id = doc_id % num_passages 
+                text = None
+                if result.get('query_document_pairs'):
+                    text = result.get('query_document_pairs')[1]
+                try:
+                    doc = valid_doc_list[doc_id]
+                except IndexError as e:
+                    logger.warning(f"{doc_id}对应的文档不存在，请检查！")
+                if  text:
+                    if text not in doc.page_content:
+                        pass
+                    # assert text in doc.page_content, f"query={result.get('query_document_pairs')[0]},doc.page_content={doc.page_content}, text={text}, doc_id={doc_id}, num_passages={num_passages}, num_queries={num_queries}"
                 doc.metadata.update({"relevance_score_reranker":score})
                 # get retriever_score
                 retriever_score_string=''
@@ -780,7 +801,7 @@ class InitEnvModels:
         except Exception as e:
             logger.error(f"{embed_model=}工作不正常，请检查:{e}")
         try:
-                        # BCERerank: compress_documents(documents: Sequence[Document],query: str)
+            # BCERerank: compress_documents(documents: Sequence[Document],query: str)
             # xinference.client: model.rerank(corpus, query) https://inference.readthedocs.io/zh-cn/latest/index.html
             # https://github.com/xorbitsai/inference/blob/7d83300a7694a0262b634007ea4164ea753e466f/xinference/model/rerank/core.py
             client = Client(self.rerank_model_base_url) #url要去掉"/v1"
@@ -791,15 +812,17 @@ class InitEnvModels:
                 from xinference.client.restful.restful_client import RESTfulRerankModelHandle
                 model = RESTfulRerankModelHandle(self.rerank_model_name,self.rerank_model_base_url, auth_headers={})
                 reranker = JqXinferenceReranker(top_n=6,model=model)
-            query = "A man is eating pasta."
-            corpus = ["A man is eating food.","A woman is playing violin."]
-            rerank_test1 = reranker.rerank(corpus, query)
+            query = ["A man is eating pasta.","一个人在吃披萨"]
+            corpus = ["A man is eating food.","A woman is playing violin.","一个人在踢球","一个人在吃饭"]
+            rerank_test1 = reranker.rerank(corpus, query,top_n=3)
             logger.debug(rerank_test1)
             rerank_test2 = reranker.compress_documents(corpus, query)
             logger.debug(rerank_test2)
         except Exception as e:
             reranker = None
             logger.warning(f"{self.rerank_model_name}在线模型无法获取: {e}")
+            # "Failed to rerank documents, detail: [{'type': 'missing', 'loc': ['body', 'queries'], 'msg': 'Field required', 'input': {'model': 'Qwen/Qwen3-Reranker-0.6B', 'documents': ['A man is eating food.', 'A woman is playing violin.'], 'query': 'A man is eating pasta.', 'top_n': 6, 'max_chunks_per_doc': None, 'return_documents': True, 'return_len': True, 'kwargs': '{}'}}]"
+            # "Failed to rerank documents, detail: [{'type': 'list_type', 'loc': ['body', 'query'], 'msg': 'Input should be a valid list', 'input': 'A man is eating pasta.'}]"
         return embed_model,embedding_model_8k,reranker
 
     def get_lightrag(self,index_name,example_number=2,language="Simplified Chinese",keyword_extraction=False, working_dir = "Neo4jWorkDir",log_level="DEBUG"):
@@ -1065,7 +1088,7 @@ class InitEnvModels:
     
     
     def split_and_get_chunks_relevant_from_documents(self,query:str, docs_list:List[Document]=None,text_splitter=None,embed_model=None,reranker=None,
-                                                    if_reranking:bool=True,retriever_docs_num=10,final_docs_num=6,score_threshold=0.3,only_use_reranker:bool=False):
+                                                    if_reranking:bool=True,retriever_docs_num=10,final_docs_num=6,score_threshold=0.3,only_use_reranker:bool=True):
         
         docs_list_cleaned = []
         for doc in docs_list:
@@ -1116,7 +1139,7 @@ class InitEnvModels:
     # 避免历史消息类型的拼装（符合HumanMessage、AIMessage、[ToolMessage if AIMessage is a ToolCall AIMessage]），引入不相关、不必要的消息
     # 返回最近的n条消息列表，并且保证是以HumanMessage开头的，符合HumanMessage、AIMessage、[ToolMessage if AIMessage is a ToolCall AIMessage]
     def filter_and_get_messages_relevant_to_query(self,query:str,messages_list:List[BaseMessage],reserve_last_n_messages_num=0,reserve_message_types:tuple=(HumanMessage,AIMessage),text_splitter=None,embed_model=None,reranker=None,
-                                                    if_reranking:bool=True,retriever_docs_num=10,final_docs_num=4 ,score_threshold=0.3, only_use_reranker=False):
+                                                    if_reranking:bool=True,retriever_docs_num=10,final_docs_num=4 ,score_threshold=0.3, only_use_reranker=True):
     
         if not messages_list:
            return []        
@@ -1358,7 +1381,7 @@ if __name__ == '__main__':
                "create a compression retriever, we need a base retriever first",
                "As shown in the summary table above, the number of lexical units has increased by 16% to more than 11,800, while the numbers of frames and FEs have increased by 25% to 1,019 and 8,884 respectively. Some frames are marked as “non-lexical”, meaning that we have created them because they are logically necessary in the frame hierarchy,"]
     docs = [Document(page_content=s) for s in sentense]
-    chunks = env_models_instance.split_and_get_chunks_relevant_from_documents(docs_list=docs,query='张结魁')
+    chunks = env_models_instance.split_and_get_chunks_relevant_from_documents(docs_list=docs,query='张结魁',only_use_reranker=True)
     print(chunks)
 
     from langchain_core.messages import HumanMessage,SystemMessage

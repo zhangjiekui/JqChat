@@ -6,7 +6,10 @@ from pydantic import BaseModel
 from config import Config
 from models import TokenizeRequest, TokenizeResponse, RerankRequest, RerankResponse, ModelInfo,ModelsResponse
 from transformers import AutoTokenizer, AutoModelForCausalLM
+from transformers.utils import is_flash_attn_2_available
 import torch
+
+print(is_flash_attn_2_available())
 
 
 

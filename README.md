@@ -9,6 +9,12 @@ curl -X 'GET' \
 
 pip install httpx==0.27.2 #报Client.__init__() got an unexpected keyword argument 'proxies'
 
+docker run -it --gpus all --privileged --shm-size 64g --name ktransformers --network=host -v /data/models/:/data/models/ --name ktransformers -itd approachingai/ktransformers:v0.3.1-FANCY
+
+docker exec -it ktransformers /bin/bash
+python -m ktransformers.local_chat  --gguf_path /data/models/Qwen/qwen235q8/qwen235q8.gguf --model_path /data/models/Qwen/qwen235q8/Qwen3-235B-A22B/ --cpu_infer 33   --model_name qwen3kt --optimize_config_path ktransformers/optimize/optimize_rules/Qwen3Moe-serve.yaml --architectures Qwen3MoeForCausalLM
+
+USE_NUMA=1 TORCH_CUDA_ARCH_LIST="8.9" python ktransformers/server/main.py  --architectures Qwen3MoeForCausalLM --host 0.0.0.0 --port 8082   --model_path /data/models/Qwen/qwen235q8/Qwen3-235B-A22B/   --gguf_path  /data/models/Qwen/qwen235q8/qwen235q8.gguf   --optimize_config_path ktransformers/optimize/optimize_rules/Qwen3Moe-serve.yaml   --max_new_tokens 32000  --backend_type balance_serve --model_name qwen3kt
 
 # 105服务器最终运行paddlex 3.0的命令
 ```
@@ -173,7 +179,7 @@ docker run  --gpus all -p 8082:8082  --privileged    -v /data/models/:/data/mode
 
 docker exec -it ktransformers /bin/bash
 
-python ktransformers/server/main.py  --architectures Qwen3MoeForCausalLM --port 8082   --model_path /data/models/Qwen/qwen235q8/Qwen3-235B-A22B/   --gguf_path  /data/models/Qwen/qwen235q8/qwen235q8.gguf   --optimize_config_path ktransformers/optimize/optimize_rules/Qwen3Moe-serve.yaml   --max_new_tokens 32000  --backend_type balance_serve
+python ktransformers/server/main.py  --architectures Qwen3MoeForCausalLM --port 8082   --model_path /data/models/Qwen/qwen235q8/Qwen3-235B-A22B/   --gguf_path  /data/models/Qwen/qwen235q8/qwen235q8.gguf   --optimize_config_path ktransformers/optimize/optimize_rules/Qwen3Moe-serve.yaml   --max_new_tokens 32000  --backend_type balance_serve --model_name qwen3kt
 
 
 
@@ -1008,7 +1014,7 @@ async def chat_completion(request:Request,create:ChatCompletionCreate):
 
 #### NUMA内存查看和CPU负荷
 nvidia-smi 查看ktransformers的pid
-numastat -p 3424586(pid)
+numastat -p 3015837(pid)
 htop
 
 

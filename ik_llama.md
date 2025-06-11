@@ -34,6 +34,77 @@ CUDA_VISIBLE_DEVICES=0 /root/ik_llama.cpp/build/bin/llama-server -m /data/models
 CUDA_VISIBLE_DEVICES=0 /root/ik_llama.cpp/build/bin/llama-sweep-bench -m /data/models/qwen3-235b-a22b-128k_ud-q4_k_xl.gguf -thp -rtr -fa -fmoe --mlock --mla-use 1 --alias ftqwen3 --ctx-size 128000 -ctk q4_0 -ctv q4_0  -amb 512  --n-gpu-layers 100 --parallel 8 --threads 32 --host 0.0.0.0 --port 8080 --numa distribute -ot "blk\.[7-9]\.ffn.*=CPU" -ot "blk\.[1-8][0-9]\.ffn.*=CPU" -ot "blk\.9[0-3]\.ffn.*=CPU" -ser 8,4 -ub 512
 
 
+CUDA_VISIBLE_DEVICES=0 /root/ik_llama.cpp/build/bin/llama-server \
+  --model /data/models/Qwen3-235B-A22B-GGUF/Qwen3-235B-A22B-mix-IQ3_K-00001-of-00003.gguf \
+  --alias ftqwen3 \
+  -thp \
+  -fa \
+  -ser 8,4 -ub 512 \
+  -ctk q8_0 -ctv q8_0 \
+  -c 32768 \
+  -fmoe \
+  --mlock \
+  -amb 512 \
+  -rtr \
+  -ot "blk\.[7-9]\.ffn.*=CPU" -ot "blk\.[1-8][0-9]\.ffn.*=CPU" -ot "blk\.9[0-3]\.ffn.*=CPU" \
+  -ngl 99 \
+  --parallel 8 \
+  --threads 32 \
+  --host 0.0.0.0 \
+  --port 8080 \
+  --numa distribute
+
+CUDA_VISIBLE_DEVICES=0 /root/ik_llama.cpp/build/bin/llama-sweep-bench \
+  --model /data/models/Qwen3-235B-A22B-GGUF/Qwen3-235B-A22B-mix-IQ3_K-00001-of-00003.gguf \
+  --alias ftqwen3 \
+  -thp \
+  -fa \
+  -ser 8,4 -ub 512 \
+  -ctk q8_0 -ctv q8_0 \
+  -c 32768 \
+  -fmoe \
+  --mlock \
+  -amb 512 \
+  -rtr \
+  -ot "blk\.[7-9]\.ffn.*=CPU" -ot "blk\.[1-8][0-9]\.ffn.*=CPU" -ot "blk\.9[0-3]\.ffn.*=CPU" \
+  -ngl 99 \
+  --parallel 8 \
+  --threads 32 \
+  --host 0.0.0.0 \
+  --port 8080 \
+  --numa distribute
+
+
+main: n_kv_max = 32768, n_batch = 2048, n_ubatch = 512, flash_attn = 1, n_gpu_layers = 99, n_threads = 32, n_threads_batch = 32
+
+|    PP |     TG |   N_KV |   T_PP s | S_PP t/s |   T_TG s | S_TG t/s |
+|-------|--------|--------|----------|----------|----------|----------|
+|   512 |    128 |      0 |   48.925 |    10.47 |   18.850 |     6.79 |
+|   512 |    128 |    512 |   22.795 |    22.46 |   18.570 |     6.89 |
+|   512 |    128 |   1024 |   17.183 |    29.80 |   17.823 |     7.18 |
+|   512 |    128 |   1536 |   19.107 |    26.80 |   18.158 |     7.05 |
+|   512 |    128 |   2048 |   20.138 |    25.43 |   17.636 |     7.26 |
+
+
+<!--  doubled again the prompt processing speed with ik_llama by removing -rtr and -fmoe -->
+CUDA_VISIBLE_DEVICES=0 /root/ik_llama.cpp/build/bin/llama-sweep-bench \
+  --model /data/models/Qwen3-235B-A22B-GGUF/Qwen3-235B-A22B-mix-IQ3_K-00001-of-00003.gguf \
+  --alias ftqwen3 \
+  -thp \
+  -fa \
+  -ser 8,4 -ub 512 \
+  -ctk q8_0 -ctv q8_0 \
+  -c 32768 \
+  --mlock \
+  -amb 512 \
+  -ot "blk\.[7-9]\.ffn.*=CPU" -ot "blk\.[1-8][0-9]\.ffn.*=CPU" -ot "blk\.9[0-3]\.ffn.*=CPU" \
+  -ngl 99 \
+  --parallel 8 \
+  --threads 32 \
+  --host 0.0.0.0 \
+  --port 8080 \
+  --numa distribute
+
 
 
 ## 参数：
