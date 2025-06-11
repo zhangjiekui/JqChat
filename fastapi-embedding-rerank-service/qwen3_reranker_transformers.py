@@ -53,8 +53,8 @@ class Qwen3Reranker:
         self.suffix_tokens = self.tokenizer.encode(self.suffix, add_special_tokens=False)
         self.instruction = instruction
         if self.instruction is None:
-            self.instruction = "Given the user query, retrieval the relevant passages"
-
+            self.instruction = "Given the user query, retrieve the relevant passages that answer the query"
+            # fastapi-embedding-rerank-service/qwen3_embedding_transformers.py中self.instruction:已修改以保持一致
     def format_instruction(self, instruction, query, doc):
         if instruction is None:
             instruction = self.instruction

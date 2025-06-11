@@ -25,8 +25,8 @@ rerank_model_dir = snapshot_download(config.RERANK_MODEL_NAME,cache_dir='/data/m
 print(f"成功下载模型'{config.RERANK_MODEL_NAME}'到{rerank_model_dir=}")
 
 
-NUM_REPLICAS = 1  # 这个表示你需要这个进程启动几份。
-NUM_GPUS = 0.4  # 这个表示，每一份占用多少个gpu （这种小模型，不需要设置超过1）
+NUM_REPLICAS = 2  # 这个表示你需要这个进程启动几份。
+NUM_GPUS = 0.2  # 这个表示，每一份占用多少个gpu （这种小模型，不需要设置超过1）
 
 # 当前参数表示，会启动2份，第1，2，3会在显卡1上。第4，5，6会在显卡2上。
 

@@ -17,7 +17,7 @@ logger = logging.getLogger(__name__)
 class Qwen3Embedding():
     def __init__(self, model_name_or_path, instruction=None, use_cuda: bool = True, max_length=8192):
         if instruction is None:
-            instruction = 'Given a web search query, retrieve relevant passages that answer the query'
+            instruction = 'Given the user query, retrieve the relevant passages that answer the query'
         self.instruction = instruction
         if is_flash_attn_2_available() and use_cuda:
             self.model = AutoModel.from_pretrained(model_name_or_path, trust_remote_code=True, attn_implementation="flash_attention_2", torch_dtype=torch.float16).cuda().eval()

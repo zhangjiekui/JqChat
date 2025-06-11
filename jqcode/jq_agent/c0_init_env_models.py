@@ -260,7 +260,7 @@ class JqVectorStoreRetrieverWithScore(VectorStoreRetriever):
     def _get_relevant_documents(
         self, query: str, *, run_manager: CallbackManagerForRetrieverRun
     ) -> List[Document]:
-        instruction = 'Given a web search query, retrieve relevant passages that answer the query'
+        instruction = 'Given the user query, retrieve the relevant passages that answer the query'
         embedding_model = "None"
         if self.name=="embedding":
             embedding_model = self.vectorstore.embedding.model
