@@ -171,16 +171,12 @@ if __name__ == "__main__":
     if from_beginning:
         # 从头开始的
         lm_documents = reader_load_files()
-
-
-
         status,lm_documents_with_added_index_info_metadata,es_index_doc_id_list = jq_es_store.add_or_update_index_metadata_if_id_exists(lm_documents)
         status = jq_es_store.update_doc_fields_values(doc_ids=["fa39031f020a45efc744f73f0031a80d"],update_field_value_pair_dict=[{"status":"true","file_text":"更新第二条的status为true"}])
         status = jq_es_store.update_doc_fields_values(doc_ids=["04281eef4b0eb67013c654937ab52a03","fa39031f020a45efc744f73f0031a80d"],update_field_value_pair_dict=[{"status":"true","file_text":"更新第一条的status为true"},{"status":"true","file_text":"更新第二条的status为true"}])
         jq_es_store.update_doc_fields_values() #没有默认参数，会报错
         docs1 = jq_es_store.search_docs_by_text("AAMIS_项目总体计划")
-        print(docs1[0].text)
-        print(docs1[0].doc_id)
+        print(docs1[0]["_source"].get("file_text",""))
         docs2 = jq_es_store.search_docs_by_text("PPQA000",filter_by_status=["true","false"])
         print(len(docs2))
         docs2true = jq_es_store.search_docs_by_text("PPQA000",filter_by_status=["true"])
@@ -189,30 +185,29 @@ if __name__ == "__main__":
         print(len(docs2false))
 
         docs3 = jq_es_store.search_docs_by_text("PPQA000")
-        print(docs3[0].text)
-        print(docs3[0].doc_id)
+        print(len(docs3))
 
-        docs4 = jq_es_store.get_docs_by_ids("fa39031f020a45efc744f73f0031a80d")
-        print(docs4[0].text)
-        print(docs4[0].doc_id)
+        # docs4 = jq_es_store.get_docs_by_ids("fa39031f020a45efc744f73f0031a80d")
+        # print(docs4[0].text)
+        # print(docs4[0].doc_id)
 
-        docs5 = jq_es_store.get_docs_by_ids(["fa39031f020a45efc744f73f0031a80d","04281eef4b0eb67013c654937ab52a03"])
-        for doc in docs5:
-            print(doc.text)
-            print(doc.doc_id)
+        # docs5 = jq_es_store.get_docs_by_ids(["fa39031f020a45efc744f73f0031a80d","04281eef4b0eb67013c654937ab52a03"])
+        # for doc in docs5:
+        #     print(doc.text)
+        #     print(doc.doc_id)
 
-        docs6 = jq_es_store.get_all_docs()
-        for doc in docs6:
-            print(doc.text)
-            print(doc.doc_id)
+        # docs6 = jq_es_store.get_all_docs()
+        # for doc in docs6:
+        #     print(doc.text)
+        #     print(doc.doc_id)
 
-        jq_es_store.delete("fa39031f020a45efc744f73f0031a80d")
+        # jq_es_store.delete("fa39031f020a45efc744f73f0031a80d")
 
-        count = jq_es_store.count
-        ids = jq_es_store.ids
-        for id in ids:
-            print(id)
-            # 打印映射信息
+        # count = jq_es_store.count
+        # ids = jq_es_store.ids
+        # for id in ids:
+        #     print(id)
+        #     # 打印映射信息
         settings,mappings = jq_es_store.get_settings_and_mappings()
         print(settings)
         print(mappings)

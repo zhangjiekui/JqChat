@@ -264,16 +264,14 @@ class JqVectorStoreRetrieverWithScore(VectorStoreRetriever):
         embedding_model = "None"
         if self.name=="embedding":
             embedding_model = self.vectorstore.embedding.model
-            if "Qwen" in embedding_model:
-                query = f'Instruct: {instruction}\nQuery:{query}'                 
-
+            # if "Qwen" in embedding_model:
+            #     query = f'Instruct: {instruction}\nQuery:{query}'
+        print(f"JqVectorStoreRetrieverWithScore:{self.name=},{embedding_model=},{query=}，下面执行文档检索......")
         docs_and_similarities = (
             self.vectorstore.similarity_search_with_relevance_scores(
                 query, **self.search_kwargs
             )
-        )
-        print(f"JqVectorStoreRetrieverWithScore:{self.name=},{embedding_model=},{query=}")
-
+        ) 
         # Make the score part of the document metadata        
         for doc, similarity in docs_and_similarities:
             doc.metadata[f"relevance_score_retriever_{self.name}"] = similarity
@@ -324,6 +322,12 @@ class JqXinferenceReranker(BaseDocumentCompressor):
         else:
             kwargs.update({"normalize":normalize})
         # return self._model.rerank(documents,query,top_n,max_chunks_per_doc,return_documents,return_len,**kwargs)
+        if isinstance(query, list):
+            logger.warning("query is not a string, only customed Qwen Reranker support List(query:str).please check your input")
+            if "Qwen" not in self._model._model_uid:
+                logger.warning("Not Qwen Reranker, only use the first query in the list:query = query[0]")
+                query = query[0]
+                assert isinstance(query, str), f"Not Qwen Reranker, assert query should be a string, but got {type(query)}"
         return self._model.rerank(documents,query,top_n,max_chunks_per_doc,return_documents,return_len)
     
     def compress_documents(
@@ -358,11 +362,17 @@ class JqXinferenceReranker(BaseDocumentCompressor):
             if isinstance(passage, str) and len(passage) > 0:
                 passages.append(passage.replace('\n', ' '))
                 valid_doc_list.append(d)
-       
+        
+        if isinstance(query, list):
+            logger.warning("query is not a string, only customed Qwen Reranker support List(query:str).please check your input")
+            if "Qwen" not in self._model._model_uid:
+                logger.warning("Not Qwen Reranker, only use the first query in the list:query = query[0]")
+                query = query[0]
+                assert isinstance(query, str), f"Not Qwen Reranker, assert query should be a string, but got {type(query)}"        
+        
         rerank_result = self._model.rerank(passages,query,top_n=self.top_n,return_documents=True,return_len=False,**kwargs)
         rerank_result_list = rerank_result["results"]
         final_results = []
-        num_queries = 1 if isinstance(query, str) else len(query)
         num_passages = len(passages)
         for result in rerank_result_list:
             score =  result.get('relevance_score',0) or result.get('score',0)
@@ -796,8 +806,8 @@ class InitEnvModels:
         try:
             embed_model = LocalAIEmbeddings(model=self.embedding_model_name,deployment=self.embedding_model_name,api_key="NotNeed",openai_api_base=self.embedding_model_base_url,base_url=self.embedding_model_base_url,embedding_ctx_length=self.embedding_model_max_tokens*8,chunk_size=self.embedding_model_max_tokens)
             embedding_model_8k = LocalAIEmbeddings(model=self.embedding_model_8k_name,deployment=self.embedding_model_name,api_key="NotNeed",openai_api_base=self.embedding_model_base_url,base_url=self.embedding_model_8k_base_url,embedding_ctx_length=self.embedding_model_8k_max_tokens*4,chunk_size=self.embedding_model_8k_max_tokens)
-            emb_test = embed_model.embed_query("test query text")
-            logger.debug(emb_test)
+            # emb_test = embed_model.embed_query("test query text")
+            # logger.debug(emb_test)
         except Exception as e:
             logger.error(f"{embed_model=}工作不正常，请检查:{e}")
         try:
@@ -877,7 +887,8 @@ class InitEnvModels:
             else:
                 self.embed_model,self.embedding_model_8k,self.reranker = self._get_emb_8k_rerank_model(embedding_model_name=embedding_model_name, embedding_model_name_8k=embedding_model_name_8k, rerank_model_name=rerank_model_name,device = device,final_docs_num_reranked=final_docs_num_reranked)
         try:
-            r1 = self.embed_model.embed_query("test query text")
+            r1 = self.embed_model.embed_query("执行embed_query测试......test query text")
+            r2 = self.embed_model.embed_documents(["执行embed_documents测试......test documents text1","test documents text2"])
         except Exception as e:
             logger.error(f"{self.embed_model=}工作不正常，请检查:{e}")
         # # try:
