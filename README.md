@@ -1,11 +1,54 @@
 du -h --max-depth=1 / | sort -rh
+## Reranker 8081
+workon vllm
+CUDA_VISIBLE_DEVICES=0 nohup vllm serve /data/models/Qwen3-Reranker-0.6B-seq-cls --served-model-name Qwen/Qwen3-Reranker-0.6B --port 8081 >> /root/JqLogs/rerank.log 2>&1 &
+tail -f /root/JqLogs/rerank.log
+
+## Embedding 8082
+workon vllm
+CUDA_VISIBLE_DEVICES=0 nohup vllm serve /data/models/Qwen/Qwen3-Embedding-0___6B --served-model-name Qwen/Qwen3-Embedding-0.6B --port 8082 >> /root/JqLogs/embedding.log 2>&1 &
+tail -f /root/JqLogs/embedding.log
+
+## Reranker 备用 
+workon vllm
+CUDA_VISIBLE_DEVICES=0 vllm serve /data/models/Qwen/Qwen3-Reranker-0___6B --served-model-name Qwen/Qwen3-Reranker-0.6B  max_num_seqs=8 gpu_memory_utilization=0.5 --hf_overrides '{"architectures": ["Qwen3ForSequenceClassification"],"classifier_from_token": ["no", "yes"],"is_original_qwen3_reranker": true}' --task score
+
 
 ```
 curl -X 'GET' \
-  'http://10.1.150.105:9996/v1/models' \
+  'http://10.1.150.105:8081/v1/models' \
   -H 'accept: application/json' \
   -H 'Authorization: Bearer abc123'
 ```
+## Embedding测试
+curl http://10.1.150.105:8082/v1/embeddings   -H 'accept: application/json'   -H 'Content-Type: application/json' -H 'Authorization: Bearer abc123'  -d '{
+    "input": "Follow the white rabbit.",
+    "model": "Qwen/Qwen3-Embedding-0.6B",
+    "encoding_format": "float"
+  }'
+
+## Reranker测试
+curl http://10.1.150.105:8081/v1/rerank \
+  -H 'accept: application/json' \
+  -H 'Content-Type: application/json' \
+  -H 'Authorization: Bearer abc123' \
+  -d '{
+      "query": "ping",
+      "documents": ["pong"],
+    "model": "Qwen/Qwen3-Reranker-0.6B"
+  }'
+
+  curl http://10.1.150.105:8081/v1/score \
+  -H 'accept: application/json' \
+  -H 'Content-Type: application/json' \
+  -H 'Authorization: Bearer abc123' \
+  -d '{
+    "text_1": "ping",
+    "text_2": "pong",
+    "model": "Qwen/Qwen3-Reranker-0.6B"
+  }'
+
+
 
 pip install httpx==0.27.2 #报Client.__init__() got an unexpected keyword argument 'proxies'
 
@@ -1016,10 +1059,9 @@ async def chat_completion(request:Request,create:ChatCompletionCreate):
 nvidia-smi 查看ktransformers的pid
 numastat -p 3015837(pid)
 htop
-
+```
 
 ### 启动JqChat应用程序:
-
 ```
 workon test
 cd /data/projects/JqChatV2/JqChat

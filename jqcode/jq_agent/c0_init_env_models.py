@@ -804,33 +804,39 @@ class InitEnvModels:
         from jqcode.jq_knowledge_manegement.chatchat.server.localai_embeddings import LocalAIEmbeddings
        
         try:
-            embed_model = LocalAIEmbeddings(model=self.embedding_model_name,deployment=self.embedding_model_name,api_key="NotNeed",openai_api_base=self.embedding_model_base_url,base_url=self.embedding_model_base_url,embedding_ctx_length=self.embedding_model_max_tokens*8,chunk_size=self.embedding_model_max_tokens)
-            embedding_model_8k = LocalAIEmbeddings(model=self.embedding_model_8k_name,deployment=self.embedding_model_name,api_key="NotNeed",openai_api_base=self.embedding_model_base_url,base_url=self.embedding_model_8k_base_url,embedding_ctx_length=self.embedding_model_8k_max_tokens*4,chunk_size=self.embedding_model_8k_max_tokens)
-            # emb_test = embed_model.embed_query("test query text")
-            # logger.debug(emb_test)
+            import os
+            key=os.getenv("VLLM_API_KEY")
+            print(key)
+            embed_model = LocalAIEmbeddings(model=self.embedding_model_name,deployment=self.embedding_model_name,api_key="abc123",headers={'Authorization': 'Bearer abc123'},openai_api_base=self.embedding_model_base_url,base_url=self.embedding_model_base_url,embedding_ctx_length=self.embedding_model_max_tokens*8,chunk_size=self.embedding_model_max_tokens)
+            embedding_model_8k = LocalAIEmbeddings(model=self.embedding_model_8k_name,deployment=self.embedding_model_name,api_key="abc123",openai_api_base=self.embedding_model_base_url,base_url=self.embedding_model_8k_base_url,embedding_ctx_length=self.embedding_model_8k_max_tokens*4,chunk_size=self.embedding_model_8k_max_tokens)
+            emb_test = embed_model.embed_query("test query text")
+            logger.warning(f"{self.embedding_model_name} 嵌入模型接口{self.embedding_model_base_url}获取成功，嵌入维度为{len(emb_test)}")
         except Exception as e:
-            logger.error(f"{embed_model=}工作不正常，请检查:{e}")
+            logger.error(f"{embed_model=} 嵌入模型接口{self.embedding_model_base_url}工作不正常，请检查:{e}")
         try:
             # BCERerank: compress_documents(documents: Sequence[Document],query: str)
             # xinference.client: model.rerank(corpus, query) https://inference.readthedocs.io/zh-cn/latest/index.html
             # https://github.com/xorbitsai/inference/blob/7d83300a7694a0262b634007ea4164ea753e466f/xinference/model/rerank/core.py
-            client = Client(self.rerank_model_base_url) #url要去掉"/v1"
+            
             try:
+                client = Client(self.rerank_model_base_url,api_key='abc123') #url要去掉"/v1"
                 xinfer_reranker = client.get_model(self.rerank_model_name)
                 reranker = JqXinferenceReranker(top_n=6,model=xinfer_reranker)
             except:
                 from xinference.client.restful.restful_client import RESTfulRerankModelHandle
-                model = RESTfulRerankModelHandle(self.rerank_model_name,self.rerank_model_base_url, auth_headers={})
+                model = RESTfulRerankModelHandle(self.rerank_model_name,self.rerank_model_base_url, auth_headers={'Authorization': 'Bearer abc123'})
                 reranker = JqXinferenceReranker(top_n=6,model=model)
-            query = ["A man is eating pasta.","一个人在吃披萨"]
+
+            query = "A man is eating pasta."
             corpus = ["A man is eating food.","A woman is playing violin.","一个人在踢球","一个人在吃饭"]
             rerank_test1 = reranker.rerank(corpus, query,top_n=3)
             logger.debug(rerank_test1)
             rerank_test2 = reranker.compress_documents(corpus, query)
             logger.debug(rerank_test2)
+            logger.warning(f"{self.rerank_model_name}  重排模型接口{self.rerank_model_base_url}获取成功")
         except Exception as e:
             reranker = None
-            logger.warning(f"{self.rerank_model_name}在线模型无法获取: {e}")
+            logger.warning(f"{self.rerank_model_name}  重排模型接口{self.rerank_model_base_url}工作不正常，请检查:{e}")
             # "Failed to rerank documents, detail: [{'type': 'missing', 'loc': ['body', 'queries'], 'msg': 'Field required', 'input': {'model': 'Qwen/Qwen3-Reranker-0.6B', 'documents': ['A man is eating food.', 'A woman is playing violin.'], 'query': 'A man is eating pasta.', 'top_n': 6, 'max_chunks_per_doc': None, 'return_documents': True, 'return_len': True, 'kwargs': '{}'}}]"
             # "Failed to rerank documents, detail: [{'type': 'list_type', 'loc': ['body', 'query'], 'msg': 'Input should be a valid list', 'input': 'A man is eating pasta.'}]"
         return embed_model,embedding_model_8k,reranker

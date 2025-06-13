@@ -315,7 +315,8 @@ if __name__ == "__main__":
     # # status = jq_es_client.create_doc_index(index_name='tempuse',
     # #                                        description="创建一个测试知识库知识库,该知识库主要用测试获取基本信息功能")
     
-    # kbs = jq_es_client.get_all_kb()
+    kbs = jq_es_client.get_all_kb()
+    print(f"当前知识库列表为:{kbs}")
 
     # index_info = jq_es_client.get_index_info(index_name='tempuse')
 
@@ -328,7 +329,7 @@ if __name__ == "__main__":
     # status = jq_es_client.drop_doc_index(index_name=index_name)
     
     input_dir = "/media/program/UPLOAD_DOCS/knowledge_base/liyuanqin/content"
-    # input_dir = fr'/data/projects/JqChatV2/JqChat/jqcode/jq_readers/.test_files/.testinputdocs'
+    input_dir = fr'/data/projects/JqChatV2/JqChat/jqcode/jq_readers/.test_files/.testinputdocs'
     # input_files =["/data/projects/JqChatV2/JqChat/jqcode/jq_readers/.test_files/.testinputdocs/AAMIS_项目总体计划_120925.doc"]
     input_files = ["/media/program/UPLOAD_DOCS/knowledge_base/liyuanqin/content/建党100周年.docx"]
     input_files += ['/data/projects/JqChatV2/JqChat/PPQA000_质量保证过程.docx']
@@ -339,7 +340,7 @@ if __name__ == "__main__":
     r2r_client = r2r_authed_client(user_id=current_user)
     
     # 1、测试文件夹
-    vectorstore = jq_es_client.chunks_indexing_from_input_dir_or_files(current_user=current_user,index_name='graphrag_test',
+    vectorstore = jq_es_client.chunks_indexing_from_input_dir_or_files(current_user=current_user,index_name='zjk_jqesclient_reader_test_qwen1024dim',
                                                                     description="graphrag_test: 转换/data/projects/JqChatV2/JqChat/jqcode/jq_readers/.test_files/.testinputdocs目录下的文件，测试速度",
                                                                     input_dir = input_dir,
                                                                     input_files=None,
@@ -349,7 +350,7 @@ if __name__ == "__main__":
 
     
 
-    vectorstore = jq_es_client.chunks_indexing_from_input_dir_or_files(current_user=current_user,index_name='default',
+    vectorstore = jq_es_client.chunks_indexing_from_input_dir_or_files(current_user=current_user,index_name='zjk_jqesclient_reader_test_qwen1024dim',
                                                                 description=None,
                                                                 input_dir = None,
                                                                 input_files=input_files,

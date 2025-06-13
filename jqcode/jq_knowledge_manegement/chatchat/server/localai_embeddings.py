@@ -301,7 +301,7 @@ class LocalAIEmbeddings(BaseModel, Embeddings):
             # See: https://github.com/openai/openai-python/issues/418#issuecomment-1525939500
             # replace newlines, which can negatively affect performance.
             text = text.replace("\n", " ")
-        print(f"   ...LocalAIEmbeddings  _embedding_func() {text=}")
+        # print(f"   ...LocalAIEmbeddings  _embedding_func() {text=}")
         return (
             embed_with_retry(
                 self,
@@ -344,7 +344,7 @@ class LocalAIEmbeddings(BaseModel, Embeddings):
         Returns:
             List of embeddings, one for each text.
         """
-        print(f"LocalAIEmbeddings embed_documents()=>嵌入模型为：{self.model},Query应为原始文本：{len(texts)=}")
+        # print(f"LocalAIEmbeddings embed_documents()=>嵌入模型为：{self.model},Query应为原始文本：{len(texts)=}")
 
         # call _embedding_func for each text with multithreads
         def task(seq, text):
@@ -368,7 +368,7 @@ class LocalAIEmbeddings(BaseModel, Embeddings):
         Returns:
             List of embeddings, one for each text.
         """
-        print(f"LocalAIEmbeddings aembed_documents()=>嵌入模型为：{self.model},Query应为原始文本：{texts[0]=}")
+        # print(f"LocalAIEmbeddings aembed_documents()=>嵌入模型为：{self.model},Query应为原始文本：{texts[0]=}")
         embeddings = []
         for text in texts:
             response = await self._aembedding_func(text, engine=self.deployment)
@@ -402,15 +402,16 @@ class LocalAIEmbeddings(BaseModel, Embeddings):
         """
         if "Qwen" in self.model:
             text =  f'Instruct: Given the user query, retrieve the relevant passages that answer the query\nQuery:{text}'
-            print(f"LocalAIEmbeddings嵌入模型为：{self.model},增加了Instruct的Query为：\n{text}")
+            print(f"LocalAIEmbeddings aembed_query()=>嵌入模型为：{self.model},增加了Instruct的Query为：")
+            print(f"------------------\n{text}\n------------------")
         embedding = await self._aembedding_func(text, engine=self.deployment)
         return embedding
 if __name__ == '__main__':
     # from langchain_community.embeddings import LocalAIEmbeddings
     embeddings_api = LocalAIEmbeddings(
-        model= '/data/models/Qwen/Qwen3-Embedding-0___6B',
-        openai_api_key="random-string",
-        openai_api_base="http://10.1.150.105:8090/v1")
+        model= 'Qwen/Qwen3-Embedding-0.6B',
+        openai_api_key="abc123",
+        openai_api_base="http://10.1.150.105:8082/v1")
 
 
     emd = embeddings_api.embed_query("用户问题Query")
