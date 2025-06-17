@@ -302,15 +302,18 @@ class LocalAIEmbeddings(BaseModel, Embeddings):
             # replace newlines, which can negatively affect performance.
             text = text.replace("\n", " ")
         # print(f"   ...LocalAIEmbeddings  _embedding_func() {text=}")
-        return (
-            embed_with_retry(
+        embeddings = embed_with_retry(
                 self,
                 input=[text],
                 **self._invocation_params,
-            )
-            .data[0]
-            .embedding
-        )
+            ).data[0].embedding
+        
+        returned_dim = len(embeddings)
+        expected_dim = self.model_kwargs.get("dimensions", 0)
+        if expected_dim and expected_dim < returned_dim:
+            embeddings = embeddings[:expected_dim]
+
+        return embeddings
 
     async def _aembedding_func(self, text: str, *, engine: str) -> List[float]:
         """Call out to LocalAI's embedding endpoint."""

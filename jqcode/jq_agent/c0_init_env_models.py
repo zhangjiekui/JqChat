@@ -823,11 +823,12 @@ class InitEnvModels:
             # emb_test = embeddings_api.embed_query("test query text")
 
 
-            embed_model = LocalAIEmbeddings(model=self.embedding_model_name,openai_api_base=self.embedding_model_base_url,openai_api_key="not empty")
+            embed_model = LocalAIEmbeddings(model=self.embedding_model_name,openai_api_base=self.embedding_model_base_url,openai_api_key="not empty",model_kwargs={'dimensions': self.embedding_model_dimentions})
             emb_test = embed_model.embed_query("test query text")
             embedding_model_8k = LocalAIEmbeddings(model=self.embedding_model_8k_name,deployment=self.embedding_model_name,api_key="abc123",openai_api_base=self.embedding_model_base_url,base_url=self.embedding_model_8k_base_url,embedding_ctx_length=self.embedding_model_8k_max_tokens*4,chunk_size=self.embedding_model_8k_max_tokens)
-            
-            logger.warning(f"{self.embedding_model_name} 嵌入模型接口{self.embedding_model_base_url}获取成功，嵌入维度为{len(emb_test)}")
+            r2 = embed_model.embed_documents(["执行embed_documents测试......test documents text1","test documents text2"])
+            # print(r2)
+            logger.warning(f"{self.embedding_model_name} 嵌入模型接口{self.embedding_model_base_url}获取成功，返回的嵌入维度为{len(emb_test)}")
         except Exception as e:
             embed_model = None
             embedding_model_8k = None            
@@ -915,6 +916,7 @@ class InitEnvModels:
         try:
             r1 = self.embed_model.embed_query("执行embed_query测试......test query text")
             r2 = self.embed_model.embed_documents(["执行embed_documents测试......test documents text1","test documents text2"])
+            print(r2)
         except Exception as e:
             logger.error(f"{self.embed_model=}工作不正常，请检查:{e}")
         # # try:
