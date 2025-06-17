@@ -409,9 +409,9 @@ class LocalAIEmbeddings(BaseModel, Embeddings):
 if __name__ == '__main__':
     # from langchain_community.embeddings import LocalAIEmbeddings
     embeddings_api = LocalAIEmbeddings(
-        model= 'Qwen/Qwen3-Embedding-0.6B',
+        model= 'Qwen3-Embedding-0.6B',
         openai_api_key="abc123",
-        openai_api_base="http://10.1.150.105:8082/v1")
+        openai_api_base="http://10.1.150.106:9997/v1")
 
 
     emd = embeddings_api.embed_query("用户问题Query")

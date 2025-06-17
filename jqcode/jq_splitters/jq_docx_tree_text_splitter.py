@@ -958,7 +958,8 @@ if __name__ == "__main__":
 
     
     llm = env_models_instance.chat_model
-    index_name='zjk_jqesclient_reader_test'
+    index_name='zjk_jqesclient_reader_test_new1024'
+    index_name='zjk_jqesclient_reader_test_768im'
     compression_retriever = get_retriever(index_name=index_name,chat_on_docs_list=input_files,add_docs_list_to_kb=True)
     # compression_retriever = get_retriever(index_name=index_name)
     # chain_type:stuff、refine、map_reduce 和 map_rerank

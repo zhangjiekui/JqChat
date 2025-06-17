@@ -340,7 +340,9 @@ if __name__ == "__main__":
     r2r_client = r2r_authed_client(user_id=current_user)
     
     # 1、测试文件夹
-    vectorstore = jq_es_client.chunks_indexing_from_input_dir_or_files(current_user=current_user,index_name='zjk_jqesclient_reader_test_qwen1024dim',
+    index_name='zjk_jqesclient_reader_test_qwen1024dim'
+    index_name='zjk_jqesclient_reader_test_768im'
+    vectorstore = jq_es_client.chunks_indexing_from_input_dir_or_files(current_user=current_user,index_name=index_name,
                                                                     description="graphrag_test: 转换/data/projects/JqChatV2/JqChat/jqcode/jq_readers/.test_files/.testinputdocs目录下的文件，测试速度",
                                                                     input_dir = input_dir,
                                                                     input_files=None,
@@ -350,7 +352,7 @@ if __name__ == "__main__":
 
     
 
-    vectorstore = jq_es_client.chunks_indexing_from_input_dir_or_files(current_user=current_user,index_name='zjk_jqesclient_reader_test_qwen1024dim',
+    vectorstore = jq_es_client.chunks_indexing_from_input_dir_or_files(current_user=current_user,index_name=index_name,
                                                                 description=None,
                                                                 input_dir = None,
                                                                 input_files=input_files,

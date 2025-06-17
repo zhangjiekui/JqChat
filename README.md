@@ -1299,13 +1299,28 @@ ollama run wangshenzhi/llama3.1_70b_chinese_chat
 经测试，完全可用，就是生成速度要慢一半（17 tokens/s），而xinfer的生成速度接近40 tokens/s
 
 ## Xinference LLM
+106服务器
+sudo bash /root/nvidiafile/NVIDIA-Linux-x86_64-560.35.03.run
+【reboot】
+
+
+sudo add-apt-repository ppa:graphics-drivers/ppa
+sudo apt update
+sudo apt install nvidia-driver-560
+
+<!-- 安装后锁定驱动版本，防止系统更新导致版本漂移： -->
+sudo apt-mark hold nvidia-driver-560
+
+
 #### 当前使用版本
 **注意:gptq准确率和推理效率都更优【qwen2 72B Int4 gptq/awq设置对应的max_seq_len=32768 & gpu_memory_utilization=0.95】**
 ### 本地Pip安装运行
 
 运行 xinference 框架服务
 ```
-workon vllm
+106服务器
+source /usr/local/bin/virtualenvwrapper.sh
+workon xinfer2
 nohup xinference-local -H 0.0.0.0 --log-level debug  >> /data/xinference/xinfer.log 2>&1 & 
 tail -f /data/xinference/xinfer.log
 ```

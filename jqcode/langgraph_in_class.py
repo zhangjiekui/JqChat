@@ -42,6 +42,7 @@ logger = jqkj_logger(__file__).get_logger()
 # python_repl = PythonREPLTool().run #这是原生的
 # python_repl = python_repl_tool #这是我自己定义的，强制加入了print,已获取输出值
 # python_repl = eval  
+# llm_model = env_models_instance.openai_chat_model or env_models_instance.chat_model
 llm_model = env_models_instance.chat_model
 # DEBUG_LLM_USING_CUSTOM_HANDLER
 invoke_llm_config = env_models_instance.invoke_llm_config 
@@ -474,14 +475,20 @@ answer_is_supported_by_documents_prompt = ChatPromptTemplate.from_messages(
 )
 answer_is_supported_by_documents_grader = answer_is_supported_by_documents_prompt | structured_llm_answer_is_supported_by_documents_grader
 
-class GradeAnswer(BaseModel,extra='allow'):
+# class GradeAnswer(BaseModel,extra='allow'):
+class GradeAnswer(BaseModel):
     """Binary classification to assess answer addresses question."""
     k: str = Field(description="Whether answer addresses the question, k must be 'yes' or 'no'")
 
 prompt_answer_grader = """You are a grader assessing whether an answer addresses / resolves a question. Response me with a simple JSON string can be directly consumed by  ‘json.loads’ method, must be ‘{{"k":"yes"}}’ or  ‘{{"k":"no"}}’,'yes' means the answer addresses / resolves the question.No preamble or explaination."""
+
+prompt_answer_grader = """You are a grader assessing whether an answer addresses / resolves a question. Make sure to return a JSON blob with key 'k' and value 'yes' or 'no'. 'yes' means the answer addresses / resolves the question, 'no' means it does not. No preamble or explanation."""
+
 if env_models_instance.need_json_mode:    
+    # structured_llm_answer_grader = llm_model.with_structured_output(GradeAnswer,method='json_mode', include_raw=True)
     structured_llm_answer_grader = llm_model.with_structured_output(GradeAnswer,method='json_mode')
 else:
+    # structured_llm_answer_grader = llm_model.with_structured_output(GradeAnswer, include_raw=True)
     structured_llm_answer_grader = llm_model.with_structured_output(GradeAnswer)
 answer_prompt = ChatPromptTemplate.from_messages(
     [
@@ -842,8 +849,18 @@ class GraphAgent:
             print("---GRADE GENERATION vs QUESTION---")       
             
             try:
-                score = answer_addresses_question_grader.invoke({"question": question,"generation": generation},config=invoke_llm_config)
-                grade = score.k
+                # try:
+                #     score = answer_addresses_question_grader.invoke({"question": question,"generation": generation},config=invoke_llm_config)                
+                #     grade = score.k
+                # except Exception as e:
+                #     _prompt=answer_prompt.invoke({"question": question,"generation": generation},config=invoke_llm_config)
+                #     _llm_res = llm_model.invoke(_prompt)
+                #     _dict = json_repair.loads(_llm_res.content)
+                #     grade = _dict.get("k","no") # 默认是"yes"
+                _prompt=answer_prompt.invoke({"question": question,"generation": generation},config=invoke_llm_config)
+                _llm_res = llm_model.invoke(_prompt)
+                _dict = json_repair.loads(_llm_res.content)
+                grade = _dict.get("k","yes") # 默认是"yes"
             except Exception as e:
                 grade = "yes" # 继续按正常往下执行！
                 print(f"---ERROR: 无法获取'answer_grader'的判别结果，详细错误信息如下:---")

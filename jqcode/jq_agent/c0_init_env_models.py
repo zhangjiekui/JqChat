@@ -670,6 +670,7 @@ class InitEnvModels:
         self.gpu_idxs = [0,1,2,3]
 
         self.chat_model = None
+        self.openai_chat_model=None
         self.get_langchain_chat_model()
 
         self.embed_model,self.embedding_model_8k,self.reranker = None, None, None
@@ -706,7 +707,7 @@ class InitEnvModels:
     #     return self.openai_client
     # endregion 直接初始化openai接口，暂时用不上
 
-    def get_langchain_chat_model(self, temperature=0.6,top_p =0.95, top_k=30, min_p=0, frequency_penalty=0.2, repetition_penalty=1.05, max_tokens=None, streaming=False,use_deepseek=True):
+    def get_langchain_chat_model(self, temperature=0.6,top_p =0.95, top_k=20, min_p=0, frequency_penalty=0.2, repetition_penalty=1.05, max_tokens=None, streaming=False,use_deepseek=True):
         if max_tokens:
             if max_tokens!=self.llm_model_max_tokens:
                 logger.warning(f"您现在请求的llm {max_tokens=}，与环境配置中的{self.llm_model_max_tokens=}不同，请确认！")
@@ -737,8 +738,7 @@ class InitEnvModels:
             except Exception as e:
                 logger.error(f"加载ChatDeepSeek失败：{str(e)}")
 
-        if not self.chat_model:
-            self.chat_model = ChatOpenAI(
+        openai_chat_model = ChatOpenAI(
                     cache=True,
                     model_name=self.llm_model_name,
                     openai_api_base=self.llm_model_base_url,    
@@ -752,7 +752,11 @@ class InitEnvModels:
                     # 设置vllm+qwen2.5的repetition_penalty: https://qwen.readthedocs.io/zh-cn/latest/framework/function_call.html#vllm
                     # https://huggingface.co/Qwen/QwQ-32B#usage-guidelines              
                     extra_body={"repetition_penalty": repetition_penalty,"min_p": min_p,"top_k": top_k},        
-                )
+                )       
+        self.openai_chat_model = openai_chat_model
+
+        if not self.chat_model:
+            self.chat_model = openai_chat_model            
             logger.warning(f'当前使用ChatOpenAI接口,LLM模型为:model_name = {self.chat_model.model_name}, api_base = {self.chat_model.openai_api_base}')
         return self.chat_model
     
@@ -804,14 +808,29 @@ class InitEnvModels:
         from jqcode.jq_knowledge_manegement.chatchat.server.localai_embeddings import LocalAIEmbeddings
        
         try:
-            import os
-            key=os.getenv("VLLM_API_KEY")
-            print(key)
-            embed_model = LocalAIEmbeddings(model=self.embedding_model_name,deployment=self.embedding_model_name,api_key="abc123",headers={'Authorization': 'Bearer abc123'},openai_api_base=self.embedding_model_base_url,base_url=self.embedding_model_base_url,embedding_ctx_length=self.embedding_model_max_tokens*8,chunk_size=self.embedding_model_max_tokens)
-            embedding_model_8k = LocalAIEmbeddings(model=self.embedding_model_8k_name,deployment=self.embedding_model_name,api_key="abc123",openai_api_base=self.embedding_model_base_url,base_url=self.embedding_model_8k_base_url,embedding_ctx_length=self.embedding_model_8k_max_tokens*4,chunk_size=self.embedding_model_8k_max_tokens)
+            # embed_model = LocalAIEmbeddings(model=self.embedding_model_name,deployment=self.embedding_model_name,api_key="abc123",headers={'Authorization': 'Bearer abc123'},openai_api_base=self.embedding_model_base_url,base_url=self.embedding_model_base_url,embedding_ctx_length=self.embedding_model_max_tokens*8,chunk_size=self.embedding_model_max_tokens)
+            import openai
+
+            # Assume that the model is already launched.
+            # The api_key can't be empty, any string is OK.
+            # client = openai.Client(api_key="not empty", base_url="http://10.1.150.106:9997/v1")
+            # client.embeddings.create(model=self.embedding_model_name, input=["What is the capital of China?"])
+
+            # embeddings_api = LocalAIEmbeddings(
+            #     model= 'Qwen3-Embedding-0.6B',#Qwen3-Embedding-0.6B
+            #     openai_api_key="abc123",
+            #     openai_api_base="http://10.1.150.106:9997/v1")
+            # emb_test = embeddings_api.embed_query("test query text")
+
+
+            embed_model = LocalAIEmbeddings(model=self.embedding_model_name,openai_api_base=self.embedding_model_base_url,openai_api_key="not empty")
             emb_test = embed_model.embed_query("test query text")
+            embedding_model_8k = LocalAIEmbeddings(model=self.embedding_model_8k_name,deployment=self.embedding_model_name,api_key="abc123",openai_api_base=self.embedding_model_base_url,base_url=self.embedding_model_8k_base_url,embedding_ctx_length=self.embedding_model_8k_max_tokens*4,chunk_size=self.embedding_model_8k_max_tokens)
+            
             logger.warning(f"{self.embedding_model_name} 嵌入模型接口{self.embedding_model_base_url}获取成功，嵌入维度为{len(emb_test)}")
         except Exception as e:
+            embed_model = None
+            embedding_model_8k = None            
             logger.error(f"{embed_model=} 嵌入模型接口{self.embedding_model_base_url}工作不正常，请检查:{e}")
         try:
             # BCERerank: compress_documents(documents: Sequence[Document],query: str)
@@ -819,7 +838,8 @@ class InitEnvModels:
             # https://github.com/xorbitsai/inference/blob/7d83300a7694a0262b634007ea4164ea753e466f/xinference/model/rerank/core.py
             
             try:
-                client = Client(self.rerank_model_base_url,api_key='abc123') #url要去掉"/v1"
+                # client = Client(self.rerank_model_base_url,api_key='abc123') #url要去掉"/v1"
+                client = Client(self.rerank_model_base_url)
                 xinfer_reranker = client.get_model(self.rerank_model_name)
                 reranker = JqXinferenceReranker(top_n=6,model=xinfer_reranker)
             except:
