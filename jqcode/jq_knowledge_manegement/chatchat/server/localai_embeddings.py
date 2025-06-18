@@ -327,8 +327,8 @@ class LocalAIEmbeddings(BaseModel, Embeddings):
                     self,
                     input=[text],
                     **self._invocation_params,
-                ).data[0].embedding
-        
+                )
+        embeddings = embeddings.data[0].embedding
         returned_dim = len(embeddings)
         expected_dim = self.model_kwargs.get("dimensions", 0)
         if expected_dim and expected_dim < returned_dim:
@@ -413,6 +413,8 @@ class LocalAIEmbeddings(BaseModel, Embeddings):
         return embedding
 if __name__ == '__main__':
     # from langchain_community.embeddings import LocalAIEmbeddings
+    import asyncio
+    print("开始测试LocalAIEmbeddings:默认设置")
     embeddings_api = LocalAIEmbeddings(
         model= 'Qwen3-Embedding-0.6B',
         openai_api_key="abc123",
@@ -421,10 +423,33 @@ if __name__ == '__main__':
 
     emd = embeddings_api.embed_query("用户问题Query")
     print(len(emd))
+    asy_emd = asyncio.run(embeddings_api.aembed_query("用户问题Query"))
+    print(len(asy_emd))
 
     documents_emd =embeddings_api.embed_documents(["text1","text2"])
     print(len(documents_emd))
     for emd in documents_emd:
         print(len(emd))
     print("执行完毕")
+
+    print("开始测试LocalAIEmbeddings:dimensions=768")
+    embeddings_api = LocalAIEmbeddings(
+        model= 'Qwen3-Embedding-0.6B',
+        openai_api_key="abc123",
+        openai_api_base="http://10.1.150.106:9997/v1",
+        model_kwargs={'dimensions': 768})
+
+
+    emd = embeddings_api.embed_query("用户问题Query")
+    print(len(emd))
+    asy_emd = asyncio.run(embeddings_api.aembed_query("用户问题Query"))
+    print(len(asy_emd))
+
+    documents_emd =asyncio.run(embeddings_api.aembed_documents(["text1","text2"]))
+    print(len(documents_emd))
+    for emd in documents_emd:
+        print(len(emd))
+    print("执行完毕")
+
+
 
