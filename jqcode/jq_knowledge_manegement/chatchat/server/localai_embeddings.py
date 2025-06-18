@@ -322,17 +322,19 @@ class LocalAIEmbeddings(BaseModel, Embeddings):
             # See: https://github.com/openai/openai-python/issues/418#issuecomment-1525939500
             # replace newlines, which can negatively affect performance.
             text = text.replace("\n", " ")
-        return (
-            (
-                await async_embed_with_retry(
+
+        embeddings = await async_embed_with_retry(
                     self,
                     input=[text],
                     **self._invocation_params,
-                )
-            )
-            .data[0]
-            .embedding
-        )
+                ).data[0].embedding
+        
+        returned_dim = len(embeddings)
+        expected_dim = self.model_kwargs.get("dimensions", 0)
+        if expected_dim and expected_dim < returned_dim:
+            embeddings = embeddings[:expected_dim]
+
+        return embeddings
 
     def embed_documents(
         self, texts: List[str], chunk_size: Optional[int] = 0

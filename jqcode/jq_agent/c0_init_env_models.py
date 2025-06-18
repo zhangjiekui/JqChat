@@ -107,22 +107,25 @@ class Vlm_API:
         self.client = OpenAI(api_key=api_key,base_url=api_base)
         self.default_prompt = '首先识别出有意义的区块，然后逐个区块完整识别并仅输出图中的文字（相当于ocr，但去掉不必要的换行符），不能遗漏，同一区块的文字内容放在一起。最后仅输出完整的文本，不要有任何额外的内容和解释。'
         # 请识别出发票中的购买方 名称（keyname:gmf）、销售方 名称（keyname:xsf）、销售项目名称 （keyname:item）、发票类型（keyname:type），以Json形式返回，使用括号中的keyname代替中文名称，不要有多余内容
-    def __call__(self,image_path_or_base64:str,query:str=None,only_return_text=True):
+    def __call__(self,image_path_or_base64:str,is_decoded_image_text:bool=False,query:str=None,only_return_text=True):
         ## 如果是图片地址，读取图片并转换为base64
         if not query:
             query = self.default_prompt
-        if isinstance(image_path_or_base64,str): 
-            if os.path.isfile(image_path_or_base64):
-                with open(image_path_or_base64, 'rb') as f:
-                    image_path_or_base64 = f.read()
-            else:
-                raise Exception(f"{image_path_or_base64}文件不存在！")
-        elif isinstance(image_path_or_base64, bytes):
-            pass
+        if is_decoded_image_text:
+            encoded_image_text = image_path_or_base64
         else:
-            raise Exception(f"目前只接受str或bytes类型的参数，不支持：{type(image_path_or_base64)=}")               
-        encoded_data = base64.b64encode(image_path_or_base64)
-        encoded_image_text = encoded_data.decode('utf-8')
+            if isinstance(image_path_or_base64,str): 
+                if os.path.isfile(image_path_or_base64):
+                    with open(image_path_or_base64, 'rb') as f:
+                        image_path_or_base64 = f.read()
+                else:
+                    raise Exception(f"{image_path_or_base64}文件不存在！")
+            elif isinstance(image_path_or_base64, bytes):
+                pass
+            else:
+                raise Exception(f"目前只接受str或bytes类型的参数，不支持：{type(image_path_or_base64)=}")               
+            encoded_data = base64.b64encode(image_path_or_base64)
+            encoded_image_text = encoded_data.decode('utf-8')
         base64_qwen = f"data:image;base64,{encoded_image_text}"
 
         try:
@@ -146,7 +149,9 @@ class Vlm_API:
                         )  
             logger.info(f"Chat response:\n{chat_response}")
             if only_return_text:
-                return chat_response.choices[0].message.content
+                text = chat_response.choices[0].message.content
+                text = text.replace('\n', ' ')
+                return text
             else:
                 return chat_response
              
@@ -170,7 +175,8 @@ class Vlm_API:
 
 class Ocr_API:
     def __init__(self,server_url:str = "http://10.1.150.106:5566/api/ocr"):
-        self.server_url = server_url       
+        self.server_url = server_url
+        self.vlm = Vlm_API()       
     
     def __call__(self,image_path_or_base64):
         ## 如果是图片地址，读取图片并转换为base64
@@ -186,11 +192,12 @@ class Ocr_API:
             raise Exception(f"目前只接受str或bytes类型的参数，不支持：{type(image_path_or_base64)=}")               
         encoded_data = base64.b64encode(image_path_or_base64)
         encoded_data_str = encoded_data.decode('utf-8')
-        payload = {
-            "imgString": encoded_data_str,
-            "bStore": False
-        }
-        try:    
+        try:
+            # raise Exception("故意抛出错误，以跳转测试VLM接口......")
+            payload = {
+                "imgString": encoded_data_str,
+                "bStore": False
+            }            
             # 发送POST请求
             headers = {'Content-Type': 'application/json'}
             response = requests.post(
@@ -205,16 +212,19 @@ class Ocr_API:
             result = result_json.get('data')[0].get('text','')
         
             # 返回结果
-            logger.debug("识别结果:"+result)
+            # logger.warning("OCR识别结果:"+result)            
             return result
             
-        except requests.exceptions.RequestException as e:
-            logger.error(f"请求错误: {str(e)}")
-            return ''
         except Exception as e:
-            logger.error(f"其他错误: {str(e)}")
-            return ''
+            logger.error(f"OCR接口请求错误: {str(e)}。下面尝试请求VLM接口......")
+            text = self.vlm(encoded_data_str,is_decoded_image_text=True)
+            logger.warning("VLM识别结果:"+text)
+            return text
 
+# ocr_api= Ocr_API()
+# image_path_or_base64="/data/projects/JqChatV2/JqChat/graph.jpg"
+# r1=ocr_api(image_path_or_base64=image_path_or_base64) 
+# print(r1)  
 
 class Ocr_GOT_API:    
     def __init__(self,model_uid='GOT-OCR2_0',base_url:str = "http://10.1.150.106:9997",auth_headers={}):
@@ -611,7 +621,7 @@ class InitEnvModels:
         
         try:
             # https://python.langchain.com/docs/integrations/llm_caching/
-            from langchain.cache import SQLAlchemyCache
+            from langchain_community.cache import SQLAlchemyCache
             from jqcode.jq_agent.c0_zh_fulltext_sql_alchemy_cache import ZhFulltextLLMCache
             from sqlalchemy import create_engine
             engine = create_engine(self.postgres_conn_psycopg3)
@@ -913,21 +923,21 @@ class InitEnvModels:
                 self.embed_model,self.embedding_model_8k,self.reranker = self._get_emb_8k_rerank_model_api()
             else:
                 self.embed_model,self.embedding_model_8k,self.reranker = self._get_emb_8k_rerank_model(embedding_model_name=embedding_model_name, embedding_model_name_8k=embedding_model_name_8k, rerank_model_name=rerank_model_name,device = device,final_docs_num_reranked=final_docs_num_reranked)
-        try:
-            r1 = self.embed_model.embed_query("执行embed_query测试......test query text")
-            r2 = self.embed_model.embed_documents(["执行embed_documents测试......test documents text1","test documents text2"])
-            print(r2)
-        except Exception as e:
-            logger.error(f"{self.embed_model=}工作不正常，请检查:{e}")
+        # try:
+        #     r1 = self.embed_model.embed_query("执行embed_query测试......test query text")
+        #     r2 = self.embed_model.embed_documents(["执行embed_documents测试......test documents text1","test documents text2"])
+        #     # print(r2)
+        # except Exception as e:
+        #     logger.error(f"{self.embed_model=}工作不正常，请检查:{e}")
         # # try:
         # #     r2 = self.embedding_model_8k.embed_query("test query text")
         # # except Exception as e:
         # #     logger.error(f"{self.embed_model=}工作不正常，请检查:{e}")        
-        try:
-            r3 = self.reranker.rerank(documents=["张结魁是谁？","张结魁是安徽晶奇公司的","create a compression retriever, we need a base retriever first"],
-                                     query="张结魁")
-        except Exception as e:
-            logger.error(f"{self.reranker=}工作不正常，请检查:{e}")
+        # try:
+        #     r3 = self.reranker.rerank(documents=["张结魁是谁？","张结魁是安徽晶奇公司的","create a compression retriever, we need a base retriever first"],
+        #                              query="张结魁")
+        # except Exception as e:
+        #     logger.error(f"{self.reranker=}工作不正常，请检查:{e}")
 
         return self.embed_model,self.embedding_model_8k,self.reranker
 

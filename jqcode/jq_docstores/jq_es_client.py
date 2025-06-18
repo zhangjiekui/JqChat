@@ -352,10 +352,10 @@ if __name__ == "__main__":
 
     
 
-    vectorstore = jq_es_client.chunks_indexing_from_input_dir_or_files(current_user=current_user,index_name=index_name,
-                                                                description=None,
-                                                                input_dir = None,
-                                                                input_files=input_files,
-                                                                r2r_client=r2r_client)
+    # vectorstore = jq_es_client.chunks_indexing_from_input_dir_or_files(current_user=current_user,index_name=index_name,
+    #                                                             description=None,
+    #                                                             input_dir = None,
+    #                                                             input_files=input_files,
+    #                                                             r2r_client=r2r_client)
 
     

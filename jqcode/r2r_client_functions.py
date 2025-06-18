@@ -19,7 +19,7 @@ def is_valid_email(id_or_email_str):
     else:
         return False
     
-def r2r_format_search_results_for_llm(query, results,limit: int = 10, min_score_threshold = 0.3) -> str:
+def r2r_format_search_results_for_llm(query, results,limit: int = 10, min_score_threshold = 0.6) -> str:
     """
     Instead of resetting 'source_counter' to 1, we:
      - For each chunk / graph / web / doc in `results`,
@@ -135,7 +135,7 @@ def r2r_format_search_results_for_llm(query, results,limit: int = 10, min_score_
         result = ''
     return result
 
-def r2r_search(client,query:str,chat_on_docs_list:list=None, limit: int = 20, min_score_threshold = 0.3,user_id:str=''):
+def r2r_search(client,query:str,chat_on_docs_list:list=None, limit: int = 20, min_score_threshold = 0.6,user_id:str=''):
     if client is None:    
         from r2r import R2RClient # type: ignore
         client = r2r_authed_client(user_id=user_id)
