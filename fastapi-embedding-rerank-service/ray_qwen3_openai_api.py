@@ -26,8 +26,8 @@ print(f"成功下载模型'{config.RERANK_MODEL_NAME}'到{rerank_model_dir=}")
 
 
 NUM_REPLICAS = 1  # 这个表示你需要这个进程启动几份。
-NUM_GPUS = 0.2  # 这个表示，每一份占用多少个gpu （这种小模型，不需要设置超过1）
-
+NUM_GPUS = 0  # 这个表示，每一份占用多少个gpu （这种小模型，不需要设置超过1）
+NUM_CPUS = 2 
 # 当前参数表示，会启动2份，第1，2，3会在显卡1上。第4，5，6会在显卡2上。
 
 
@@ -41,7 +41,7 @@ NUM_GPUS = 0.2  # 这个表示，每一份占用多少个gpu （这种小模型�
 # NUM_GPUS = 0.6
 # 当前参数表示，会启动2份，第1会在显卡1上。第2会在显卡2上
 
-ray.init(dashboard_host="0.0.0.0", dashboard_port=8266, include_dashboard=True, log_to_driver=True)
+ray.init(dashboard_host="0.0.0.0", dashboard_port=8266, include_dashboard=True, log_to_driver=True,ignore_reinit_error=True)
 app = FastAPI()
 origins = ["*"]
 app.add_middleware(
@@ -53,7 +53,7 @@ app.add_middleware(
 )
 
 
-@serve.deployment(num_replicas=NUM_REPLICAS, ray_actor_options={"num_gpus": NUM_GPUS})
+@serve.deployment(num_replicas=NUM_REPLICAS, ray_actor_options={"num_gpus": NUM_GPUS,"num_cpus":NUM_CPUS})
 @serve.ingress(app)
 class BatchCombineInferModel:
     def __init__(
@@ -184,17 +184,32 @@ class BatchCombineInferModel:
         return auth_info
 
 serve.start(http_options=HTTPOptions(host="0.0.0.0", port=8090))
+my_application = BatchCombineInferModel.bind(embedding_model_dir, rerank_model_dir)
+
+if __name__ == "__main__":
+    
+    serve.run(my_application,route_prefix="/")
+
+    status = "RUNNING"
+    while status == "RUNNING":        
+        _status = serve.status()
+        status = _status.applications["default"].status
+        print(f"BatchCombineInferModel is {status} ...")
+        time.sleep(30)
 
 
-serve.run(
-    BatchCombineInferModel.bind(
-        embedding_model_dir, rerank_model_dir
-    ),
-    route_prefix="/",
-)
 
 
-while True:
-    time.sleep(1000)
+'''
+可以直接运行该脚本，将启动服务
+也可以在终端中运行：
+cd /data/projects/JqChatV2/JqChat/fastapi-embedding-rerank-service
+workon test
+serve run ray_qwen3_openai_api:my_application
 
+
+导出配置文件
+serve build ray_qwen3_openai_api:my_application -o config.yaml
+serve run config.yaml
+'''
 # ray stop --force
