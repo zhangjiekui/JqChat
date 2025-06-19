@@ -41,7 +41,8 @@ NUM_CPUS = 2
 # NUM_GPUS = 0.6
 # 当前参数表示，会启动2份，第1会在显卡1上。第2会在显卡2上
 
-ray.init(dashboard_host="0.0.0.0", dashboard_port=8266, include_dashboard=True, log_to_driver=True,ignore_reinit_error=True)
+# ray.init(dashboard_host="0.0.0.0", dashboard_port=8265, include_dashboard=True, log_to_driver=True,ignore_reinit_error=True)
+ray.init(dashboard_host="0.0.0.0", include_dashboard=True, log_to_driver=True,ignore_reinit_error=True)
 app = FastAPI()
 origins = ["*"]
 app.add_middleware(
@@ -210,6 +211,9 @@ serve run ray_qwen3_openai_api:my_application
 
 导出配置文件
 serve build ray_qwen3_openai_api:my_application -o config.yaml
+
+运行：
+ray start --head --dashboard-host "0.0.0.0" --dashboard-port 8265
 serve run config.yaml
 '''
 # ray stop --force
