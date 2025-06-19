@@ -1,4 +1,4 @@
-du -h --max-depth=1 / | sort -rh
+**du -h --max-depth=1 / | sort -rh**
 ## Reranker 8081
 workon vllm
 CUDA_VISIBLE_DEVICES=0 nohup vllm serve /data/models/Qwen3-Reranker-0.6B-seq-cls --served-model-name Qwen/Qwen3-Reranker-0.6B --port 8081 >> /root/JqLogs/rerank.log 2>&1 &

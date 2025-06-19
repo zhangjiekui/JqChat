@@ -249,6 +249,8 @@ def extract_code(text):
         single_match = re.search(r'`(.+?)`', text, re.DOTALL)
         if single_match:
             return single_match.group(1).strip()
+        else:
+            return text
 
 def display_code(code:str):
     _code = f"""\n```python\n{code}\n```"""
@@ -1297,10 +1299,13 @@ class GraphAgent:
                 max_tokens = self.model.bound.max_tokens
                 api_base = self.model.bound.openai_api_base
                 message = self.model.invoke(messages,config=invoke_llm_config)
-                reasoning_content = message.additional_kwargs.get("reasoning_content",None)
-                if reasoning_content:
-                    logger.warning(f"推理内容：<think>\n{reasoning_content}\n</think>")
-                    reasoning_content_formatted = f'<details>\n<summary>查看模型思考过程</summary>\n<font color="grey" size=16px>{reasoning_content}</font></details>'
+                reasoning_content = message.additional_kwargs.get("reasoning_content","")
+                if reasoning_content.replace("\n",""):
+                    # logger.warning(f"推理内容：<think>\n{reasoning_content}\n</think>")
+                    reasoning_content_formatted = state["user_variables"].get(self.user_id,{}).get("reasoning_content",[])
+                    reasoning_content_formatted.append(reasoning_content)
+
+                    # reasoning_content_formatted = f'<details>\n<summary>查看模型思考过程</summary>\n<font color="grey" size=16px>{reasoning_content}</font></details>'
                     add_dict = {"reasoning_content":reasoning_content_formatted}
                     self.update_user_variables(state=state,add_dict=add_dict)
                     pass
@@ -1615,6 +1620,8 @@ class GraphAgent:
         
         [USER_QUESTION]
         {user_question}
+        仅仅需要可直接运行的Python代码，不需要输出任何其他内容。
+
         """
 
         sys_message = SystemMessage(content=system_code_prompt)
@@ -1714,14 +1721,33 @@ class GraphAgent:
                                 logger.warning(f"code_execution尝试从用户消息内容中直接提取代码时出现错误:{e}")
         try:
             if code:
+                # code = "print(故意要犯错误)"
                 logger.warning("......开始提交和执行代码......") 
                 # 返回值为{"text"="",image=""}
-                result,success=code_executor.call(code=code)
-                if  result :     
-                    if result['text']:
-                        message_content+=result['text']   
-                    if result['image']:       
-                        message_content+=result['image']
+                success = False
+                retry_times = 1
+                while not success and retry_times <= 3:
+                    result,success=code_executor.call(code=code)
+                    if success:
+                        message_content = f'执行代码成功[生成的文本内容为：{result.get("text") or "无生成的文本"};生成的图片位置为：{result.get("image") or "无生成的图片"}]。\n'
+                        if 'qwen3-----------' in env_models_instance.chat_model.model_name:
+                            message_content += '/no_think'  # 记录当前执行的工具名称                    
+                        
+                        logger.warning(f"......代码执行成功, {message_content=}......")
+                    else:                                      
+                        message_content = f'用户问题为:{question}\n生成代码为：{code}\n但该代码运行失败，返回结果为：{result}。\n请根据返回结果中的错误信息，修正代码，并重新提交执行。\n' 
+                        logger.warning(f"......第{retry_times}次代码执行失败, {message_content=}......") 
+                        try:
+                            human_message = HumanMessage(content=message_content)
+                            code_generated = llm_model.invoke([human_message],config=invoke_llm_config)
+                            code_text = code_generated.content.strip()        
+                            code = extract_code(code_text)
+                            # result,success=code_executor.call(code=code)
+                        except Exception as e:
+                            logger.warning(f"请求code_generation时出现错误:{e}")
+                    retry_times += 1
+                
+                
                 if not tool_call_id:
                     tool_call_id =f'call_{str(uuid.uuid4())}'
                     makeup_aimessage_with_tool_call = AIMessage(name="tool_calls",content="",tool_calls=[{"name":"code_generation_calling_execution","args":{"query":'makeuped query'},"id":tool_call_id}])
@@ -1803,7 +1829,7 @@ class GraphAgent:
         # self.graph.update_state(config=self.invoke_graph_config,values={"messages":input_message})
         
         #   {"$user_id":{"rag_args":"$rag_args","reference":"$reference"}}        
-        user_variables_statedict = {self.user_id:{"rag_args":"","reference":"","reasoning_content":""}}
+        user_variables_statedict = {self.user_id:{"rag_args":"","reference":"","reasoning_content":[]}}
         result = self.graph.invoke({"messages": [input_message],"question":self.question_rewrited,"question_related_messages":[],"generation":'',"user_variables":user_variables_statedict,"question_searched":False},config=self.invoke_graph_config)
         
         logger.debug(f"==USER[id:{self.user_id}]的问题[id:{self.question_id}]，允许问题改写:{allow_question_rewrite}")
@@ -1812,7 +1838,9 @@ class GraphAgent:
         print(f"改写问题>>:{self.question_rewrited} [{allow_question_rewrite=}]")
         answer = result['messages'][-1].content
         answer = display_text(answer)
-        user_variables_statedict = self._get_messages_from_state_by_key("user_variables")
+        # user_variables_statedict前面已存在，且值会随着self.graph.invoke的执行而变化，所以不需要重新获取
+        # 下面的代码反而无法获取最新的值
+        ## user_variables_statedict = self._get_messages_from_state_by_key("user_variables") #
       
         referens_str = user_variables_statedict[self.user_id]['reference']
         # 因为该问题已经结束，所以无需更新user_variables_statedict的'reference'值
@@ -1820,8 +1848,17 @@ class GraphAgent:
             answer = f'\n{referens_str}\n' + answer
 
         reasoning_content = user_variables_statedict[self.user_id]['reasoning_content']
+        
         if reasoning_content:
-            answer = f'\n{reasoning_content}\n' + answer  
+            reasoning_content_str = ''
+            if len(reasoning_content) == 1:
+                reasoning_content_str += reasoning_content[0] + '\n------\n'
+            else:
+                for i, content in enumerate(reasoning_content):
+                    reasoning_content_str += f'\n**推理步骤{i+1}** ： {content}\n------\n'
+            reasoning_content_formatted = f'<details>\n<summary>查看模型思考过程</summary>\n<font color="grey" size=16px>\n{reasoning_content_str}</font></details>'
+            answer = f'\n{reasoning_content_formatted}\n' + answer
+            # print(answer)  
 
 
         print(f"==AI回答:>>:{answer}")
@@ -1865,7 +1902,7 @@ if __name__ == "__main__":
     # user_questions = ['请调用工具函数帮我查询：我现在的位置是在安徽晶奇网络科技股份有限公司附近，请查询15公里范围内的养老机构，最多返回10个']
     # user_questions = ['我现在的位置是在安徽晶奇网络科技股份有限公司附近，请查询15公里范围内的养老机构，最多返回10个']
     # user_questions = ["请搜索网络然后回答问题：What is the weather in SF and LA?","Who won the super bowl in 2024? In what state is the winning team headquarters located?What is the GDP of that state? ","2024年安徽省会城市的GDP是多少? "]
-    # user_questions = ['合肥大蜀山']
+    user_questions = ['请绘制sin(x)曲线','请使用python实现指数移动平均法，生成样例数据，执行代码，绘制出曲线']
     my_main_bot = GraphAgent(executable_tools=executable_tools,routing_tools_wrapped_in_class=route_tools,allow_conversation_memory=True)
 
     for user_question in user_questions:
