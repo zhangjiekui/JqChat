@@ -228,14 +228,22 @@ usual_imports_list = usual_imports.split("\n")
 usual_imports_list_striped = [line.strip() for line in usual_imports_list]
 def merge_code_with_usual_imports(code:str,usual_imports_list=usual_imports_list_striped):
     code_lines = code.split("\n")
-    code_lines_striped = [line.strip() for line in code_lines]
+    code_lines_striped = [line.rstrip() for line in code_lines]
 
-    code_lines_is_import = [code_line for code_line in code_lines_striped if code_line.startswith('import')] 
+    code_lines_is_import = [code_line for code_line in code_lines_striped if code_line.lstrip().startswith('import')] 
    
-    for code_line in usual_imports_list_striped:
+    for code_line in usual_imports_list:
         if code_line not in code_lines_is_import:
-            code_lines_striped.insert(0,code_line)
-
+            code_lines_striped.insert(1,code_line)
+        else:
+            if 'import matplotlib.pyplot' in code_line:
+                code_lines_striped.remove(code_line)
+                new_code_line = "import matplotlib.pyplot as plt\n"
+                if 'font.sans-serif' not in code:
+                    new_code_line += "plt.rcParams['font.sans-serif'] = ['SimHei']\n"
+                if 'axes.unicode_minus' not in code:
+                    new_code_line += "plt.rcParams['axes.unicode_minus'] = False\n"
+                code_lines_striped.insert(0,new_code_line)
     code = "\n".join(code_lines_striped)
     return code
 
@@ -1730,7 +1738,7 @@ class GraphAgent:
                     result,success=code_executor.call(code=code)
                     if success:
                         message_content = f'执行代码成功[生成的文本内容为：{result.get("text") or "无生成的文本"};生成的图片位置为：{result.get("image") or "无生成的图片"}]。\n'
-                        if 'qwen3-----------' in env_models_instance.chat_model.model_name:
+                        if 'qwen3' in env_models_instance.chat_model.model_name:
                             message_content += '/no_think'  # 记录当前执行的工具名称                    
                         
                         logger.warning(f"......代码执行成功, {message_content=}......")
@@ -1742,6 +1750,7 @@ class GraphAgent:
                             code_generated = llm_model.invoke([human_message],config=invoke_llm_config)
                             code_text = code_generated.content.strip()        
                             code = extract_code(code_text)
+                            code = merge_code_with_usual_imports(code) # 加入常用的imports，防止代码生成中出现的遗漏错误
                             # result,success=code_executor.call(code=code)
                         except Exception as e:
                             logger.warning(f"请求code_generation时出现错误:{e}")
@@ -1878,7 +1887,7 @@ if __name__ == "__main__":
         '请搜索我与晶奇公司的相关网页，说明我与晶奇公司的关系',
         '晶奇公司的厦门市智慧民政一体化平台建设方案的编制依据，给出详尽的文件名称和文号等内容列表',
         '请绘制sin(x)曲线',
-        '请使用python实现指数移动平均法，生成样例数据，执行代码，绘制出曲线',
+        '请使用python实现指数移动平均法，生成波形变动的至少12个样例数据，执行代码，绘制出曲线',
         '我公司是什么时候与西南石油大学建立校企合作关系的？',
         "晶奇公司编制的安徽省食品药品监督管理局行政审批系统项目总体计划的版本号是多少，批准人是谁？",
         '请搜索合肥大蜀山，然后提供详细介绍', 
@@ -1902,7 +1911,8 @@ if __name__ == "__main__":
     # user_questions = ['请调用工具函数帮我查询：我现在的位置是在安徽晶奇网络科技股份有限公司附近，请查询15公里范围内的养老机构，最多返回10个']
     # user_questions = ['我现在的位置是在安徽晶奇网络科技股份有限公司附近，请查询15公里范围内的养老机构，最多返回10个']
     # user_questions = ["请搜索网络然后回答问题：What is the weather in SF and LA?","Who won the super bowl in 2024? In what state is the winning team headquarters located?What is the GDP of that state? ","2024年安徽省会城市的GDP是多少? "]
-    user_questions = ['请绘制sin(x)曲线','请使用python实现指数移动平均法，生成样例数据，执行代码，绘制出曲线']
+    user_questions = ['请绘制sin(x)曲线','请使用python实现指数移动平均法，生成波形变动的至少12个样例数据，执行代码，绘制出曲线']
+    # user_questions = ['请使用python实现指数移动平均法，生成波形变动的至少12个样例数据，执行代码，绘制出曲线']
     my_main_bot = GraphAgent(executable_tools=executable_tools,routing_tools_wrapped_in_class=route_tools,allow_conversation_memory=True)
 
     for user_question in user_questions:
