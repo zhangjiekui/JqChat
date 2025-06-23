@@ -217,3 +217,48 @@ ray start --head --dashboard-host "0.0.0.0" --dashboard-port 8265
 serve run config.yaml
 '''
 # ray stop --force
+
+
+
+# https://docs.vllm.ai/en/latest/examples/online_serving/ray_serve_deepseek.html?h=ray
+
+
+from ray import serve
+from ray.serve.llm import LLMConfig, build_openai_app
+
+llm_config = LLMConfig(
+    model_loading_config={
+        "model_id": "deepseek",
+        # Since DeepSeek model is huge, it is recommended to pre-download
+        # the model to local disk, say /path/to/the/model and specify:
+        # model_source="/path/to/the/model"
+        "model_source": "deepseek-ai/DeepSeek-R1",
+    },
+    deployment_config={
+        "autoscaling_config": {
+            "min_replicas": 1,
+            "max_replicas": 4,
+        }
+    },
+    # Change to the accelerator type of the node
+    accelerator_type="NVIDIA_TESLA_T4",
+    runtime_env={"env_vars": {"VLLM_USE_V1": "1"}},
+    # Customize engine arguments as needed (e.g. vLLM engine kwargs)
+    engine_kwargs={
+        "tensor_parallel_size": 4,
+        "pipeline_parallel_size": 1,
+        "gpu_memory_utilization": 0.2,
+        "dtype": "auto",
+        "max_num_seqs": 64,
+        "max_model_len": 16384,
+        "enable_chunked_prefill": True,
+        "enable_prefix_caching": True,
+        "trust_remote_code": True,
+    },
+)
+
+# Deploy the application
+llm_app = build_openai_app({"llm_configs": [llm_config]})
+serve.run(llm_app)
+
+# https://github.com/Xjj020315/qwen3-master/tree/main/embedding%26reranker/%E4%BB%8E%E9%9B%B6%E9%83%A8%E7%BD%B2

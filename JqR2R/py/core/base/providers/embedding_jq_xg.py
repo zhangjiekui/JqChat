@@ -60,7 +60,7 @@ class EmbeddingProvider(Provider):
             raise ValueError(
                 "EmbeddingProvider must be initialized with a `EmbeddingConfig`."
             )
-        logger.info(f"Initializing EmbeddingProvider with config {config}.")
+        logger.debug(f"Initializing EmbeddingProvider with config {config}.")
 
         super().__init__(config)
         self.config: EmbeddingConfig = config

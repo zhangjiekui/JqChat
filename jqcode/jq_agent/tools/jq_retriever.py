@@ -63,13 +63,14 @@ def get_retriever(vectorstore:ElasticsearchStore=None,index_name:str='',index_de
             _RESERVED_FILTER_BY_FILES = []
             for doc in doc_paths_exists:
                 suffix = doc.suffix
-                if suffix in required_exts:
-                    _RESERVED_FILTER_BY_FILES.append(doc)
+                if suffix in required_exts:                    
                     if doc.suffix !='.docx':
                         docx = str(doc.parent/doc.stem) + '.docx'
                         _RESERVED_FILTER_BY_FILES.append(docx)
                     else:
-                        logger.warning(f"{doc}还不是支持的文件类型{required_exts}")
+                        _RESERVED_FILTER_BY_FILES.append(str(doc))
+                else:
+                    logger.warning(f"{doc}还不是支持的文件类型{required_exts}")
             
             RESERVED_FILTER_BY_FILES = [str(file) for file in _RESERVED_FILTER_BY_FILES]
             

@@ -1,3 +1,7 @@
+# https://github.com/pydaxing/PandoraBox
+
+# /data/projects/JqChatV2/JqChat/langgraph_pbox_code_interpreter.py
+# /data/projects/JqChatV2/JqChat/jqcode/langgraph_in_class.py
 from pbox import CodeSandBox
 
 code_sandbox = CodeSandBox()
@@ -26,6 +30,8 @@ import seaborn as sns
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
+plt.rcParams['font.sans-serif'] = ['SimHei']
+plt.rcParams['axes.unicode_minus'] = False
 
 def calculate_ema(data, alpha):
     ema = []
@@ -76,3 +82,13 @@ print(result)
 #     "your-api-key",
 #     "your-kernel-id"
 # )
+
+
+from pbox import CodeSandBox
+
+code_sandbox = CodeSandBox()
+code_sandbox.execute_code("x = 'Hello, PandoraBox!'")
+result = code_sandbox.execute_code(code)
+
+print(str(result))
+print(result.logs.stdout)

@@ -43,6 +43,49 @@ UPLOAD_FOLDER=str(os.environ.get("workspace","/data/projects/JqChatV2/workspace"
 chat_router = APIRouter(prefix="/chat", tags=["Chat对话"])
 workspace_router=APIRouter(prefix="/workspace", tags=["文件下载"])
 # 
+
+"""
+{
+  "query": "晶奇公司质量保证过程中的角色及角色的职责或含义解释，对应的人员（姓名）有哪些?其中的批准人是谁？",
+  "doc": "zjk_jqesclient_reader_test_768im",
+  "user": "user(zjk)",
+  "files": [],
+  "is_rewrite": true,
+  "is_memory": true,
+  "is_knowledge": true,
+  "code_message": "python code"
+}
+
+
+{
+  "query": "请绘制sin(x)曲线",
+  "doc": "zjk_jqesclient_reader_test_768im",
+  "user": "user(zjk)",
+  "files": [],
+  "is_rewrite": true,
+  "is_memory": true,
+  "is_knowledge": true,
+  "code_message": "python code"
+}
+
+
+curl -X 'POST' \
+  'http://10.1.150.105:7861/chat/completions' \
+  -H 'accept: application/json' \
+  -H 'Content-Type: application/json' \
+  -d '{
+  "query": "请绘制sin(x)曲线",
+  "doc": "zjk_jqesclient_reader_test_768im",
+  "user": "user(zjk)",
+  "files": [],
+  "is_rewrite": true,
+  "is_memory": true,
+  "is_knowledge": true,
+  "code_message": "python code"
+}'
+
+"""
+
 @chat_router.post('/completions',summary="对话接口")
 def completions(
     user_prompt: str = Body(alias="query",description="用户输入"),
@@ -93,6 +136,10 @@ def completions(
     chat_bot = GraphAgent(memory_thread_id=user_id, kb_base_dict=index_meta_dict,chat_on_docs_list=chat_on_docs_list,add_docs_list_to_kb=add_docs_list_to_kb,
                           allow_conversation_memory=allow_conversation_memory,allow_question_rewrite=allow_question_rewrite)
     print(f"{chat_bot.user_id=}")
+
+
+
+
     text = chat_bot.run_conversation(user_question=user_prompt)
     
     # returned_str

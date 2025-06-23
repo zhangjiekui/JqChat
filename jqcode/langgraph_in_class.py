@@ -492,7 +492,7 @@ class GradeAnswer(BaseModel):
 
 prompt_answer_grader = """You are a grader assessing whether an answer addresses / resolves a question. Response me with a simple JSON string can be directly consumed by  ‘json.loads’ method, must be ‘{{"k":"yes"}}’ or  ‘{{"k":"no"}}’,'yes' means the answer addresses / resolves the question.No preamble or explaination."""
 
-prompt_answer_grader = """You are a grader assessing whether an answer addresses / resolves a question. Make sure to return a JSON blob with key 'k' and value 'yes' or 'no'. 'yes' means the answer addresses / resolves the question, 'no' means it does not. No preamble or explanation."""
+prompt_answer_grader = """You are a grader assessing whether an answer addresses / resolves a question. Make sure to return a JSON blob with key 'k' and value 'yes' or 'no'. Value 'yes' means the answer addresses / resolves the question, value 'no' means it does not. No preamble or explanation."""
 
 if env_models_instance.need_json_mode:    
     # structured_llm_answer_grader = llm_model.with_structured_output(GradeAnswer,method='json_mode', include_raw=True)
@@ -517,7 +517,7 @@ answer_addresses_question_grader = answer_prompt | structured_llm_answer_grader
 executable_tools = [get_flight_number,python_repl_tool,get_elderly_organization_list]
 # executable_tools = [get_flight_number]
 route_tools = [WEB_SEARCH,CODE_GENERATION,CODE_EXECUTION]
-default_index_description = "向量库/知识库工具(vectorstore/knowledge base)：关于安徽晶奇网络科技股份有限公司（简称晶奇公司）、医疗卫生、医疗健康、医疗服务、医疗政策、信息化产品方案、技术文档等等方面的文档知识库. 凡是安徽晶奇网络科技股份有限公司及医疗健康相关的问题，都必须使用该vectorstore工具。"
+default_index_description = "向量库/知识库工具(vectorstore/knowledge base)：关于安徽晶奇网络科技股份有限公司（简称晶奇公司）、医疗卫生、医疗健康、医疗服务、医疗政策、信息化产品方案、技术文档等等方面的文档知识库. 如果用户问题与此相关，都必须优先使用该vectorstore工具。"
 # "A vectorstore/knowledge base containing documents related to 晶奇公司、安徽晶奇网络科技股份有限公司、医疗卫生、医疗健康、医疗服务、医疗政策、medical treatment & health. 凡是与晶奇公司、安徽晶奇网络科技股份有限公司及医疗健康相关的问题，都必须使用vectorstore工具。MUST use the vectorstore for questions on these topics."}
 
 
@@ -600,7 +600,7 @@ class GraphAgent:
             }
             ```
         '''
-        _system_message_content = f"现在是{_current_date_time}. 你的名字叫做 ‘晶灵’,是安徽晶奇公司网络科技公司研发的一款高级智能体专家应用。请尽量使用简体中文（不要有繁体！）来与用户沟通互动。 And you are equipped with some powerful tools:{_tool_names_str}, Please strictly following OpenAI 'tool calling' interface specification if you need to call a tool or multiple tools in sequence, with No preamble or explaination. Tool Choice Guidelines:First,'CODE_GENERATION' and 'CODE_EXECUTION' MUST NOT be called at the same time(Actualy, in our APPLICATION  'CODE_GENERATION' will call 'CODE_EXECUTION' automatically), 'CODE_GENERATION' is used when user want you write code to solve their problem, while 'CODE_EXECUTION' is only used when user have provided the code, and just want you just to run the code and report the results. Second, 'CODE_GENERATION' is preferred rather than 'python_repl_tool' for drawing images, plotting graphs/charts, data file processing/analyzing/saving, Otherwise, please use 'python_repl_tool'.If you need to call tools, you must response following the format:\n {_tool_response_format},and no need any more explanation"
+        _system_message_content = f"现在是{_current_date_time}. 你的名字叫做 ‘晶灵’,是安徽晶奇公司网络科技公司研发的一款高级智能体专家应用。请尽量使用简体中文（不要有繁体！）来与用户沟通互动。 And you are equipped with some powerful tools:{_tool_names_str}, Please strictly following OpenAI 'tool calling' interface specification if you need to call a tool or multiple tools in sequence, with No preamble or explaination. Tool Choice Guidelines:First,'CODE_GENERATION' and 'CODE_EXECUTION' MUST NOT be called at the same time(Actualy, in our APPLICATION  'CODE_GENERATION' will call 'CODE_EXECUTION' automatically), 'CODE_GENERATION' is used when user want you write code to solve their problem, while 'CODE_EXECUTION' is only used when user have provided the code, and just want you just to run the code and report the results. Second, 'CODE_GENERATION' is preferred rather than 'python_repl_tool' for drawing images, plotting graphs/charts, data file processing/analyzing/saving, Otherwise, please use 'python_repl_tool'.如果用户提及检索知识库，应优先考虑调用'VECTORSTORE'工具;如果需要调用'WEB_SEARCH'工具，谨记只能生成一次工具调用，并直接将用户问题直接作为工具参数。If you need to call tools, you must response following the format:\n {_tool_response_format},and no need any more explanation"
         
         self.all_tools = executable_tools + routing_tools_wrapped_in_class
         self.all_tools_names = _tool_names
@@ -1887,7 +1887,7 @@ if __name__ == "__main__":
         '请搜索我与晶奇公司的相关网页，说明我与晶奇公司的关系',
         '晶奇公司的厦门市智慧民政一体化平台建设方案的编制依据，给出详尽的文件名称和文号等内容列表',
         '请绘制sin(x)曲线',
-        '请使用python实现指数移动平均法，生成波形变动的至少12个样例数据，执行代码，绘制出曲线',
+        '请使用python实现指数移动平均法，生成波形变动的至少24个样例数据，执行代码，绘制出曲线',
         '我公司是什么时候与西南石油大学建立校企合作关系的？',
         "晶奇公司编制的安徽省食品药品监督管理局行政审批系统项目总体计划的版本号是多少，批准人是谁？",
         '请搜索合肥大蜀山，然后提供详细介绍', 
@@ -1910,15 +1910,70 @@ if __name__ == "__main__":
 
     # user_questions = ['请调用工具函数帮我查询：我现在的位置是在安徽晶奇网络科技股份有限公司附近，请查询15公里范围内的养老机构，最多返回10个']
     # user_questions = ['我现在的位置是在安徽晶奇网络科技股份有限公司附近，请查询15公里范围内的养老机构，最多返回10个']
-    # user_questions = ["请搜索网络然后回答问题：What is the weather in SF and LA?","Who won the super bowl in 2024? In what state is the winning team headquarters located?What is the GDP of that state? ","2024年安徽省会城市的GDP是多少? "]
-    user_questions = ['请绘制sin(x)曲线','请使用python实现指数移动平均法，生成波形变动的至少12个样例数据，执行代码，绘制出曲线']
-    # user_questions = ['请使用python实现指数移动平均法，生成波形变动的至少12个样例数据，执行代码，绘制出曲线']
+    user_questions = ["请搜索网络然后回答问题：What is the weather in SF and LA?","Who won the super bowl in 2024? In what state is the winning team headquarters located?What is the GDP of that state? ","2024年安徽省会城市的GDP是多少? "]
+    # user_questions = ['请检索知识库，然后回答晶奇公司质量保证过程中的角色及角色的职责或含义解释，对应的人员（姓名）有哪些?其中的批准人是谁？']
+    # user_questions = ['请使用python实现指数移动平均法，生成波形变动的至少24个样例数据，执行代码，绘制出曲线']
     my_main_bot = GraphAgent(executable_tools=executable_tools,routing_tools_wrapped_in_class=route_tools,allow_conversation_memory=True)
+
+    from fastapi import FastAPI
+    import threading
+    app = FastAPI()
+
+    from pydantic import BaseModel
+    from typing import List, Optional, Union
+
+    class JqChatRequest(BaseModel):
+        question: Union[str, List[str]]
+    class JqChatResponse(BaseModel):
+        answer: str
+
+
+    @app.post("/v1/jqchat", response_model=JqChatResponse)
+    def jqchat(request:JqChatRequest):
+        answer = my_main_bot.run_conversation(user_question=request.question)
+        logger.warning(f"FastAPI server answer：{answer}")
+        return JqChatResponse(answer=answer)
+    def run_fastapi():
+        import uvicorn
+        uvicorn.run(app, host="0.0.0.0", port=8888)
+        logger.warning("FastAPI server started at http://0.0.0.0:8888")
+
+    def test_jqchat_service(question:str="你好，请介绍一下你自己"):
+        import requests
+        url = f"http://10.1.150.105:8888/v1/jqchat"
+        
+        payload = {"question": question}
+        
+        response = requests.post(url, json=payload)
+        
+        if response.status_code == 200:
+            print("Response from jqchat service:")
+            print(response.json())
+        else:
+            print(f"Error: {response.status_code} - {response.answer}")
+
+        return response.json()
+
+    import time
+    fastapi_thread = threading.Thread(target=run_fastapi)
+    fastapi_thread.start()
+    # fastapi_thread.join()
+    time.sleep(5)
+    # import multiprocessing
+    # fastapi_process = multiprocessing.Process(target=run_fastapi)
+    # fastapi_process.start()
+    # time.sleep(5)
+
+    response = test_jqchat_service()
+    print(response)
+    pass
 
     for user_question in user_questions:
         if user_question == '请绘制sin(x)曲线':
             pass
-        answer = my_main_bot.run_conversation(user_question=user_question)
+        # answer = my_main_bot.run_conversation(user_question=user_question)
+        response=test_jqchat_service(user_question)
+        print(f"{user_question}:\n{response}")
         pass
 
 
