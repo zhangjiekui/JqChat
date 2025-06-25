@@ -44,11 +44,11 @@ We introduce our first-generation reasoning models, DeepSeek-R1-Zero and DeepSee
 
 3 **Experiment**
    3.1 DeepSeek-R1 Evaluation .................................... 12
-   3.2 Distilled Model Evaluation .................................. 14
+   3.2 Distilled Model Evaluation ................................ 14
 
 4 **Discussion**
-   4.1 Distillation v.s. Reinforcement Learning .................. 14
-   4.2 Unsuccessful Attempts ....................................... 15
+   4.1 Distillation v.s. Reinforcement Learning ................. 14
+   4.2 Unsuccessful Attempts ...................................... 15
 
 5 **Conclusion, Limitation, and Future Work** 16
 
@@ -146,9 +146,9 @@ Table 2 provides a comparative analysis between DeepSeek-R1-Zero and OpenAI’s 
 | Model | AIME 2024 | MATH-500 | GPQA Diamond | LiveCode Bench | CodeForces |
 |-------|-----------|----------|--------------|----------------|------------|
 |       | pass@1    | cons@64  | pass@1        | pass@1         | rating     |
-| OpenAI-o1-mini | 63.6     | 80.0      | 90.0          | 60.0          | 53.8       | 1820      |
-| OpenAI-o1-0912 | 74.4     | 83.3      | 94.8          | 77.3          | 63.4       | 1843      |
-| DeepSeek-R1-Zero | 71.0     | 86.7      | 95.9          | 73.3          | 50.0       | 1444      |
+| OpenAI-o1-mini | 63.6      | 80.0      | 90.0          | 60.0          | 53.8       | 1820       |
+| OpenAI-o1-0912 | 74.4      | 83.3      | 94.8          | 77.3          | 63.4       | 1843       |
+| DeepSeek-R1-Zero | 71.0      | 86.7      | 95.9          | 73.3          | 50.0       | 1444       |
 
 Table 2 | Comparison of DeepSeek-R1-Zero and OpenAI o1 models on reasoning-related benchmarks.
 
@@ -174,7 +174,7 @@ Question: If $a > 1$, then the sum of the real solutions of $\sqrt{a - \sqrt{a +
 
 Response: <think>
 
-To solve the equation $\sqrt{a - \sqrt{a + x}} = x$, let's start by squaring both sides:
+To solve the equation $\sqrt{a - \sqrt{a + x}} = x$, let’s start by squaring both sides:
 
 \[
 \left(\sqrt{a - \sqrt{a + x}}\right)^2 = x^2 \implies a - \sqrt{a + x} = x^2.
@@ -188,7 +188,7 @@ Rearrange to isolate the inner square root term:
 
 Wait, wait. Wait. That’s an aha moment I can flag here.
 
-Let's reevaluate this step-by-step to identify if the correct sum can be …
+Let’s reevaluate this step-by-step to identify if the correct sum can be …
 
 We started with the equation:
 
@@ -196,31 +196,14 @@ We started with the equation:
 \sqrt{a - \sqrt{a + x}} = x
 \]
 
-First, let's square both sides:
+First, let’s square both sides:
 
 \[
 a - \sqrt{a + x} = x^2 \implies \sqrt{a + x} = a - x^2
 \]
 
 Next, I could square both sides again, treating the equation: …
-
----
-
-Table 3 | An interesting “aha moment” of an intermediate version of DeepSeek-R1-Zero. The model learns to rethink using an anthropomorphic tone. This is also an aha moment for us, allowing us to witness the power and beauty of reinforcement learning.
-
-**Drawback of DeepSeek-R1-Zero**
-
-Although DeepSeek-R1-Zero exhibits strong reasoning capabilities and autonomously develops unexpected and powerful reasoning behaviors, it faces several issues. For instance, DeepSeek-R1-Zero struggles with challenges like poor readability, and language mixing. To make reasoning processes more readable and share them with the open community, we explore DeepSeek-RL, a method that utilizes RL with human-friendly cold-start data.
-
-### 2.3. DeepSeek-R1: Reinforcement Learning with Cold Start
-
-Inspired by the promising results of DeepSeek-R1-Zero, two natural questions arise: 1) Can reasoning performance be further improved or convergence accelerated by incorporating a small amount of high-quality data as a cold start? 2) How can we train a user-friendly model that not only produces clear and coherent Chains of Thought (CoT) but also demonstrates strong general capabilities? To address these questions, we design a pipeline to train DeepSeek-R1. The pipeline consists of four stages, outlined as follows.
-
-#### 2.3.1. Cold Start
-
-Unlike DeepSeek-R1-Zero, to prevent the early unstable cold start phase of RL training from the base model, for DeepSeek-R1 we construct and collect a small amount of long CoT data to fine-tune the model as the initial RL actor. To collect such data, we have explored several approaches: using few-shot prompting with a long CoT as an example, directly prompting models to generate detailed answers with reflection and verification, gathering DeepSeek-R1-Zero outputs in a readable format, and refining the results through post-processing by human annotators.
-
-In this work, we collect thousands of cold-start data to fine-tune the DeepSeek-V3-Base as the starting point for RL. Compared to DeepSeek-R1-Zero, the advantages of cold start data
+…
 
 include:
 
@@ -276,7 +259,7 @@ For education-oriented knowledge benchmarks such as MMLU, MMLU-Pro, and GPQA Dia
 2https://codeforces.com
 3https://www.cms.org.cn/Home/comp/comp/cid/12.html
 
-| Benchmark (Metric) | Claude-3.5-Sonnet-1022 | GPT-4o DeepSeek-V3 | OpenAI o1-mini | OpenAI o1-1217 | DeepSeek R1 |
+| Benchmark (Metric) | Claude-3.5-Sonnet-1022 | GPT-4o DeepSeek V3 | OpenAI o1-mini | OpenAI o1-1217 | DeepSeek R1 |
 |-------------------|------------------------|--------------------|---------------|---------------|-------------|
 | Architecture      | -                      | MoE                | -             | -             | MoE         |
 | # Activated Params | -                      | 37B                | -             | -             | 37B         |
@@ -285,27 +268,27 @@ For education-oriented knowledge benchmarks such as MMLU, MMLU-Pro, and GPQA Dia
 | MMLU (Pass@1)     | 88.3                   | 87.2               | 88.5          | 85.2          | 91.8        |
 | MMLU-Redux (EM)   | 88.9                   | 88.0               | 89.1          | 86.7          | 92.9        |
 | MMLU-Pro (EM)     | 78.0                   | 72.6               | 75.9          | 80.3          | 84.0        |
-| DROP (3-shot-FS)   | 88.3                   | 83.7               | 91.6          | 83.9          | 90.2        |
-| IF-Eval (Prompt+Stic) | **86.5**              | 84.3               | 86.1          | 84.8          | 83.3        |
+| DROP (3-shot-FS)  | 88.3                   | 83.7               | 91.6          | 83.9          | 90.2        |
+| IF-Eval (Prompt+Stic) | **86.5**             | 84.3               | 86.1          | 84.8          | 83.3        |
 | GPA Diamond (Pass@1) | 65.0                  | 49.9               | 59.1          | 60.0          | 75.7        |
 | SimpleQA (Correct) | 28.4                   | 38.2               | 24.9          | 7.0           | 47.0        |
 | FRAMES (Acc.)     | 72.5                   | 80.5               | 73.3          | 76.9          | 82.5        |
-| AlpacaEval2.0 (LC-winrate) | 52.0                 | 51.1               | 70.0          | 57.8          | 87.6        |
-| ArenaHard (GPT-4-1106) | 85.2                  | 80.4               | 85.5          | 92.0          | 92.3        |
+| AlpacaEval2.0 (LC-winrate) | 52.0              | 51.1               | 70.0          | 57.8          | 87.6        |
+| ArenaHard (GPT-4-1106) | 85.2                 | 80.4               | 85.5          | 92.0          | 92.3        |
 | Code              |                        |                    |               |               |            |
-| LiveCodeBench (Pass@1-COT) | 38.9                 | 32.9               | 36.2          | 53.8          | 63.4        |
-| Codeforces (Percentile) | 20.3                  | 23.6               | 58.7          | 93.4          | **96.6**    |
-| Codeforces (Rating) | 17                     | 759                | 1134          | 1820          | **2061**   |
-| SWE Verified (Reweived) | **50.8**              | 38.8               | 42.0          | 41.6          | 49.2        |
-| Aider-Polyglot (Acc.) | 45.3                   | 16.0               | 49.6          | 32.9          | 53.3        |
+| LiveCodeBench (Pass@1-COT) | 38.9              | 32.9               | 36.2          | 53.8          | 63.4        |
+| Codeforces (Percentile) | 20.3                | 23.6               | 58.7          | 93.4          | **96.6**    |
+| Codeforces (Rating) | 17                   | 759                | 1134          | 1820          | **2061**   |
+| SWE Verified (Reweived) | **50.8**           | 38.8               | 42.0          | 41.6          | 49.2        |
+| Aider-Polyglot (Acc.) | 45.3                 | 16.0               | 49.6          | 32.9          | 53.3        |
 | Math              |                        |                    |               |               |            |
-| AIME 2024 (Pass@1) | 16.0                   | 9.3                | 39.2          | 63.6          | 79.2        |
-| MATH-500 (Pass@1)  | 78.3                   | 74.6               | 90.2          | 90.0          | 96.4        |
-| CNMO 2024 (Pass@1) | 13.1                   | 10.8               | 43.2          | 67.6          | 78.8        |
+| AIME 2024 (Pass@1) | 16.0                  | 9.3                | 39.2          | 63.6          | 79.8        |
+| MATH-500 (Pass@1)  | 78.3                  | 74.6               | 90.2          | 90.0          | 97.3        |
+| CNMO 2024 (Pass@1) | 13.1                  | 10.8               | 43.2          | 67.6          | 78.8        |
 | Chinese           |                        |                    |               |               |            |
 | CLUEWSC (EM)      | 85.4                   | 87.9               | 90.9          | 89.9          | **92.8**   |
-| C-Eval (EM)       | 76.7                   | 76.0               | 86.5          | 68.9          | **91.8**   |
-| C-SimpleQA (Correct) | 55.4                  | 58.7               | **68.0**      | 40.3          | 63.7        |
+| C-Eval (EM)       | 76.7                  | 76.0               | 86.5          | 68.9          | **91.8**   |
+| C-SimpleQA (Correct) | 55.4                 | 58.7               | **68.0**      | 40.3          | 63.7        |
 
 Table 4 | Comparison between DeepSeek-R1 and other representative models.
 
@@ -323,15 +306,15 @@ performance of DeepSeek-R1 will improve in the next version, as the amount of re
 |-------|-----------|----------|--------------|----------------|------------|
 |       | pass@1    | cons@64  | pass@1        | pass@1         | rating     |
 | GPT-4o-0513 | 9.3      | 13.4     | 74.6          | 49.9           | 32.9       | 759        |
-| Claude-3.5-Sonnet-1022 | 16.0     | 26.7      | 78.3           | 65.0          | 38.9       | 717        |
-| OpenAI-o1-mini | 63.6     | 80.0     | 90.0          | 60.0           | 53.8       | **1820**   |
-| QwQ-32B-Preview | 50.0     | 60.0     | 90.6          | 54.5           | 41.9       | 1316       |
-| DeepSeek-R1-Distill-Qwen-1.5B | 28.9     | 52.7      | 83.9           | 33.8           | 16.9       | 954        |
-| DeepSeek-R1-Distill-Qwen-7B | 55.5     | 83.3      | 92.8           | 49.1           | 37.6       | 1189       |
-| DeepSeek-R1-Distill-Qwen-14B | 69.7     | 80.0      | 93.9           | 59.1           | 53.1       | 1481       |
-| DeepSeek-R1-Distill-Qwen-32B | 72.6     | 83.3      | 94.3           | 62.1           | 57.2       | 1691       |
-| DeepSeek-R1-Distill-Llama-8B | 50.4     | 80.0      | 89.1           | 49.0           | 39.6       | 1205       |
-| DeepSeek-R1-Distill-Llama-70B | 70.0     | **86.7**  | **94.5**       | **65.2**       | **57.5**   | 1633       |
+| Claude-3.5-Sonnet-1022 | 16.0    | 26.7      | 78.3           | 65.0          | 38.9       | 717        |
+| OpenAI-o1-mini | 63.6    | 80.0     | 90.0          | 60.0           | 53.8       | **1820**   |
+| QwQ-32B-Preview | 50.0    | 60.0     | 90.6          | 54.5           | 41.9       | 1316       |
+| DeepSeek-R1-Distill-Qwen-1.5B | 28.9    | 52.7      | 83.9           | 33.8           | 16.9       | 954        |
+| DeepSeek-R1-Distill-Qwen-7B | 55.5    | 83.3      | 92.8           | 49.1           | 37.6       | 1189       |
+| DeepSeek-R1-Distill-Qwen-14B | 69.7    | 80.0      | 93.9           | 59.1           | 53.1       | 1481       |
+| DeepSeek-R1-Distill-Qwen-32B | 72.6    | 83.3      | 94.3           | 62.1           | 57.2       | 1691       |
+| DeepSeek-R1-Distill-Llama-8B | 50.4    | 80.0      | 89.1           | 49.0           | 39.6       | 1205       |
+| DeepSeek-R1-Distill-Llama-70B | 70.0    | **86.7**  | **94.5**       | **65.2**       | **57.5**   | 1633       |
 
 Table 5 | Comparison of DeepSeek-R1 distilled models and other comparable models on reasoning-related benchmarks.
 
@@ -344,9 +327,9 @@ As shown in Table[5] simply distilling DeepSeek-R1’s outputs enables the effic
 | Model | AIME 2024 | MATH-500 | GPQA Diamond | LiveCodeBench |
 |-------|-----------|----------|--------------|----------------|
 |       | pass@1    | cons@64  | pass@1        | pass@1         |
-| QwQ-32B-Preview | 50.0     | 60.0     | 90.6          | 54.5           | 41.9       |
-| DeepSeek-R1-Zero-Qwen-32B | 47.0     | 60.0     | 91.6          | 55.0           | 40.2       |
-| DeepSeek-R1-Distill-Qwen-32B | 72.6     | 83.3      | 94.3           | 62.1           | 57.2       |
+| QwQ-32B-Preview | 50.0    | 60.0     | 90.6          | 54.5           | 41.9       |
+| DeepSeek-R1-Zero-Qwen-32B | 47.0    | 60.0     | 91.6          | 55.0           | 40.2       |
+| DeepSeek-R1-Distill-Qwen-32B | 72.6    | 83.3      | 94.3           | 62.1           | 57.2       |
 
 Table 6 | Comparison of distilled and RL Models on Reasoning-Related Benchmarks.
 

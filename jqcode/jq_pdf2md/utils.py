@@ -7,7 +7,8 @@ from typing import Union
 
 import pandas as pd
 from PIL import Image
-from docext.core.file_converters.pdf_converter import PDFConverter
+# from docext.core.file_converters.pdf_converter import PDFConverter
+from jqcode.jq_pdf2md.pdf_converter import PDFConverter
 
 
 def encode_image(image_path):

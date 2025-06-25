@@ -54,159 +54,85 @@ EmergentAGI Inc. 08/08/24
 - **Read**
 - **Predict**
 - **Read**
-- **Native RAG**
-- **Advanced RAG**
-- **DSP (e.g. 09/23/21)**
-- **1ER-0E12EN (Date of Use)**
 
 ### Methods
 
 | Method | Retrieval Source | Retrieval Data Type | Retrieval Granularity | Augmentation Stage | Retrieval Process |
-|--------|------------------|--------------------|-----------------------|------------------|------------------|
-| CGL1 [26] | Wikipedia       | Text               | Phrase                | Pre-training      | Iterative         |
-| DenaX [27] | FactoidWiki     | Text               | Posponizer           | Tuning            | Tuning            |
-| EAR [31]  | Dataset-base    | Text               | Sentence              | Tuning            | Tuning            |
-| UPISE [28] | Dataset-base    | Text               | Sentence              | Tuning            | Tuning            |
-| RAST [32]  | Dataset-base    | Text               | Sentence              | Tuning            | Tuning            |
-| SaIF4em [33] | Dataset-base    | Text               | Sentence              | Tuning            | Tuning            |
-| FLARE [34] | Search Engine Wiki | Text               | Sentence              | Tuning            | Tuning            |
-| PGRB [35]  | Wikipedia        | Text               | Sentence              | Tuning            | Tuning            |
-| FLLYU [36] | Wikipedia        | Text               | Sentence              | Tuning            | Tuning            |
-| RADIA [37] | Dataset-base    | Text               | Sentence              | Tuning            | Tuning            |
-| Filter error [38] | Synthesized dataset | Text               | Sentence              | Tuning            | Tuning            |
-| R-QQA [39] | Dataset-base    | Text               | Sentence Pair         | Tuning            | Tuning            |
-| LLM-R [39] | Dataset-base    | Text               | Sentence              | Tuning            | Tuning            |
-| TIGER [40] | Dataset-base    | Text               | Item-base             | Pre-training      | Tuning            |
-| LM-baker [41] | Dataset-base    | Text               | Item-base             | Tuning            | Tuning            |
-| BEEQE [42] | Dataset-base    | Text               | Item-base             | Tuning            | Tuning            |
-| CV-RAI [43] | Synthesized dataset | Text               | Item-base             | Tuning            | Tuning            |
-| Atea [44]  | Wikipedia        | Text               | Chunk                 | Pre-training      | Iterative         |
-| RAVEN [45] | Wikipedia        | Text               | Chunk                 | Pre-training      | Iterative         |
-| RETM0+ [46] | Pre-training Corpus | Text               | Chunk                 | Pre-training      | Iterative         |
-| INSTRUCTIONER [47] | Pre-training corpus | Text               | Chunk                 | Tuning            | Tuning            |
-| KRR [48]   | Search Engine | Text               | Chunk                 | Tuning            | Tuning            |
-| RA-DA [49] | Dataset-base    | Text               | Chunk                 | Tuning            | Tuning            |
-| PROMPTAGATOR [50] | BERT | Text               | Chunk                 | Tuning            | Tuning            |
-| AAE [51]   | MENTION, Wikipedia | Text               | Chunk                 | Tuning            | Tuning            |
-| RA-XT [52] | Common Corpus, Wikipedia | Text               | Chunk                 | Tuning            | Tuning            |
-| RAG-Robots [53] | Wikipedia | Text               | Chunk                 | Tuning            | Tuning            |
-| RA-Lang Form [54] | Wikipedia | Text               | Chunk                 | Tuning            | Tuning            |
-| CnN [55]   | Wikipedia        | Text               | Chunk                 | Tuning            | Tuning            |
-| Scf-A4G [56] | Wikipedia        | Text               | Chunk                 | Tuning            | Tuning            |
-| BOM [57]   | Wikipedia        | Text               | Chunk                 | Tuning            | Tuning            |
-| CoL [58]   | Wikipedia        | Text               | Chunk                 | Tuning            | Tuning            |
-| Take Elitism [59] | Wikipedia        | Text               | Chunk                 | Tuning            | Tuning            |
-| PopqQA [60] | Arxiv, Online, Database, PubMed | Text               | Chunk                 | Tuning            | Tuning            |
-| NasaQa [61] | FactoidWiki      | Text               | Chunk                 | Tuning            | Tuning            |
-| NoMBAACL [62] | Search Engine, Wikipedia | Text               | Chunk                 | Tuning            | Tuning            |
-| ToC [63]   | Search Engine, Wikipedia | Text               | Chunk                 | Tuning            | Tuning            |
-| SkR [64]   | Dataset-base, Wikipedia | Text               | Chunk                 | Tuning            | Tuning            |
-| ITRG [65]  | Wikipedia        | Text               | Chunk                 | Tuning            | Tuning            |
-| RAG-Long Context [66] | Dataset-base | Text               | Chunk                 | Tuning            | Tuning            |
-| ITER-BTIRAS [67] | Wikipedia        | Text               | Chunk                 | Tuning            | Tuning            |
-| IBCoT [68] | Wikipedia        | Text               | Chunk                 | Tuning            | Tuning            |
-| LLM-Knowledge Boundary [69] | Wikipedia | Text               | Chunk                 | Tuning            | Tuning            |
-| RAPTOR [70] | Dataset-base    | Text               | Chunk                 | Tuning            | Tuning            |
-| RECTIE [71] | LLMs | Text               | Doc                  | Tuning            | Tuning            |
-| ICRLM [72] | Pile, Wikipedia | Text               | Doc                  | Tuning            | Tuning            |
-| Retrieval Sample [73] | Dataset-base | Text               | Doc                  | Tuning            | Tuning            |
-| Zeez [74]   | C4 | Text               | Doc                  | Tuning            | Tuning            |
-| CMA [75]   | Arxiv | Text               | Doc                  | Tuning            | Tuning            |
-| I-PAGER [76] | Wikipedia        | Text               | Doc                  | Tuning            | Tuning            |
-| PRCA [77]   | Dataset-base    | Text               | Doc                  | Tuning            | Tuning            |
-| QML-Doc-ranking [78] | Dataset-base | Text               | Doc                  | Tuning            | Tuning            |
-| Recompr [79] | Wikipedia        | Text               | Doc                  | Tuning            | Tuning            |
-| D9P [80]   | Wikipedia        | Text               | Doc                  | Tuning            | Tuning            |
-| ARABAAO [81] | Dataset-base    | Text               | Doc                  | Tuning            | Tuning            |
-| GenBank [82] | LLMs | Text               | Doc                  | Tuning            | Tuning            |
-| UnbN-RAIC [83] | Dataset-base | Text               | Doc                  | Tuning            | Tuning            |
-| CREA-ACL [114] | Dataset-base | Text               | Doc                  | Tuning            | Tuning            |
-| PKG [85]   | LLM | Text               | Doc                  | Tuning            | Tuning            |
-| SANTA [86]  | Dataset-base    | Text               | Doc                  | Tuning            | Tuning            |
-| SURGE [87]  | Freebase        | KG                 | Sub-Graph            | Tuning            | Tuning            |
-| KG-Tool [88] | Dataset-base    | KG                 | Entry                | Tuning            | Tuning            |
-| Dual-Book [89] | Wikipedia, Dataset-base | KG                 | Entry                | Tuning            | Tuning            |
-| KaanKoala [90] | Dataset-base, OpenAI | KG                 | Entry                | Tuning            | Tuning            |
-| FABULA [91] | Dataset-base, OpenAI | KG                 | Entry                | Tuning            | Tuning            |
-| HyKGE [92]  | CMuKG | KG                 | Entry                | Tuning            | Tuning            |
-| KALMV [93]  | Wikipedia        | KG                 | Triplet              | Tuning            | Tuning            |
-| RoL [94]   | Freebase        | KG                 | Triplet              | Tuning            | Tuning            |
-| G-Remover [95] | Dataset-base | KG                 | Triplet              | Tuning            | Tuning            |
+|--------|------------------|--------------------|-----------------------|-------------------|------------------|
+| CGL12 | Wikipedia        | Text               | Phrase                | Pre-training      | Iterative         |
+| DenaX10 | FactoidWiki     | Text               | Posponizer           | Tuning             | Tuning            |
+| EAR31 | Dataset-base     | Text               | Sentence              | Tuning             | Tuning            |
+| UPISE20 | Dataset-base    | Text               | Sentence              | Tuning             | Tuning            |
+| RAST32 | Dataset-base    | Text               | Sentence              | Tuning             | Tuning            |
+| SaIF94m | Dataset-base    | Text               | Sentence              | Tuning             | Tuning            |
+| FLARE11 | Search Engine Wiki | Text               | Sentence              | Tuning             | Tuning            |
+| PGR42 | Wikipedia        | Text               | Sentence              | Tuning             | Tuning            |
+| FLL11 | Wikipedia        | Text               | Sentence              | Tuning             | Tuning            |
+| RAD15 | Dataset-base    | Text               | Sentence              | Tuning             | Tuning            |
+| Filter errata16 | Synthesized dataset | Text | Sentence Pair | Tuning | Tuning |
+| R-QA17 | Dataset-base    | Text               | Sentence Pair | Tuning | Tuning |
+| LLM-R38 | Dataset-base    | Text               | Sentence Pair | Tuning | Tuning |
+| TIGER40 | Dataset-base    | Text               | Item-base           | Pre-training | Tuning |
+| LM-baker41 | Dataset-base    | Text               | Item-base           | Tuning | Tuning |
+| BEEQE31 | Dataset-base    | Text               | Item-base           | Tuning | Tuning |
+| CV-AQ1 | Synthesized dataset | Text | Item-base | Tuning | Tuning |
+| Ada12 | Wikipedia        | Text               | Chunk               | Pre-training | Iterative |
+| RA-VAEN | Wikipedia        | Text               | Chunk               | Pre-training | Iterative |
+| RETM04 | Pre-training Corpus | Text | Chunk | Pre-training | Iterative |
+| INSTRUCTION15 | Pre-training corpus | Text | Chunk | Tuning | Tuning |
+| KRR1 | Search Engine Dataset | Text | Chunk | Tuning | Tuning |
+| RA-c2s | Dataset-base    | Text               | Chunk               | Tuning | Tuning |
+| PROMPTMAGATOR21 | BERT | Text | Chunk | Tuning | Tuning |
+| AaD12 | MBERT+GPT+Wikipedia | Text | Chunk | Tuning | Tuning |
+| RA-LAT2 | Common Corpus Wikipedia | Text | Chunk | Tuning | Tuning |
+| RAG-Robots18 | Wikipedia | Text | Chunk | Tuning | Tuning |
+| RA-Lang-Fors19 | Wikipedia | Text | Chunk | Tuning | Tuning |
+| CnN52 | Wikipedia | Text | Chunk | Tuning | Tuning |
+| CnN44 | Wikipedia | Text | Chunk | Tuning | Tuning |
+| BOM26 | Wikipedia | Text | Chunk | Tuning | Tuning |
+| CoL21 | Wikipedia | Text | Chunk | Tuning | Tuning |
+| Take Elbassan22 | Wikipedia | Text | Chunk | Tuning | Tuning |
+| PapeQA33 | Arxiv Online Dataset PubMed | Text | Chunk | Tuning | Tuning |
+| NasaRAG34 | FactoidWiki | Text | Chunk | Tuning | Tuning |
+| IAC15 | Search Engine Wikipedia | Text | Chunk | Tuning | Tuning |
+| NoMBAACL16 | Wikipedia | Text | Chunk | Tuning | Tuning |
+| ToC37 | Search Engine Wikipedia | Text | Chunk | Tuning | Tuning |
+| SKR30 | Dataset-base, Wikipedia | Text | Chunk | Tuning | Tuning |
+| ITRG32 | Wikipedia | Text | Chunk | Tuning | Tuning |
+| RAG-LongContext30 | Dataset-base | Text | Chunk | Tuning | Tuning |
+| ITER-BTIR31 | Dataset-base | Text | Chunk | Tuning | Tuning |
+| IBCoT31 | Wikipedia | Text | Chunk | Tuning | Tuning |
+| LLM-Knowledge Boundary32 | Wikipedia | Text | Chunk | Tuning | Tuning |
+| RAPTOR16 | Dataset-base | Text | Chunk | Tuning | Tuning |
+| RECITE22 | LLMs | Text | Chunk | Tuning | Tuning |
+| ICRLM16 | Pile, Wikipedia | Text | Chunk | Tuning | Tuning |
+| Retrieval-Sample16 | Dataset-base | Text | Doc | Tuning | Tuning |
+| Zee30 | C4 | Text | Doc | Tuning | Tuning |
+| CMA17 | Arxiv | Text | Doc | Tuning | Tuning |
+| I-PAGER18 | Wikipedia | Text | Doc | Tuning | Tuning |
+| PRCA18 | Dataset-base | Text | Doc | Tuning | Tuning |
+| QML-Doc-ranking20 | Dataset-base | Text | Doc | Tuning | Tuning |
+| Recompr17 | Wikipedia | Text | Doc | Tuning | Tuning |
+| D9P21 | Pile | Text | Doc | Tuning | Tuning |
+| ARALUX22 | Dataset-base | Text | Doc | Tuning | Tuning |
+| ARABRAO17 | Dataset-base | Text | Doc | Tuning | Tuning |
+| GenBank18 | LMG | Text | Doc | Tuning | Tuning |
+| UnBhRAC11 | Dataset-base | Text | Doc | Tuning | Tuning |
+| CREA4CL11 | Dataset-base | Text | Multi | Tuning | Tuning |
+| PKG15 | LLM | Tableau Text | Chunk | Tuning | Tuning |
+| SANTA16 | Dataset-base | Code, Text | Chunk | Tuning | Tuning |
+| SURGE17 | Freebase | KG | Sub-Graph | Tuning | Tuning |
+| KG-Tod17 | Dataset-base | KG | Entry | Tuning | Tuning |
+| Dual-Book16 | Book | KG | Entry Sequence | Tuning | Tuning |
+| KaawKaw15 | Dataset-base | KG | Entry Sequence | Tuning | Tuning |
+| FABULA17 | Dataset-base | KG | Entry | Tuning | Tuning |
+| HyKGE11 | CMuKG | KG | Entry | Tuning | Tuning |
+| KALMV16 | Wikipedia | KG | Triple | Tuning | Tuning |
+| RoL18 | Freebase | KG | Triple | Tuning | Tuning |
+| G-Remover18 | Dataset-base | Text | Graph | Sub-Graph | Tuning |
 
 ## TABLE 1
 SUMMARY OF RAG METHODS
-
-| Method | Retrieval Source | Retrieval Data Type | Retrieval Granularity | Augmentation Stage | Retrieval Process |
-|--------|------------------|--------------------|-----------------------|------------------|------------------|
-| CGL1 [26] | Wikipedia       | Text               | Phrase                | Pre-training      | Iterative         |
-| DenaX [27] | FactoidWiki     | Text               | Posponizer           | Tuning            | Tuning            |
-| EAR [31]  | Dataset-base    | Text               | Sentence              | Tuning            | Tuning            |
-| UPISE [28] | Dataset-base    | Text               | Sentence              | Tuning            | Tuning            |
-| RAST [32]  | Dataset-base    | Text               | Sentence              | Tuning            | Tuning            |
-| SaIF4em [33] | Dataset-base    | Text               | Sentence              | Tuning            | Tuning            |
-| FLARE [34] | Search Engine Wiki | Text               | Sentence              | Tuning            | Tuning            |
-| PGRB [35]  | Wikipedia        | Text               | Sentence              | Tuning            | Tuning            |
-| FLLYU [36] | Wikipedia        | Text               | Sentence              | Tuning            | Tuning            |
-| RADIA [37] | Dataset-base    | Text               | Sentence              | Tuning            | Tuning            |
-| Filter error [38] | Synthesized dataset | Text               | Sentence              | Tuning            | Tuning            |
-| R-QQA [39] | Dataset-base    | Text               | Sentence Pair         | Tuning            | Tuning            |
-| LLM-R [39] | Dataset-base    | Text               | Sentence              | Tuning            | Tuning            |
-| TIGER [40] | Dataset-base    | Text               | Item-base             | Pre-training      | Tuning            |
-| LM-baker [41] | Dataset-base    | Text               | Item-base             | Tuning            | Tuning            |
-| BEEQE [42] | Dataset-base    | Text               | Item-base             | Tuning            | Tuning            |
-| CV-RAI [43] | Synthesized dataset | Text               | Item-base             | Tuning            | Tuning            |
-| Atea [44]  | Wikipedia        | Text               | Chunk                 | Pre-training      | Iterative         |
-| RAVEN [45] | Wikipedia        | Text               | Chunk                 | Pre-training      | Iterative         |
-| RETM0+ [46] | Pre-training Corpus | Text               | Chunk                 | Pre-training      | Iterative         |
-| INSTRUCTIONER [47] | Pre-training corpus | Text               | Chunk                 | Tuning            | Tuning            |
-| KRR [48]   | Search Engine | Text               | Chunk                 | Tuning            | Tuning            |
-| RA-DA [49] | Dataset-base    | Text               | Chunk                 | Tuning            | Tuning            |
-| PROMPTAGATOR [50] | BERT | Text               | Chunk                 | Tuning            | Tuning            |
-| AAE [51]   | MENTION, Wikipedia | Text               | Chunk                 | Tuning            | Tuning            |
-| RA-XT [52] | Common Corpus, Wikipedia | Text               | Chunk                 | Tuning            | Tuning            |
-| RAG-Robots [53] | Wikipedia | Text               | Chunk                 | Tuning            | Tuning            |
-| RA-Lang Form [54] | Wikipedia | Text               | Chunk                 | Tuning            | Tuning            |
-| CnN [55]   | Wikipedia        | Text               | Chunk                 | Tuning            | Tuning            |
-| Scf-A4G [56] | Wikipedia        | Text               | Chunk                 | Tuning            | Tuning            |
-| BOM [57]   | Wikipedia        | Text               | Chunk                 | Tuning            | Tuning            |
-| CoL [58]   | Wikipedia        | Text               | Chunk                 | Tuning            | Tuning            |
-| Take Elitism [59] | Wikipedia        | Text               | Chunk                 | Tuning            | Tuning            |
-| PopqQA [60] | Arxiv, Online, Database, PubMed | Text               | Chunk                 | Tuning            | Tuning            |
-| NasaQa [61] | FactoidWiki      | Text               | Chunk                 | Tuning            | Tuning            |
-| NoMBAACL [62] | Search Engine, Wikipedia | Text               | Chunk                 | Tuning            | Tuning            |
-| ToC [63]   | Search Engine, Wikipedia | Text               | Chunk                 | Tuning            | Tuning            |
-| SkR [64]   | Dataset-base, Wikipedia | Text               | Chunk                 | Tuning            | Tuning            |
-| ITRG [65]  | Wikipedia        | Text               | Chunk                 | Tuning            | Tuning            |
-| RAG-Long Context [66] | Dataset-base | Text               | Chunk                 | Tuning            | Tuning            |
-| ITER-BTIRAS [67] | Wikipedia        | Text               | Chunk                 | Tuning            | Tuning            |
-| IBCoT [68] | Wikipedia        | Text               | Chunk                 | Tuning            | Tuning            |
-| LLM-Knowledge Boundary [69] | Wikipedia | Text               | Chunk                 | Tuning            | Tuning            |
-| RAPTOR [70] | Dataset-base    | Text               | Chunk                 | Tuning            | Tuning            |
-| RECTIE [71] | LLMs | Text               | Doc                  | Tuning            | Tuning            |
-| ICRLM [72] | Pile, Wikipedia | Text               | Doc                  | Tuning            | Tuning            |
-| Retrieval Sample [73] | Dataset-base | Text               | Doc                  | Tuning            | Tuning            |
-| Zeez [74]   | C4 | Text               | Doc                  | Tuning            | Tuning            |
-| CMA [75]   | Arxiv | Text               | Doc                  | Tuning            | Tuning            |
-| I-PAGER [76] | Wikipedia        | Text               | Doc                  | Tuning            | Tuning            |
-| PRCA [77]   | Dataset-base    | Text               | Doc                  | Tuning            | Tuning            |
-| QML-Doc-ranking [78] | Dataset-base | Text               | Doc                  | Tuning            | Tuning            |
-| Recompr [79] | Wikipedia        | Text               | Doc                  | Tuning            | Tuning            |
-| D9P [80]   | Wikipedia        | Text               | Doc                  | Tuning            | Tuning            |
-| ARABAAO [81] | Dataset-base    | Text               | Doc                  | Tuning            | Tuning            |
-| GenBank [82] | LLMs | Text               | Doc                  | Tuning            | Tuning            |
-| UnbN-RAIC [83] | Dataset-base | Text               | Doc                  | Tuning            | Tuning            |
-| CREA-ACL [114] | Dataset-base | Text               | Doc                  | Tuning            | Tuning            |
-| PKG [85]   | LLM | Text               | Doc                  | Tuning            | Tuning            |
-| SANTA [86]  | Dataset-base    | Text               | Doc                  | Tuning            | Tuning            |
-| SURGE [87]  | Freebase        | KG                 | Sub-Graph            | Tuning            | Tuning            |
-| KG-Tool [88] | Dataset-base    | KG                 | Entry                | Tuning            | Tuning            |
-| Dual-Book [89] | Wikipedia, Dataset-base | KG                 | Entry                | Tuning            | Tuning            |
-| KaanKoala [90] | Dataset-base, OpenAI | KG                 | Entry                | Tuning            | Tuning            |
-| FABULA [91] | Dataset-base, OpenAI | KG                 | Entry                | Tuning            | Tuning            |
-| HyKGE [92]  | CMuKG | KG                 | Entry                | Tuning            | Tuning            |
-| KALMV [93]  | Wikipedia        | KG                 | Triplet              | Tuning            | Tuning            |
-| RoL [94]   | Freebase        | KG                 | Triplet              | Tuning            | Tuning            |
-| G-Remover [95] | Dataset-base | KG                 | Triplet              | Tuning            | Tuning            |
 
 Global search
 

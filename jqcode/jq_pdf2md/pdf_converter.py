@@ -7,14 +7,14 @@ from typing import Optional
 
 from pdf2image import convert_from_path
 
-from docext.core.file_converters.file_converter import FileConverter
+# from docext.core.file_converters.file_converter import FileConverter
 
 output_folder="/data/projects/JqChatV2/JqChat/docext/output_imgs"
 
 def get_delta_time(input_time):
     return round(time.time() - input_time, 2)
-
-class PDFConverter(FileConverter):
+class PDFConverter:
+# class PDFConverter(FileConverter):
     def convert_to_images(self, file_path: str,max_img_size: Optional[int] = 1024, concurrency_limit: int=32):
         return convert_from_path(file_path,dpi=160, fmt='png', thread_count=concurrency_limit, use_pdftocairo=True,size=(max_img_size, max_img_size))
 

@@ -282,7 +282,7 @@ if __name__ == "__main__":
 
     file_inputs = ["/data/projects/JqChatV2/JqChat/JqR2R/py/core/examples/supported_file_types/pdf.pdf"]
     file_inputs += ["/data/projects/JqChatV2/JqChat/JqR2R/py/core/examples/data/DeepSeek_R1.pdf"]
-    file_inputs += ["/data/projects/JqChatV2/JqChat/docext/晶奇招股说明书.pdf"]
+    # file_inputs += ["/data/projects/JqChatV2/JqChat/docext/晶奇招股说明书.pdf"]
 
     start_time = time.time()
     # model_name = "qwenvl"  # or "nanonets"
