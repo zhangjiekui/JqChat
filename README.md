@@ -1,4 +1,10 @@
 **du -h --max-depth=1 / | sort -rh**
+
+pip install torch==2.7.0 torchvision torchaudio vllm==0.9.1
+[py3.10]pip install /root/flash_attn-2.8.0.post2+cu12torch2.7cxx11abiFALSE-cp310-cp310-linux_x86_64.whl
+[py3.11]pip install /root/flash_attn-2.8.0.post2+cu12torch2.7cxx11abiTRUE-cp311-cp311-linux_x86_64.whl
+
+[都有问题]pip install torch==2.7.0 flashinfer-python==0.2.5 flashinfer-python==0.2.6.post1
 ## Reranker 8081
 workon vllm
 CUDA_VISIBLE_DEVICES=0 nohup vllm serve /data/models/Qwen3-Reranker-0.6B-seq-cls --served-model-name Qwen/Qwen3-Reranker-0.6B --port 8081 >> /root/JqLogs/rerank.log 2>&1 &
@@ -138,11 +144,17 @@ fastllm https://github.com/ztxz16/fastllm/blob/master/docs/qwen3.md
 workon torch26cu126
 安装：pip install ftllm -U
 如有问题，自己克隆代码库，编译安装
+git clone https://github.com/ztxz16/fastllm.git
+cd ~/fastllm
+使用numa加速时，强烈建议关闭系统numa平衡。
+（ubuntu中可使用命令sudo sysctl -w kernel.numa_balancing=0 查看sudo sysctl  -a | grep numa_bal 恢复sudo sysctl -w kernel.numa_balancing=1)
 bash install.sh -DUSE_CUDA=ON -DCUDA_ARCH=89 -D CMAKE_CUDA_COMPILER=$(which nvcc)
 下载模型：ftllm download fastllm/Qwen3-235B-A22B-INT4MIX
 环境变量：
 export FASTLLM_USE_NUMA=ON
 export FASTLLM_NUMA_THREADS=32
+CUDA_DEVICE_ORDER=PCI_BUS_ID
+bash install.sh -DUSE_CUDA=ON -DCUDA_ARCH=89 -D CMAKE_CUDA_COMPILER=$(which nvcc)
 运行模型api server (openai风格)：
 # 纯CPU
 速度（4t/s）：numactl -C 0-31 -m 0  ftllm server /root/Qwen3-235B-A22B-INT4MIX/ --model_name ftqwen3 --device cpu -t 30 
@@ -151,7 +163,21 @@ export FASTLLM_NUMA_THREADS=32
 numactl -C 0-31 -m 0  ftllm server /root/Qwen3-235B-A22B-INT4MIX/ --model_name ftqwen3 --device cuda --moe_device cpu -t 30 [错误]
 # 1个4090gpu
 速度（8t/s）：
-CUDA_VISIBLE_DEVICES=0 export FASTLLM_USE_NUMA=ON && export FASTLLM_NUMA_THREADS=30 &&  ftllm server /root/Qwen3-235B-A22B-INT4MIX/ --model_name ftqwen3 --device cuda --moe_device "{'cuda':10,'cpu':90}" 
+CUDA_VISIBLE_DEVICES=0 export FASTLLM_USE_NUMA=OFF && export FASTLLM_NUMA_THREADS=30 &&  ftllm server /root/Qwen3-235B-A22B-INT4MIX/ --model_name ftqwen3 --device 'cuda:0' --moe_device "{'cuda：0':10,'cpu':90}" 
+
+CUDA_VISIBLE_DEVICES=0 export FASTLLM_USE_NUMA=OFF && export FASTLLM_NUMA_THREADS=30 &&  ftllm server /root/Qwen3-235B-A22B-INT4MIX/ --model_name ftqwen3 --device cuda --moe_device cpu 
+
+CUDA_VISIBLE_DEVICES=0,1,2,3 FASTLLM_USE_NUMA=OFF export CUDA_DEVICE_ORDER=PCI_BUS_ID &&  ftllm server /root/Qwen3-235B-A22B-INT4MIX/ --model_name ftqwen3 --device 'cuda:0' --moe_device cpu --cuda_se true
+
+FASTLLM_USE_NUMA=OFF 
+CUDA_DEVICE_ORDER=PCI_BUS_ID &&  ftllm server /root/Qwen3-235B-A22B-INT4MIX/ --model_name ftqwen3 --device 'cuda:0' --moe_device cpu --cuda_se true
+
+FASTLLM_USE_NUMA=OFF export CUDA_DEVICE_ORDER=PCI_BUS_ID &&  ftllm server /root/Qwen3-235B-A22B-INT4MIX/ --model_name ftqwen3 --device cuda --moe_device cpu --cuda_se true
+
+CUDA_VISIBLE_DEVICES=0 export FASTLLM_USE_NUMA=ON && export FASTLLM_NUMA_THREADS=30 &&  ftllm server /root/Qwen3-235B-A22B-INT4MIX/ --model_name ftqwen3 --device cuda --moe_device cuda
+
+
+CUDA_VISIBLE_DEVICES=0 export FASTLLM_USE_NUMA=ON && export FASTLLM_NUMA_THREADS=30 &&  ftllm server /root/Qwen3-235B-A22B-INT4MIX/ --model_name ftqwen3 --device cuda --moe_device cpu --cuda_se false
 # 2个4090gpu
 速度（8t/s）：
 export CUDA_VISIBLE_DEVICES=0,1 && export FASTLLM_USE_NUMA=ON && export FASTLLM_NUMA_THREADS=30 &&  ftllm server /root/Qwen3-235B-A22B-INT4MIX/ --model_name ftqwen3 --device cuda --moe_device multicuda:0:8,1:8,cpu:84
@@ -428,9 +454,20 @@ CUDA_VISIBLE_DEVICES=2,3 VLLM_USE_V1=1 nohup vllm serve /data/models/Qwen/Qwen2_
 tail -f /root/JqLogs/vllmvl.log 
 ```
 
-``` **qwenvl gpu2** vllmv0.9.0.1
+``` **qwenvl gpu2** 
+vllmv0.9.1
+flash_attn 2.8.0.post2
+flashinfer-python 0.2.3         /root/flashinfer
+
+【7B VL】
+workon sl
+CUDA_VISIBLE_DEVICES=1 VLLM_ALLOW_ENGINE_USE_RAY=1 nohup vllm serve /data/models/Qwen/Qwen2___5-VL-7B-Instruct-AWQ --served-model-name qwenvl --enable-auto-tool-choice --tool-call-parser hermes --gpu-memory-utilization 0.98 --port 8000 --host 0.0.0.0 --limit-mm-per-prompt image=5,video=5 --max-model-len 32768  --max-num-seqs 32 --enable-prefix-caching --enable-chunked-prefill >> /root/JqLogs/vllmvl.log 2>&1 &
+tail -f /root/JqLogs/vllmvl.log 
+```
+
+``` **qwenvl gpu0,1** vllmv0.9.1[实际推理速度更慢]
 workon vllm2
-CUDA_VISIBLE_DEVICES=1 VLLM_ALLOW_ENGINE_USE_RAY=1 nohup vllm serve /data/models/Qwen/Qwen2___5-VL-7B-Instruct-AWQ --served-model-name qwenvl --enable-auto-tool-choice --tool-call-parser hermes --gpu-memory-utilization 0.98 --port 8000 --host 0.0.0.0 --limit-mm-per-prompt image=5,video=5 --max-model-len 32768  --max-num-seqs 16 --enable-prefix-caching --enable-chunked-prefill >> /root/JqLogs/vllmvl.log 2>&1 &
+CUDA_VISIBLE_DEVICES=0,1 VLLM_ALLOW_ENGINE_USE_RAY=1 nohup vllm serve /data/models/Qwen/Qwen2___5-VL-7B-Instruct-AWQ --served-model-name qwenvl --enable-auto-tool-choice --tool-call-parser hermes --gpu-memory-utilization 0.98 --port 8000 --host 0.0.0.0 --limit-mm-per-prompt image=5,video=5 --max-model-len 32768  --tensor-parallel-size 2 --max-num-seqs 32 --enable-prefix-caching --enable-chunked-prefill >> /root/JqLogs/vllmvl.log 2>&1 &
 tail -f /root/JqLogs/vllmvl.log 
 ```
 

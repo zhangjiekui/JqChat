@@ -21,7 +21,19 @@ from jqcode.jq_pdf2md.utils import convert_files_to_images,encode_image,validate
 
 def get_delta_time(input_time):
     return round(time.time() - input_time, 2)
+
+start_tag="```markdown"
+len_start_tag=len(start_tag)
+end_tag="```"
+len_end_tag=len(end_tag)
 def process_tags(content: str) -> str:
+    content = content.rstrip()
+    content = content.lstrip()
+    if content.startswith(start_tag):
+        content = content[len_start_tag:]
+    if content.endswith(end_tag):
+        content = content[:-(len_end_tag)] 
+
     content = content.replace("<img>", "&lt;img&gt;")
     content = content.replace("</img>", "&lt;/img&gt;")
     content = content.replace("<watermark>", "&lt;watermark&gt;")
@@ -127,6 +139,7 @@ def stream_request(
                                 if "delta" in choice and "content" in choice["delta"]:
                                     content = choice["delta"]["content"]
                                     if content:
+                                        # content = process_tags(content)
                                         single_page_markdown_content += content
                         except json.JSONDecodeError:
                             continue
@@ -187,14 +200,75 @@ async def convert_to_markdown_in_pool_executor(
     # Watermarks should be wrapped in brackets. Ex: <watermark>OFFICIAL COPY</watermark>. 
     # Page numbers should be wrapped in brackets. Ex: <page_number>14</page_number> or <page_number>9/22</page_number>. Prefer using ☐ and ☑ for check boxes.
     # """
+    user_prompt ="""
+            # PDF文档解析器规范 (Markdown/LaTeX输出)
+            **角色：** 专业PDF解析器
+            **输出：** 直接返回结构化Markdown内容
+            **原则：** 保持原结构 | 内容优先于视觉 | 无解释性文字 | 语言与图中原语言保持一致，不要翻译  | 删除所有页眉、页脚、分页符和页码标记
 
-    user_prompt = f"""{toc_prompt}
-    请注意这是多页连续的文档，要确保页面内容以合适的方式来连接和合并。
-    如果碰到内嵌的图片/图形，请优先考虑作为一个OCR任务来处理，否则作为图片描述任务，如果图片与上下文关系不大（如背景图片或水印等），请忽略。注意仅输出图片OCR或图片描述文本结果，请勿输出图片链接。
-    Extract the text from the above document as if you were reading it naturally.     
-    Return the results in markdown format, but no ``` ```markdown or ```html tags.
-    Prefer using ☐ and ☑ for check boxes.
-    """
+            ## 转换规范
+            1. **标题结构**
+            - 严格使用 `# H1` → `## H2` → `### H3` 层级，还原原文档结构            
+            2. **文本格式**
+            - `**加粗**` `*斜体*` `~~删除线~~` `<u>下划线</u>`
+            3. **列表**
+            ```markdown
+            - 无序列表
+                * 嵌套项
+                1. 有序列表
+                1.1 嵌套项
+            ```
+            4. **表格**
+            使用Markdown原生表格语法
+            ```markdown
+            | Header1 | Header2 | Header3 |
+            | :------ | :-----: | ------: |
+            | Left    | Center  | Right   |
+            ```
+            - 合并相邻但属于同一表格的多个表格（因分页等原因造成的）
+            - 对于合并单元格等复杂结构，优先确保数据内容完整和逻辑关系清晰，可以牺牲视觉保真度
+            5. **图片**
+            - 不要输出图片链接，只输出图片OCR或图形描述文本结果，并使用<img>图片OCR或图形描述文本结果</img>标签来包裹。
+                - 文字型图片：尝试提取图片中的核心文字信息
+                - 图形类：    根据上下文和图片视觉内容，生成描述性替代文本
+            - 忽略水印/背景图
+            6. **数学公式**
+            - 行内：`$E=mc^2$`
+            - 独立块：
+                    $$
+                    \int_a^b f(x)dx
+                    $$
+                - 符号转换： 确保数学符号（希腊字母、运算符等）准确转换为LaTeX表示（如 \alpha, \times, \sum）和上下标转换准确
+            7. **代码块**
+            ```python
+            print("语言标注") #代码内容
+            ```
+            - 未知语言：使用 ` ```text ` 或 ` ``` `
+            8. **链接**
+            `[显示文本](URL)` 保留锚链接(`#section`)
+            9. **特殊处理**
+            - 多语言：
+                - 自动检测中/英/日/韩
+                - RTL语言(阿拉伯语)：用`<div dir="rtl">文本</div>`包裹
+            - 特殊字符：
+                - 数学符号：→ LaTeX (`α`→`\alpha`)
+                - 非数学：保留Unicode(`→⇒✔©®°C`)
+                - 货币：保留原样(`¥€$£`)
+
+            ## 多页处理
+            - 按自然章节分割（检测标题/主题切换）
+            - 确保不切断：表格/公式/代码块
+            - 保持内容连贯性
+
+            ## 质量自检
+            1. 标题层级准确性 ✓
+            2. 表格数据完整性 ✓
+            3. 公式符号正确性 ✓
+            4. 代码语言标注 ✓
+            5. 图片替代文本描述性 ✓
+            6. 多页衔接自然度 ✓
+            7. 特殊字符处理合规 ✓
+        """
 
     logger.info(f"Converting {len(encoded_images)} image(s) to markdown using [{model_name=},{vlm_url=}] (Processing in ThreadPoolExecutor(max_workers={concurrency_limit}))")
 
@@ -224,6 +298,7 @@ async def convert_to_markdown_in_pool_executor(
             tasks.append(task)
         
     full_markdown_contents = await asyncio.gather(*tasks)
+
     return full_markdown_contents
 async def convert_file_to_markdown(
     encoded_images, model_name, vlm_url, concurrency_limit, max_gen_tokens
@@ -234,6 +309,7 @@ async def convert_file_to_markdown(
 
     # start_time = time.time()
     final_results = await convert_to_markdown_in_pool_executor(encoded_images, model_name, vlm_url, concurrency_limit, max_gen_tokens)
+
     logger.info(f"Successfully completed document conversion")
     return final_results
 
@@ -246,9 +322,10 @@ def convert_files_to_markdowns(
         for file_input in file_inputs
     ]
     validate_file_paths(file_paths)
+    file_num = len(file_paths)
     all_files_results = []
-    for file_path in file_paths:
-        logger.info(f"==Begin==============='{file_path}'=================")
+    for i,file_path in enumerate(file_paths,1):
+        logger.info(f"开始【{i}/{file_num}】================='{file_path}'=================")
         start_time = time.time()
         logger.info(f"Converting file '{file_path}' to markdown using [{model_name=},{vlm_url=}]")
         encoded_images = file2imgs_and_encode_images_in_thread_pool_executor(
@@ -264,7 +341,7 @@ def convert_files_to_markdowns(
             )
         )
         logger.info(f"Successfully completed document['{file_path}'] conversion to markdown file  in {get_delta_time(start_time)} seconds")
-        logger.info(f"==End==============='{file_path}'=================")
+        logger.info(f"完成【{i}/{file_num}】================='{file_path}'=================\n\n")
         all_files_results.append({file_path:final_results})
     return all_files_results  
 
@@ -276,18 +353,19 @@ if __name__ == "__main__":
 
 
     """
-    workon vllm
+    workon vllm2
     vllm serve /data/models/Nanonets-OCR-s/ --enable-chunked-prefill --port 8008 --host 0.0.0.0 --served-model-name=nanonets --max-num-seqs 32 --limit-mm-per-prompt image=5,video=1
     """
-
-    file_inputs = ["/data/projects/JqChatV2/JqChat/JqR2R/py/core/examples/supported_file_types/pdf.pdf"]
+    file_inputs = ["/data/projects/JqChatV2/JqChat/docext/晶奇招股说明书.pdf"]
+    file_inputs += ["/data/projects/JqChatV2/JqChat/JqR2R/py/core/examples/supported_file_types/pdf.pdf"]
     file_inputs += ["/data/projects/JqChatV2/JqChat/JqR2R/py/core/examples/data/DeepSeek_R1.pdf"]
-    # file_inputs += ["/data/projects/JqChatV2/JqChat/docext/晶奇招股说明书.pdf"]
+    file_inputs = ["/data/projects/JqChatV2/JqChat/JqR2R/py/core/examples/data/DeepSeek_R1.pdf"]
+    
 
     start_time = time.time()
-    # model_name = "qwenvl"  # or "nanonets"
-    model_name = "nanonets"
-    concurrency_limit = 16 if model_name == "qwenvl" else 32
+    model_name = "qwenvl"  # or "nanonets"
+    # model_name = "nanonets"
+    concurrency_limit = 32 if model_name == "qwenvl" else 32
     vlm_url= "http://10.1.150.105:8000/v1" if model_name == "qwenvl" else os.getenv("VLM_MODEL_URL", "http://10.1.150.105:8008/v1")
     all_files_results = convert_files_to_markdowns(
         file_inputs,
