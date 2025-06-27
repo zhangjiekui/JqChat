@@ -129,7 +129,7 @@ class JqElasticsearchDocumentStore(JqBaseDocumentStore):
         actions_list = []
         es_index_doc_id_list = []
         if not if_uploade_src_file:
-            logger.warning("由于性能问题，现在改为默认不上传原始文件、doc_tree（file_yaml）到ES！")
+            logger.warning("        由于性能问题，现在改为默认不上传原始文件、doc_tree（file_yaml）到ES！")
         for document in lm_documents:
             file_name = document.metadata.get('file_name',None) or document.metadata.get('file_name_jq',None)
             file_text = document.text
@@ -329,7 +329,7 @@ class JqElasticsearchDocumentStore(JqBaseDocumentStore):
                     pass
                 return False
     
-    def query_raw(self, query: dict) -> List[LmDocument]:
+    def query_raw(self, query: dict,index=None) -> List[LmDocument]:
         """Query Elasticsearch store using query format of ES client
 
         Args:
@@ -338,7 +338,8 @@ class JqElasticsearchDocumentStore(JqBaseDocumentStore):
         Returns:
             List[LmDocument]: List of result documents
         """
-        res = self.client.search(index=self.index_name, body=query)
+        index_name = index or self.index_name
+        res = self.client.search(index=index_name, body=query)
         return res["hits"]["hits"]
         
     def _get_query(self,user_query_text: str=None,size=MAX_DOCS_TO_GET,query_on_fileds:list = ["file_name","file_text"], filter_by_doc_ids:list=None,filter_by_file_upload_users:list=None,filter_by_doc_types:list=[".doc"],filter_by_status:list=["true","false"]):

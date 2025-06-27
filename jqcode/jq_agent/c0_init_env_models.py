@@ -306,7 +306,7 @@ class JqXinferenceReranker(BaseDocumentCompressor):
         self,
         top_n: int = 6,
         model:Any =None,
-        threshold:float =0.3, #"""相关性阈值，低于此值的文档不返回."""
+        threshold:float =0.2, #"""相关性阈值，低于此值的文档不返回."""
         **kwargs
     ):
         
@@ -917,7 +917,7 @@ class InitEnvModels:
         return lightrag
 
     @lru_cache
-    def get_emb_8k_rerank_model(self,embedding_model_name=None, embedding_model_name_8k=None, rerank_model_name=None, device = ['cpu','cpu','cpu'],final_docs_num_reranked=4,api_mode:bool=True):
+    def get_emb_8k_rerank_model(self,embedding_model_name=None, embedding_model_name_8k=None, rerank_model_name=None, device = ['cpu','cpu','cpu'],final_docs_num_reranked=6,api_mode:bool=True):
         if not (self.embed_model and self.embedding_model_8k and self.reranker):
             if api_mode:
                 self.embed_model,self.embedding_model_8k,self.reranker = self._get_emb_8k_rerank_model_api()
@@ -1148,12 +1148,26 @@ class InitEnvModels:
         text_chunks = text_splitter.split_documents(docs_list_cleaned)
                 
         reranker = reranker if reranker else self.reranker
-        reranker.top_n = final_docs_num
-        
-        # text_chunks.append(Document(query))
-        # chunks_relevant = []
-        if only_use_reranker:            
-            chunks_relevant = reranker.compress_documents(text_chunks,query)
+        original_reranker_top_n = reranker.top_n
+
+        if only_use_reranker:
+            # reduce memory usage.
+            micro_bs = 20
+            num_chunks = len(text_chunks)            
+            if num_chunks > micro_bs:
+                reranker.top_n = micro_bs
+                _chunks_relevant = []
+                for i in range(0, num_chunks, micro_bs):
+                    sub_docs = text_chunks[i : i + micro_bs]
+                    sub_chunks_relevant = reranker.compress_documents(sub_docs,query)
+                    _chunks_relevant.extend(sub_chunks_relevant)            
+                # s = _chunks_relevant[0].metadata.get('relevance_score_reranker', 0)
+                chunks_relevant = sorted(_chunks_relevant, key=lambda x: x.metadata.get('relevance_score_reranker', 0), reverse=True)
+                chunks_relevant = chunks_relevant[:final_docs_num]
+            else:
+                reranker.top_n = final_docs_num
+                chunks_relevant = reranker.compress_documents(text_chunks,query)
+            reranker.top_n = original_reranker_top_n
         
         else:
             from jqcode.jq_agent.tools.jq_retriever import get_retriever
@@ -1188,7 +1202,7 @@ class InitEnvModels:
     # 避免历史消息类型的拼装（符合HumanMessage、AIMessage、[ToolMessage if AIMessage is a ToolCall AIMessage]），引入不相关、不必要的消息
     # 返回最近的n条消息列表，并且保证是以HumanMessage开头的，符合HumanMessage、AIMessage、[ToolMessage if AIMessage is a ToolCall AIMessage]
     def filter_and_get_messages_relevant_to_query(self,query:str,messages_list:List[BaseMessage],reserve_last_n_messages_num=0,reserve_message_types:tuple=(HumanMessage,AIMessage),text_splitter=None,embed_model=None,reranker=None,
-                                                    if_reranking:bool=True,retriever_docs_num=10,final_docs_num=4 ,score_threshold=0.3, only_use_reranker=True):
+                                                    if_reranking:bool=True,retriever_docs_num=10,final_docs_num=6 ,score_threshold=0.3, only_use_reranker=True):
     
         if not messages_list:
            return []        

@@ -532,6 +532,7 @@ class JqkjSimpleDirectoryReader(SimpleDirectoryReader):
     overwrite_existing_converted_files: bool = False,
     exclude: Optional[List] = ['~*.*','$*.*'],
     exclude_hidden: bool = True,
+    exclude_files_list: Optional[List[str|Path]] = None,
     errors: str = "ignore",
     recursive: bool = False,
     encoding: str = "utf-8",
@@ -544,6 +545,7 @@ class JqkjSimpleDirectoryReader(SimpleDirectoryReader):
     fs: Optional[fsspec.AbstractFileSystem] = None,    
 ) -> None:  
             # 确保输入是个列表
+            logger.warning(f"\n========== 进入: JqkjSimpleDirectoryReader ==========")
             if input_files:
                 if isinstance(input_files, (str, Path)):
                     input_files = [input_files] 
@@ -574,17 +576,36 @@ class JqkjSimpleDirectoryReader(SimpleDirectoryReader):
                 fs=fs,                  
             )
 
-            input_filepaths_exist,input_filepaths_exist_and_replaced_by_docx_if_converted = convert_file_to_docx(self.input_files,overwrite=overwrite_existing_converted_files,destination_dir=output_dir_for_converted_files)
+            if exclude_files_list:
+                reserved_files = []
+                for file in self.input_files:
+                    if file.name in exclude_files_list:
+                        logger.info(f"排除存在于exclude_files_list中的文件：{file.name}")
+                   
+                    else:
+                        logger.info(f"添加文件：{str(file)}")
+                        reserved_files.append(file)
+                logger.warning(f"     JqkjSimpleDirectoryReader原始输入文件数量为：{len(self.input_files)}")
+                logger.warning(f"     JqkjSimpleDirectoryReader排除文件后仍然保留的文件数量为：{len(reserved_files)=}")
+                logger.debug(f"""JqkjSimpleDirectoryReader原始输入文件列表为：\n-------------\n{self.input_files}\n-------------""")
+                self.input_files = reserved_files
+            if self.input_files:   
+                input_filepaths_exist,input_filepaths_exist_and_replaced_by_docx_if_converted = convert_file_to_docx(self.input_files,overwrite=overwrite_existing_converted_files,destination_dir=output_dir_for_converted_files)
             
-            converted_files_metadata = {}
-            for i,file in enumerate(input_filepaths_exist_and_replaced_by_docx_if_converted):                     
-                file = str(file)
-                original_file = str(input_filepaths_exist[i])
-                converted_files_metadata[file] = {'original_source_jq':original_file,'source':original_file,'original_source_converted_jq':file} #'source'键是为了与chatchat中的reader保持一致的                        
-                    
-            self.input_files = input_filepaths_exist_and_replaced_by_docx_if_converted
-            self.input_files_original_metadata=converted_files_metadata
-            self.file_metadata = file_metadata or self.JQKJ_DEFAULT_FILE_META_DATA_FUNC
+                converted_files_metadata = {}
+                for i,file in enumerate(input_filepaths_exist_and_replaced_by_docx_if_converted):                     
+                    file = str(file)
+                    original_file = str(input_filepaths_exist[i])
+                    converted_files_metadata[file] = {'original_source_jq':original_file,'source':original_file,'original_source_converted_jq':file} #'source'键是为了与chatchat中的reader保持一致的                        
+                        
+                self.input_files = input_filepaths_exist_and_replaced_by_docx_if_converted
+                self.input_files_original_metadata=converted_files_metadata
+                self.file_metadata = file_metadata or self.JQKJ_DEFAULT_FILE_META_DATA_FUNC
+                logger.warning(f"     JqkjSimpleDirectoryReader输入{len(self.input_files)}个文件，并已完成必要的docx目标文件转换") 
+            else:
+                logger.warning(f"     JqkjSimpleDirectoryReader没有输入文件，JqkjSimpleDirectoryReader将不会加载任何文件，请检查输入路径或文件列表是否正确。")
+                logger.debug(f"""也可能是文件都在排除列表中，排除列表数量为：{len(exclude_files_list)}，请核对检查：\n-------------\n{exclude_files_list}\n-------------""")
+            logger.warning(f"========== 离开: JqkjSimpleDirectoryReader ==========")
 
     SimpleDirectoryReader.supported_suffix_fn = JQKJ_DEFAULT_FILE_READER_CLS
     

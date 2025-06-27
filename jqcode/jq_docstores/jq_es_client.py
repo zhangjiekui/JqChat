@@ -4,6 +4,7 @@ import sys,os,logging
 import time 
 import shutil
 import asyncio
+from pathlib import Path
 from langchain.schema import Document as LcDocument
 from jqcode.jq_agent.c0_init_env_models import env_models_instance
 from jqcode.jq_docstores.backend_docstore_utils.jq_es_metastores import JqElasticsearchUniMetaStore, md5_id_from_text
@@ -86,6 +87,31 @@ class JqEsClient():
             logger.error(f"An error occurred: {e}")
             return None
 
+    def get_all_records_from_index(self, index_name: str=None, size: int = 10000) -> list[dict]:
+        """
+        从索引中获取所有文档记录。
+        :param index_name: 索引名称，如果为 None，则获取所有索引的记录
+        :param size: 每次查询的文档数量，默认为 10000
+        :return: 文档记录列表
+        """
+        query_dict = {"query": {"match_all": {}}, "size": size}
+        existed_records = self.docstores.query_raw(query_dict, index=index_name)
+        
+        return existed_records
+    def get_docfile_names_from_index(self, index_name: str=None, size: int = 10000) -> list[str]:
+        """
+        从索引中获取文档名称列表。
+        """
+        existed_chunks = self.get_all_records_from_index(index_name=index_name, size=size)
+        existed_docfile_names = []
+        for chunk in existed_chunks:
+            _source = chunk.get("_source")
+            file_name = _source.get("file_name")
+            file_path_original = _source["metadata"].get("original_source_jq","")
+            file_name_original = Path(file_path_original).name if file_path_original else file_name
+            if file_name_original not in existed_docfile_names:
+                existed_docfile_names.append(file_name_original)
+        return existed_docfile_names    
         
     def create_doc_index(self,index_name:str="",description:str="",index_creator:str = ""):
         """
@@ -198,6 +224,15 @@ class JqEsClient():
             logging.error(f"Error deleting document blocks: {e}")
             return False
         
+    def expends_file_names_to_docpdfmd(self,existed_docfile_names:list=[],skip_special_files:list = []):                                      
+        for file_name in existed_docfile_names:
+            if file_name.endswith('.docx'):
+                existed_docfile_names.extend([file_name.replace('.docx','.doc'),file_name.replace('.docx','.pdf'),file_name.replace('.docx','.md')])
+                existed_docfile_names = list(set(existed_docfile_names)) #去重    
+                existed_docfile_names.sort()
+                                    
+        existed_docfile_names.extend(skip_special_files)
+        return existed_docfile_names
 
     def chunks_indexing_from_input_dir_or_files(self,
             # 当前用户，将在create_doc_index和add_or_update_index_metadata_if_id_exists方法中使用
@@ -209,10 +244,17 @@ class JqEsClient():
             input_dir:str=None,
             input_files:list=None, 
             overwrite_existing_converted_files=False,
+            skip_es_index_creation_if_file_already_indexed=True,
+            # True:如果ES中已存在索引，则跳过在r2r索引创建;
+            # False:r2r独立检查和创建索引
+            r2r_share_same_es_docs_to_be_processed = False,
             required_exts=required_exts_in_reader,
             if_uploade_src_file = False,
             exclude_hidden=False,
             r2r_client = None,
+            skip_special_files = [
+                                    "厦门市智慧民政一体化平台项目建设方案 V3.6.docx", #文件太大了
+                                ]
         ):
         """
             将文档chunks文本和向量存储到doc_index
@@ -221,85 +263,128 @@ class JqEsClient():
             (3) 将文件记录ID更新到chunks元数据中
             (4) 将文档chunks文本和向量存储到doc_index
         """
+        logger.warning(f"\n========== 进入: chunks_indexing_from_input_dir_or_files ==========")
         vectorstore = None
+    # 0. 检查文件在目标库中是否存在
+        existed_docfile_names = []
+        if skip_es_index_creation_if_file_already_indexed:
+            if self.client.indices.exists(index=index_name):
+                existed_docfile_names = self.get_docfile_names_from_index(index_name=index_name, size=10000)
+        existed_docfile_names = self.expends_file_names_to_docpdfmd(existed_docfile_names, skip_special_files=skip_special_files)        
         
     # 1、可选。创建知识库，并在metastore中写入该知识库的元数据（如名称、描述、创建者)
         if index_name not in self.metastores.index_names or not self.client.indices.exists(index=index_name):
-            logger.warning(f"创建知识库{index_name},并在metastore中写入该知识库的元数据(如名称、描述、创建者)")       
+            logger.warning(f"   For ES: 创建知识库{index_name},并在metastore中写入该知识库的元数据(如名称、描述、创建者)")       
             index_store = self.create_doc_index(index_name=index_name,description=description,index_creator=current_user)
-            logger.warning(f"应已创建知识库{index_name}，并在{self.metastores.index_name}中有该知识库({index_name})的描述等元信息")
+            logger.warning(f"   For ES: 应已创建知识库{index_name}，并在{self.metastores.index_name}中有该知识库({index_name})的描述等元信息")
         else:
-            logger.warning(f"知识库{index_name}已存在,并在metastore中存在。") 
-            index_store = JqElasticsearchIndexStore(index_name=index_name)
-        vectorstore = index_store
+            logger.warning(f"   For ES: 知识库{index_name}已存在,并在metastore中存在。") 
+
     # 2、读取文件
         simple_reader = JqkjSimpleDirectoryReader(input_dir=input_dir,input_files=input_files, 
                                                   overwrite_existing_converted_files=overwrite_existing_converted_files,
                                                   required_exts=required_exts,
-                                                  exclude_hidden=exclude_hidden)
+                                                  exclude_hidden=exclude_hidden,
+                                                  exclude_files_list=existed_docfile_names)
         lm_documents = asyncio.run(simple_reader.aload_data())
-        logger.warning(f"读取到的文件数量:{len(lm_documents)=}")
-    # 3.1、上传到文件库(docstore)，并在lm_documents元数据中加入存储库(docstore)及文件对应ID等信息
-        status,lm_documents_with_added_index_info_metadata,es_index_doc_id_list = self.docstores.add_or_update_index_metadata_if_id_exists(lm_documents=lm_documents,file_upload_user=current_user,if_uploade_src_file=if_uploade_src_file)
-        if if_uploade_src_file:
-            logger.warning(f"上传到ES的文件数量：{len(lm_documents_with_added_index_info_metadata)=}")
-            logger.info(f"上传的文件查看：{self.docstores.index_name}中存在{es_index_doc_id_list}等{len(es_index_doc_id_list)}文件记录！")
-            logger.info(f"lm_documents_with_added_index_info_metadata中应以包含:存储库(docstore)及文件存储ID({es_index_doc_id_list})的信息,请核实！")
-        else:
-            logger.warning(f"选择不上传文件到ES：{if_uploade_src_file=}")
-    # 3.2、如果是上传到/temp目录下的文件，复制到知识库目录下，并更新元数据
-        tmp_dir = env_models_instance.abs_workspace + f"/temp"
-        for doc in lm_documents:
-            metadata = doc.metadata            
-            src_filepath = metadata.get('source', metadata.get('original_source_jq',None))
-            file_name = os.path.basename(src_filepath)
-            kb_dir = env_models_instance.abs_workspace + f"/knowledge_base/{index_name}/content"
-            if not os.path.exists(kb_dir):
-                os.makedirs(kb_dir,exist_ok=True)
-                
-            kb_filepath = f"{kb_dir}/{file_name}"
-            if not os.path.isfile(kb_filepath):
-                shutil.copy2(src_filepath, kb_filepath)
-                logger.warning(f"  ==已将文件拷贝到知识库：{src_filepath}=>{kb_filepath}")
-                
-            # if src_filepath.startswith(tmp_dir):
-            #     doc.metadata.update({"source_kb":kb_filepath})
-            doc.metadata.update({"source_kb":kb_filepath})
-            
-    # 4、切分文件
-        lm_splitted_documents = asyncio.run(doc_tree_spiltter.aget_nodes_from_documents(lm_documents)) #llamaindex格式
-        lc_splitted_documents = [LcDocument(page_content=doc.text,metadata=doc.metadata) for doc in lm_splitted_documents] #转换为langchain格式
-        logger.warning(f"从{len(lm_documents)}个文件中，生成的切片数为:{len(lc_splitted_documents)}")
-    # 5、将文件切片写入ES知识库
-        if len(lm_documents)>0:    
-            vectorstore = env_models_instance.get_es_searchstore_index_documents(documents=lc_splitted_documents, embedding=embed_model,index_name=index_name,source_id_key='source',clear_before_add_index=False)        
-            logger.warning(f"已将{len(lc_splitted_documents)=}个文件切片写入ES向量知识库{index_name}，并返回vectorstore对象")
-        else:
-            logger.warning(f"{len(lm_documents)=}，无需写入ES知识库，直接返回vectorstore对象")
+        logger.warning(f"   For ES: JqkjSimpleDirectoryReader读取到的文件数量:{len(lm_documents)=}")
+        if len(lm_documents) == 0:
+            logger.warning(f"   For ES: {len(lm_documents)=}，无需写入ES知识库，直接返回vectorstore对象")
             vectorstore = env_models_instance.get_es_searchstore(es_connection=self.client,embedding=embed_model,index_name=index_name)
-        
-    # 6、将文件进行r2r处理
-        if env_models_instance.USING_GRAPH_RAG: 
+        else:
+        # 3.1、上传到文件库(docstore)，并在lm_documents元数据中加入存储库(docstore)及文件对应ID等信息
+            status,lm_documents_with_added_index_info_metadata,es_index_doc_id_list = self.docstores.add_or_update_index_metadata_if_id_exists(lm_documents=lm_documents,file_upload_user=current_user,if_uploade_src_file=if_uploade_src_file)
+            if if_uploade_src_file:
+                logger.warning(f"   For ES: 上传到ES的文件数量：{len(lm_documents_with_added_index_info_metadata)=}")
+                logger.info(f"   For ES: 上传的文件查看：{self.docstores.index_name}中存在{es_index_doc_id_list}等{len(es_index_doc_id_list)}文件记录！")
+                logger.info(f"   For ES: lm_documents_with_added_index_info_metadata中应以包含:存储库(docstore)及文件存储ID({es_index_doc_id_list})的信息,请核实！")
+            else:
+                logger.warning(f"   For ES: 选择不上传文件到ES：{if_uploade_src_file=}")
+        # 3.2、如果是上传到/temp目录下的文件，复制到知识库目录下，并更新元数据
+            tmp_dir = env_models_instance.abs_workspace + f"/temp"
+            for doc in lm_documents:
+                metadata = doc.metadata            
+                src_filepath = metadata.get('source', metadata.get('original_source_jq',None))
+                file_name = os.path.basename(src_filepath)
+                kb_dir = env_models_instance.abs_workspace + f"/knowledge_base/{index_name}/content"
+                if not os.path.exists(kb_dir):
+                    os.makedirs(kb_dir,exist_ok=True)
+                    
+                kb_filepath = f"{kb_dir}/{file_name}"
+                if not os.path.isfile(kb_filepath):
+                    shutil.copy2(src_filepath, kb_filepath)
+                    logger.warning(f"   For LocalKb: ==已将文件拷贝到知识库：{src_filepath}=>{kb_filepath}")
+                    
+                # if src_filepath.startswith(tmp_dir):
+                #     doc.metadata.update({"source_kb":kb_filepath})
+                doc.metadata.update({"source_kb":kb_filepath})
+                
+        # 4、切分文件
+            lm_splitted_documents = asyncio.run(doc_tree_spiltter.aget_nodes_from_documents(lm_documents)) #llamaindex格式
+            lc_splitted_documents = [LcDocument(page_content=doc.text,metadata=doc.metadata) for doc in lm_splitted_documents] #转换为langchain格式
+            logger.warning(f"   For ES: 从{len(lm_documents)}个文件中，生成的切片数为:{len(lc_splitted_documents)}")
+        # 5、将文件切片写入ES知识库
+            if len(lc_splitted_documents)>0:    
+                vectorstore = env_models_instance.get_es_searchstore_index_documents(documents=lc_splitted_documents, embedding=embed_model,index_name=index_name,source_id_key='source',clear_before_add_index=False)        
+                logger.warning(f"   For ES: 已将{len(lc_splitted_documents)=}个文件切片写入ES向量知识库{index_name}，并返回vectorstore对象")
+            else:
+                logger.warning(f"   For ES: {len(lc_splitted_documents)=}，无需写入ES知识库，直接返回vectorstore对象")
+                vectorstore = env_models_instance.get_es_searchstore(es_connection=self.client,embedding=embed_model,index_name=index_name)
+            
+        # 6、将文件进行r2r处理
+        if env_models_instance.USING_GRAPH_RAG:            
             if not r2r_client: # type: ignore
                 try:
                     from r2r_client_functions import r2r_authed_client
                     r2r_client = r2r_authed_client(user_id="admin")
-                    logger.warning("self.r2r_client初始化成功")
+                    logger.debug("   For R2R: self.r2r_client初始化成功.")
                 except ImportError as e:
-                    logger.error(f"Failed to import r2r:{e}")
-                    logger.error("To run the server, install the required dependencies: pip install 'r2r[core]'")
+                    logger.error(f"   For R2R: Failed to import r2r:{e}")
+                    logger.error("   For R2R: To run the server, install the required dependencies: pip install 'r2r[core]'")
                     r2r_client = None
                 except Exception as e:
-                    logger.error(f"R2R Client failed to initialize or login: {e}")
+                    logger.error(f"   For R2R: R2R Client failed to initialize or login: {e}")
                     r2r_client = None
             if r2r_client: 
                 from r2r_client_functions import r2r_create_documents
-                r2r_create_documents(r2r_client=r2r_client,lm_documents=lm_documents)
+                if r2r_share_same_es_docs_to_be_processed:
+                    # 针对r2r，来查找存在的文档
+                    logger.warning(f"   For R2R: r2r_share_same_es_docs={r2r_share_same_es_docs_to_be_processed},R2R与ES加载的文档保持一致")
+                else:
+                    logger.warning(f"   For R2R: r2r_share_same_es_docs={r2r_share_same_es_docs_to_be_processed},R2R将独立检查和加载文档")
+                    try:
+                        response = r2r_client.documents.list()
+                        documents = response.results
+                    except:
+                        documents = []
+                    existed_docfile_names = [doc.title for doc in documents]
+                    document_paths = [doc.metadata.get("source",None) for doc in documents]
+                    possibale_existed_not_docx_files = [Path(path).name for path in document_paths if path]
+                    for not_docx_file in possibale_existed_not_docx_files:
+                        if not_docx_file not in existed_docfile_names:
+                            existed_docfile_names.append(not_docx_file)
+                    
+                    
+                    existed_docfile_names = self.expends_file_names_to_docpdfmd(existed_docfile_names,skip_special_files=skip_special_files) 
+
+                   
+                    simple_reader = JqkjSimpleDirectoryReader(input_dir=input_dir,input_files=input_files, 
+                                            overwrite_existing_converted_files=overwrite_existing_converted_files,
+                                            required_exts=required_exts,
+                                            exclude_hidden=exclude_hidden,
+                                            exclude_files_list=existed_docfile_names)
+                    lm_documents = asyncio.run(simple_reader.aload_data())
+                    logger.warning(f"   For R2R: JqkjSimpleDirectoryReader读取到的文件数量:{len(lm_documents)=}")
+                if len(lm_documents) > 0:
+                    r2r_create_documents(r2r_client=r2r_client,file_paths_or_lm_documents=lm_documents)
+                else:
+                    logger.warning(f"   For R2R: lm_documents={lm_documents}，无需进行r2r处理")
+
             else:
-               logger.warning("self.r2r_client初始化失败！") 
+                logger.warning("    self.r2r_client初始化失败！") 
+        
 
-
-
+        logger.warning(f"\n========== 离开: chunks_indexing_from_input_dir_or_files ==========")
         return vectorstore
 
     
@@ -308,7 +393,8 @@ if __name__ == "__main__":
     # index_name='tempuse'
     # current_user='elastic'
 
-
+    index_name='zjk_jqesclient_reader_test_qwen1024dim'
+    index_name='zjk_jqesclient_reader_test_768im'
     jq_es_client = JqEsClient()
     # status = jq_es_client.delete_file_from_es_kb('liyuanqin', 'OCR接口性能报告.docx')
     # status = jq_es_client.delete_file_from_es_kb('liyuanqin', '测试文本.txt')
@@ -316,7 +402,10 @@ if __name__ == "__main__":
     # #                                        description="创建一个测试知识库知识库,该知识库主要用测试获取基本信息功能")
     
     kbs = jq_es_client.get_all_kb()
-    print(f"当前知识库列表为:{kbs}")
+    print(f"ES中全部的知识库列表为:{kbs}")
+
+    docs = jq_es_client.get_docfile_names_from_index(index_name)
+    print(f"知识库{index_name}中存在的文档数量: {len(docs)}")
 
     # index_info = jq_es_client.get_index_info(index_name='tempuse')
 
@@ -340,8 +429,7 @@ if __name__ == "__main__":
     r2r_client = r2r_authed_client(user_id=current_user)
     
     # 1、测试文件夹
-    index_name='zjk_jqesclient_reader_test_qwen1024dim'
-    index_name='zjk_jqesclient_reader_test_768im'
+    pass
     vectorstore = jq_es_client.chunks_indexing_from_input_dir_or_files(current_user=current_user,index_name=index_name,
                                                                     description="graphrag_test: 转换/data/projects/JqChatV2/JqChat/jqcode/jq_readers/.test_files/.testinputdocs目录下的文件，测试速度",
                                                                     input_dir = input_dir,
@@ -351,11 +439,12 @@ if __name__ == "__main__":
     # 2、测试文件列表
 
     
-
-    # vectorstore = jq_es_client.chunks_indexing_from_input_dir_or_files(current_user=current_user,index_name=index_name,
-    #                                                             description=None,
-    #                                                             input_dir = None,
-    #                                                             input_files=input_files,
-    #                                                             r2r_client=r2r_client)
+    pass
+    vectorstore = jq_es_client.chunks_indexing_from_input_dir_or_files(current_user=current_user,index_name=index_name,
+                                                                description=None,
+                                                                input_dir = None,
+                                                                input_files=input_files,
+                                                                r2r_client=r2r_client)
+    pass
 
     

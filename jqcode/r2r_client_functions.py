@@ -2,7 +2,8 @@ import os,re
 import asyncio
 import uuid
 from uuid import UUID
-from r2r import R2RClient,R2RConfig,LiteLLMEmbeddingProvider,ChunkSearchResult # type: ignore
+from pathlib import Path
+from r2r import R2RClient,R2RConfig,LiteLLMEmbeddingProvider,ChunkSearchResult,SearchSettings # type: ignore
 from jqcode.jq_utils.logger import jqkj_logger
 logger = jqkj_logger(__file__).get_logger()
 
@@ -19,7 +20,7 @@ def is_valid_email(id_or_email_str):
     else:
         return False
     
-def r2r_format_search_results_for_llm(query, results,limit: int = 10, min_score_threshold = 0.6) -> str:
+def r2r_format_search_results_for_llm(query, results,limit: int = 10, min_score_threshold = 0.2) -> str:
     """
     Instead of resetting 'source_counter' to 1, we:
      - For each chunk / graph / web / doc in `results`,
@@ -56,13 +57,13 @@ def r2r_format_search_results_for_llm(query, results,limit: int = 10, min_score_
                 content_id = str(r.content.id)
                 if content_id not in unique_content_result_ids:
                     unique_content_result_ids.append(content_id)
-                    id_text_score_tuple = (str(r.id),r.content,r.score)
+                    id_text_score_tuple = (str(r.id),r.content,r.score,r.result_type.value)
                     if id_text_score_tuple not in no_repeated_results:
                         no_repeated_results.append(id_text_score_tuple) 
         for r in no_repeated_results:
             g = r[1]
             content_id = str(g.id)
-            text = ""
+            text = f"Graph ResultType: {r[3]}\n"
             if hasattr(g, "summary"):
                 text+=f"Community Name: {g.name}\n"
                 text+=f"Summary: {g.summary}\n"
@@ -70,12 +71,13 @@ def r2r_format_search_results_for_llm(query, results,limit: int = 10, min_score_
             elif hasattr(g, "name") and hasattr(g, "description"):
                 text+=f"Entity Name: {g.name}\n"
                 text+=f"Description: {g.description}\n"
+
             elif (hasattr(g, "subject") and hasattr(g, "predicate") and hasattr(g, "object")):
                 text+=f"Relationship: {g.subject}-{g.predicate}-{g.object}\n"
-            line_content = {"Source ID": r[0],"Content ID":content_id, "Score": r[-1], "Text": text}
+            line_content = {"Source ID": r[0],"Content ID":content_id, "Score": r[2], "Text": text}
             lines.append({"Graph_Search_Results":line_content})
             # Add metadata if needed
-
+# region 【Search方法返回结果实际不会包括下面的两项，所以暂时不处理】  
     # 3) Web search:暂时不处理
     if results.web_search_results:
         logger.warning("存在results.web_search_results，但暂时未作处理！")
@@ -107,7 +109,7 @@ def r2r_format_search_results_for_llm(query, results,limit: int = 10, min_score_
         #             lines.append(
         #                 f"\nChunk ID {id_to_shorthand(chunk['id'])}:\n{chunk['text']}"
         #             )
-
+# endregion
     # Rerank...... 
     if lines:
         config_file = os.environ.get("R2R_CONFIG_PATH", None)
@@ -135,38 +137,52 @@ def r2r_format_search_results_for_llm(query, results,limit: int = 10, min_score_
         result = ''
     return result
 
-def r2r_search(client,query:str,chat_on_docs_list:list=None, limit: int = 20, min_score_threshold = 0.6,user_id:str=''):
-    if client is None:    
+def r2r_search(r2r_client,query:str,chat_on_docs_list:list=None, limit: int = 10, min_score_threshold = 0.2,user_id:str=''):
+    # todo: https://github.com/SciPhi-AI/R2R/blob/bdc76755880c9c6422bd5ee0d433762841185805/py/core/main/services/retrieval_service.py#L1449C13-L1449C50
+    # 可以控制过滤：filter_user_id, filter_collection_ids 
+    if r2r_client is None:    
         from r2r import R2RClient # type: ignore
-        client = r2r_authed_client(user_id=user_id)
+        r2r_client = r2r_authed_client(user_id=user_id)
     # https://r2r-docs.sciphi.ai/api-and-sdks/retrieval/search-app
     # search_settings: https://github.com/SciPhi-AI/R2R/blob/main/py/shared/abstractions/search.py#L406
-    search_response = client.retrieval.search(query=query,search_mode="advanced",
-                                                            search_settings={
-                                                                "limit": 20,
-                                                                "use_semantic_search":True,
-                                                                "use_hybrid_search": True,
-                                                                "use_fulltext_search": True,                                                               
-                                                                "hybrid_settings": {
-                                                                            "full_text_weight": 1.0,
-                                                                            "semantic_weight": 5.0,
-                                                                            "full_text_limit": 200,
-                                                                            "rrf_k": 50
-                                                                        },
-                                                                # "filters": {"title": {"$in": [chat_on_docs_list]}},
-                                                                "graph_search_settings":{
-                                                                                "limits":{
-                                                                                            "entity": 20,
-                                                                                            "relationship": 20,
-                                                                                            "community": 20,
-                                                                                          },
-                                                                                "use_graph_search": True,
-                                                                                # "kg_search_type": "local"
-                                                                                "max_llm_queries_for_global_search": 50,
-                                                                                "max_community_description_length": 5000,
-                                                                            }   
-                                                                },                                                                 
-                                                    )
+    # https://github.com/SciPhi-AI/R2R/blob/bdc76755880c9c6422bd5ee0d433762841185805/py/core/main/services/retrieval_service.py
+    search_settings = SearchSettings(use_semantic_search=True,use_fulltext_search=True,use_hybrid_search=True,search_strategy="rag_fusion",limit=limit)
+    search_response = r2r_client.retrieval.search(query=query, search_settings=search_settings)
+# region 【详细定义search_settings字典参数】   
+    # search_response = client.retrieval.search(query=query,search_mode="advanced",
+    #                                                         search_settings={
+    #                                                             "limit": 20,
+    #                                                             "use_semantic_search":True,
+    #                                                             "use_hybrid_search": True,
+    #                                                             "use_fulltext_search": True,                                                               
+    #                                                             "hybrid_settings": {
+    #                                                                         "full_text_weight": 1.0,
+    #                                                                         "semantic_weight": 5.0,
+    #                                                                         "full_text_limit": 200,
+    #                                                                         "rrf_k": 50
+    #                                                                     },
+    #                                                             # "filters": {"title": {"$in": [chat_on_docs_list]}},
+    #                                                             "chunk_settings": {
+    #                                                                             "enabled": True,
+    #                                                                             "index_measure": "cosine_distance",
+    #                                                                             "include_metadata": True,
+    #                                                                             "probes": 10,
+    #                                                                             "ef_search": 40,
+    #                                                                         },
+    #                                                             "graph_search_settings":{
+    #                                                                             "limits":{
+    #                                                                                         "entity": 20,
+    #                                                                                         "relationship": 20,
+    #                                                                                         "community": 20,
+    #                                                                                       },
+    #                                                                             "use_graph_search": True,
+    #                                                                             # "kg_search_type": "local"
+    #                                                                             "max_llm_queries_for_global_search": 100,
+    #                                                                             "max_community_description_length": 10000,
+    #                                                                         }   
+    #                                                             },                                                                 
+                                                    # )
+# endregion
     search_results = r2r_format_search_results_for_llm(query,search_response.results,limit=limit,min_score_threshold=min_score_threshold)
     return search_results
 
@@ -195,7 +211,10 @@ def r2r_authed_client(user_id,user_email='',password="change_me_immediately",ser
         logger.error(f"Failed to login user {user_email}:{e}")
     return r2r_client
 
-def r2r_create_documents(r2r_client,lm_documents:list):
+def r2r_create_documents(r2r_client,file_paths_or_lm_documents:list):
+    logger.warning(f"\n========== 进入: r2r_create_documents ==========")
+    if not isinstance(file_paths_or_lm_documents,list):
+       file_paths_or_lm_documents = [file_paths_or_lm_documents]
     try:
         response = r2r_client.documents.list()
         documents = response.results
@@ -203,39 +222,108 @@ def r2r_create_documents(r2r_client,lm_documents:list):
         documents = []
     document_ids = [doc.id for doc in documents] 
     document_titles = [doc.title for doc in documents]
-    for doc in lm_documents:
-        id = doc.id_
-        if id not in document_ids:
-            doc_title = doc.metadata.get("file_name",doc.metadata.get("file_name_jq",""))
-            if doc_title in document_titles:
-                logger.warning(f"文档{doc_title}已经存在，忽略此文件的处理，请注意检查!")
-            else:
-                file_path = doc.metadata.get("file_path",doc.metadata.get("original_source_converted_jq",""))
-                metadata=doc.metadata
-                if not metadata.get('language',None):
-                    metadata.update({"language": "Chinese"})
-                try:
-                    metadata.pop('file_doc_tree_jq')                    
-                except:
-                    pass
-                try:
-                    create_response = r2r_client.documents.create(file_path=file_path,metadata=doc.metadata,id=id)
-                    logger.warning(create_response) 
-                except Exception as e:
-                    logger.warning(f"r2r_client.documents.create({file_path})过程中出现错误{e}")   
+    document_paths = [doc.metadata.get("source",None) for doc in documents]
+
+    skiped_file_names = []
+    for filepath_or_doc in file_paths_or_lm_documents:
+        doc_title = ''
+        file_path = ''
+        if isinstance(filepath_or_doc,str):
+            file_path = filepath_or_doc
+            doc_title = Path(file_path).name
+            metadata = {"language": "Chinese","source":file_path}
+            id = uuid.uuid1()
+        else:
+            try:
+                id = filepath_or_doc.id_
+                doc_title = filepath_or_doc.metadata.get("file_name",filepath_or_doc.metadata.get("file_name_jq",""))
+                    
+                if id not in document_ids:
+                    file_path = filepath_or_doc.metadata.get("file_path",filepath_or_doc.metadata.get("original_source_converted_jq",""))
+                    metadata=filepath_or_doc.metadata
+                    if not metadata.get('language',None):
+                        metadata.update({"language": "Chinese"})
+                    if not metadata.get('source',None):
+                        metadata.update({"source": file_path})
+                    for _key in ['file_doc_tree_jq','df_table_list_jq']:
+                        try:
+                            metadata.pop(_key)                    
+                        except:
+                            pass
+                else:
+                    logger.warning(f"   Document with ID [{id}] already exists. Skipping [{doc_title}] creation.")
+                    skiped_file_names.append(doc_title)
+                    continue
+            except Exception as e:
+                logger.error(f"   处理文档[{filepath_or_doc}]时发生错误: {e}")
+                continue
+                        
+
+        if file_path in document_paths:
+            doc_title = Path(file_path).name
+            logger.warning(f"   Document Path [{doc_title}] already exists.Passing...")
+            skiped_file_names.append(file_path)
+            continue
+        if doc_title in document_titles:
+            logger.warning(f"   Document Title [{doc_title}] already exists.Passing...")
+            skiped_file_names.append(file_path)
+            continue
+
+        if not Path(file_path).exists():
+            logger.warning(f"   File Path [{file_path}] does not exist.Passing...")
+        else:
+            try: 
+                create_response = r2r_client.documents.create(file_path=file_path,metadata=metadata,id=id)
+                logger.warning(f"   {create_response=}") 
+            except Exception as e:
+                logger.warning(f"   r2r_client.documents.create({file_path})过程中出现错误{e}")
+                continue   
+    logger.warning(f"   R2R输入文件数为：{len(file_paths_or_lm_documents)=},因已R2R中已存在而跳过的文件数为：{len(skiped_file_names)=}") 
+    logger.warning(f"\n========== 离开: r2r_create_documents ==========")              
+       
+
 
 if __name__ == "__main__":
     r2r_client = r2r_authed_client("admin")
+    search_settings = SearchSettings(use_semantic_search=True,use_fulltext_search=True,use_hybrid_search=True,search_strategy="rag_fusion",limit=20)
+    
+    # https://github.com/SciPhi-AI/R2R/blob/bdc76755880c9c6422bd5ee0d433762841185805/py/core/main/services/retrieval_service.py
     query_list = ["全民健康信息平台包含的建设内容、系统或功能","质量保证过程的含义","柯林斯与班纳特关系"]
-    for query in query_list:
-        result= r2r_search(r2r_client,query=query)
-        print(result)
-        # from jqcode.jq_agent.c0_init_env_models import env_models_instance
-        # llm_model = env_models_instance.chat_model
-
-        from jqcode.langgraph_in_class import llm_chain        
-        answer = llm_chain.invoke({"question": query,"context":result})
-        print(answer)
-        pass
 
 
+
+    # for query in query_list:
+    #     search_result= r2r_search(r2r_client,query=query)
+    #     print(f"{search_result=}")
+
+    #     from jqcode.langgraph_in_class import llm_chain        
+    #     answer = llm_chain.invoke({"question":query,"context":search_result})
+    #     print(f"{answer=}")
+    #     pass
+
+
+    r2r_create_documents(r2r_client,file_paths_or_lm_documents=
+                         ["/data/projects/JqChatV2/JqChat/JqR2R/py/core/examples/data/DeepSeek_R1.pdf",
+                          "/data/projects/JqChatV2/JqChat/JqR2R/py/core/examples/supported_file_types/pdf.pdf",
+                          "/data/projects/JqChatV2/JqChat/2025年第五期总经理办公会纪要.docx",
+                          
+                          ])
+
+    # response = r2r_client.documents.list()
+    # documents = response.results
+
+    # for doc in documents:
+    #     doc_id = doc.id 
+    #     try:                           
+    #         chunks_response = r2r_client.documents.list_chunks(doc_id)
+    #         chunks = chunks_response.results
+    #         entities_response = r2r_client.documents.list_entities(doc_id)
+    #     except Exception as e:
+    #         logger.error(f"获取文档{doc.id}:{doc.title}的chunks时发生错误: {e}")
+    #         continue
+    #     try:
+    #         entities_response = r2r_client.documents.list_entities(doc_id)
+    #         entities = entities_response.results
+    #     except Exception as e:
+    #         logger.error(f"获取文档{doc.id}:{doc.title}的chunks时发生错误: {e}")
+    #         continue

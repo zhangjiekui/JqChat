@@ -793,12 +793,12 @@ class GraphAgent:
                         r2r_search_context = r2r_search(self.r2r_client,query=question) #,chat_on_docs_list = self.chat_on_docs_list
 
                         if r2r_search_context:
-                            n = 40
+                            n = 100
                             text = r2r_search_context[0:n]
                             text = text.replace("\n","..")
                             logger.warning(f'GraphRag Result String={text} ...共{len(r2r_search_context)}字，仅显示前{n}字...')
                             logger.warning("========GraphRag Result String========")
-                            print(r2r_search_context)
+                            print(text)
                             logger.warning("========GraphRag Result String========")
                             graph_documents = [Document(page_content=r2r_search_context,metadata={'source':"GraphRag"})] 
                             documents.extend(graph_documents)
@@ -1910,70 +1910,73 @@ if __name__ == "__main__":
 
     # user_questions = ['请调用工具函数帮我查询：我现在的位置是在安徽晶奇网络科技股份有限公司附近，请查询15公里范围内的养老机构，最多返回10个']
     # user_questions = ['我现在的位置是在安徽晶奇网络科技股份有限公司附近，请查询15公里范围内的养老机构，最多返回10个']
-    user_questions = ["请搜索网络然后回答问题：What is the weather in SF and LA?","Who won the super bowl in 2024? In what state is the winning team headquarters located?What is the GDP of that state? ","2024年安徽省会城市的GDP是多少? "]
-    # user_questions = ['请检索知识库，然后回答晶奇公司质量保证过程中的角色及角色的职责或含义解释，对应的人员（姓名）有哪些?其中的批准人是谁？']
-    # user_questions = ['请使用python实现指数移动平均法，生成波形变动的至少24个样例数据，执行代码，绘制出曲线']
+    # user_questions = ["请搜索网络然后回答问题：What is the weather in SF and LA?","Who won the super bowl in 2024? In what state is the winning team headquarters located?What is the GDP of that state? ","2024年安徽省会城市的GDP是多少? "]
+    
+    
+    user_questions += ["请检索知识库：安徽晶奇或晶奇网络相关的公司全称"]
+    # user_questions += ['请检索知识库，然后回答晶奇公司质量保证过程中的角色及角色的职责或含义解释，对应的人员（姓名）有哪些?其中的批准人是谁？']
+    # user_questions += ["请检索知识库：信息"]
     my_main_bot = GraphAgent(executable_tools=executable_tools,routing_tools_wrapped_in_class=route_tools,allow_conversation_memory=True)
 
-    from fastapi import FastAPI
-    import threading
-    app = FastAPI()
+    # from fastapi import FastAPI
+    # import threading
+    # app = FastAPI()
 
-    from pydantic import BaseModel
-    from typing import List, Optional, Union
+    # from pydantic import BaseModel
+    # from typing import List, Optional, Union
 
-    class JqChatRequest(BaseModel):
-        question: Union[str, List[str]]
-    class JqChatResponse(BaseModel):
-        answer: str
+    # class JqChatRequest(BaseModel):
+    #     question: Union[str, List[str]]
+    # class JqChatResponse(BaseModel):
+    #     answer: str
 
 
-    @app.post("/v1/jqchat", response_model=JqChatResponse)
-    def jqchat(request:JqChatRequest):
-        answer = my_main_bot.run_conversation(user_question=request.question)
-        logger.warning(f"FastAPI server answer：{answer}")
-        return JqChatResponse(answer=answer)
-    def run_fastapi():
-        import uvicorn
-        uvicorn.run(app, host="0.0.0.0", port=8888)
-        logger.warning("FastAPI server started at http://0.0.0.0:8888")
+    # @app.post("/v1/jqchat", response_model=JqChatResponse)
+    # def jqchat(request:JqChatRequest):
+    #     answer = my_main_bot.run_conversation(user_question=request.question)
+    #     logger.warning(f"FastAPI server answer：{answer}")
+    #     return JqChatResponse(answer=answer)
+    # def run_fastapi():
+    #     import uvicorn
+    #     uvicorn.run(app, host="0.0.0.0", port=8888)
+    #     logger.warning("FastAPI server started at http://0.0.0.0:8888")
 
-    def test_jqchat_service(question:str="你好，请介绍一下你自己"):
-        import requests
-        url = f"http://10.1.150.105:8888/v1/jqchat"
+    # def test_jqchat_service(question:str="你好，请介绍一下你自己"):
+    #     import requests
+    #     url = f"http://10.1.150.105:8888/v1/jqchat"
         
-        payload = {"question": question}
+    #     payload = {"question": question}
         
-        response = requests.post(url, json=payload)
+    #     response = requests.post(url, json=payload)
         
-        if response.status_code == 200:
-            print("Response from jqchat service:")
-            print(response.json())
-        else:
-            print(f"Error: {response.status_code} - {response.answer}")
+    #     if response.status_code == 200:
+    #         print("Response from jqchat service:")
+    #         print(response.json())
+    #     else:
+    #         print(f"Error: {response.status_code} - {response.answer}")
 
-        return response.json()
+    #     return response.json()
 
-    import time
-    fastapi_thread = threading.Thread(target=run_fastapi)
-    fastapi_thread.start()
-    # fastapi_thread.join()
-    time.sleep(5)
-    # import multiprocessing
-    # fastapi_process = multiprocessing.Process(target=run_fastapi)
-    # fastapi_process.start()
+    # import time
+    # fastapi_thread = threading.Thread(target=run_fastapi)
+    # fastapi_thread.start()
+    # # fastapi_thread.join()
     # time.sleep(5)
+    # # import multiprocessing
+    # # fastapi_process = multiprocessing.Process(target=run_fastapi)
+    # # fastapi_process.start()
+    # # time.sleep(5)
 
-    response = test_jqchat_service()
-    print(response)
-    pass
+    # response = test_jqchat_service()
+    # print(response)
+    # pass
 
     for user_question in user_questions:
         if user_question == '请绘制sin(x)曲线':
             pass
-        # answer = my_main_bot.run_conversation(user_question=user_question)
-        response=test_jqchat_service(user_question)
-        print(f"{user_question}:\n{response}")
+        answer = my_main_bot.run_conversation(user_question=user_question)
+        # response=test_jqchat_service(user_question)
+        # print(f"{user_question}:\n{response}")
         pass
 
 
