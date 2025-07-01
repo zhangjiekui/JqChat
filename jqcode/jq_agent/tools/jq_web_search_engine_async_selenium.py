@@ -719,7 +719,7 @@ class AsyncHtmlLoaderBypassException(AsyncHtmlLoader):
         return Document(page_content=text, metadata=metadata)
 
 @func_set_timeout(timeout_value)
-async def get_webpages_texts_by_langchain_document_loader_from_urls(urls,max_doc_nums=4,header_template=None,timeout_seconds:int=10):    
+async def get_webpages_texts_by_langchain_document_loader_from_urls(urls,max_doc_nums=6,header_template=None,timeout_seconds:int=10):    
     loader = AsyncHtmlLoaderBypassException(urls,requests_per_second=max_doc_nums,header_template=header_template, autoset_encoding=True,verify_ssl=False,raise_for_status=False,ignore_load_errors=True,preserve_order=False,requests_kwargs={"timeout":timeout_seconds})
     # async with async
     docs_async_generator = loader.alazy_load()        
@@ -751,7 +751,7 @@ async def get_webpages_texts_by_jina_ai_reader_from_urls(urls,docs=[]):
         return docs
 
 @func_set_timeout(timeout_value)
-async def get_search_result_documents(urls,query,document_loader_class=AsyncHtmlLoader,max_doc_nums=4,filter_out_host = filter_out_host):
+async def get_search_result_documents(urls,query,document_loader_class=AsyncHtmlLoader,max_doc_nums=6,filter_out_host = filter_out_host):
     # https://www.comet.com/site/blog/langchain-document-loaders-for-web-data/
             # 内容应该是NewsURLLoader比较适合RAG
             # 但SeleniumURLLoader似乎可以防屏蔽
@@ -818,7 +818,7 @@ async def get_search_result_documents(urls,query,document_loader_class=AsyncHtml
     return docs
 
 @func_set_timeout(timeout_value)
-def get_tavily_search_result_documents(query,max_doc_nums=4):
+def get_tavily_search_result_documents(query,max_doc_nums=6):
     documents = []
     tavily_search = TavilySearchResults(max_results=max_doc_nums)
     docs = tavily_search.invoke({"query": query})
@@ -834,7 +834,7 @@ def get_tavily_search_result_documents(query,max_doc_nums=4):
 # 最终的方法调用，建议用户只调用该方法
 # 根据query，返回最多max_doc_nums个结果文档，返回结果类型为:list[langchain_core.documents.base.Document]
 @func_set_timeout(timeout_value)
-async def get_web_search_documents(query,max_doc_nums=4):
+async def get_web_search_documents(query,max_doc_nums=6):
     try:
         docs = await _get_web_search_documents(query,max_doc_nums=max_doc_nums)
         for doc in docs:        
@@ -861,7 +861,7 @@ async def get_web_search_documents(query,max_doc_nums=4):
         return []
 
 @func_set_timeout(timeout_value)
-async def _get_web_search_documents(query,max_doc_nums=4):
+async def _get_web_search_documents(query,max_doc_nums=6):
     docs = []
     if not query:
         print(f"提交到Web_Search的query为空！直接返回空列表。")

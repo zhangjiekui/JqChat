@@ -1,10 +1,93 @@
 **du -h --max-depth=1 / | sort -rh**
 
+
+## 安装驱动和Cuda
+ Runfile Installer 12.8.1
+https://docs.nvidia.com/cuda/cuda-quick-start-guide/index.html#linux
+
+
+Ubuntu安装驱动：
+1、先运行
+apt install linux-headers-$(uname -r)
+apt-get install alsa-utils
+
+2、下载驱动：【https://www.nvidia.com/en-us/drivers/details/247720/】.run文件
+      运行下载的文件 sh NVIDIA-Linux-x86_64-570.169.run
+     检查：nvidia-smi
+****************************
+2、列出可选驱动【https://documentation.ubuntu.com/server/how-to/graphics/install-nvidia-drivers/】
+【desktop】 sudo ubuntu-drivers list
+            sudo ubuntu-drivers install 【自动选择安装】
+【servers】sudo ubuntu-drivers list --gpgpu
+           sudo ubuntu-drivers install --gpgpu  【自动选择安装】 
+------list的结果
+
+nvidia-driver-535
+nvidia-driver-550-open
+nvidia-driver-570-server-open
+nvidia-driver-570
+nvidia-driver-570-server
+nvidia-driver-535-open
+nvidia-driver-545-open
+nvidia-driver-535-server
+nvidia-driver-545
+nvidia-driver-550
+nvidia-driver-570-open
+nvidia-driver-535-server-open
+---------
+****************************
+
+3、选择一个合适的安装 【如nvidia-driver-570-server】
+
+sudo ubuntu-drivers install nvidia-driver-570-server
+
+Ubuntu安装CUDA：
+1、下载 cuda .run文件 wget https://developer.download.nvidia.com/compute/cuda/12.8.1/local_installers/cuda_12.8.1_570.124.06_linux.run
+2、运行 sudo sh cuda_12.8.1_570.124.06_linux.run 
+3、环境变量
+export PATH=/usr/local/cuda-12.8/bin${PATH:+:${PATH}}
+export LD_LIBRARY_PATH=/usr/local/cuda-12.8/lib64:${LD_LIBRARY_PATH:+:${LD_LIBRARY_PATH}}
+
+4、检查 nvcc --version
+
+## 运行Hunyuan
+docker pull hunyuaninfer/hunyuan-a13b:hunyuan-moe-A13B-vllm
+docker run  --privileged --user root  --net=host --ipc=host --name hy --rm \
+        -v /data/models/:/data/models/ \
+        -e VLLM_ATTENTION_BACKEND="FLASH_ATTN" -e VLLM_USE_V1=0 \
+        --runtime=nvidia \
+        --gpus=all -it --entrypoint python hunyuaninfer/hunyuan-a13b:hunyuan-moe-A13B-vllm \
+         -m vllm.entrypoints.openai.api_server --host 0.0.0.0 --tensor-parallel-size 4 \
+         --port 9998 --model /data/models/Tencent-Hunyuan/Hunyuan-A13B-Instruct-GPTQ-Int4/ --trust_remote_code --served-model-name qwen3 \
+         --dtype bfloat16 --disable-log-stats --quantization gptq_marlin \
+         --max-model-len 32000 \
+         --reasoning-parser deepseek_r1 \
+         --enable-auto-tool-choice \
+         --tool-parser-plugin /data/models/Tencent-Hunyuan/Hunyuan-A13B-Instruct-GPTQ-Int4/hunyuan_tool_parser.py \
+         --tool-call-parser hunyuan \
+         2>&1 | tee log_server.txt
+
+
+docker run  --privileged --user root  --net=host --ipc=host         -v ~/.cache:/root/.cache/ -e VLLM_ATTENTION_BACKEND="FLASH_ATTN" -e VLLM_USE_V1=0  --runtime=nvidia -it --entrypoint python  hunyuaninfer/hunyuan-a13b:hunyuan-moe-A13B-vllm -m vllm.entrypoints.openai.api_server --host 0.0.0.0 --port 1337          --tensor-parallel-size 4 --quantization gptq_marlin --model tencent/Hunyuan-A13B-Instruct-GPTQ-Int4 --trust-remote-code --max-model-len 16K  --gpu-memory-utilization 0.95 --reasoning-parser deepseek_r1
+
 pip install torch==2.7.0 torchvision torchaudio vllm==0.9.1
+
 [py3.10]pip install /root/flash_attn-2.8.0.post2+cu12torch2.7cxx11abiFALSE-cp310-cp310-linux_x86_64.whl
 [py3.11]pip install /root/flash_attn-2.8.0.post2+cu12torch2.7cxx11abiTRUE-cp311-cp311-linux_x86_64.whl
 
-[都有问题]pip install torch==2.7.0 flashinfer-python==0.2.5 flashinfer-python==0.2.6.post1
+[FLASHINFER in vllmb ]
+export TORCH_CUDA_ARCH_LIST='7.5 8.0 8.9 9.0 10.0+PTX'
+export FLASHINFER_ENABLE_SM90=1
+pip install build
+pip install -U setuptools
+python -m flashinfer.aot
+python -m build --no-isolation --wheel
+ls -la dist/
+cd dist
+pip install pip install flashinfer_python-0.2.6.post1-cp39-abi3-linux_x86_64.whl
+[当前0.9.1有问题 Failed to check the "should dump" flag on TCPStore]
+pip install -U vllm --pre --extra-index-url https://wheels.vllm.ai/nightly
+
 ## Reranker 8081
 workon vllm
 CUDA_VISIBLE_DEVICES=0 nohup vllm serve /data/models/Qwen3-Reranker-0.6B-seq-cls --served-model-name Qwen/Qwen3-Reranker-0.6B --port 8081 >> /root/JqLogs/rerank.log 2>&1 &
@@ -355,7 +438,7 @@ lmcache/vllm-openai:2025-05-08-v1 \
     --max-num-seqs 32
 ```
 ```
-    CUDA_VISIBLE_DEVICES=2,3 vllm serve /data/models/Qwen/Qwen3-32B-FP8 \
+    CUDA_VISIBLE_DEVICES=0,1 vllm serve /data/models/Qwen/Qwen3-32B-FP8 \
     --served-model-name qwen3 \
     --tensor-parallel-size 2 \
     --enable-chunked-prefill \
@@ -384,7 +467,24 @@ workon vllmb
 VLLM_ATTENTION_BACKEND=FLASHINFER CUDA_VISIBLE_DEVICES=0,1 nohup vllm serve /data/models/Qwen/QwQ-32B-AWQ/ --served-model-name qwen25qwq --enable-auto-tool-choice --tool-call-parser hermes --enable-reasoning --reasoning-parser deepseek_r1 --host 0.0.0.0 --port 9998 --max-model-len 32768 --tensor-parallel-size 2 --gpu-memory-utilization 0.95 --max-num-seqs 64 --enable-prefix-caching --enable-chunked-prefill --kv_cache_dtype fp8 >> /root/JqLogs/qwq.log 2>&1 &
 tail -f /root/JqLogs/qwq.log
 ```
-``` Qwen3-30B-A3B-FP8 gpu0_1
+``` Qwen3-30B-A3B-FP8 gpu2_3
+[py3.10]pip install /root/flash_attn-2.8.0.post2+cu12torch2.7cxx11abiFALSE-cp310-cp310-linux_x86_64.whl
+[py3.11]pip install /root/flash_attn-2.8.0.post2+cu12torch2.7cxx11abiTRUE-cp311-cp311-linux_x86_64.whl
+
+[FLASHINFER in vllmb ]
+export TORCH_CUDA_ARCH_LIST='7.5 8.0 8.9 9.0 10.0+PTX'
+export FLASHINFER_ENABLE_SM90=1
+pip install build
+pip install -U setuptools
+python -m flashinfer.aot
+python -m build --no-isolation --wheel
+ls -la dist/
+cd dist
+pip install pip install flashinfer_python-0.2.6.post1-cp39-abi3-linux_x86_64.whl
+[当前0.9.1有问题 Failed to check the "should dump" flag on TCPStore]
+pip install -U vllm --pre --extra-index-url https://wheels.vllm.ai/nightly
+
+
 workon vllmb
 CUDA_VISIBLE_DEVICES=2,3 nohup vllm serve /data/models/Qwen/Qwen3-30B-A3B-FP8 \
 --served-model-name qwen3 \
@@ -397,7 +497,7 @@ CUDA_VISIBLE_DEVICES=2,3 nohup vllm serve /data/models/Qwen/Qwen3-30B-A3B-FP8 \
 --max-model-len 64000 \
 --gpu-memory-utilization 0.90 \
 --enable-expert-parallel \
---max-num-seqs 64 \
+--max-num-seqs 32 \
 --host 0.0.0.0 --port 9998 \
 --enable-prefix-caching >> /root/JqLogs/qwq.log 2>&1 &
 tail -f /root/JqLogs/qwq.log

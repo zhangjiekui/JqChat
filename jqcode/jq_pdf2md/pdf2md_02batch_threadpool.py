@@ -155,16 +155,15 @@ def file2imgs_and_encode_images_in_thread_pool_executor(file_input: str, concurr
     2.Encode images to base64 in a process pool executor
     """
     convert_files_start_time = time.time()
-    img_paths = convert_files_to_images([file_input], max_img_size)
-    logger.info(f"Successfully converted '{file_input}' to {len(img_paths)} image(s) in {get_delta_time(convert_files_start_time)} seconds")
+    image_paths = convert_files_to_images([file_input], max_img_size)
+    logger.info(f"Successfully converted '{file_input}' to {len(image_paths)} image(s) in {get_delta_time(convert_files_start_time)} seconds")
 
     encode_images_start_time = time.time()
-
     with ThreadPoolExecutor(max_workers=concurrency_limit) as executor:
-        tasks = [executor.submit(encode_image, img_path) for img_path in img_paths]
+        tasks = [executor.submit(encode_image, img_path) for img_path in image_paths]
         encoded_images = [task.result() for task in tasks]
-    logger.info(f"Successfully encoded {len(img_paths)} image(s) in {get_delta_time(encode_images_start_time)} seconds")
-    return encoded_images
+    logger.info(f"Successfully encoded {len(image_paths)} image(s) in {get_delta_time(encode_images_start_time)} seconds")
+    return encoded_images,image_paths
 
 # encoded_images = file2imgs_and_encode_images_in_thread_pool_executor(
 #     "/data/projects/JqChatV2/JqChat/JqR2R/py/core/examples/data/DeepSeek_R1.pdf",
@@ -176,7 +175,7 @@ def file2imgs_and_encode_images_in_thread_pool_executor(file_input: str, concurr
 
 
 async def convert_to_markdown_in_pool_executor(
-    encoded_images, model_name, vlm_url, concurrency_limit, max_gen_tokens
+    encoded_images, model_name, vlm_url, concurrency_limit, max_gen_tokens,mm_batch_size = 5
 ):
     """
     Get markdown conversion results
@@ -273,48 +272,56 @@ async def convert_to_markdown_in_pool_executor(
     logger.info(f"Converting {len(encoded_images)} image(s) to markdown using [{model_name=},{vlm_url=}] (Processing in ThreadPoolExecutor(max_workers={concurrency_limit}))")
 
     # Accumulate results from all pages
-    full_markdown_contents = []
-
-    loop = asyncio.get_running_loop()
+    full_markdown_contents = []    
     tasks = []
+    loop = asyncio.get_running_loop()
+
+    
     with ThreadPoolExecutor(max_workers=concurrency_limit) as executor:
-        for i, encoded_image in enumerate(encoded_images):     
+        mm_batch_num =1
+        start_time = time.time()
+        for i in range(0, len(encoded_images), mm_batch_size):
+            batch_encoded_images = encoded_images[i:i + mm_batch_size]
+            contents = [{"type": "text", "text": user_prompt}]
+            for encoded_image in batch_encoded_images:
+                contents.append(
+                    {
+                        "type": "image_url",
+                        "image_url": {
+                            "url": f"data:image/jpeg;base64,{encoded_image}"
+                        }
+                    }
+                )
 
-            # Build messages for this single image
-            content = [
-                {
-                    "type": "image_url",
-                    "image_url": {
-                        "url": f"data:image/jpeg;base64,{encoded_image}"
-                    },
-                },
-                {"type": "text", "text": user_prompt},
-            ]
-
-            if len(encoded_images) == 5 or i < len(encoded_images) - 1:
-                # content.append({"type": "text", "text": f"这是第{i + 1}页，共{len(encoded_images)}页"})
-                messages = [{"role": "user", "content": content}]
-                task=loop.run_in_executor(executor, stream_request, messages,model_name, vlm_url,max_gen_tokens)
+            messages = [{"role": "user", "content": contents}]
+            task=loop.run_in_executor(executor, stream_request, messages,model_name, vlm_url,max_gen_tokens)
+            task.name = f"MmBatch(mm_batch_num),Imgs({i+1}-{i+len(contents)-1})"
+            task.add_done_callback(lambda task: print(f"   .....{get_delta_time(start_time)}(seconds). Imgs[{task.name}] has converted to markdowns."))
             tasks.append(task)
+            contents = []
+            mm_batch_num += 1
         
     full_markdown_contents = await asyncio.gather(*tasks)
+    pass
+
+
 
     return full_markdown_contents
 async def convert_file_to_markdown(
-    encoded_images, model_name, vlm_url, concurrency_limit, max_gen_tokens
+    file_path, model_name, vlm_url, max_img_size, concurrency_limit, max_gen_tokens,mm_batch_size=5
 ):
     """
     Non-streaming version for backward compatibility
     """
-
-    # start_time = time.time()
-    final_results = await convert_to_markdown_in_pool_executor(encoded_images, model_name, vlm_url, concurrency_limit, max_gen_tokens)
-
-    logger.info(f"Successfully completed document conversion")
-    return final_results
+    encoded_images,_ = file2imgs_and_encode_images_in_thread_pool_executor(file_path, concurrency_limit, max_img_size)
+    start_time = time.time()
+    file_name = Path(file_path).name
+    file2md_result = await convert_to_markdown_in_pool_executor(encoded_images, model_name, vlm_url, concurrency_limit, max_gen_tokens,mm_batch_size)
+    logger.info(f"Times:{get_delta_time(start_time)}(seconds). Successfully converted document['{file_name}'] to markdown file.")
+    return file2md_result
 
 def convert_files_to_markdowns(
-    file_inputs, model_name, vlm_url, max_img_size, concurrency_limit, max_gen_tokens
+    file_inputs, model_name, vlm_url, max_img_size, concurrency_limit, max_gen_tokens,mm_batch_size=5
 ):
     start_time = time.time()
     file_paths: list[str] = [
@@ -323,27 +330,36 @@ def convert_files_to_markdowns(
     ]
     validate_file_paths(file_paths)
     file_num = len(file_paths)
-    all_files_results = []
+    all_file2md_results = []
     for i,file_path in enumerate(file_paths,1):
         logger.info(f"开始【{i}/{file_num}】================='{file_path}'=================")
         start_time = time.time()
         logger.info(f"Converting file '{file_path}' to markdown using [{model_name=},{vlm_url=}]")
-        encoded_images = file2imgs_and_encode_images_in_thread_pool_executor(
-            file_path, concurrency_limit=concurrency_limit, max_img_size=max_img_size
-        )
-        final_results = asyncio.run(
+
+        file2md_result = asyncio.run(
             convert_file_to_markdown(
-                encoded_images,
+                file_path,
                 model_name,
-                vlm_url,
+                vlm_url, 
+                max_img_size,                
                 concurrency_limit,
                 max_gen_tokens,
+                mm_batch_size
             )
         )
-        logger.info(f"Successfully completed document['{file_path}'] conversion to markdown file  in {get_delta_time(start_time)} seconds")
         logger.info(f"完成【{i}/{file_num}】================='{file_path}'=================\n\n")
-        all_files_results.append({file_path:final_results})
-    return all_files_results  
+        all_file2md_results.append({file_path:file2md_result})
+    return all_file2md_results  
+
+# async def convert_file_to_markdown(
+#     file_path, model_name, vlm_url, max_img_size, concurrency_limit, max_gen_tokens
+# ):
+#     start_time = time.time()
+#     logger.info(f"Converting file '{file_path}' to markdown using [{model_name=},{vlm_url=}]")
+#     encoded_images = file2imgs_and_encode_images_in_thread_pool_executor(
+#             file_path, concurrency_limit=concurrency_limit, max_img_size=max_img_size
+#         )
+
 
 
 
@@ -351,14 +367,17 @@ def convert_files_to_markdowns(
 
 if __name__ == "__main__":
 
-
     """
-    workon vllm2
+    workon vllm
+    vllm serve /data/models/OCRFlux-3B --enable-chunked-prefill --port 8008 --host 0.0.0.0 --served-model-name=nanonets --max-num-seqs 32 --limit-mm-per-prompt image=5,video=1
+    """
+    """
+    workon vllm
     vllm serve /data/models/Nanonets-OCR-s/ --enable-chunked-prefill --port 8008 --host 0.0.0.0 --served-model-name=nanonets --max-num-seqs 32 --limit-mm-per-prompt image=5,video=1
     """
     file_inputs = ["/data/projects/JqChatV2/JqChat/docext/晶奇招股说明书.pdf"]
-    file_inputs += ["/data/projects/JqChatV2/JqChat/JqR2R/py/core/examples/supported_file_types/pdf.pdf"]
-    file_inputs += ["/data/projects/JqChatV2/JqChat/JqR2R/py/core/examples/data/DeepSeek_R1.pdf"]
+    # file_inputs += ["/data/projects/JqChatV2/JqChat/JqR2R/py/core/examples/supported_file_types/pdf.pdf"]
+    # file_inputs += ["/data/projects/JqChatV2/JqChat/JqR2R/py/core/examples/data/DeepSeek_R1.pdf"]
     file_inputs = ["/data/projects/JqChatV2/JqChat/JqR2R/py/core/examples/data/DeepSeek_R1.pdf"]
     
 

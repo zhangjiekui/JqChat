@@ -7,6 +7,7 @@ from typing import Union
 
 import pandas as pd
 from PIL import Image
+from loguru import logger
 # from docext.core.file_converters.pdf_converter import PDFConverter
 from jqcode.jq_pdf2md.pdf_converter import PDFConverter
 
@@ -56,10 +57,15 @@ def resize_images(file_paths: list[str], max_img_size: int):
 
 def validate_file_paths(file_paths: list[str]):
     # TODO: add support for s3 image urls
+    validated_file_paths = []
     for file_path in file_paths:
-        assert os.path.exists(file_path), f"File {file_path} does not exist"
-        assert os.path.isfile(file_path), f"File {file_path} is not a file"
-        assert os.path.splitext(file_path)[1].lower() in [
+        if not os.path.exists(file_path):
+            logger.info(f"File {file_path} does not exist, Passing......")
+            continue
+        if not os.path.isfile(file_path):
+            logger.info(f"File {file_path} is not a file, Passing......")
+            continue
+        if not os.path.splitext(file_path)[1].lower() in [
             ".jpg",
             ".jpeg",
             ".png",
@@ -68,7 +74,12 @@ def validate_file_paths(file_paths: list[str]):
             ".gif",
             ".webp",
             ".pdf",
-        ], f"File {file_path} is not an image"
+        ]:
+            logger.info(f"File {file_path} is not an image, Passing......")
+            continue
+        validated_file_paths.append(file_path)
+    return validated_file_paths
+
 
 def file_is_supported_image(file_path: str) -> bool:
     return os.path.splitext(file_path)[1].lower() in [

@@ -1131,7 +1131,12 @@ class GraphAgent:
     
     # 直接获取或者尝试进一步解析出tool_calls
     def exists_action(self,state:GraphAgentState):
-        valid_toolcalls = [toolcall for toolcall in state['messages'][-1].tool_calls if toolcall['name'] in self.all_tools_names]
+        tool_calls = state['messages'][-1].tool_calls
+        for i,toolcall in enumerate(tool_calls):
+            if toolcall.get("name","") == 'VECTOR_STORE':
+                tool_calls[i].update({"name": "VECTORSTORE"})
+
+        valid_toolcalls = [toolcall for toolcall in tool_calls if toolcall['name'] in self.all_tools_names]
         state['messages'][-1].tool_calls = valid_toolcalls        
         result = state['messages'][-1]
         print("xxxxxxxxxxxxxxxxxxxxxxxxxxxx")
@@ -1207,9 +1212,9 @@ class GraphAgent:
             tool_call_1 = result.tool_calls[0]
             tool_call_1_name = tool_call_1['name']
             if tool_call_1_name in self.routing_tool_names:
-                logger.info(f"Returned first ToolName is '{tool_call_1_name}', So routing to '{tool_call_1_name}' Node......")
+                logger.warning(f"Returned first ToolName is '{tool_call_1_name}', So routing to '{tool_call_1_name}' Node......")
                 # 如果是WEB_SEARCH或VECTORSTORE，要将搜索query保存到state中，方便在web_search时使用
-                if tool_call_1_name.lower() in ["web_search","vectorstore"]:
+                if tool_call_1_name.lower() in ["websearch","web_search","vectorstore","vector_store"]:
                     try:
                         search_query = tool_call_1['args']['query']
                         user_variables_statedict = {"rag_args":search_query}
@@ -1222,8 +1227,10 @@ class GraphAgent:
                 # 所以此处回头去更新AIMessage的值，因是第一个导航工具，所以只需保留第一个
                 if returned_tool_calling_nums > 1:
                     state['messages'][-1].tool_calls = [tool_call_1]
-              
-                return tool_call_1_name
+                if tool_call_1_name in ['VECTORSTORE','VECTOR_STORE']:
+                    return 'VECTORSTORE'
+                else:
+                    return 'WEB_SEARCH'
             elif tool_call_1_name in self.executable_tool_names:
                 if returned_tool_calling_nums > 1:
                     executable_tools = [toolcall for toolcall in result.tool_calls if toolcall['name'] in self.executable_tool_names]
@@ -1307,16 +1314,36 @@ class GraphAgent:
                 max_tokens = self.model.bound.max_tokens
                 api_base = self.model.bound.openai_api_base
                 message = self.model.invoke(messages,config=invoke_llm_config)
+                if message.tool_calls:
+                    message.additional_kwargs["reasoning_content"] = message.content
+                    message.content = ""
+                else:
+                    mix_content = message.content
+                    huyuan_split_string = '\n</think>\n<answer>\n'
+                    if huyuan_split_string in mix_content:
+                        contents = mix_content.split(huyuan_split_string)
+                        if len(contents) == 2:
+                            reasoning_content = contents[0]+"</think>\n"
+                            answer_content = "\n<answer>" + contents[1]
+                            message.content = answer_content
+                            message.additional_kwargs["reasoning_content"] = reasoning_content
+                        else:
+                            pass
+                    else:
+                        pass
+                
+                
                 reasoning_content = message.additional_kwargs.get("reasoning_content","")
-                if reasoning_content.replace("\n",""):
-                    # logger.warning(f"推理内容：<think>\n{reasoning_content}\n</think>")
-                    reasoning_content_formatted = state["user_variables"].get(self.user_id,{}).get("reasoning_content",[])
-                    reasoning_content_formatted.append(reasoning_content)
+                if reasoning_content:
+                    if reasoning_content.replace("\n",""):
+                        # logger.warning(f"推理内容：<think>\n{reasoning_content}\n</think>")
+                        reasoning_content_formatted = state["user_variables"].get(self.user_id,{}).get("reasoning_content",[])
+                        reasoning_content_formatted.append(reasoning_content)
 
-                    # reasoning_content_formatted = f'<details>\n<summary>查看模型思考过程</summary>\n<font color="grey" size=16px>{reasoning_content}</font></details>'
-                    add_dict = {"reasoning_content":reasoning_content_formatted}
-                    self.update_user_variables(state=state,add_dict=add_dict)
-                    pass
+                        # reasoning_content_formatted = f'<details>\n<summary>查看模型思考过程</summary>\n<font color="grey" size=16px>{reasoning_content}</font></details>'
+                        add_dict = {"reasoning_content":reasoning_content_formatted}
+                        self.update_user_variables(state=state,add_dict=add_dict)
+                        pass
                                 
                 # 尝试获取finish_reason，如发现因token限制导致的大模型输出不完整或异常，给出警告提示
                 try: 
