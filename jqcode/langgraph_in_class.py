@@ -1229,8 +1229,10 @@ class GraphAgent:
                     state['messages'][-1].tool_calls = [tool_call_1]
                 if tool_call_1_name in ['VECTORSTORE','VECTOR_STORE']:
                     return 'VECTORSTORE'
-                else:
+                elif tool_call_1_name in ['WEB_SEARCH','WEBSEARCH']:
                     return 'WEB_SEARCH'
+                else:
+                    return tool_call_1_name
             elif tool_call_1_name in self.executable_tool_names:
                 if returned_tool_calling_nums > 1:
                     executable_tools = [toolcall for toolcall in result.tool_calls if toolcall['name'] in self.executable_tool_names]
@@ -1314,36 +1316,37 @@ class GraphAgent:
                 max_tokens = self.model.bound.max_tokens
                 api_base = self.model.bound.openai_api_base
                 message = self.model.invoke(messages,config=invoke_llm_config)
-                if message.tool_calls:
-                    message.additional_kwargs["reasoning_content"] = message.content
-                    message.content = ""
-                else:
-                    mix_content = message.content
-                    huyuan_split_string = '\n</think>\n<answer>\n'
-                    if huyuan_split_string in mix_content:
-                        contents = mix_content.split(huyuan_split_string)
-                        if len(contents) == 2:
-                            reasoning_content = contents[0]+"</think>\n"
-                            answer_content = "\n<answer>" + contents[1]
-                            message.content = answer_content
-                            message.additional_kwargs["reasoning_content"] = reasoning_content
+                reasoning_content = message.additional_kwargs.get("reasoning_content","")
+                if reasoning_content=="": 
+                    if message.tool_calls:
+                        message.additional_kwargs["reasoning_content"] = message.content
+                        message.content = ""
+                    else:
+                        mix_content = message.content
+                        huyuan_split_string = '\n</think>\n<answer>\n'
+                        if huyuan_split_string in mix_content:
+                            contents = mix_content.split(huyuan_split_string)
+                            if len(contents) == 2:
+                                reasoning_content = contents[0]+"</think>\n"
+                                answer_content = "\n<answer>" + contents[1]
+                                message.content = answer_content
+                                message.additional_kwargs["reasoning_content"] = reasoning_content
+                            else:
+                                pass
                         else:
                             pass
-                    else:
-                        pass
                 
                 
-                reasoning_content = message.additional_kwargs.get("reasoning_content","")
-                if reasoning_content:
-                    if reasoning_content.replace("\n",""):
-                        # logger.warning(f"推理内容：<think>\n{reasoning_content}\n</think>")
-                        reasoning_content_formatted = state["user_variables"].get(self.user_id,{}).get("reasoning_content",[])
-                        reasoning_content_formatted.append(reasoning_content)
 
-                        # reasoning_content_formatted = f'<details>\n<summary>查看模型思考过程</summary>\n<font color="grey" size=16px>{reasoning_content}</font></details>'
-                        add_dict = {"reasoning_content":reasoning_content_formatted}
-                        self.update_user_variables(state=state,add_dict=add_dict)
-                        pass
+                reasoning_content=reasoning_content if reasoning_content.replace("\n","") else "非关键或未选择输出模型推理过程内容"
+                    # logger.warning(f"推理内容：<think>\n{reasoning_content}\n</think>")
+                reasoning_content_formatted = state["user_variables"].get(self.user_id,{}).get("reasoning_content",[])
+                reasoning_content_formatted.append(reasoning_content)
+
+                # reasoning_content_formatted = f'<details>\n<summary>查看模型思考过程</summary>\n<font color="grey" size=16px>{reasoning_content}</font></details>'
+                add_dict = {"reasoning_content":reasoning_content_formatted}
+                self.update_user_variables(state=state,add_dict=add_dict)
+                pass
                                 
                 # 尝试获取finish_reason，如发现因token限制导致的大模型输出不完整或异常，给出警告提示
                 try: 
@@ -1881,7 +1884,14 @@ class GraphAgent:
         referens_str = user_variables_statedict[self.user_id]['reference']
         # 因为该问题已经结束，所以无需更新user_variables_statedict的'reference'值
         if referens_str:
-            answer = f'\n{referens_str}\n' + answer
+            # answer = f'\n{referens_str}\n' + answer
+            splits = referens_str.split('\n')
+            title = splits[0]
+            start = title.index('参') # 得到参考文档或参考网页
+            title_formatted = title[start:start+4]
+            _referens_str = referens_str.replace(title, '')
+            referens_str_formated = f'<details>\n<summary>{title_formatted}</summary>\n<font color="grey" size=16px>\n{_referens_str}\n</font></details>'
+            answer = f'\n{referens_str_formated}\n' + answer
 
         reasoning_content = user_variables_statedict[self.user_id]['reasoning_content']
         
@@ -1891,10 +1901,11 @@ class GraphAgent:
                 reasoning_content_str += reasoning_content[0] + '\n------\n'
             else:
                 for i, content in enumerate(reasoning_content):
-                    reasoning_content_str += f'\n**推理步骤{i+1}** ： {content}\n------\n'
+                    reasoning_content_str += f'\n**推理步骤{i+1}** ： {content}\n'
+                reasoning_content_str = f"{reasoning_content_str}\n------\n"
             reasoning_content_formatted = f'<details>\n<summary>查看模型思考过程</summary>\n<font color="grey" size=16px>\n{reasoning_content_str}</font></details>'
             answer = f'\n{reasoning_content_formatted}\n' + answer
-            # print(answer)  
+        # print(f"最终格式化的输出结果：\n{answer}\n")  
 
 
         print(f"==AI回答:>>:{answer}")
@@ -1940,7 +1951,9 @@ if __name__ == "__main__":
     # user_questions = ["请搜索网络然后回答问题：What is the weather in SF and LA?","Who won the super bowl in 2024? In what state is the winning team headquarters located?What is the GDP of that state? ","2024年安徽省会城市的GDP是多少? "]
     
     
+    user_questions=["晶奇公司质量保证过程中的角色及角色的职责或含义解释，对应的人员（姓名）有哪些?其中的批准人是谁？"]
     user_questions += ["请检索知识库：安徽晶奇或晶奇网络相关的公司全称"]
+    
     # user_questions += ['请检索知识库，然后回答晶奇公司质量保证过程中的角色及角色的职责或含义解释，对应的人员（姓名）有哪些?其中的批准人是谁？']
     # user_questions += ["请检索知识库：信息"]
     my_main_bot = GraphAgent(executable_tools=executable_tools,routing_tools_wrapped_in_class=route_tools,allow_conversation_memory=True)
