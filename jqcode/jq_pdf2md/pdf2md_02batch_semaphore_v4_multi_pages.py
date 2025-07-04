@@ -159,7 +159,6 @@ async def file2imgs_and_encode_images2base64(semaphore, file_input: str, concurr
     encode_images_start_time = time.time()
     async with semaphore:
         tasks = [asyncio.to_thread(encode_image,img_path) for img_path in image_paths]
-        # tasks = [asyncio.create_task(encode_image(img_path)) for img_path in image_paths]
         encoded_images = await asyncio.gather(*tasks)
 
     logger.info(f"Successfully encoded '{Path(file_input).name}' {len(image_paths)} image(s) in {get_delta_time(encode_images_start_time)} seconds")
@@ -220,16 +219,19 @@ async def convert_imgs_to_markdown(
     
     async with semaphore:
         mm_batch_num =1 
-        changed_mm_batch_size = mm_batch_size   #从第二批次开始，还是每次输入mm_batch_size张图片，但第一张是作为参考，不实际输出内容       
+        changed_mm_batch_size = mm_batch_size - 1  #从第二批次开始，还是每次输入mm_batch_size张图片，但第一张是作为参考，不实际输出内容       
         for i in range(0, len(encoded_images), changed_mm_batch_size):
-            start= i
-            end= start + changed_mm_batch_size
-            batch_encoded_images = encoded_images[start:end]
             
             if mm_batch_num == 1:
                 multi_page_prompt = first_batch_prompt
+                start= i
+                end= start + changed_mm_batch_size + 1
             else:
                 multi_page_prompt = Subsequent_batch_prompt
+                start= end - 1 
+                end= end + changed_mm_batch_size
+            batch_encoded_images = encoded_images[start:end]
+            # print(f"Processing batch {mm_batch_num}:batch_encoded_images[{start}:{end}],{len(batch_encoded_images)=}...")
             
             user_prompt =f"""
             # PDF文档解析器规范 (Markdown/LaTeX输出)
@@ -328,7 +330,7 @@ async def convert_imgs_to_markdown(
 
             messages = [{"role": "user", "content": contents}]
             task = asyncio.create_task(asyncio.to_thread(img2md_request_for_vlm,messages, model_name, vlm_url, max_gen_tokens))
-            task.name = f"File('{file_name}')[Imgs({start}-{start + len(contents)-1}, {len(contents)}imgs/mm_batch) In MmBatch({mm_batch_num})] converted to markdowns"
+            task.name = f"File('{file_name}')[Imgs({start}-{start + len(batch_encoded_images)-1}, {len(batch_encoded_images)} imgs/mm_batch) In MmBatch({mm_batch_num})] converted to markdowns"
             start_time = time.time()
             task.add_done_callback(lambda task:  callback_with_time(task, start_time))
             tasks.append(task)
@@ -341,7 +343,8 @@ async def convert_imgs_to_markdown(
     tocs = []
     for batch_content_with_toc in full_markdown_contents:
         if batch_content_with_toc.startswith("```json"):
-            first_batch_content_with_toc_dict = json_repair.loads(batch_content_with_toc)
+            first_batch_content_with_toc_dict = json.loads(batch_content_with_toc)
+            # first_batch_content_with_toc_dict = json_repair.loads(batch_content_with_toc)
             toc = first_batch_content_with_toc_dict.get("toc", "")
             text = first_batch_content_with_toc_dict.get("content", "")
             if toc:
@@ -364,12 +367,11 @@ async def convert_file_to_markdown(
     start_time = time.time()
     file_name = Path(file_path).name
     task = asyncio.create_task(convert_imgs_to_markdown(semaphore,file_name,encoded_images, model_name, vlm_url, concurrency_limit,mm_batch_size, max_gen_tokens))
-    # file2md_result = await asyncio.gather(*[task])
-    file2md_result = await asyncio.gather(task)
+    file2md_result = await task
     logger.info(f">>> Successfully converted document['{file_name}'] to markdown file. Elapsed:{get_delta_time(start_time)}(seconds).")
     return file2md_result
 async def convert_files_to_markdowns(
-    file_inputs, model_name, vlm_url, max_img_size=16000, concurrency_limit=32, mm_batch_size = 5, max_gen_tokens=16000
+    file_inputs, model_name, vlm_url, max_img_size=16000, concurrency_limit=32, mm_batch_size = 5, max_gen_tokens=32000
 ):
     
     file_paths: list[str] = [
@@ -384,23 +386,23 @@ async def convert_files_to_markdowns(
     start_time_all = time.time()    
 
     tasks = []
-    loop = asyncio.get_running_loop()
+    # loop = asyncio.get_running_loop()
     # loop.set_debug(True)
     semaphore = asyncio.Semaphore(concurrency_limit)
     for i,file_path in enumerate(file_paths,1):
         task = asyncio.create_task(convert_file_to_markdown(
-            semaphore,
-            file_path,
-            model_name,
-            vlm_url, 
-            max_img_size,                
-            concurrency_limit,
-            mm_batch_size,
-            max_gen_tokens
-        )
+                semaphore,
+                file_path,
+                model_name,
+                vlm_url, 
+                max_img_size,                
+                concurrency_limit,
+                mm_batch_size,
+                max_gen_tokens
+            )
         )
             
-        file_start_time = time.time()
+        # file_start_time = time.time()
         # task.name = f"File({i}):{Path(file_path).name} has converted to markdowns"
         # task.add_done_callback(lambda task:  callback_with_time(task, file_start_time))
         tasks.append(task)
@@ -417,18 +419,18 @@ if __name__ == "__main__":
     """
     """
     workon vllmb
-    CUDA_VISIBLE_DEVICES=0 vllm serve /data/models/Nanonets-OCR-s/ --enable-chunked-prefill --port 8008 --host 0.0.0.0 --served-model-name=nanonets --max-num-seqs 32 --limit-mm-per-prompt image=6,video=1
+    CUDA_VISIBLE_DEVICES=0 vllm serve /data/models/Nanonets-OCR-s/ --enable-chunked-prefill --port 8008 --host 0.0.0.0 --served-model-name=nanonets --max-num-seqs 32 --limit-mm-per-prompt image=32,video=1
     """
     file_inputs = ["/data/projects/JqChatV2/JqChat/docext/晶奇招股说明书.pdf"]
     # file_inputs += ["/data/projects/JqChatV2/JqChat/JqR2R/py/core/examples/supported_file_types/pdf.pdf"]
     # file_inputs += ["/data/projects/JqChatV2/JqChat/JqR2R/py/core/examples/data/DeepSeek_R1.pdf"]
     file_inputs = ["/data/projects/JqChatV2/JqChat/JqR2R/py/core/examples/data/DeepSeek_R1.pdf"]
-    file_inputs += ["/data/projects/JqChatV2/JqChat/JqR2R/py/core/examples/supported_file_types/pdf.pdf"]
+    # file_inputs += ["/data/projects/JqChatV2/JqChat/JqR2R/py/core/examples/supported_file_types/pdf.pdf"]
     
 
     start_time = time.time()
     model_name = "qwenvl"  # or "nanonets"
-    model_name = "nanonets"
+    # model_name = "nanonets"
     concurrency_limit = 40 if model_name == "qwenvl" else 40
     vlm_url= "http://10.1.150.105:8000/v1" if model_name == "qwenvl" else os.getenv("VLM_MODEL_URL", "http://10.1.150.105:8008/v1")
     coro_all_files_results = convert_files_to_markdowns(

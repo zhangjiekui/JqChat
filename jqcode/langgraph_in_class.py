@@ -1951,8 +1951,8 @@ if __name__ == "__main__":
     # user_questions = ["请搜索网络然后回答问题：What is the weather in SF and LA?","Who won the super bowl in 2024? In what state is the winning team headquarters located?What is the GDP of that state? ","2024年安徽省会城市的GDP是多少? "]
     
     
-    user_questions=["晶奇公司质量保证过程中的角色及角色的职责或含义解释，对应的人员（姓名）有哪些?其中的批准人是谁？"]
-    user_questions += ["请检索知识库：安徽晶奇或晶奇网络相关的公司全称"]
+    # user_questions=["晶奇公司质量保证过程中的角色及角色的职责或含义解释，对应的人员（姓名）有哪些?其中的批准人是谁？"]
+    # user_questions += ["请检索知识库：安徽晶奇或晶奇网络相关的公司全称"]
     
     # user_questions += ['请检索知识库，然后回答晶奇公司质量保证过程中的角色及角色的职责或含义解释，对应的人员（姓名）有哪些?其中的批准人是谁？']
     # user_questions += ["请检索知识库：信息"]
