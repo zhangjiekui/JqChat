@@ -135,7 +135,7 @@ class CodeExecutorTool():
                 os.remove(fname)
 
     def _start_kernel(self, kernel_id: str):
-        print(self.work_dir)
+        print(f"{self.work_dir=}")
         connection_file = os.path.join(self.work_dir, f'kernel_connection_file_{kernel_id}.json')
         
         launch_kernel_script = os.path.join(self.work_dir, f'launch_kernel_{kernel_id}.py')

@@ -10,6 +10,7 @@ import requests
 import base64
 import json
 import random
+from lazyllm import FileSystemQueue
 os.environ['USER_AGENT'] = 'myagent'
 import re
 import threading
@@ -50,7 +51,6 @@ from langchain.callbacks.base import BaseCallbackHandler
 from langchain_core.callbacks import StdOutCallbackHandler,FileCallbackHandler
 from jqcode.jq_splitters.backend_splitter_utils.jq_chinese_recursive_text_splitter import JqChineseRecursiveTextSplitter
 from jqcode.jq_splitters.jq_docx_tree_text_splitter import JqkjDocTreeTokenTextSplitter,load_project_env
-import asyncio
 from transformers import AutoTokenizer
 from pydantic import PrivateAttr
 import json_repair
@@ -504,7 +504,9 @@ class SingletonDecorator:
 @SingletonDecorator
 class InitEnvModels:
     def __init__(self):
-        self.env_loaded = load_project_env()
+        self.env_loaded = load_project_env()        
+        self.lazyllm_queue = FileSystemQueue()
+        self.lazyllm_queue_sid =self.lazyllm_queue.sid
         assert self.env_loaded, "环境变量没有正确载入！"        
         self.ollama_host = os.getenv("OLLAMA_HOST",'http://localhost:11434')        
         self.api_type =os.getenv("OPENAI_API_TYPE",'open_ai')        

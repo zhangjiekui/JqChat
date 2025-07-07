@@ -538,19 +538,43 @@ def MakeFastAPIOffline(
 #         return path_str  # THUDM/chatglm06b
 
 
-def api_address(production_mode=False) -> str:
+def api_address(production_mode=True) -> str:
     host = API_SERVER["host"]
     if host == "0.0.0.0":
         host = "127.0.0.1"
     port = API_SERVER["port"]
+
+    try:
+        production_mode_str=os.environ["production_mode"]
+        if production_mode_str=="true":
+            production_mode = True
+        elif production_mode_str=="false":
+            production_mode = False
+        else:
+            production_mode = production_mode
+    except:
+        production_mode = production_mode
+
     if not production_mode:
         port = port+1
     return f"http://{host}:{port}"
 
 
-def webui_address(production_mode=False) -> str:
+def webui_address(production_mode=True) -> str:
     host = WEBUI_SERVER["host"]
     port = WEBUI_SERVER["port"]
+
+    try:
+        production_mode_str=os.environ["production_mode"]
+        if production_mode_str=="true":
+            production_mode = True
+        elif production_mode_str=="false":
+            production_mode = False
+        else:
+            production_mode = production_mode
+    except:
+        production_mode = production_mode
+
     if not production_mode:
         port = port+1
     return f"http://{host}:{port}"

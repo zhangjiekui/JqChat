@@ -1,21 +1,31 @@
 import time
 import uuid
-
+import asyncio
+import threading
+from lazyllm import FileSystemQueue
 # from audio_recorder_streamlit import audio_recorder
 import streamlit as st
 from streamlit_chatbox import ChatBox
 from streamlit_extras.bottom_container import bottom
-
+try:
+    # Streamlit >= 1.12.0
+    from streamlit.runtime.scriptrunner import add_script_run_ctx
+    from streamlit.runtime.scriptrunner.script_run_context import get_script_run_ctx
+except:
+    # Streamlit <= 1.11.0
+    from streamlit.scriptrunner import add_script_run_ctx
+    from streamlit.scriptrunner.script_run_context import get_script_run_ctx
 
 from web.utils.utils import *
 
 from jqcode.jq_knowledge_manegement.chatchat.server.knowledge_base.kb_service.base import (
     get_kb_details,
 )
-
+from jqcode.jq_agent.c0_init_env_models import env_models_instance
 chat_box = ChatBox(assistant_avatar=get_img_base64("chatchat_icon_blue_square_v2.png"))
-
 code_message:str=None
+lazyllm_queue = env_models_instance.lazyllm_queue
+lazyllm_queue_sid = env_models_instance.lazyllm_queue_sid
 
 LOADER_DICT = {
     "CSVLoader": [".csv"],
@@ -68,6 +78,61 @@ def code(user,_api:ApiRequest)  :
 
 # 初始化session中的是否纳入知识库选项 
 st.session_state["is_knowledge"]=False
+
+class ThreadWithResult(threading.Thread):  
+    def __init__(self, target, args=()):  
+        super(ThreadWithResult, self).__init__()  
+        self.func = target  
+        self.args = args
+        self.result = ""  
+  
+    def run(self):
+        try:  
+            self.result = self.func(*self.args)  # 在执行函数的同时，把结果赋值给result,  
+        except:
+            self.result = self.func(self.args)
+        finally:
+            if self.result:
+                print(self.result)
+            else:
+                print("没有结果")
+                self.result = ""
+    
+    # 然后通过get_result函数获取返回的结果
+    def get_result(self):  
+        try:  
+            return self.result  
+        except Exception as e:  
+            return None 
+
+
+def get_process_text(user_id,chat_box):
+        leading_text = "#####  执行过程：  \n"
+        text_string = leading_text        
+        values = []       
+        condition = True
+        while condition:            
+            try:
+                values =lazyllm_queue._dequeue(id=user_id)
+                if values:
+                    for j,text in enumerate(values):
+                        if text.strip() == "DONE":
+                            condition = False
+                        if not text.startswith("<br>"):
+                            text = f"<br>"+text
+                        text_string += text
+                        chat_box.update_msg(text_string,streaming=False)
+                        print(f"output{j}: {text}")
+
+                else:
+                    time.sleep(1)
+            except Exception as e:
+                condition = False
+                logger.warning(f"获取执行过程信息时：{e}")
+                lazyllm_queue.clear()
+                break
+        print("Done:全部完成")
+        return text_string[len(leading_text):]
 def dialogue_page(
     api: ApiRequest,
     is_lite: bool = False,
@@ -77,8 +142,7 @@ def dialogue_page(
     # 初始化文件ID和执行代码结果为None
     ctx.setdefault("files", [])
     ctx.setdefault("code_message",'')
-    ctx.setdefault("is_knowledge",False)
-    
+    ctx.setdefault("is_knowledge",False)    
    
     @st.dialog("上传文件", width="large")
     def file_upload():
@@ -146,7 +210,9 @@ def dialogue_page(
             ctx['files']=[]
             ctx['is_knowledge']=False
             rerun()
-        
+
+    
+
     #简洁的对话，待完善 
     if prompt:
         chat_box.user_say(prompt)
@@ -157,9 +223,30 @@ def dialogue_page(
         files=ctx.get('files')
         # @swm 这里有问题
         is_knowledge=ctx.get("is_knowledge")
-        msg=chat(code_message=code_message,query=prompt,user=user,doc=doc,files=files,is_memory=is_memory,is_rewrite=is_rewrite,is_knowledge=is_knowledge,_api=api)
-        chat_box.update_msg(msg["text"],streaming=False) 
+        
+        t1 = ThreadWithResult(target=chat, args=(code_message,prompt,user,doc,files,is_memory,is_rewrite,is_knowledge,api))
+        t2 = ThreadWithResult(target=get_process_text, args=(user,chat_box))
+        add_script_run_ctx(t2)        
+        t1.start()
+        time.sleep(2)
+        t2.start()
+    
+        # 等待线程结束
+        t1.join()
+        t2.join()
+        chat_result=t1.get_result()
+        log_result=t2.get_result()
+        
+
+        log_text = f'<details>\n<summary>点击查看"执行过程"</summary>\n<font color="grey" size=16px>\n{log_result}\n</font></details>'
+        chat_text = chat_result["text"]
+        answer_text = f"{log_text}\n{chat_text}"
+        chat_box.update_msg(answer_text,streaming=False) 
         #清空code执行回复信息和文件
         ctx['files']=[]
         ctx['is_knowledge']=False
+        lazyllm_queue.clear()
+
+if __name__ == "__main__":
+    pass
 

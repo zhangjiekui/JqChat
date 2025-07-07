@@ -255,6 +255,8 @@ def dump_server_info(after_start=False, args=None,local_debug:bool=False):
     print(f">>>>>log>>>>> 本项目'LLM输入输出'日志位置: {llm_handler_file_path} ,说明：专门记录LLM的输入输出，且不受if_log_verbose影响")
     if after_start:        
         production_mode=not local_debug
+        os.environ["production_mode"] = str(production_mode).lower()
+
         print(f"服务端运行信息({production_mode=})")
         if args.api:
             print(f"    JqChat Api Server: {api_address(production_mode)}")

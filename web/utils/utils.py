@@ -98,7 +98,7 @@ class ApiRequest:
                 else:
                     return self.client.post(url, data=data, json=json,timeout=self.timeout,  **kwargs)
             except Exception as e:
-                msg = f"error when post {url}: {e}"
+                msg = f"error when post {self.base_url}{url}: {e}"
                 logger.error(
                     f"{e.__class__.__name__}: {msg}",
                     exc_info=e if log_verbose else None,
@@ -331,7 +331,8 @@ class ApiRequest:
             "is_rewrite":is_rewrite,
             "is_knowledge":is_knowledge
         }
-        response = self.post("/chat/completions", json=data, stream=False, **kwargs)
+        logger.warning(f"ApiRequest {self.base_url=}")
+        response = self.post(f"/chat/completions", json=data, stream=False, **kwargs)
         return  self._get_response_value(response, as_json=True)
     # 执行代码相关操作
     def code_chat(
