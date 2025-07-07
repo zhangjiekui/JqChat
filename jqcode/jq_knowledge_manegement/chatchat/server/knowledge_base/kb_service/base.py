@@ -414,8 +414,12 @@ class KBServiceFactory:
 def get_kb_details() -> List[Dict]:
     kbs_in_folder = list_kbs_from_folder()
     kbs_in_es = list_kbs_from_es()
-    kbs_in_es_dict = []    
+    kbs_in_es_dict = []
+    es_kb_names = [] 
+    folder_kb_names = []
+
     for kb in kbs_in_es:
+        es_kb_names.append(kb)
         kb_info = jq_es_client.get_index_info(index_name=kb)
         kb_dict = {
             "kb_name": kb,
@@ -425,6 +429,7 @@ def get_kb_details() -> List[Dict]:
 
     result = {}
     for kb in kbs_in_folder:
+        folder_kb_names.append(kb)  
         result[kb] = {
             "kb_name": kb,
             "vs_type": "",
@@ -440,11 +445,32 @@ def get_kb_details() -> List[Dict]:
         kb_name = kb_detail["kb_name"]
         kb_detail["in_es"] = True
         if kb_name in result:
+            kb_detail["in_folder"] = True
             result[kb_name].update(kb_detail)
         else:
-            kb_detail["in_folder"] = True
+            kb_detail["in_es"] = True
+            kb_detail["in_folder"] = False
             result[kb_name] = kb_detail
 
+    if os.environ.get("blocking_logging","true") == "true":
+        es_kb_not_in_folder = []
+        folder_kb_not_in_es = []
+        for es_kb_name in es_kb_names:
+            if es_kb_name not in folder_kb_names:
+                es_kb_not_in_folder.append(es_kb_name)
+                
+        for folder_kb_name in folder_kb_names:
+            if folder_kb_name not in es_kb_names:
+                folder_kb_not_in_es.append(folder_kb_name)
+        es_kb_not_in_folder_str = "|".join(es_kb_not_in_folder)
+        folder_kb_not_in_es_str = "|".join(folder_kb_not_in_es)         
+        logger.warning(f"\n Elastic_kb NOT IN LOCAL kb: [{es_kb_not_in_folder_str}]")
+        logger.warning(f"\n Local_kb NOT IN ELASTIC kb: [{folder_kb_not_in_es_str}]")
+        os.environ["blocking_logging"] = "false"
+
+    for kb_name, kb_detail in result.items():
+        if kb_name not in es_kb_names:
+            kb_detail["in_es"] = False
     data = []
     for i, v in enumerate(result.values()):
         v["No"] = i + 1

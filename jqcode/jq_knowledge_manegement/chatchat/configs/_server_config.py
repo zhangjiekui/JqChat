@@ -49,7 +49,8 @@ class ConfigServerFactory(core_config.ConfigFactory[ConfigServer]):
         self.OPEN_CROSS_DOMAIN = True
 
         # 各服务器默认绑定host。如改为"0.0.0.0"需要修改下方所有XX_SERVER的host
-        self.DEFAULT_BIND_HOST = "0.0.0.0" if sys.platform != "win32" else "0.0.0.0"
+        self.DEFAULT_BIND_HOST = "0.0.0.0" if sys.platform != "win32" else "127.0.0.1"
+        
         self.WEBUI_SERVER_PORT = 8501
         self.API_SERVER_PORT = 7861
         self.__init_server()
@@ -58,14 +59,14 @@ class ConfigServerFactory(core_config.ConfigFactory[ConfigServer]):
         # webui.py server
         # self.WEBU
         self.WEBUI_SERVER = {
-            "host": '0.0.0.0',
-            "port": 8501,
+            "host": self.DEFAULT_BIND_HOST,
+            "port": self.WEBUI_SERVER_PORT,
         }
 
         # api.py server
         self.API_SERVER = {
-            "host": '0.0.0.0',
-            "port": 7861,
+            "host": self.DEFAULT_BIND_HOST,
+            "port": self.API_SERVER_PORT,
         }
 
     def httpx_default_timeout(self, timeout: float=6000):
@@ -154,3 +155,5 @@ class ConfigServerWorkSpace(
 
 
 config_server_workspace: ConfigServerWorkSpace = ConfigServerWorkSpace()
+
+

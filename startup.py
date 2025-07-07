@@ -1,10 +1,9 @@
+import os, sys
 import asyncio
 import logging
 import logging.config
 import multiprocessing as mp
 from multiprocessing import Process,Event
-import os, sys
-
 from fastapi.staticfiles import StaticFiles
 # from jqcode.jq_knowledge_manegement.chatchat.server.knowledge_base.migrate import create_tables
 from contextlib import asynccontextmanager
@@ -40,8 +39,10 @@ try:
 except ImportError:
     from streamlit import bootstrap
 from jqcode.jq_utils.logger import jqkj_logger,set_multiprocessing_context
+from jqcode.jq_config.general_config import llm_handler_file_path,if_log_verbose,logfile_path
 
 logger = jqkj_logger(__file__).get_logger()
+
 
 
 # 设置numexpr最大线程数，默认为CPU核心数
@@ -63,7 +64,7 @@ def _set_app_event(app: FastAPI, started_event:Event = None): # type: ignore
     app.router.lifespan_context = lifespan
 
 def run_api_server(
-    started_event:Event = None, run_mode: str = None # type: ignore
+    started_event:Event = None, run_mode: str = None,local_debug:bool=False # type: ignore
 ):
     logger.info(f"Api MODEL_PLATFORMS: {MODEL_PLATFORMS}")
     set_httpx_config()
@@ -72,20 +73,24 @@ def run_api_server(
 
     host = API_SERVER["host"]
     port = API_SERVER["port"]
-
+    if local_debug:
+        port = port + 1
+    log_file = get_log_file(log_path=LOG_PATH, sub_dir=f"run_api_server_{get_timestamp_ms()}")
     logging_conf = get_config_dict(
         "INFO",
-        get_log_file(log_path=LOG_PATH, sub_dir=f"run_api_server_{get_timestamp_ms()}"),
+        log_file,
         1024 * 1024 * 1024 * 3,
         1024 * 1024 * 1024 * 3,
     )
     logging.config.dictConfig(logging_conf)  # type: ignore
+    logger.warning(f"API Server start at {host}:{port}")
+    logger.warning(f">>>>>log>>>>> 'API Server' LogFile at {log_file}")
     app.mount("/workspace", StaticFiles(directory="workspace"), name="workspace")
     uvicorn.run(app, host=host, port=port)
     
 
 def run_webui(
-    started_event: Event = None, run_mode: str = None # type: ignore
+    started_event: Event = None, run_mode: str = None,local_debug:bool=False # type: ignore
 ):
 
 
@@ -94,7 +99,8 @@ def run_webui(
 
     host = WEBUI_SERVER["host"]
     port = WEBUI_SERVER["port"]
-
+    if local_debug:
+        port = port + 1
     script_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), "web/webui.py")
 
     flag_options = {
@@ -168,10 +174,12 @@ def run_webui(
         ]
     args+=["--gatherUsageStats","False"]
 
-
+    log_file = get_log_file(log_path=LOG_PATH, sub_dir=f"run_webui_{get_timestamp_ms()}")
+    logger.warning(f"WebUI Server start at {host}:{port}")
+    logger.warning(f">>>>>log>>>>> 'WebUI Server' LogFile at {log_file}")
     logging_conf = get_config_dict(
         "INFO",
-        get_log_file(log_path=LOG_PATH, sub_dir=f"run_webui_{get_timestamp_ms()}"),
+        log_file,
         1024 * 1024 * 1024 * 3,
         1024 * 1024 * 1024 * 3,
     )
@@ -232,7 +240,7 @@ def parse_args() -> argparse.ArgumentParser:
     return args, parser
 
 
-def dump_server_info(after_start=False, args=None):
+def dump_server_info(after_start=False, args=None,local_debug:bool=False):
 
     print("\n")
     print("=*" * 5 + "JqChat Configuration" + "=*" * 5)
@@ -240,22 +248,25 @@ def dump_server_info(after_start=False, args=None):
     print(f"python版本：{sys.version}")
     print(f"项目版本：{VERSION}")
     print(f"langchain版本：{langchain.__version__}")
-    print("\n")
-
-    if after_start:
-        print(f"服务端运行信息：")
+    print(f"启用本地调试模式，改变端口，避免与已启动的生成服务端口冲突: {local_debug=}")
+    VERBOSE = if_log_verbose()
+    print(f"if_log_verbose = {VERBOSE}, 说明：在 jqcode/jq_config/general_config.py 中设置")
+    print(f">>>>>log>>>>> 本项目'Agent'服务日志位置: {logfile_path},说明：如果if_log_verbose=False，则只记录Waring和Error")
+    print(f">>>>>log>>>>> 本项目'LLM输入输出'日志位置: {llm_handler_file_path} ,说明：专门记录LLM的输入输出，且不受if_log_verbose影响")
+    if after_start:        
+        production_mode=not local_debug
+        print(f"服务端运行信息({production_mode=})")
         if args.api:
-            print(f"    JqChat Api Server: {api_address()}")
+            print(f"    JqChat Api Server: {api_address(production_mode)}")
         if args.webui:
-            print(f"    JqChat WEBUI Server: {webui_address()}")
+            print(f"    JqChat WEBUI Server: {webui_address(production_mode)}")
         if args.kernel:
             print(f"    JqChat Kernel Server: http://0.0.0.0:{APP_PORT}")
     print("=*" * 5 + "JqChat Configuration" + "=*" * 5)
     print("\n")
 
 
-async def start_main_server():
-
+async def start_main_server(local_debug:bool):
 
     logging_conf = get_config_dict(
         "INFO",
@@ -345,6 +356,7 @@ async def start_main_server():
             kwargs=dict(
                 started_event=api_started,
                 run_mode=run_mode,
+                local_debug = local_debug
             ),
             # daemon=False,
             daemon=True,
@@ -360,17 +372,18 @@ async def start_main_server():
             kwargs=dict(
                 started_event=webui_started,
                 run_mode=run_mode,
+                local_debug = local_debug
             ),
-            daemon=False,
+            daemon=True,
         )
         processes["webui"] = process
 
-    
+    dump_server_info(after_start=True,args=args,local_debug=local_debug)
     
     if process_count() == 0:
         parser.print_help()
     else:
-        dump_server_info(after_start=True,args=args)
+        
         try:
             if p := processes.get("kernel"):
                 logger.info(f"启动KERNEL服务：{p.name}")
@@ -379,7 +392,7 @@ async def start_main_server():
                 # kernel_started.wait()  # 等待kernel启动完成
 
             if p := processes.get("api"):
-                logger.info(f"启动API服务：{ p.name}")
+                logger.info(f"启动API服务：{p.name}")
                 p.start()
                 p.name = f"{p.name} ({p.pid})"
                 api_started.wait()  # 等待api.py启动完成
@@ -390,8 +403,7 @@ async def start_main_server():
                 p.name = f"{p.name} ({p.pid})"
                 webui_started.wait()  # 等待webui.py启动完成
                
-
-            dump_server_info(after_start=True, args=args)
+            print("=============!!!这行代码实际已经执行不到了!!!=============")
             # 等待所有进程退出
             while processes:
                 for p in processes.values():
@@ -416,8 +428,8 @@ async def start_main_server():
             for p in processes.values():
                 logger.info("Process status: %s", p)
 
-def main():
-    # 添加这行代码
+
+def main(local_debug: bool = False):
     print("=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*")    
     project_root_path = pathlib.Path().resolve()
     print(f"当前应用启动路径:{project_root_path}")
@@ -428,17 +440,18 @@ def main():
             sys.path.append(str(need_add_path))
             print(f"已将{need_add_path} 加入系统路径！")
     os.environ["r2r_project_root_path"] = str(need_add_path)
-
-    print(f"本项目中添加使用的Python路径为：{set(sys.path)}")
-    print(f"本项目运行日志位置: {project_root_path}/jqchat_agent.log")
-    
+ 
+    print("=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*")    
     set_multiprocessing_context(mp,context="spawn",logger=logger)
-    mp.freeze_support()
-    print("=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*")      
-    
-    # create_tables()
-    asyncio.run(start_main_server())
+    mp.freeze_support()    
+    print("\n\n")    
+    print(">>>*=*=*=*=*=*=*=*=*开始启动服务=*=*=*=*=*=*=*=*=*=*=*")
+    os.environ["blocking_logging"] = "true"
+    asyncio.run(start_main_server(local_debug=local_debug))
+    # 下面实际上执行不到（见start_main_server方法中：print("=============!!!这行代码实际已经执行不到了!!!=============")）
+    os.environ["blocking_logging"] = "false"
+    print(">>>*=*=*=*=*=*=*=*=*服务启动完成=*=*=*=*=*=*=*=*=*=*=*")
 
 
 if __name__ == "__main__":
-    main()
+    main(local_debug=True)

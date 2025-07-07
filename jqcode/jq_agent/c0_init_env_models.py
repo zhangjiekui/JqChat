@@ -50,7 +50,7 @@ from langchain.callbacks.base import BaseCallbackHandler
 from langchain_core.callbacks import StdOutCallbackHandler,FileCallbackHandler
 from jqcode.jq_splitters.backend_splitter_utils.jq_chinese_recursive_text_splitter import JqChineseRecursiveTextSplitter
 from jqcode.jq_splitters.jq_docx_tree_text_splitter import JqkjDocTreeTokenTextSplitter,load_project_env
-
+import asyncio
 from transformers import AutoTokenizer
 from pydantic import PrivateAttr
 import json_repair
@@ -58,26 +58,22 @@ from langchain_core.utils.input import print_text
 import multiprocessing
 from concurrent.futures import ProcessPoolExecutor,ThreadPoolExecutor
 from jqcode.jq_config.general_config import llm_handler_file_path,if_log_verbose,logfile_path
-from jqcode.jq_utils.logger import jqkj_logger,is_main_process,set_multiprocessing_context
+from jqcode.jq_utils.logger import jqkj_logger,set_multiprocessing_context,is_main_process
 from langchain.globals import set_llm_cache
 logger = jqkj_logger(__file__).get_logger()
 
-
-
-
 set_multiprocessing_context(multiprocessing,context="spawn",logger=logger)
 
-
-
 VERBOSE = if_log_verbose()
-if is_main_process():    
-    print("=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*")
-    print("日志信息：")
-    print(f"if_log_verbose = {VERBOSE}, 说明：在 jqcode/jq_config/general_config.py 中设置")
-    print(f"logfile_path = {logfile_path} ,说明：如果if_log_verbose=False，则只记录Waring和Error")
-    print(f"llm_handler_logfile_path = {llm_handler_file_path} ,说明：专门记录LLM的输入输出，且不受if_log_verbose影响")
-    print("=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*")
-    print("\n")
+# 放到startup.py中dump_server_info方法中去输出
+# if is_main_process():    
+#     print("=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*")
+#     print("日志信息：")
+#     print(f"if_log_verbose = {VERBOSE}, 说明：在 jqcode/jq_config/general_config.py 中设置")
+#     print(f"logfile_path = {logfile_path} ,说明：如果if_log_verbose=False，则只记录Waring和Error")
+#     print(f"llm_handler_logfile_path = {llm_handler_file_path} ,说明：专门记录LLM的输入输出，且不受if_log_verbose影响")
+#     print("=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*")
+#     print("\n")
 
 os.environ["NEO4J_URI"] = "bolt://10.1.150.105:7687"
 os.environ["NEO4J_USERNAME"] = "neo4j"
@@ -628,13 +624,15 @@ class InitEnvModels:
             # engine2 = create_engine(self.postgres_conn_psycopg2)
             set_llm_cache(SQLAlchemyCache(engine,ZhFulltextLLMCache))
             # Cache位置：Schemas - public - Tables - llm_cache_fulltext
-            logger.warning(f"设置全局的Postgresql lm_cache成功！")
+            if is_main_process():
+                logger.warning(f"设置全局的Postgresql lm_cache成功！")
         except Exception as e:
             logger.error(f"设置全局的Postgresql lm_cache失败:{e}")
             try:
                 from langchain.cache import SQLiteCache
                 set_llm_cache(SQLiteCache(database_path=".langchain_llm_cache.db"))
-                logger.warning(f"设置全局的SQLiteCache lm_cache成功！")
+                if is_main_process():
+                    logger.warning(f"设置全局的SQLiteCache lm_cache成功！")
             except Exception as e:
                 logger.error(f"设置全局的lm_cache（Postgresql及SQLiteCache）都失败:{e}")
 
@@ -742,7 +740,8 @@ class InitEnvModels:
                         # https://huggingface.co/Qwen/QwQ-32B#usage-guidelines              
                         extra_body={"repetition_penalty": repetition_penalty,"min_p": min_p,"top_k": top_k},        
                     )
-                logger.warning(f'当前使用ChatDeepSeek接口,LLM模型为:model_name = {self.chat_model.model_name}, api_base = {self.chat_model.api_base}')
+                if is_main_process():
+                    logger.warning(f'当前使用ChatDeepSeek接口,LLM模型为:model_name = {self.chat_model.model_name}, api_base = {self.chat_model.api_base}')
             except ImportError as e:
                 logger.error(f"ChatDeepSeek模块未安装，请安装'from langchain_deepseek import ChatDeepSeek'：{str(e)}")
             except Exception as e:
@@ -767,7 +766,8 @@ class InitEnvModels:
 
         if not self.chat_model:
             self.chat_model = openai_chat_model            
-            logger.warning(f'当前使用ChatOpenAI接口,LLM模型为:model_name = {self.chat_model.model_name}, api_base = {self.chat_model.openai_api_base}')
+            if is_main_process():
+                logger.warning(f'当前使用ChatOpenAI接口,LLM模型为:model_name = {self.chat_model.model_name}, api_base = {self.chat_model.openai_api_base}')
         return self.chat_model
     
     def _get_emb_8k_rerank_model(self,embedding_model_name=None, embedding_model_name_8k=None, rerank_model_name=None, device = ['cpu','cpu','cpu'],final_docs_num_reranked=4): #device = ['cuda:1','cuda:2''cuda:3']
@@ -836,13 +836,15 @@ class InitEnvModels:
             embed_model = LocalAIEmbeddings(model=self.embedding_model_name,openai_api_base=self.embedding_model_base_url,openai_api_key="not empty",model_kwargs={'dimensions': self.embedding_model_dimentions})
             emb_test = embed_model.embed_query("test query text")
             embedding_model_8k = LocalAIEmbeddings(model=self.embedding_model_8k_name,deployment=self.embedding_model_name,api_key="abc123",openai_api_base=self.embedding_model_base_url,base_url=self.embedding_model_8k_base_url,embedding_ctx_length=self.embedding_model_8k_max_tokens*4,chunk_size=self.embedding_model_8k_max_tokens)
-            r2 = embed_model.embed_documents(["执行embed_documents测试......test documents text1","test documents text2"])
+            # r2 = embed_model.embed_documents(["执行embed_documents测试......test documents text1","test documents text2"])
             # print(r2)
-            logger.warning(f"{self.embedding_model_name} 嵌入模型接口{self.embedding_model_base_url}获取成功，返回的嵌入维度为{len(emb_test)}")
+            if is_main_process(): 
+                logger.warning(f"{self.embedding_model_name} 嵌入模型接口{self.embedding_model_base_url}获取成功，返回的嵌入维度为{len(emb_test)}")
         except Exception as e:
             embed_model = None
             embedding_model_8k = None            
-            logger.error(f"{embed_model=} 嵌入模型接口{self.embedding_model_base_url}工作不正常，请检查:{e}")
+            if is_main_process(): 
+                logger.error(f"{embed_model=} 嵌入模型接口{self.embedding_model_base_url}工作不正常，请检查:{e}")
         try:
             # BCERerank: compress_documents(documents: Sequence[Document],query: str)
             # xinference.client: model.rerank(corpus, query) https://inference.readthedocs.io/zh-cn/latest/index.html
@@ -864,7 +866,8 @@ class InitEnvModels:
             logger.debug(rerank_test1)
             rerank_test2 = reranker.compress_documents(corpus, query)
             logger.debug(rerank_test2)
-            logger.warning(f"{self.rerank_model_name}  重排模型接口{self.rerank_model_base_url}获取成功")
+            if is_main_process(): 
+                logger.warning(f"{self.rerank_model_name}  重排模型接口{self.rerank_model_base_url}获取成功")
         except Exception as e:
             reranker = None
             logger.warning(f"{self.rerank_model_name}  重排模型接口{self.rerank_model_base_url}工作不正常，请检查:{e}")

@@ -45,7 +45,7 @@ class ApiRequest:
         _timeout = max(timeout,360000) #10小时
         
         self.timeout = _timeout
-        logger.warning(f"ApiRequest中的{self.timeout=}")
+        # logger.warning(f"ApiRequest中的{self.timeout=}")
         self._use_async = False
         self._client = None
 
@@ -756,7 +756,7 @@ class AsyncApiRequest(ApiRequest):
         self, base_url: str = api_address(), timeout: float = HTTPX_DEFAULT_TIMEOUT
     ):
         super().__init__(base_url, timeout)
-        logger.warning(f"AsyncApiRequest中的{timeout=}")
+        # logger.warning(f"AsyncApiRequest中的{timeout=}")
         self._use_async = True
 
 

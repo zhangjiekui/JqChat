@@ -37,6 +37,7 @@ from jqcode.jq_knowledge_manegement.chatchat.configs import (
 )
 from jqcode.jq_knowledge_manegement.chatchat.server.pydantic_v2 import BaseModel, Field
 from jqcode.jq_knowledge_manegement.chatchat.configs import API_SERVER
+from jqcode.jq_knowledge_manegement.chatchat.configs import WEBUI_SERVER
 logger = logging.getLogger()
 
 
@@ -537,21 +538,21 @@ def MakeFastAPIOffline(
 #         return path_str  # THUDM/chatglm06b
 
 
-def api_address() -> str:
+def api_address(production_mode=False) -> str:
     host = API_SERVER["host"]
     if host == "0.0.0.0":
         host = "127.0.0.1"
     port = API_SERVER["port"]
-    if port == 8501:
-        pass
+    if not production_mode:
+        port = port+1
     return f"http://{host}:{port}"
 
 
-def webui_address() -> str:
-    from jqcode.jq_knowledge_manegement.chatchat.configs import WEBUI_SERVER
-
+def webui_address(production_mode=False) -> str:
     host = WEBUI_SERVER["host"]
     port = WEBUI_SERVER["port"]
+    if not production_mode:
+        port = port+1
     return f"http://{host}:{port}"
 
 

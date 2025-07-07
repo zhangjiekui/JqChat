@@ -1,6 +1,6 @@
 import logging
 import os
-from jqcode.jq_config.general_config import logfile_path,if_log_verbose
+from jqcode.jq_config.general_config import logfile_path,if_log_verbose,llm_handler_file_path
 import multiprocessing 
 import warnings
 warnings.filterwarnings("ignore")
@@ -14,6 +14,9 @@ warnings.filterwarnings('ignore',message='PyTorch',module='datasets',append=True
 VERBOSE = if_log_verbose()
 logfile_path = logfile_path
 stem = logfile_path.stem
+
+
+
 
 
         
@@ -92,16 +95,22 @@ class jqkj_logger(logging.Logger):
         if is_main_process():
             self.logger.error(message)
 
-def is_main_process(pid=None):
-    if pid is None:
-        pid = os.getpid()  # 获取当前进程的PID
-    try:
-        # 尝试获取父进程的PID
-        parent_pid = os.getppid()
-        # 如果父进程的PID与当前进程的PID相同，则当前进程是主进程
-        return pid == parent_pid
-    except Exception:
-        # 如果无法获取父进程的PID（例如，在Windows上），则当前进程可能是主进程
+# def is_main_process(pid=None):
+#     if pid is None:
+#         pid = os.getpid()  # 获取当前进程的PID
+#     try:
+#         # 尝试获取父进程的PID
+#         parent_pid = os.getppid()
+#         # 如果父进程的PID与当前进程的PID相同，则当前进程是主进程
+#         return pid == parent_pid
+#     except Exception:
+#         # 如果无法获取父进程的PID（例如，在Windows上），则当前进程可能是主进程
+#         return True
+def is_main_process():
+    flag = os.environ.get("blocking_logging","false")
+    if str(flag).lower() == "true":
+        return False
+    else:
         return True
 
 def _set_multiprocessing_context(mp:multiprocessing=multiprocessing ,context:str="spawn",logger=jqkj_logger(__file__).get_logger()):
@@ -122,7 +131,9 @@ def set_multiprocessing_context(mp:multiprocessing=multiprocessing ,context:str=
         logger.warning(f'已成功设置multiprocessing.set_start_method("{current_method}")')
     except Exception as e:
         pass
-          
+
+
+
 if __name__ == "__main__":
 
     # 7、测试
