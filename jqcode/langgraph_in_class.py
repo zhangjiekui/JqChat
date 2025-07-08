@@ -10,31 +10,30 @@ from langchain_openai import ChatOpenAI
 from langchain_community.tools.tavily_search import TavilySearchResults
 from langchain_openai import ChatOpenAI
 from langchain.schema import Document
-from langchain_core.output_parsers import StrOutputParser, JsonOutputParser
-from langchain_core.tools import tool
-import sqlite3
-from langgraph.checkpoint.sqlite import SqliteSaver
+from langchain_core.output_parsers import StrOutputParser
 from langgraph.checkpoint.postgres import PostgresSaver
 from psycopg_pool import ConnectionPool
 from jqcode.jq_agent.c0_init_env_models import env_models_instance,clean_up_list_when_encounter_null_element
 from jqcode.jq_agent.tools.jq_functions_and_tools import get_flight_number,python_repl_tool,get_elderly_organization_list
-from langchain_experimental.tools import PythonREPLTool
 from jqcode.jq_agent.tools.jq_retriever import get_retriever
 import asyncio
-from jqcode.jq_agent.tools.jq_web_search_engine_async import get_web_search_documents,is_query_chinese,get_tavily_search_result_documents
+from langchain_community.tools import TavilySearchResults
+from langchain_core.tools import Tool
+from langgraph.prebuilt import create_react_agent
+from jqcode.jq_agent.tools.jq_web_search_engine import get_web_search_documents as search
+from jqcode.jq_agent.tools.jq_web_search_engine_async import get_web_search_documents as async_search
 import os
 import re
 import shutil
-from base64 import b64encode,b64decode
+from base64 import b64decode
 from pathlib import Path
 from jqcode.jq_code_executor.code_executor import CodeExecutorTool
 import json_repair
 import shortuuid
 import uuid
-from collections import deque
 from jqcode.jq_utils.logger import jqkj_logger
 from dotenv import load_dotenv
-from datetime import date,datetime
+from datetime import datetime
 
 if not os.environ["env_loaded"]:
     _ = load_dotenv()
@@ -776,7 +775,7 @@ class GraphAgent:
         message = ""
         for i,retriever in enumerate(retrievers):
             message += f" 检索器[{i+1}]{retriever.name}，检索的目标知识库为{retriever.vectorstore._store.index} "
-            lazyllm_queue._enqueue(self.user_id,f"知识库检索：检索器[{i+1}]{retriever.name}，目标为{retriever.vectorstore._store.index}")
+            lazyllm_queue._enqueue(self.user_id,f"知识库（{retriever.vectorstore._store.index}）检索：检索器[{i+1}]{retriever.name} ")
         logger.warning(f"     vectorstore方法，执行实际文档检索的集成检索器为：{message}")
         try:
             
@@ -804,7 +803,7 @@ class GraphAgent:
                             logger.warning(f'GraphRag Result String={text} ...共{len(r2r_search_context)}字，仅显示前{n}字...')
                             logger.warning("========GraphRag Result String========")
                             print(text)
-                            lazyllm_queue._enqueue(self.user_id,f"图数据库检索结果（仅显示前{n}字）：\n{text}......")
+                            lazyllm_queue._enqueue(self.user_id,f"图数据库检索结果（共{len(text)}字，仅显示前{n}字）：\n<br>{text}......")
                             logger.warning("========GraphRag Result String========")
                             graph_documents = [Document(page_content=r2r_search_context,metadata={'source':"GraphRag"})] 
                             documents.extend(graph_documents)
@@ -886,6 +885,7 @@ class GraphAgent:
 
             if grade == "yes":
                 print("---DECISION: GENERATION ADDRESSES QUESTION---")
+                lazyllm_queue._enqueue(self.user_id,"生成的答案经评估检查，很好的回答了用户问题，作为最终答案")
                 return "useful"
             else:
                 print("---DECISION: GENERATION DOES NOT ADDRESS QUESTION---")
@@ -898,12 +898,13 @@ class GraphAgent:
                 
                 if question_has_searched:
                     print("---BUT WE HAVE WEB SEARCHED THE QUESTION, SO DIRECTLY ROUTE TO 'END' NODE---")
+                    lazyllm_queue._enqueue(self.user_id,"生成的答案经评估检查，并没有解决用户问题，但已经进行过网络搜索，只能这样了")
                     return "useful"
                 else:
                     print(f"not useful: {generation=}")
                     _user_variables_statedict = {"history_generation":generation}
                     self.update_user_variables(state,add_dict=_user_variables_statedict)
-
+                    lazyllm_queue._enqueue(self.user_id,"生成的答案经评估检查，并没有解决用户问题，自动补充网络搜索")
                     return "not useful"
         else:
             # pprint.pprint("---DECISION: GENERATION IS NOT GROUNDED IN DOCUMENTS, RE-TRY---")
@@ -914,34 +915,25 @@ class GraphAgent:
 
     # async def jq_search_agent(self,query:str):
     def jq_search_agent(self,query:str):
-        import os
-        from langchain.chat_models import init_chat_model
-        from langchain_community.tools import TavilySearchResults
-        from langchain_core.tools import Tool
-        from langgraph.prebuilt import create_react_agent
-        from jqcode.jq_agent.tools.jq_web_search_engine import get_web_search_documents as search
-        from jqcode.jq_agent.tools.jq_web_search_engine_async import get_web_search_documents as async_search
-
         tool1 = Tool(
             name="JqSearchEngineTool",
             description="Comprehensive Search Engine for recent results from web.",
             func=search,
             coroutine = async_search,
-            # func=asyncio.run(search),
         )
 
-        tool2 = TavilySearchResults(
-            max_results=5,
-            search_depth="advanced",
-            include_answer=True,
-            include_raw_content=True,
-            include_images=True,
-            # include_domains=[...],
-            # exclude_domains=[...],
-            # name="...",            # overwrite default tool name
-            # description="...",     # overwrite default tool description
-            # args_schema=...,       # overwrite default args_schema: BaseModel
-        )
+        # tool2 = TavilySearchResults(
+        #     max_results=5,
+        #     search_depth="advanced",
+        #     include_answer=True,
+        #     include_raw_content=True,
+        #     include_images=True,
+        #     # include_domains=[...],
+        #     # exclude_domains=[...],
+        #     # name="...",            # overwrite default tool name
+        #     # description="...",     # overwrite default tool description
+        #     # args_schema=...,       # overwrite default args_schema: BaseModel
+        # )
 
         # tools = [tool1,tool2]
         tools = [tool1]
@@ -972,7 +964,7 @@ class GraphAgent:
             if isinstance(message,ToolMessage):
                 _docs = eval(message.content)
                 docs.extend(_docs)
-        
+        lazyllm_queue._enqueue(self.user_id,f"调用晶奇智能体搜索，返回了{len(docs)}个结果")
         # 如果agent未得到正确答案，再调用自己的Web search：get_web_search_documents
         if not docs:
             try:
@@ -994,8 +986,8 @@ class GraphAgent:
 
             # Web search
             max_doc_nums=8
-            docs = asyncio.run(get_web_search_documents(question,query_generated,max_doc_nums=max_doc_nums))
-            lazyllm_queue._enqueue(self.user_id,f"搜索网络，最多返回{max_doc_nums}个结果")
+            docs = asyncio.run(async_search(question,query_generated,max_doc_nums=max_doc_nums))
+            lazyllm_queue._enqueue(self.user_id,f"调用晶奇网页搜索工具，返回{len(docs)}个结果")
 
 
         # print(docs)
@@ -1030,6 +1022,7 @@ class GraphAgent:
             logger.debug(f'{referens_str=}')
             
         logger.warning(f"     web_search搜索到的相关文本块数:{len(chunks_relevant)=}")
+        lazyllm_queue._enqueue(self.user_id,f"从搜索结果中提取到{len(chunks_relevant)}个相关文档")
         return {"documents": chunks_relevant, "question_searched":{question:True},"user_variables":state["user_variables"]}     
     # endregion 类内方法  
     
@@ -1112,10 +1105,10 @@ class GraphAgent:
                         _args = json_repair.loads(_args)                     
                     result = self.executable_tool_dict[t['name']].invoke(_args)
                     result = str(result)
-                    lazyllm_queue._enqueue(self.user_id,f"执行工具{t['name']},返回结果{result}")
+                    
                     if "error" in result.lower():
                         raise Exception(result)
-                                  
+                    lazyllm_queue._enqueue(self.user_id,f"调用工具{tool_name},返回结果为：\n<br>{result}")              
                     tool_message = ToolMessage(tool_call_id=tool_call_id, name=tool_name, content=result) 
                     tool_message = self.makeup_message_with_question_id_idx(tool_message)     
                     results.append(tool_message)            
@@ -1133,6 +1126,7 @@ class GraphAgent:
                 # results = results + [makeup_ai_message,makeup_tool_message,makeup_human_message]
                 results = results + [makeup_tool_message,makeup_human_message]
                 logger.info("工具调用执行异常，加入执行错误信息，返回到大模型")
+                lazyllm_queue._enqueue(self.user_id,f"工具{tool_name}调用异常,附加错误信息，返回到大模型")
                 # return {'messages': results,'question_related_messages':results}   
             
 
@@ -1250,17 +1244,14 @@ class GraphAgent:
                 if returned_tool_calling_nums > 1:                    
                     executable_tools = [toolcall for toolcall in result.tool_calls if toolcall['name'] in self.executable_tool_names]
                     state['messages'][-1].tool_calls = executable_tools
-                    lazyllm_queue._enqueue(self.user_id,f'下面将执行工具{executable_tools}')
-                    
+                    lazyllm_queue._enqueue(self.user_id,f'下面将调用工具{executable_tools}')                    
             else:
-                pass
-                    
-                
-            
+                pass            
         else:
             logger.info(f'No returned tool_calling and {finish_reason=}')
             logger.info(f'{result.type.upper()}: {result.content}')            
         exists_action_or_not = True if returned_tool_calling_nums>0 else False
+        lazyllm_queue._enqueue(self.user_id,f'是否调用工具：{exists_action_or_not}')
         return exists_action_or_not
     
     def code_execution_passed(self,state:GraphAgentState):
@@ -1294,9 +1285,13 @@ class GraphAgent:
             question_related_messages = state["question_related_messages"]
                
         # 当前message
-        input_message = messages[-1]
+        input_message = messages[-1]        
         if input_message not in question_related_messages:
             question_related_messages.append(input_message)
+        num_history_messages = len(question_related_messages)-1
+        if num_history_messages>0:
+            lazyllm_queue._enqueue(self.user_id,f'从历史对话中检索到{num_history_messages}条与当前相关的内容')
+
         if self.system_message:
             messages = self.system_message + question_related_messages
         # for m in messages:
@@ -1306,6 +1301,7 @@ class GraphAgent:
         max_messages_num = 30
         if len(messages)>max_messages_num:
             _error_str = f'error!消息数量大于{max_messages_num}，为避免陷入错误循环，主动退出执行！请修改该问题后重新提问。'
+            lazyllm_queue._enqueue(self.user_id,f'消息数量大于{max_messages_num}，为避免陷入错误循环，主动退出执行！请修改该问题后重新提问。')
             logger.error(_error_str)
             for m in messages:
                 m.pretty_print()
@@ -1330,6 +1326,7 @@ class GraphAgent:
                 max_tokens = self.model.bound.max_tokens
                 api_base = self.model.bound.openai_api_base
                 message = self.model.invoke(messages,config=invoke_llm_config)
+                lazyllm_queue._enqueue(self.user_id,f'大模型调用成功，输入消息数为: {len(messages)}')
                 reasoning_content = message.additional_kwargs.get("reasoning_content","")
                 if reasoning_content=="": 
                     if message.tool_calls:
@@ -1360,7 +1357,6 @@ class GraphAgent:
                 # reasoning_content_formatted = f'<details>\n<summary>查看模型思考过程</summary>\n<font color="grey" size=16px>{reasoning_content}</font></details>'
                 add_dict = {"reasoning_content":reasoning_content_formatted}
                 self.update_user_variables(state=state,add_dict=add_dict)
-                pass
                                 
                 # 尝试获取finish_reason，如发现因token限制导致的大模型输出不完整或异常，给出警告提示
                 try: 
@@ -1605,13 +1601,14 @@ class GraphAgent:
             history_generation_document = Document(page_content=history_generation)
             documents.append(history_generation_document)
         generation = rag_node.invoke({"documents": documents, "question": question, "messages":messages},config=invoke_llm_config)
+        lazyllm_queue._enqueue(self.user_id,f'根据获得的{len(documents)}个文档，生成答案和参考文档/网址链接')
         logger.debug(f"{generation=}")
         if history_generation:
             history_generation=history_generation.replace("####","######")
             if history_reference_str:
                 history_reference_str=history_reference_str.replace("####","######")
 
-            generation = f'{generation}\n\n##### **中间推理步骤（开始） \n尝试通过检索知识库({self.index_name})来解答您的问题，得到的结果如下：\n {history_reference_str} \n{history_generation}\n因为根据知识库得到的答案似乎并没有很好解答您的问题，接着又尝试了搜索网络，才得到最终的答案。 \n\n#####  **中间推理步骤（结束） '
+            generation = f'{generation}\n\n##### **中间推理步骤（开始） \n尝试通过检索知识库({self.index_name})来解答您的问题，得到的结果如下：\n {history_reference_str} \n{history_generation}\n<br>因为根据知识库得到的答案似乎并没有很好解答您的问题，接着又尝试了搜索网络，才得到最终的答案。 \n\n#####  **中间推理步骤（结束） '
             
 
         
@@ -1838,17 +1835,19 @@ class GraphAgent:
         print('================='*5)
         print(f"开始会话UserId:{self.user_id},Question:{user_question}")
         print('================='*5)
+        lazyllm_queue._enqueue(self.user_id,f"用户UserId为: {self.user_id}")
+        lazyllm_queue._enqueue(self.user_id,f"用户问题为: {user_question}")  
         # logger.info(f"老的{self.question_id=}")
         logger.debug(f"切记新的问题对话前，要先更新user_question 和 question_id！老的[{self.question_id=}]")
         self.question_id = self.get_random_id()
         self.question = user_question
         self.question_rewrited = user_question      # 后面会使用self.question_rewrited提交给大模型，就要确保self.question_rewrited有值
         self.message_idx_in_a_question_epoch = -1   # 新的question epoch/session,重新设置idx       
-        
+        lazyllm_queue._enqueue(self.user_id,f"用户知识库选择为：{self.index_name}") 
         logger.warning(f"用户会话记忆设置为{self.allow_conversation_memory=}")
-        lazyllm_queue._enqueue(self.user_id,f"用户会话记忆设置为{self.allow_conversation_memory=}") 
+        lazyllm_queue._enqueue(self.user_id,f"用户会话记忆设置为：{self.allow_conversation_memory}") 
         logger.warning(f"用户改写问题设置为{self.allow_question_rewrite=}")
-        lazyllm_queue._enqueue(self.user_id,f"用户改写问题设置为{self.allow_question_rewrite=}")  
+        lazyllm_queue._enqueue(self.user_id,f"用户改写问题设置为：{self.allow_question_rewrite}")  
         allow_question_rewrite = self.allow_question_rewrite       
         if allow_question_rewrite:
             # 在重写时获取的最近的历史消息列表可以长一些，因为有些历史消息相关性不强，但能提供有用的上下文信息，并且获得的related_history_messages仅用于此次计算，不会真正附加到消息列表中
@@ -1869,7 +1868,7 @@ class GraphAgent:
                         question_rewrited = json_content.get("q","")                
                 except Exception as e:
                     logger.warning(f"尝试进行问题改写失败，错误消息为:{e}")
-                    
+                    lazyllm_queue._enqueue(self.user_id,f"尝试进行问题时出现异常，可忽略")
                     if rewrite_message_returned:
                         logger.info("======下面是大模型返回的消息内容======")
                         rewrite_message_returned.pretty_print()
@@ -1879,15 +1878,17 @@ class GraphAgent:
                 if question_rewrited:
                     if question_rewrited != self.question_rewrited:
                         logger.warning(f"进行了问题改写:{self.question_rewrited} => {question_rewrited}")
-                        lazyllm_queue._enqueue(self.user_id,f"进行了问题改写:{self.question_rewrited} => {question_rewrited}")
+                        lazyllm_queue._enqueue(self.user_id,f"问题进行了改写=>: {question_rewrited}")
                         both_question = f"原始的用户Query：{self.question_rewrited}（及重写后的用户Query：{question_rewrited}）"
                         self.question_rewrited = both_question
                     else:
                         logger.warning(f"改写问题与原始问题一致:{self.question_rewrited} == {question_rewrited}")
-                        lazyllm_queue._enqueue(self.user_id,f"改写问题与原始问题一致:{self.question_rewrited} == {question_rewrited}")
-
+                        lazyllm_queue._enqueue(self.user_id,f"改写问题与原始问题一致")
+            else:
+                lazyllm_queue._enqueue(self.user_id,f"未检索到与当前问题相关的历史内容,跳过问题改写")
+                logger.debug(f"从历史消息中未检索到与当前相关的消息,跳过问题改写")
         logger.debug(f"USER[id:{self.user_id}]的问题['{self.question_rewrited}'] (新的question_id: [{self.question_id})]")
-        lazyllm_queue._enqueue(self.user_id,f"USER[id:{self.user_id}]的问题为：['{self.question_rewrited}'] ")
+        # lazyllm_queue._enqueue(self.user_id,f"USER[id:{self.user_id}]的问题为：['{self.question_rewrited}'] ")
         input_message = self.makeup_message_with_question_id_idx(HumanMessage,content=self.question_rewrited)
         # self.graph.update_state(config=self.invoke_graph_config,values={"messages":input_message})
         
@@ -1901,6 +1902,7 @@ class GraphAgent:
         print(f"改写问题>>:{self.question_rewrited} [{allow_question_rewrite=}]")
         answer = result['messages'][-1].content
         answer = display_text(answer)
+        lazyllm_queue._enqueue(self.user_id,f"正在呈现最终结果")
         # user_variables_statedict前面已存在，且值会随着self.graph.invoke的执行而变化，所以不需要重新获取
         # 下面的代码反而无法获取最新的值
         ## user_variables_statedict = self._get_messages_from_state_by_key("user_variables") #
@@ -1968,7 +1970,7 @@ if __name__ == "__main__":
         '我现在的位置是在安徽晶奇网络科技股份有限公司附近，请查询15公里范围内的养老机构，最多返回10个',
         "全民健康信息平台包含的建设内容、系统或功能",
         "请检索知识库：医院信息系统",
-        "请检索知识库回答：医院信息系统中的基础维护系统完整功能详述"
+        "请检索知识库回答，医院信息系统中的基础维护系统完整功能详述"
     ]
 
     # user_questions = ['请调用工具函数帮我查询：我现在的位置是在安徽晶奇网络科技股份有限公司附近，请查询15公里范围内的养老机构，最多返回10个']

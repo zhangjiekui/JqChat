@@ -670,7 +670,7 @@ def get_tavily_search_result_documents(query,max_doc_nums=4):
 # 最终的方法调用，建议用户只调用该方法
 # 根据query，返回最多max_doc_nums个结果文档，返回结果类型为:list[langchain_core.documents.base.Document]
 @func_set_timeout(timeout_value)
-async def get_web_search_documents(question,query='',max_doc_nums=4):
+async def get_web_search_documents(question,query='',max_doc_nums=6):
     """
     Args:
         question:str 用户的问题

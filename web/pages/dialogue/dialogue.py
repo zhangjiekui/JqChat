@@ -107,7 +107,7 @@ class ThreadWithResult(threading.Thread):
 
 
 def get_process_text(user_id,chat_box):
-        leading_text = "#####  执行过程：  \n"
+        leading_text = "#####  整体执行过程：  \n"
         text_string = leading_text        
         values = []       
         condition = True
@@ -118,20 +118,18 @@ def get_process_text(user_id,chat_box):
                     for j,text in enumerate(values):
                         if text.strip() == "DONE":
                             condition = False
-                        if not text.startswith("<br>"):
-                            text = f"<br>"+text
+                        # if not text.startswith("\n - "): #<br> 或 "\n - "
+                        #     text = f"\n - "+text
+                        text = f"\n {j+1}. "+text
                         text_string += text
                         chat_box.update_msg(text_string,streaming=False)
-                        print(f"output{j}: {text}")
-
-                else:
-                    time.sleep(1)
+                        # print(f"output{j}: {text}")
             except Exception as e:
                 condition = False
                 logger.warning(f"获取执行过程信息时：{e}")
                 lazyllm_queue.clear()
                 break
-        print("Done:全部完成")
+        # print("Done:全部完成")
         return text_string[len(leading_text):]
 def dialogue_page(
     api: ApiRequest,
@@ -228,7 +226,6 @@ def dialogue_page(
         t2 = ThreadWithResult(target=get_process_text, args=(user,chat_box))
         add_script_run_ctx(t2)        
         t1.start()
-        time.sleep(2)
         t2.start()
     
         # 等待线程结束
@@ -237,8 +234,8 @@ def dialogue_page(
         chat_result=t1.get_result()
         log_result=t2.get_result()
         
-
-        log_text = f'<details>\n<summary>点击查看"执行过程"</summary>\n<font color="grey" size=16px>\n{log_result}\n</font></details>'
+        # reasoning_content_str = f"{reasoning_content_str}\n------\n"
+        log_text = f'<details>\n<summary>点击查看"整体执行过程"</summary>\n<font color="grey" size=16px>\n{log_result}\n------\n</font></details>'
         chat_text = chat_result["text"]
         answer_text = f"{log_text}\n{chat_text}"
         chat_box.update_msg(answer_text,streaming=False) 
