@@ -1232,19 +1232,19 @@ class GraphAgent:
                 if returned_tool_calling_nums > 1:
                     state['messages'][-1].tool_calls = [tool_call_1]
                 if tool_call_1_name in ['VECTORSTORE','VECTOR_STORE']:
-                    lazyllm_queue._enqueue(self.user_id,'下面将进行知识库检索VECTORSTORE')
+                    lazyllm_queue._enqueue(self.user_id,'下面将调用知识库检索VECTORSTORE')
                     return 'VECTORSTORE'
                 elif tool_call_1_name in ['WEB_SEARCH','WEBSEARCH']:
-                    lazyllm_queue._enqueue(self.user_id,'下面将进行网络搜索WEBSEARCH')
+                    lazyllm_queue._enqueue(self.user_id,'下面将调用网络搜索WEBSEARCH')
                     return 'WEB_SEARCH'
                 else:
-                    lazyllm_queue._enqueue(self.user_id,f'下面将进行{tool_call_1_name}')
+                    lazyllm_queue._enqueue(self.user_id,f'下面将调用{tool_call_1_name}')
                     return tool_call_1_name
             elif tool_call_1_name in self.executable_tool_names:
                 if returned_tool_calling_nums > 1:                    
                     executable_tools = [toolcall for toolcall in result.tool_calls if toolcall['name'] in self.executable_tool_names]
                     state['messages'][-1].tool_calls = executable_tools
-                    lazyllm_queue._enqueue(self.user_id,f'下面将调用工具{executable_tools}')                    
+                    lazyllm_queue._enqueue(self.user_id,f'下面将调用多个工具:\n<br>{executable_tools}')                    
             else:
                 pass            
         else:
@@ -1878,15 +1878,15 @@ class GraphAgent:
                 if question_rewrited:
                     if question_rewrited != self.question_rewrited:
                         logger.warning(f"进行了问题改写:{self.question_rewrited} => {question_rewrited}")
-                        lazyllm_queue._enqueue(self.user_id,f"问题进行了改写=>: {question_rewrited}")
+                        lazyllm_queue._enqueue(self.user_id,f"问题进行了改写: {question_rewrited}")
                         both_question = f"原始的用户Query：{self.question_rewrited}（及重写后的用户Query：{question_rewrited}）"
                         self.question_rewrited = both_question
                     else:
                         logger.warning(f"改写问题与原始问题一致:{self.question_rewrited} == {question_rewrited}")
                         lazyllm_queue._enqueue(self.user_id,f"改写问题与原始问题一致")
             else:
-                lazyllm_queue._enqueue(self.user_id,f"未检索到与当前问题相关的历史内容,跳过问题改写")
-                logger.debug(f"从历史消息中未检索到与当前相关的消息,跳过问题改写")
+                lazyllm_queue._enqueue(self.user_id,f"未检索到与当前问题相关的历史内容，跳过问题改写")
+                logger.debug(f"从历史消息中未检索到与当前相关的消息，跳过问题改写")
         logger.debug(f"USER[id:{self.user_id}]的问题['{self.question_rewrited}'] (新的question_id: [{self.question_id})]")
         # lazyllm_queue._enqueue(self.user_id,f"USER[id:{self.user_id}]的问题为：['{self.question_rewrited}'] ")
         input_message = self.makeup_message_with_question_id_idx(HumanMessage,content=self.question_rewrited)
