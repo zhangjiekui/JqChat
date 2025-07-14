@@ -41,7 +41,14 @@ nvidia-driver-535-server-open
 
 sudo ubuntu-drivers install nvidia-driver-570-server
 
+apt search nvidia-cuda-toolkit
 Ubuntu安装CUDA：
+sudo apt update
+sudo apt upgrade
+【apt search nvidia-cuda-toolkit】
+【sudo apt install nvidia-cuda-toolkit-12-8】可附加nvidia-cuda-dev
+
+如果没有目标版本，就下载手动安装
 1、下载 cuda .run文件 wget https://developer.download.nvidia.com/compute/cuda/12.8.1/local_installers/cuda_12.8.1_570.124.06_linux.run
 2、运行 sudo sh cuda_12.8.1_570.124.06_linux.run 
 3、环境变量
@@ -49,6 +56,9 @@ export PATH=/usr/local/cuda-12.8/bin${PATH:+:${PATH}}
 export LD_LIBRARY_PATH=/usr/local/cuda-12.8/lib64:${LD_LIBRARY_PATH:+:${LD_LIBRARY_PATH}}
 
 4、检查 nvcc --version
+
+sudo apt-mark hold nvidia-driver-570  # 固定当前驱动版本
+sudo dpkg-reconfigure unattended-upgrades  # 禁用自动更新
 
 ## 运行Hunyuan
 docker pull hunyuaninfer/hunyuan-a13b:hunyuan-moe-A13B-vllm

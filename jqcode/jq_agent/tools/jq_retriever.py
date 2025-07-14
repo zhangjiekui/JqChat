@@ -22,7 +22,6 @@ def get_retriever(vectorstore:ElasticsearchStore=None,index_name:str='',index_de
     embed_model = env_models_instance.embed_model
     reranker = env_models_instance.reranker
     es_connection = env_models_instance.get_es_connection()
-    lc_documents = None
     doc_paths_exists = []
     vector_retriever = None
 
@@ -56,12 +55,12 @@ def get_retriever(vectorstore:ElasticsearchStore=None,index_name:str='',index_de
                 index_destination = index_name
             else:
                 index_destination = default_temp_index_name
-                logger.warning(f"您还没有选择将文件上传到知识库'{index_name=}'，将使用默认的临时知识库{default_temp_index_name=}来处理。")
+                logger.warning(f"您没有选择将文件上传到知识库'{index_name=}'，将使用默认的临时知识库{default_temp_index_name=}来处理。")
                 index_description = "临时使用的知识库，用来临时性分析处理和检索：（1）用户上传的文档分析（但不存入知识库）；（2）从用户历史会话中检索出与当前会话的相关消息记录"
                 
             
             _RESERVED_FILTER_BY_FILES = []
-            for doc in doc_paths_exists:
+            for i,doc in enumerate(doc_paths_exists):
                 suffix = doc.suffix
                 if suffix in required_exts:                    
                     if doc.suffix !='.docx':
@@ -70,7 +69,21 @@ def get_retriever(vectorstore:ElasticsearchStore=None,index_name:str='',index_de
                     else:
                         _RESERVED_FILTER_BY_FILES.append(str(doc))
                 else:
-                    logger.warning(f"{doc}还不是支持的文件类型{required_exts}")
+                    logger.warning(f"{doc}还不是支持的知识库文件类型{required_exts}")
+                    if suffix in [".png",".jpg",".jpeg"]:
+                        logger.warning(f"{doc}是图片文件，将直接调用VLM模型来处理")
+                        ocr = env_models_instance.get_ocr()
+                        ocr_mode = env_models_instance.ocr_mode
+                        if ocr_mode == "API":
+                            result = ocr(doc)
+                            logger.debug(f"$$图片[{doc}]中的OCR文本:\n{result}")
+                            txt_file = str(doc.parent/doc.stem) + '.txt' 
+                            with open(txt_file,"w") as f:
+                                f.write(result)
+                            _RESERVED_FILTER_BY_FILES.append(txt_file)
+                            doc_paths_exists[i] = txt_file
+
+
             
             RESERVED_FILTER_BY_FILES = [str(file) for file in _RESERVED_FILTER_BY_FILES]
             
@@ -165,7 +178,7 @@ def get_retriever(vectorstore:ElasticsearchStore=None,index_name:str='',index_de
                     if file not in file_stem_set_without_extention:
                         files_to_be_add_to_index.append(existed_files_maybe_need_indexing[i])
                     else:
-                        logger.info(f"......{index_destination=}中已经存在{file=},跳过......") 
+                        logger.warning(f"......{index_destination=}中已经存在{file=},跳过......") 
 
                 existed_files_maybe_need_indexing = files_to_be_add_to_index
         # endregion 在知识库中查询是否已经存在拟上传的文件

@@ -348,7 +348,7 @@ def update_docs(
         input_dir=None,
         input_files=file_paths, 
         overwrite_existing_converted_files=False,
-        required_exts=['.pdf', '.doc', '.docx', '.md', '.html', '.htm', '.py', '.txt'],
+        required_exts=['.pdf', '.doc', '.docx', '.md', '.html', '.htm', '.py', '.txt','jpg','png','jpeg','gif','.bmp'],
         exclude_hidden=False
     )
     print(result)

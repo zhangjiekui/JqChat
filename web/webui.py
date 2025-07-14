@@ -49,7 +49,7 @@ if __name__ == "__main__":
     with st.sidebar:
        
         st.image(
-            get_img_base64("logo-long-chatchat-trans-v3.png"), use_column_width=True
+            get_img_base64("logo-long-chatchat-trans-v3.png"), use_container_width=True
         )
         st.caption(
             f"""<p align="right">当前版本：{VERSION}</p>""",

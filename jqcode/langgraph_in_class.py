@@ -1328,6 +1328,8 @@ class GraphAgent:
                 message = self.model.invoke(messages,config=invoke_llm_config)
                 lazyllm_queue._enqueue(self.user_id,f'大模型调用成功，输入消息数为: {len(messages)}')
                 reasoning_content = message.additional_kwargs.get("reasoning_content","")
+                if reasoning_content is None:
+                    reasoning_content = ""
                 if reasoning_content=="": 
                     if message.tool_calls:
                         message.additional_kwargs["reasoning_content"] = message.content
@@ -1349,7 +1351,7 @@ class GraphAgent:
                 
                 
 
-                reasoning_content=reasoning_content if reasoning_content.replace("\n","") else "非关键或未选择输出模型推理过程内容"
+                reasoning_content=reasoning_content if reasoning_content.replace("\n","") else "非推理模型或未选择输出模型推理过程内容"
                     # logger.warning(f"推理内容：<think>\n{reasoning_content}\n</think>")
                 reasoning_content_formatted = state["user_variables"].get(self.user_id,{}).get("reasoning_content",[])
                 reasoning_content_formatted.append(reasoning_content)
@@ -1979,7 +1981,7 @@ if __name__ == "__main__":
     
     
     # user_questions=["晶奇公司质量保证过程中的角色及角色的职责或含义解释，对应的人员（姓名）有哪些?其中的批准人是谁？"]
-    # user_questions += ["请检索知识库：安徽晶奇或晶奇网络相关的公司全称"]
+    # user_questions += ["请检索知识库：安徽晶奇或晶奇网络相关的公司全称及英文名称"]
     
     # user_questions += ['请检索知识库，然后回答晶奇公司质量保证过程中的角色及角色的职责或含义解释，对应的人员（姓名）有哪些?其中的批准人是谁？']
     # user_questions += ["请检索知识库：信息"]

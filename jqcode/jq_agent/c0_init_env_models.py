@@ -101,7 +101,7 @@ class Vlm_API:
         self.api_key = api_key
         self.model=model
         self.client = OpenAI(api_key=api_key,base_url=api_base)
-        self.default_prompt = '首先识别出有意义的区块，然后逐个区块完整识别并仅输出图中的文字（相当于ocr，但去掉不必要的换行符），不能遗漏，同一区块的文字内容放在一起。最后仅输出完整的文本，不要有任何额外的内容和解释。'
+        self.default_prompt = "首先识别出有意义的区块，然后逐个区块完整识别并仅输出图中的文字（相当于ocr，去掉不必要的换行符，但保留必要的空格，使用‘||’分割文本块）。最后仅输出完整的文本，不要有任何额外的内容和解释。"
         # 请识别出发票中的购买方 名称（keyname:gmf）、销售方 名称（keyname:xsf）、销售项目名称 （keyname:item）、发票类型（keyname:type），以Json形式返回，使用括号中的keyname代替中文名称，不要有多余内容
     def __call__(self,image_path_or_base64:str,is_decoded_image_text:bool=False,query:str=None,only_return_text=True):
         ## 如果是图片地址，读取图片并转换为base64
@@ -176,20 +176,32 @@ class Ocr_API:
     
     def __call__(self,image_path_or_base64):
         ## 如果是图片地址，读取图片并转换为base64
-        if isinstance(image_path_or_base64,str): 
-            if os.path.isfile(image_path_or_base64):
-                with open(image_path_or_base64, 'rb') as f:
-                    image_path_or_base64 = f.read()
-            else:
-                raise Exception(f"{image_path_or_base64}文件不存在！")
-        elif isinstance(image_path_or_base64, bytes):
-            pass
-        else:
-            raise Exception(f"目前只接受str或bytes类型的参数，不支持：{type(image_path_or_base64)=}")               
-        encoded_data = base64.b64encode(image_path_or_base64)
-        encoded_data_str = encoded_data.decode('utf-8')
         try:
-            # raise Exception("故意抛出错误，以跳转测试VLM接口......")
+            if isinstance(image_path_or_base64,Path):
+                image_path_or_base64 = str(image_path_or_base64)
+            if isinstance(image_path_or_base64,str): 
+                if os.path.isfile(image_path_or_base64):
+                    with open(image_path_or_base64, 'rb') as f:
+                        image_path_or_base64 = f.read()
+                else:
+                    raise Exception(f"{image_path_or_base64}文件不存在！")
+            elif isinstance(image_path_or_base64, bytes):
+                pass
+            else:
+                raise Exception(f"目前只接受str、path或bytes类型的参数，不支持：{type(image_path_or_base64)=}")               
+            encoded_data = base64.b64encode(image_path_or_base64)
+            encoded_data_str = encoded_data.decode('utf-8')
+        except Exception as e:
+            logger.warning(f"{e}")
+            return ""
+        try:
+            logger.warning(f"优先调用VLM模型来做图片OCR识别...")
+            result = self.vlm(encoded_data_str,is_decoded_image_text=True)
+            logger.warning("VLM识别结果:"+result)
+            # raise Exception("故意抛出错误，以跳转测试OCR接口......")
+
+        except Exception as e:
+            logger.error(f"VLM接口请求错误: {str(e)}。下面尝试请求OCR接口......")            
             payload = {
                 "imgString": encoded_data_str,
                 "bStore": False
@@ -205,17 +217,11 @@ class Ocr_API:
             # 检查响应状态
             response.raise_for_status()            
             result_json = response.json()
-            result = result_json.get('data')[0].get('text','')
-        
+            result = result_json.get('data')[0].get('text','')        
             # 返回结果
             # logger.warning("OCR识别结果:"+result)            
-            return result
-            
-        except Exception as e:
-            logger.error(f"OCR接口请求错误: {str(e)}。下面尝试请求VLM接口......")
-            text = self.vlm(encoded_data_str,is_decoded_image_text=True)
-            logger.warning("VLM识别结果:"+text)
-            return text
+        return result
+
 
 # ocr_api= Ocr_API()
 # image_path_or_base64="/data/projects/JqChatV2/JqChat/graph.jpg"
@@ -678,6 +684,8 @@ class InitEnvModels:
         _Executor = ThreadPoolExecutor if  self.ocr_mode == 'API' else ProcessPoolExecutor     
         self.ocr_pool = _Executor(_pool_size)
         self.gpu_idxs = [0,1,2,3]
+
+        self.vlm = Vlm_API()  
 
         self.chat_model = None
         self.openai_chat_model=None

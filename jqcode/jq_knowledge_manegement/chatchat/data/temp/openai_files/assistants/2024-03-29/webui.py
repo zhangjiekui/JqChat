@@ -74,7 +74,7 @@ if __name__ == "__main__":
     with st.sidebar:
         st.image(
             os.path.join(img_dir, "img", "logo-long-chatchat-trans-v2.png"),
-            use_column_width=True,
+            use_container_width=True,
         )
         st.caption(
             f"""<p align="right">当前版本：{VERSION}</p>""",

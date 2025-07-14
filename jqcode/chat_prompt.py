@@ -6,6 +6,7 @@ import os
 import json
 import re
 import pandas as pd
+import cv2 as cv
 from collections import deque
 
 
@@ -22,7 +23,11 @@ READER_MAP = {
     '.xls': pd.read_excel,
     '.docx':pd.read_hdf,
     '.doc':pd.read_hdf,
-    '.pdf':pd.read_hdf
+    '.pdf':pd.read_hdf,
+    '.png':cv.imread,
+    '.bmp':cv.imread,
+    '.jpg':cv.imread,
+    '.jpeg':cv.imread,
 }
 
 def allowed_file(filename):
