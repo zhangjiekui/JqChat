@@ -11,6 +11,7 @@ from lazyllm import FileSystemQueue
 # from audio_recorder_streamlit import audio_recorder
 import streamlit as st
 from streamlit_chatbox import ChatBox
+from streamlit_chatbox import Image as StImage
 from streamlit_extras.bottom_container import bottom
 try:
     # Streamlit >= 1.12.0
@@ -27,7 +28,7 @@ from jqcode.jq_knowledge_manegement.chatchat.server.knowledge_base.kb_service.ba
 from jqcode.jq_agent.c0_init_env_models import env_models_instance
 
 
-os.environ["STREAMLIT_SERVER_ENABLE_STATIC_SERVING"] = "false"
+# os.environ["STREAMLIT_SERVER_ENABLE_STATIC_SERVING"] = "false"
 try:
     st.set_option("deprecation.showfileUploaderEncoding", False)
 except:
@@ -39,6 +40,8 @@ chat_box = ChatBox(assistant_avatar=get_img_base64("chatchat_icon_blue_square_v2
 code_message:str=None
 lazyllm_queue = env_models_instance.lazyllm_queue
 lazyllm_queue_sid = env_models_instance.lazyllm_queue_sid
+max_img_num=5
+img_size = (300,300)
 
 LOADER_DICT = {
     "CSVLoader": [".csv"],
@@ -174,9 +177,10 @@ def dialogue_page(
             print(response)
             st.info(f"{response['message']}")
             chat_box.context['files']=response['files']
+            # chat_box.output_messages()
 
-    @st.dialog("上传图片（OCR识别或对话）", width="large")
-    def img_upload(max_img_num=5):
+    @st.dialog("上传图片（OCR识别或对话，最多5张）", width="large")
+    def img_upload(max_img_num=max_img_num):
         files = st.file_uploader("上传图片",type=["jpg", "jpeg", "png","bmp"],
             accept_multiple_files=True,
             )
@@ -203,6 +207,8 @@ def dialogue_page(
                     base64_images.append(base64_image)
                 ctx['base64_images'] = base64_images
                 st.info(f"上传成功")
+                # chat_box.output_messages()
+                
             else:
                 st.error(f"一次最多上传{max_img_num}张图片，但您上传了{num_files}张图片，上传失败!")
     
@@ -238,22 +244,17 @@ def dialogue_page(
         is_memory = st.checkbox("启用会话记忆",value=True)
         is_rewrite=st.checkbox("启用问题重写",value=True)   
     # Display chat messages from history on app rerun
-    chat_box.output_messages()
+    # chat_box.output_messages()
     chat_input_placeholder = "请输入对话内容，换行请使用Shift+Enter；如果是仅想识别图片中的文字，直接输入ocr即可。"
 
-    # chat input
+    
     with bottom():
-        cols = st.columns([1, 1, 15, 1])
-        
+        cols = st.columns([1, 1, 15, 1])        
         if cols[0].button(":page_facing_up:", help="上传文档（知识库问答）"):
-        # if cols[0].button("文件", help="上传文档（知识库问答）"):
-           file_upload()
-        
+           file_upload()        
         if cols[1].button(":framed_picture:", help="上传图片（OCR/对话）"):
-           img_upload()         
-        
-        prompt = cols[2].chat_input(chat_input_placeholder, key="prompt",accept_file=False)
-        
+           img_upload()        
+        prompt = cols[2].chat_input(chat_input_placeholder, key="prompt",accept_file=False)        
         if cols[-1].button(":wastebasket:", help="清空对话"):
             chat_box.reset_history()
              #清空code执行回复信息和文件
@@ -265,28 +266,52 @@ def dialogue_page(
             rerun()
 
     
-    # streamlit workon 1.37.0
+    # workon test
+    # streamlit  1.37.0                  [pip install streamlit==1.37.0]
+    # streamlit-chatbox = "1.1.12.post4" [pip install streamlit-chatbox==1.1.12.post4]
     #简洁的对话，待完善
+    # chat input
     if prompt:
         use_vlm = ctx.get("vlm",False)
         if use_vlm:            
-            img_files = ctx["files"]
+            img_files = ctx.get("files",None)
+            base64_images = ctx.get("base64_images",None)
             if img_files:
                 if prompt.lower()=="ocr":
                     prompt = "首先识别出有意义的区块，然后逐个区块完整识别并仅输出图中的文字（相当于ocr，去掉不必要的换行符，但保留必要的空格，使用‘||’分割文本块）。最后仅输出完整的文本，不要有任何额外的内容和解释。"
-                with st.chat_message("user"):
-                    st.write(prompt)
-                    num_img_files = 5
-                    cols = st.columns(num_img_files)
-                    for i,img_file in enumerate(img_files): 
-                        img = Image.open(img_file) 
-                        img_square = img.resize((300,300))
-                        with cols[i%num_img_files]:
-                            st.image(img_square, use_container_width=True)
 
+                chat_box.user_say(prompt)
+                img_columns = [10] * max_img_num
+                all_columns = [2] + img_columns
+                cols = st.columns(all_columns)
+
+                # # 方式1
+                # for i,img_file in enumerate(img_files): 
+                #     img = Image.open(img_file) 
+                #     img_square = img.resize(img_size)
+                #     img_element = StImage(img_square)
+                #     with cols[i%max_img_num]:
+                #         chat_box.user_say(img_element)
+
+                # 方式2
+                for i,img_file in enumerate(img_files): 
+                    img = Image.open(img_file) 
+                    img_square = img.resize(img_size)
+                    j = i+1
+                    with cols[j]:
+                        st.image(img_square, use_container_width=True)
+
+                # 
+                # # 方式3
+                # messages = []
+                # for i,img_file in enumerate(img_files): 
+                #     img = Image.open(img_file) 
+                #     img_square = img.resize(img_size)
+                #     img_element = StImage(img_square)
+                #     messages.append(img_element)                    
+                # chat_box.user_say(messages)            
             
-            base64_images = ctx.get("base64_images",None)
-            if base64_images:
+            # if base64_images:
                 chat_box.ai_say("正在思考中...")                
                 vlm = env_models_instance.vlm
                 answer_texts = ""
@@ -297,13 +322,14 @@ def dialogue_page(
                     for i,base64_image in enumerate(base64_images):
                         answer_text = vlm(image_path_or_base64=base64_image,is_decoded_image_text=True,query=prompt)
                         answer_texts += f"\n {i+1}. "+ answer_text
-                chat_box.update_msg(answer_texts,streaming=False) 
+                chat_box.update_msg(answer_texts,streaming=False)
             else:
                 chat_box.update_msg("未获取到图片内容",streaming=False)
             ctx['files']=[]
             ctx['base64_images']=[]
             ctx['vlm']=False  
-        else:
+        else:        
+            chat_box.user_say(prompt)
             chat_box.ai_say("正在思考中...")
             user=ctx.get("uid")
             doc=str(selected_kb)
@@ -328,14 +354,16 @@ def dialogue_page(
             log_text = f'<details>\n<summary>点击查看"整体执行过程"</summary>\n<font color="grey" size=16px>\n{log_result}\n------\n</font></details>'
             chat_text = chat_result["text"]
             answer_text = f"{log_text}\n{chat_text}"
-            chat_box.update_msg(answer_text,streaming=False) 
+            chat_box.update_msg(answer_text,streaming=False)
             #清空code执行回复信息和文件
             ctx['files']=[]
             ctx['base64_images']=[]
             ctx['vlm']=False 
             ctx['is_knowledge']=False
             lazyllm_queue.clear()
-            
+
+
+
 
 if __name__ == "__main__":
     pass
