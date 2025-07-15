@@ -40,11 +40,14 @@ tail -f /root/JqLogs/qwq.log
 workon vllm
 CUDA_VISIBLE_DEVICES=1 nohup vllm serve /data/models/Qwen/Qwen2___5-VL-7B-Instruct-AWQ --served-model-name qwenvl --enable-auto-tool-choice --tool-call-parser hermes --gpu-memory-utilization 0.98 --port 8000 --host 0.0.0.0 --limit-mm-per-prompt image=5,video=1 --max-model-len 32768  --max-num-seqs 32 --enable-prefix-caching --enable-chunked-prefill >> /root/JqLogs/vllmvl.log 2>&1 &
 tail -f /root/JqLogs/vllmvl.log 
+
+
 ```
+## OCRFlux-3B
+workon vllm
+CUDA_VISIBLE_DEVICES=0 vllm serve /data/models/OCRFlux-3B/ --enable-chunked-prefill  --port 8008 --host 0.0.0.0 --served-model-name=nanonets --max-num-seqs 32 --limit-mm-per-prompt image=32,video=1
 
-
-
-
+## 以上两个模型都不支持--enable-cross-image-attention
 
 
 ## 106 服务器

@@ -21,11 +21,11 @@ except:
     from streamlit.scriptrunner import add_script_run_ctx
 
 from web.utils.utils import *
-
+from jqcode.jq_agent.c0_init_env_models import env_models_instance
 from jqcode.jq_knowledge_manegement.chatchat.server.knowledge_base.kb_service.base import (
     get_kb_details,
 )
-from jqcode.jq_agent.c0_init_env_models import env_models_instance
+
 
 
 # os.environ["STREAMLIT_SERVER_ENABLE_STATIC_SERVING"] = "false"
