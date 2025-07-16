@@ -72,6 +72,7 @@ def knowledge_base_page(api: ApiRequest, is_lite: bool = None):
         )
         st.stop()
     kb_names = list(kb_list.keys())
+    kb_names.sort()
 
     if (
         "selected_kb_name" in st.session_state
