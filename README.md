@@ -1221,10 +1221,10 @@ tail -f /root/JqLogs/jqchat.log
     sudo lsof -i :5011
 ```
 
-### 运行MCP服务
+### 运行JqChat MCP服务
 ```
 workon test
-nohup python /data/projects/JqChatV2/JqChat/jqcode/jq_mcp_service.py >> /root/JqLogs/jqmcp.log 2>&1 &
+nohup python /data/projects/JqChatV2/JqChat/jqcode/jq_mcp/jq_mcp_service.py >> /root/JqLogs/jqmcp.log 2>&1 &
 tail -f /root/JqLogs/jqmcp.log
 ```
 
