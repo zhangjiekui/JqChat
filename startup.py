@@ -456,4 +456,4 @@ def main(local_debug: bool = False):
 
 
 if __name__ == "__main__":
-    main(local_debug=False)
+    main(local_debug=True)
