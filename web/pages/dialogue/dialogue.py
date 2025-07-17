@@ -235,9 +235,10 @@ def dialogue_page(
         if "selected_kb_info" not in st.session_state:
             st.session_state["selected_kb_info"] = ""
         kb_names = list(kb_list.keys())
+        kb_names.sort()
         selected_kb = st.selectbox(
             "请选择知识库：",
-            kb_names,
+            ["不使用知识库"]+kb_names,
             format_func=format_selected_kb,
                 index=selected_kb_index,
         )

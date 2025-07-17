@@ -6,6 +6,7 @@ import socket
 import sys
 from concurrent.futures import ProcessPoolExecutor, ThreadPoolExecutor, as_completed
 from pathlib import Path
+from copy import deepcopy
 from typing import (
     Any,
     Awaitable,
@@ -753,14 +754,45 @@ def get_httpx_client(
         default_proxies.update(proxies)
 
     # construct Client
-    kwargs.update(timeout=timeout, proxies=default_proxies)
-    # kwargs.update(timeout=timeout, proxy=default_proxies)
+    kwargs.update(timeout=timeout)
+
+    proxy_kwargs = deepcopy(kwargs)
+    proxies_kwargs = deepcopy(kwargs)
+    proxy_kwargs.update(proxy=default_proxies)
+    proxies_kwargs.update(proxies=default_proxies)
+    
 
     if use_async:
-        return httpx.AsyncClient(**kwargs)
+        async_client = None
+        try:
+            async_client = httpx.AsyncClient(**proxy_kwargs)
+        except Exception as e:
+            logger.warning(f"Using proxy_kwargs: {e}")
+            try:
+                async_client = httpx.AsyncClient(**proxies_kwargs)
+            except Exception as e:
+                logger.warning(f"Using proxies_kwargs: {e}")
+                try:
+                    async_client = httpx.AsyncClient(**kwargs)
+                except Exception as e:
+                    logger.warning(f"Using kwargs: {e}")
+        return async_client
+    
     else:
-        return httpx.Client(**kwargs)
-
+        client = None
+        try:
+            client = httpx.Client(**proxy_kwargs)
+        except Exception as e:
+            logger.warning(f"Using proxy_kwargs: {e}")
+            try:
+                client = httpx.Client(**proxies_kwargs)
+            except Exception as e:
+                logger.warning(f"Using proxies_kwargs: {e}")
+                try:
+                    client = httpx.Client(**kwargs)
+                except Exception as e:
+                    logger.warning(f"Using kwargs: {e}")
+        return client
 
 def get_server_configs() -> Dict:
     """

@@ -94,7 +94,7 @@ def knowledge_base_page(api: ApiRequest, is_lite: bool = None):
 
     selected_kb = st.selectbox(
         "请选择或新建知识库：",
-        kb_names + ["新建知识库"],
+        ["新建知识库"] + kb_names  ,
         format_func=format_selected_kb,
         index=selected_kb_index,
     )
