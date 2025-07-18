@@ -5,12 +5,12 @@ from typing import Dict, List
 from fastapi import APIRouter, Request
 from langchain.prompts.prompt import PromptTemplate
 
-from jqcode.jq_knowledge_manegement.chatchat.server.api_server.api_schemas import AgentStatus, MsgType, OpenAIChatInput
-from jqcode.jq_knowledge_manegement.chatchat.server.chat.chat import chat
-from jqcode.jq_knowledge_manegement.chatchat.server.chat.feedback import chat_feedback
-from jqcode.jq_knowledge_manegement.chatchat.server.chat.file_chat import file_chat
-from jqcode.jq_knowledge_manegement.chatchat.server.db.repository import add_message_to_db
-from jqcode.jq_knowledge_manegement.chatchat.server.utils import (
+from jqcode.api_server.api_schemas import AgentStatus, MsgType, OpenAIChatInput
+from jqcode.jq_kb_manegement.server.chat.chat import chat
+from jqcode.jq_kb_manegement.server.chat.feedback import chat_feedback
+from jqcode.jq_kb_manegement.server.chat.file_chat import file_chat
+from jqcode.jq_kb_manegement.server.db.repository import add_message_to_db
+from jqcode.jq_kb_manegement.server.utils import (
     get_OpenAIClient,
     get_prompt_template,
     get_tool,
@@ -19,7 +19,7 @@ from jqcode.jq_knowledge_manegement.chatchat.server.utils import (
 
 from .openai_routes import openai_request
 
-chat_router = APIRouter(prefix="/chat", tags=["ChatChat 对话"])
+chat_router = APIRouter(prefix="/chat", tags=["JqChat对话"])
 
 chat_router.post(
     "/chat",

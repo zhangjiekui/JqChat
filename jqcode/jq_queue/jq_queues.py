@@ -180,6 +180,8 @@ if __name__ == '__main__':
     print(f"{lazyllm_queue._id=}")
     print(f"{lazyllm_queue.sid=}")
     lazyllm_queue.enqueue('test enqueue')
+    print(f"{lazyllm_queue.peek()=}")
+    print(f"{lazyllm_queue.size()=}")
     print("下面的两个结果应该一样")
     print(lazyllm_queue.dequeue())
     lazyllm_queue.enqueue('test enqueue')
@@ -187,8 +189,12 @@ if __name__ == '__main__':
 
     print("\n===========================")
 
-    lazyllm_queue._enqueue(id='test_enqueue_id',message='test _enqueue')
+    lazyllm_queue._enqueue(id='test_enqueue_id',message='test _enqueue1')
     print("下面的两个结果应该不一样")
     print(lazyllm_queue.dequeue())
-    lazyllm_queue._enqueue(id='test_enqueue_id',message='test _enqueue')
+    lazyllm_queue._enqueue(id='test_enqueue_id',message='test _enqueue2')
+    print(f"{lazyllm_queue.peek()=}")
+    print(f"{lazyllm_queue.size()=}")
+    print(f"{lazyllm_queue._peek(id='test_enqueue_id')=}")
+    print(f"{lazyllm_queue._size(id='test_enqueue_id')=}")
     print(lazyllm_queue._dequeue(id='test_enqueue_id'))

@@ -12,8 +12,8 @@ files = ["/data/projects/JqChatV2/workspace/knowledge_base/test_pdf/content/安�
          "/data/projects/JqChatV2/workspace/knowledge_base/test_pdf/content/创业软件.pdf",
          "/data/projects/JqChatV2/workspace/knowledge_base/test_pdf/content/创业软件2.pdf",
          "/data/projects/JqChatV2/workspace/knowledge_base/test_pdf/content/GBT36964-2018软件工程软件开发成本度量规范.pdf",         
-         '/data/projects/JqChatV2/JqChat/jqcode/jq_knowledge_manegement/chatchat/data/knowledge_base/samples/content/llm/大模型推理优化策略.md',
-         '/data/projects/JqChatV2/JqChat/jqcode/jq_knowledge_manegement/chatchat/data/knowledge_base/samples/content/llm/分布式训练技术原理.md'
+         '/data/projects/JqChatV2/JqChat/jqcode/jq_kbe_manegement/data/knowledge_base/samples/content/llm/大模型推理优化策略.md',
+         '/data/projects/JqChatV2/JqChat/jqcode/jq_kbe_manegement/data/knowledge_base/samples/content/llm/分布式训练技术原理.md'
          ]
 # files = ['a1.pdf','a2.pdf','b1.md','b2.md','c1.html','c2.html','d1.txt','d2.py','e1.docx','e2.docx']
 pdf_files = [file for file in files if Path(file).suffix in ['.pdf']]

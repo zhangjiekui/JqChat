@@ -16,8 +16,8 @@ from openai import AsyncClient
 from openai.types.file_object import FileObject
 from sse_starlette.sse import EventSourceResponse
 
-from jqcode.jq_knowledge_manegement.chatchat.configs import BASE_TEMP_DIR, log_verbose
-from jqcode.jq_knowledge_manegement.chatchat.server.utils import get_config_platforms, get_model_info, get_OpenAIClient
+from jqcode.jq_kb_manegement.configs import BASE_TEMP_DIR, log_verbose
+from jqcode.jq_kb_manegement.server.utils import get_config_platforms, get_model_info, get_OpenAIClient
 
 from .api_schemas import *
 

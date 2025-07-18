@@ -46,7 +46,6 @@ llm_model = env_models_instance.chat_model
 # DEBUG_LLM_USING_CUSTOM_HANDLER
 invoke_llm_config = env_models_instance.invoke_llm_config 
 lazyllm_queue = env_models_instance.lazyllm_queue
-lazyllm_queue_sid = env_models_instance.lazyllm_queue_sid
 
 class GraphAgentState(TypedDict):
     messages: Annotated[list[BaseMessage], add_messages]

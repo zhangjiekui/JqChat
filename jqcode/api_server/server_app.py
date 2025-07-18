@@ -1,27 +1,27 @@
 import argparse
 import os
 from typing import Literal
-from jqcode.chat_routes import chat_router,workspace_router
 import uvicorn
 from fastapi import Body, FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from starlette.responses import RedirectResponse
 
-from jqcode.jq_knowledge_manegement.chatchat.configs import CHATCHAT_ROOT, MEDIA_PATH, OPEN_CROSS_DOMAIN, VERSION
+from jqcode.jq_kb_manegement.configs import CHATCHAT_ROOT, MEDIA_PATH, OPEN_CROSS_DOMAIN, VERSION
 
 from jqcode.api_server.kb_routes import kb_router
 from jqcode.api_server.chat_api import api_router
-# from jqcode.jq_knowledge_manegement.chatchat.server.api_server.chat_routes import chat_router
+# from jqcode.jq_knowledge_manegement.server.api_server.chat_routes import chat_router
 
-# from jqcode.jq_knowledge_manegement.chatchat.server.api_server.openai_routes import openai_router
-# from jqcode.jq_knowledge_manegement.chatchat.server.api_server.server_routes import server_router
-# from jqcode.jq_knowledge_manegement.chatchat.server.api_server.tool_routes import tool_router
-from jqcode.jq_knowledge_manegement.chatchat.server.chat.completion import completion
-from jqcode.jq_knowledge_manegement.chatchat.server.utils import MakeFastAPIOffline
+# from jqcode.jq_knowledge_manegement.server.api_server.openai_routes import openai_router
+# from jqcode.jq_knowledge_manegement.server.api_server.server_routes import server_router
+# from jqcode.jq_knowledge_manegement.server.api_server.tool_routes import tool_router
+from jqcode.jq_kb_manegement.server.chat.completion import completion
+from jqcode.jq_kb_manegement.server.utils import MakeFastAPIOffline
 from datetime import timedelta
 
 def create_app(run_mode: str = None):
+    from jqcode.chat_routes import chat_router,workspace_router
     app = FastAPI(title="JqChat API Server", version=VERSION)
     MakeFastAPIOffline(app)
     # Add CORS middleware to allow all origins

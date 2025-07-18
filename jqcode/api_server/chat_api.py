@@ -11,7 +11,7 @@ from langchain_core.messages import ToolMessage
 from jqcode.langgraph_in_class import GraphAgent,display_code, display_text
 from jqcode.jq_docstores.backend_docstore_utils.jq_es_metastores import JqElasticsearchUniMetaStore
 from jqcode.jq_docstores.jq_es_client import JqEsClient
-from jqcode.jq_knowledge_manegement.chatchat.server.knowledge_base.kb_service.base import (
+from jqcode.jq_kb_manegement.server.knowledge_base.kb_service.base import (
     get_kb_details,
 )
 from jqcode.jq_utils.logger import jqkj_logger

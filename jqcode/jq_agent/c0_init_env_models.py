@@ -43,8 +43,6 @@ from langchain_core.vectorstores import VectorStoreRetriever
 from langchain.callbacks.manager import AsyncCallbackManagerForRetrieverRun,CallbackManagerForRetrieverRun
 from langchain_community.vectorstores import FAISS
 from langchain_community.vectorstores.utils import DistanceStrategy
-
-
 from langchain.retrievers import ContextualCompressionRetriever
 from langchain_core.messages import BaseMessage, HumanMessage,SystemMessage,ToolMessage,AIMessage
 from langchain.callbacks.base import BaseCallbackHandler
@@ -65,26 +63,12 @@ logger = jqkj_logger(__file__).get_logger()
 set_multiprocessing_context(multiprocessing,context="spawn",logger=logger)
 
 VERBOSE = if_log_verbose()
-# 放到startup.py中dump_server_info方法中去输出
-# if is_main_process():    
-#     print("=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*")
-#     print("日志信息：")
-#     print(f"if_log_verbose = {VERBOSE}, 说明：在 jqcode/jq_config/general_config.py 中设置")
-#     print(f"logfile_path = {logfile_path} ,说明：如果if_log_verbose=False，则只记录Waring和Error")
-#     print(f"llm_handler_logfile_path = {llm_handler_file_path} ,说明：专门记录LLM的输入输出，且不受if_log_verbose影响")
-#     print("=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*")
-#     print("\n")
-
 os.environ["NEO4J_URI"] = "bolt://10.1.150.105:7687"
 os.environ["NEO4J_USERNAME"] = "neo4j"
 os.environ["NEO4J_PASSWORD"] = "neo4jneo4j"
-
-
 os.environ['LANGCHAIN_TRACING_V2'] = 'true'
 os.environ['LANGCHAIN_ENDPOINT'] = 'https://api.smith.langchain.com'
-# os.environ['LANGCHAIN_API_KEY'] = "ls__fe150087fa0643f28b3eae3a07d57529"
 os.environ['LANGCHAIN_API_KEY'] = "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"
-
 os.environ['TAVILY_API_KEY'] = "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"
 os.environ['LANGCHAIN_PROJECT']= 'JqChat'
 
@@ -255,7 +239,7 @@ class Ocr_GOT_API:
 def test_orc_got(Ocr_GOT_API):
     ocr_got = Ocr_GOT_API()
     img1='/data/projects/JqChatV2/JqChat/image.png'  
-    img2="/data/projects/JqChatV2/JqChat/jqcode/jq_knowledge_manegement/chatchat/data/knowledge_base/samples/content/llm/img/大模型推理优化策略-幕布图片-923924-83386.jpg"
+    img2="/data/projects/JqChatV2/JqChat/jqcode/jq_knowledge_manegement/data/knowledge_base/samples/content/llm/img/大模型推理优化策略-幕布图片-923924-83386.jpg"
     img3="/data/projects/JqChatV2/JqChat/ocr.png"
     img4='/data/projects/JqChatV2/JqChat/ocr2.jpg'
     results = []
@@ -510,10 +494,11 @@ class SingletonDecorator:
 @SingletonDecorator
 class InitEnvModels:
     def __init__(self):
-        self.env_loaded = load_project_env()        
+        self.env_loaded = load_project_env()
+        assert self.env_loaded, "环境变量没有正确载入！"         
         self.lazyllm_queue = FileSystemQueue()
         self.lazyllm_queue_sid =self.lazyllm_queue.sid
-        assert self.env_loaded, "环境变量没有正确载入！"        
+               
         self.ollama_host = os.getenv("OLLAMA_HOST",'http://localhost:11434')        
         self.api_type =os.getenv("OPENAI_API_TYPE",'open_ai')        
 
@@ -702,29 +687,6 @@ class InitEnvModels:
         self.all_indices = self.get_all_knowledge_base()
         self.strategy = DenseVectorStrategy(hybrid=False,rrf=False,distance=DistanceMetric.COSINE)
         self.default_chinese_analyzer_settings =self.ES_DEFAULT_CHINESE_SETTINGS
-    # region 直接初始化openai接口，暂时用不上
-        # loade openai models:暂时用不上
-        # self.openai = None
-        # self.get_openai()
-        # self.openai_client = None
-        # self.get_openai_client()
-    # def get_openai(self):
-    #     if not self.openai:
-    #         openai.api_type = self.api_type
-    #         openai.default_headers = {"x-foo": "true"}  #新增的，来自官方 https://github.com/openai/openai-python/tree/e9724398d2bdd87ba41f199c3577303f1b80f2c7
-    #         openai.api_version = os.environ.get("OPENAI_API_VERSION")
-    #         openai.log = os.getenv("OPENAI_API_LOGLEVEL")
-    #         self.openai = openai
-    #     return self.openai
-
-    # # 直接使用OpenAI
-    # def get_openai_client(self):
-    #     if not self.openai_client:
-    #         self.openai_client = OpenAI(base_url=self.llm_model_base_url,api_key=self.api_key)
-    #         print(f'当前使用的LLM模型base_url为:OpenAI, {self.openai_client.base_url}')
-    #     return self.openai_client
-    # endregion 直接初始化openai接口，暂时用不上
-
     def get_langchain_chat_model(self, temperature=0.6,top_p =0.95, top_k=20, min_p=0, frequency_penalty=0.2, repetition_penalty=1.05, max_tokens=None, streaming=False,use_deepseek=True):
         if max_tokens:
             if max_tokens!=self.llm_model_max_tokens:
@@ -825,7 +787,7 @@ class InitEnvModels:
 
     def _get_emb_8k_rerank_model_api(self):
         from xinference.client import Client
-        from jqcode.jq_knowledge_manegement.chatchat.server.localai_embeddings import LocalAIEmbeddings
+        from jqcode.jq_kb_manegement.server.localai_embeddings import LocalAIEmbeddings
        
         try:
             # embed_model = LocalAIEmbeddings(model=self.embedding_model_name,deployment=self.embedding_model_name,api_key="abc123",headers={'Authorization': 'Bearer abc123'},openai_api_base=self.embedding_model_base_url,base_url=self.embedding_model_base_url,embedding_ctx_length=self.embedding_model_max_tokens*8,chunk_size=self.embedding_model_max_tokens)

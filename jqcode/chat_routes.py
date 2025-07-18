@@ -11,7 +11,7 @@ from langchain_core.messages import ToolMessage
 from jqcode.langgraph_in_class import GraphAgent,display_code, display_text
 from jqcode.jq_docstores.backend_docstore_utils.jq_es_metastores import JqElasticsearchUniMetaStore
 from jqcode.jq_docstores.jq_es_client import JqEsClient
-from jqcode.jq_knowledge_manegement.chatchat.server.knowledge_base.kb_service.base import (
+from jqcode.jq_kb_manegement.server.knowledge_base.kb_service.base import (
     get_kb_details,
 )
 from jqcode.jq_utils.logger import jqkj_logger
@@ -130,14 +130,9 @@ def completions(
             file=os.path.join(UPLOAD_FOLDER_TEMP, file)
             if os.path.isfile(file):
                 chat_on_docs_list.append(file)
-    print(f"{chat_on_docs_list=}")
+    
     chat_bot = GraphAgent(memory_thread_id=user_id, kb_base_dict=index_meta_dict,chat_on_docs_list=chat_on_docs_list,add_docs_list_to_kb=add_docs_list_to_kb,
                           allow_conversation_memory=allow_conversation_memory,allow_question_rewrite=allow_question_rewrite)
-    print(f"{chat_bot.user_id=}")
-
-
-
-
     text = chat_bot.run_conversation(user_question=user_prompt)
     
     # returned_str

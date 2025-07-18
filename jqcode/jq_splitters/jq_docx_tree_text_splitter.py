@@ -48,15 +48,15 @@ def load_project_env():
     env_loaded_value_in_env = os.getenv("env_loaded",'')
     dotenv_loaded = False
     # 只载入一次
-    if env_loaded_value_in_env != "True":    
-        print('\n')
+    if env_loaded_value_in_env != "True":
+        print('\n')    
         print('=*'*20)
         env_dir = find_dotenv()
         if not env_dir:
             root_dir = Path().resolve()
             env_dir = root_dir/'JqChat/.env'
 
-        print(f"项目.env文件路径：{env_dir}")       
+        print(f"=*=* 项目.env文件路径：{env_dir}")       
 
         dotenv_loaded = load_dotenv(env_dir)
         if dotenv_loaded:
@@ -112,7 +112,7 @@ def under_non_alpha_ratio(text: str, threshold: float = 0.5):
         except:
             return False
 
-# derived from jqcode.jq_knowledge_manegement.chatchat.server.file_rag.text_splitter.zh_title_enhance import is_possible_title
+# derived from jqcode.jq_knowledge_manegement.server.file_rag.text_splitter.zh_title_enhance import is_possible_title
 def is_possible_title(
     text: str,
     title_max_word_length: int = 20,

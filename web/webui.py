@@ -4,12 +4,12 @@ import sys
 import streamlit as st
 import streamlit_antd_components as sac
 
-from jqcode.jq_knowledge_manegement.chatchat.server.utils import api_address
+from jqcode.jq_kb_manegement.server.utils import api_address
 from pages.dialogue.dialogue import  dialogue_page
 from pages.knowledge_base.knowledge_base import knowledge_base_page
 from web.utils.utils import ApiRequest,get_img_base64
 
-from jqcode.jq_knowledge_manegement.chatchat.configs import VERSION
+from jqcode.jq_kb_manegement.configs import VERSION
 api = ApiRequest(base_url=api_address())
 if __name__ == "__main__":
     is_lite = "lite" in sys.argv  # TODO: remove lite mode

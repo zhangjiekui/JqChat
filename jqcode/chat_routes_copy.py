@@ -10,8 +10,8 @@ import pandas as pd
 import requests
 
 from jqcode.jq_code_executor.code_executor import CodeExecutorTool
-# from jqcode.jq_knowledge_manegement.chatchat.server.db.repository.knowledge_base_repository import get_kb_detail, load_kb_from_db
-# from jqcode.jq_knowledge_manegement.chatchat.server.knowledge_base.kb_service.base import get_kb_details
+# from jqcode.jq_knowledge_manegement.server.db.repository.knowledge_base_repository import get_kb_detail, load_kb_from_db
+# from jqcode.jq_knowledge_manegement.server.knowledge_base.kb_service.base import get_kb_details
 
 
 UPLOAD_FOLDER = 'workspace/'

@@ -3,7 +3,7 @@ from langchain.schema import Document
 from langchain_experimental.graph_transformers import LLMGraphTransformer
 from langchain_neo4j import Neo4jVector, Neo4jGraph, GraphCypherQAChain
 from langchain_openai import ChatOpenAI
-from jqcode.jq_knowledge_manegement.chatchat.server.localai_embeddings import LocalAIEmbeddings
+from jqcode.jq_kb_manegement.server.localai_embeddings import LocalAIEmbeddings
 
 # Initialize the language model with specific parameters
 llm = ChatOpenAI(

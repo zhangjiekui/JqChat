@@ -9,15 +9,15 @@ from st_aggrid import AgGrid, JsCode
 from st_aggrid.grid_options_builder import GridOptionsBuilder
 from streamlit_antd_components.utils import ParseItems
 
-from jqcode.jq_knowledge_manegement.chatchat.configs import DEFAULT_VS_TYPE, kbs_config
+from jqcode.jq_kb_manegement.configs import DEFAULT_VS_TYPE, kbs_config
 
-from jqcode.jq_knowledge_manegement.chatchat.server.knowledge_base.kb_service.base import (
+from jqcode.jq_kb_manegement.server.knowledge_base.kb_service.base import (
     get_kb_details,
     get_kb_file_details,
     KBService
 )
-from jqcode.jq_knowledge_manegement.chatchat.server.knowledge_base.utils import LOADER_DICT, get_file_path
-from jqcode.jq_knowledge_manegement.chatchat.server.utils import get_config_models
+from jqcode.jq_kb_manegement.server.knowledge_base.utils import LOADER_DICT, get_file_path
+from jqcode.jq_kb_manegement.server.utils import get_config_models
 from jqcode.jq_agent.c0_init_env_models import env_models_instance
 
 from web.utils.utils import *

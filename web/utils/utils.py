@@ -12,7 +12,7 @@ from typing import *
 
 import httpx
 
-from jqcode.jq_knowledge_manegement.chatchat.configs import (
+from jqcode.jq_kb_manegement.configs import (
     CHUNK_SIZE,
     DEFAULT_EMBEDDING_MODEL,
     DEFAULT_VS_TYPE,
@@ -25,7 +25,7 @@ from jqcode.jq_knowledge_manegement.chatchat.configs import (
     ZH_TITLE_ENHANCE,
     log_verbose,
 )
-from jqcode.jq_knowledge_manegement.chatchat.server.utils import api_address, get_httpx_client, set_httpx_config
+from jqcode.jq_kb_manegement.server.utils import api_address, get_httpx_client, set_httpx_config
 
 logger = logging.getLogger()
 
@@ -375,7 +375,6 @@ class ApiRequest:
         """
          对应chat_routes upload_file
         """
-        print(is_knowledge,uid)
         def convert_file(file, filename=None):
             if isinstance(file, bytes):  # raw bytes
                 file = BytesIO(file)
@@ -393,7 +392,7 @@ class ApiRequest:
             "is_knowledge":is_knowledge
 
         }
-        print(is_knowledge)
+
         response = self.post(
             "/chat/upload",
             data=data,
@@ -480,8 +479,8 @@ class ApiRequest:
     ):
         """
         对应api.py/knowledge_base/delete_knowledge_base接口,
-        jqcode/jq_knowledge_manegement/chatchat/server/knowledge_base/kb_api.py delete_kb方法
-        jqcode/jq_knowledge_manegement/chatchat/server/knowledge_base/kb_service/base.py  drop_kb方法
+        jqcode/jq_kbe_manegement/server/knowledge_base/kb_api.py delete_kb方法
+        jqcode/jq_kbe_manegement/server/knowledge_base/kb_service/base.py  drop_kb方法
         """
         response = self.post(
             "/knowledge_base/delete_knowledge_base",
@@ -545,7 +544,7 @@ class ApiRequest:
         batch_size=10,
     ):
         """
-        对应api.py/knowledge_base/upload_docs接口,JqChat/jqcode/jq_knowledge_manegement/chatchat/server/knowledge_base/kb_doc_api.py  upload_docs方法
+        对应api.py/knowledge_base/upload_docs接口,JqChat/jqcode/jq_kbe_manegement/server/knowledge_base/kb_doc_api.py  upload_docs方法
         """
 
         def convert_file(file, filename=None):
@@ -631,7 +630,7 @@ class ApiRequest:
         not_refresh_vs_cache: bool = False,
     ):
         """
-        对应api.py/knowledge_base/update_docs接口,JqChat/jqcode/jq_knowledge_manegement/chatchat/server/knowledge_base/kb_doc_api.py update_docs
+        对应api.py/knowledge_base/update_docs接口,JqChat/jqcode/jq_kbe_manegement/server/knowledge_base/kb_doc_api.py update_docs
         """
         data = {
             "knowledge_base_name": knowledge_base_name,

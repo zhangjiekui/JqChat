@@ -22,7 +22,7 @@ except:
 
 from web.utils.utils import *
 from jqcode.jq_agent.c0_init_env_models import env_models_instance
-from jqcode.jq_knowledge_manegement.chatchat.server.knowledge_base.kb_service.base import (
+from jqcode.jq_kb_manegement.server.knowledge_base.kb_service.base import (
     get_kb_details,
 )
 
@@ -39,7 +39,6 @@ except:
 chat_box = ChatBox(assistant_avatar=get_img_base64("chatchat_icon_blue_square_v2.png"))
 code_message:str=None
 lazyllm_queue = env_models_instance.lazyllm_queue
-lazyllm_queue_sid = env_models_instance.lazyllm_queue_sid
 max_img_num=5
 img_size = (300,300)
 
@@ -84,7 +83,6 @@ def upload_docs(user,knowledge_id,files,is_knowledge, _api: ApiRequest) -> str:
     将文件上传到临时目录，用于文件对话
     返回临时向量库ID
     """
-    print(is_knowledge)
     return _api.upload_docs(uid=user,knowledge_id=knowledge_id,is_knowledge=is_knowledge,files=files)
 #聊天
 def chat(code_message,query,user,doc:str,files,is_memory,is_rewrite,is_knowledge,_api:ApiRequest)  :
@@ -113,9 +111,9 @@ class ThreadWithResult(threading.Thread):
             self.result = self.func(self.args)
         finally:
             if self.result:
-                print(self.result)
+                logger.warning(self.result)
             else:
-                print("没有结果")
+                logger.warning("没有结果")
                 self.result = ""
     
     # 然后通过get_result函数获取返回的结果
@@ -173,11 +171,10 @@ def dialogue_page(
             ctx["is_knowledge"]= is_knowledge
             if is_knowledge:
                 knowledge_id=selected_kb
-            response=upload_docs(user=user,knowledge_id=knowledge_id,is_knowledge=is_knowledge,files=files,_api=api)
-            print(response)
-            st.info(f"{response['message']}")
+            response=upload_docs(user=user,knowledge_id=knowledge_id,is_knowledge=is_knowledge,files=files,_api=api)       
             chat_box.context['files']=response['files']
-            # chat_box.output_messages()
+            st.info(f"{response['message']}:{len(response['files'])}个文件")
+
 
     @st.dialog("上传图片（OCR识别或对话，最多5张）", width="large")
     def img_upload(max_img_num=max_img_num):
@@ -206,8 +203,7 @@ def dialogue_page(
                     base64_image = base64.b64encode(img_bytes).decode('utf-8')
                     base64_images.append(base64_image)
                 ctx['base64_images'] = base64_images
-                st.info(f"上传成功")
-                # chat_box.output_messages()
+                st.info(f"上传成功:{len(files)}个文件")
                 
             else:
                 st.error(f"一次最多上传{max_img_num}张图片，但您上传了{num_files}张图片，上传失败!")

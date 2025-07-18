@@ -3,7 +3,7 @@ import asyncio
 from langchain.schema import Document
 from langchain_neo4j import Neo4jVector
 from langchain_openai import ChatOpenAI
-from jqcode.jq_knowledge_manegement.chatchat.server.localai_embeddings import LocalAIEmbeddings
+from jqcode.jq_kb_manegement.server.localai_embeddings import LocalAIEmbeddings
 from graphiti_core import Graphiti
 from graphiti_core.llm_client import OpenAIClient,LLMConfig,LLMClient
 from graphiti_core.cross_encoder.client import CrossEncoderClient

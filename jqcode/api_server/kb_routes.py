@@ -4,9 +4,9 @@ from typing import List
 
 from fastapi import APIRouter, Request
 
-from jqcode.jq_knowledge_manegement.chatchat.server.chat.file_chat import upload_temp_docs
-from jqcode.jq_knowledge_manegement.chatchat.server.knowledge_base.kb_api import create_kb, delete_kb, list_kbs
-from jqcode.jq_knowledge_manegement.chatchat.server.knowledge_base.kb_doc_api import (
+from jqcode.jq_kb_manegement.server.chat.file_chat import upload_temp_docs
+from jqcode.jq_kb_manegement.server.knowledge_base.kb_api import create_kb, delete_kb, list_kbs
+from jqcode.jq_kb_manegement.server.knowledge_base.kb_doc_api import (
     delete_docs,
     download_doc,
     list_files,
@@ -16,12 +16,12 @@ from jqcode.jq_knowledge_manegement.chatchat.server.knowledge_base.kb_doc_api im
     update_info,
     upload_docs,
 )
-from jqcode.jq_knowledge_manegement.chatchat.server.knowledge_base.kb_summary_api import (
+from jqcode.jq_kb_manegement.server.knowledge_base.kb_summary_api import (
     recreate_summary_vector_store,
     summary_doc_ids_to_vector_store,
     summary_file_to_vector_store,
 )
-from jqcode.jq_knowledge_manegement.chatchat.server.utils import BaseResponse, ListResponse
+from jqcode.jq_kb_manegement.server.utils import BaseResponse, ListResponse
 
 kb_router = APIRouter(prefix="/knowledge_base", tags=["Knowledge Base Management"])
 

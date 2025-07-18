@@ -21,8 +21,8 @@ import subprocess
 import streamlit as st
 from streamlit_option_menu import option_menu
 
-from jqcode.jq_knowledge_manegement.chatchat.server.api_allinone_stale import api_args, parser
-from jqcode.jq_knowledge_manegement.chatchat.server.llm_api_stale import (
+from jqcode.jq_kb_manegement.server.api_allinone_stale import api_args, parser
+from jqcode.jq_kb_manegement.server.llm_api_stale import (
     LOG_PATH,
     controller_args,
     launch_all,

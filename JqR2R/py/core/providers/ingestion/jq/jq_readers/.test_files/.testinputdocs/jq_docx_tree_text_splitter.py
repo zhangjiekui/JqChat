@@ -66,7 +66,7 @@ def under_non_alpha_ratio(text: str, threshold: float = 0.5):
         except:
             return False
 
-# derived from jqcode.jq_knowledge_manegement.chatchat.server.file_rag.text_splitter.zh_title_enhance import is_possible_title
+# derived from jqcode.jq_knowledge_manegement.server.file_rag.text_splitter.zh_title_enhance import is_possible_title
 def is_possible_title(
     text: str,
     title_max_word_length: int = 20,

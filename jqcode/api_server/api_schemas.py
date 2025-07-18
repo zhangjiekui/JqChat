@@ -12,10 +12,10 @@ from openai.types.chat import (
     completion_create_params,
 )
 
-from jqcode.jq_knowledge_manegement.chatchat.configs import DEFAULT_LLM_MODEL, TEMPERATURE
-from jqcode.jq_knowledge_manegement.chatchat.server.callback_handler.agent_callback_handler import AgentStatus  # noaq
-from jqcode.jq_knowledge_manegement.chatchat.server.pydantic_v2 import AnyUrl, BaseModel, Field
-from jqcode.jq_knowledge_manegement.chatchat.server.utils import MsgType
+from jqcode.jq_kb_manegement.configs import DEFAULT_LLM_MODEL, TEMPERATURE
+from jqcode.jq_kb_manegement.server.callback_handler.agent_callback_handler import AgentStatus  # noaq
+from jqcode.jq_kb_manegement.server.pydantic_v2 import AnyUrl, BaseModel, Field
+from jqcode.jq_kb_manegement.server.utils import MsgType
 
 
 class OpenAIBaseInput(BaseModel):

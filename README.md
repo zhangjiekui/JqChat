@@ -1212,13 +1212,12 @@ htop
 ```
 workon test
 cd /data/projects/JqChatV2/JqChat
-nohup python startup.py >> /root/JqLogs/jqchat.log 2>&1 &
+nohup python startup.py --production>> /root/JqLogs/jqchat.log 2>&1 &
 tail -f /root/JqLogs/jqchat.log
 ```
 ```
     sudo lsof -i :7861
     sudo lsof -i :8501
-    sudo lsof -i :5011
 ```
 
 ### 运行JqChat MCP服务

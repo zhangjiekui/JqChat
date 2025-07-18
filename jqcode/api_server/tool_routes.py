@@ -5,7 +5,7 @@ from typing import List
 
 from fastapi import APIRouter, Body, Request
 
-from jqcode.jq_knowledge_manegement.chatchat.server.utils import BaseResponse, get_tool, get_tool_config
+from jqcode.jq_kb_manegement.server.utils import BaseResponse, get_tool, get_tool_config
 
 logger = logging.getLogger()
 

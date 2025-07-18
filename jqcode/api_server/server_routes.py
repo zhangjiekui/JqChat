@@ -2,7 +2,7 @@ from typing import Literal
 
 from fastapi import APIRouter, Body
 
-from jqcode.jq_knowledge_manegement.chatchat.server.utils import get_prompt_template, get_server_configs
+from jqcode.jq_kb_manegement.server.utils import get_prompt_template, get_server_configs
 
 server_router = APIRouter(prefix="/server", tags=["Server State"])
 
