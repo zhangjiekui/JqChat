@@ -31,7 +31,7 @@ from jqcode.jq_kb_manegement.server.llm_api_stale import (
     worker_args,
 )
 from jqcode.jq_kb_manegement.webui_pages import *
-from jqcode.jq_kb_manegement.webui_pages.utils import *
+from jq_kb_manegement.webui_pages.utils_to_be_replaced import *
 
 parser.add_argument("--use-remote-api", action="store_true")
 parser.add_argument("--nohup", action="store_true")

@@ -1,6 +1,7 @@
 # 该文件封装了对api.py的请求，可以被不同的webui使用
 # 通过ApiRequest和AsyncApiRequest支持同步/异步调用
-
+# 当前使用/data/projects/JqChatV2/JqChat/web/utils/utils.py
+# 替代jqcode/jq_kb_manegement/webui_pages/utils.py
 import base64
 import contextlib
 import json
@@ -11,7 +12,7 @@ from pathlib import Path
 from typing import *
 
 import httpx
-
+from jqcode.jq_utils.logger import jqkj_logger
 from jqcode.jq_kb_manegement.configs import (
     CHUNK_SIZE,
     DEFAULT_EMBEDDING_MODEL,
@@ -27,7 +28,7 @@ from jqcode.jq_kb_manegement.configs import (
 )
 from jqcode.jq_kb_manegement.server.utils import api_address, get_httpx_client, set_httpx_config
 
-logger = logging.getLogger()
+logger = jqkj_logger(__file__).get_logger()
 
 set_httpx_config()
 
@@ -306,20 +307,21 @@ class ApiRequest:
         return self._get_response_value(response, value_func=lambda r: r.text)
 
     # 对话相关操作
-    def chat_chat(
+    # 对应/data/projects/JqChatV2/JqChat/jqcode/jq_server/jq_chat_routes.py中的def completions方法
+    def chat_jqagent(
         self,
         code_message:str,
         files:List[str],
         query: str,
         user: str,
         doc: str,
-        is_memory,
-        is_rewrite,
-        is_knowledge,
+        is_memory:bool=True, #是否启用记忆
+        is_rewrite:bool=True,#是否启用问题改写
+        is_knowledge:bool=True,#是否将文档纳入知识库
         **kwargs,
     ):
         """
-        对应api.py/chat/chat接口
+        对应/data/projects/JqChatV2/JqChat/jqcode/jq_server/jq_chat_routes.py中的def completions方法
         """
         data = {
             "query": query,
@@ -334,19 +336,20 @@ class ApiRequest:
         logger.warning(f"ApiRequest {self.base_url=}")
         response = self.post(f"/chat/completions", json=data, stream=False, **kwargs)
         return  self._get_response_value(response, as_json=True)
-    # 执行代码相关操作
-    def code_chat(
+    # 对应/data/projects/JqChatV2/JqChat/jqcode/jq_server/jq_chat_routes.py中的def code方法
+    def code_execute(
         self,
-        user: str,
+        code: str,
         **kwargs,
     ):
         """
-        对应api.py/chat/chat接口
+        对应/data/projects/JqChatV2/JqChat/jqcode/jq_server/jq_chat_routes.py中的def code方法
         """
+        # print(f"code_execute:{code}")
         data = {
-            "user": user,
+            "code": code,
         }
-        response = self.post("/chat/code", json=data, stream=False, **kwargs)
+        response = self.post("/chat/code", data=None, json=data, stream=False, **kwargs)
         return  self._get_response_value(response, as_json=True)
     # 执行代码相关操作
     def clear_chat(
@@ -363,7 +366,7 @@ class ApiRequest:
         response = self.post("/chat/clear", json=data, stream=False, **kwargs)
         return  self._get_response_value(response, as_json=True)
     
-    
+    # /data/projects/JqChatV2/JqChat/jqcode/jq_server/jq_chat_routes.py中的def upload_file方法
     def upload_docs(
         self,
         files: List[Union[str, Path, bytes]],
@@ -373,7 +376,7 @@ class ApiRequest:
         **kwargs,
     ):
         """
-         对应chat_routes upload_file
+         /data/projects/JqChatV2/JqChat/jqcode/jq_server/jq_chat_routes.py中的def upload_file方法
         """
         def convert_file(file, filename=None):
             if isinstance(file, bytes):  # raw bytes
@@ -400,6 +403,8 @@ class ApiRequest:
         )
         return self._get_response_value(response, as_json=True)
 
+
+# 下面的方法还未曾验证
     def file_chat(
         self,
         query: str,
@@ -804,5 +809,11 @@ def get_img_base64(file_name: str) -> str:
 
 
 if __name__ == "__main__":
-    api = ApiRequest()
+    api = ApiRequest(base_url="http://127.0.0.1:7862/", timeout=10)
+    print(api.base_url)
+    # result = api.chat_jqagent(code_message="代码已成功执行",files=[],query="你好",user="zjk",doc="",is_memory=True,is_rewrite=True,is_knowledge=False)
+    result = api.code_execute("print('hello world')")
+    print(result)
+    result = api.code_execute("代码中测试请求你是谁")
+    print(result)
     aapi = AsyncApiRequest()

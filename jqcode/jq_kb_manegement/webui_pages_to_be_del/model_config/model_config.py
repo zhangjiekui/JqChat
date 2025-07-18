@@ -1,6 +1,6 @@
 import streamlit as st
 
-from jqcode.jq_kb_manegement.webui_pages.utils import *
+from jq_kb_manegement.webui_pages.utils_to_be_replaced import *
 
 
 def model_config_page(api: ApiRequest):

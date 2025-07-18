@@ -32,12 +32,27 @@ try:
 except:    
     index_meta_dict_default = {"index_name": es_index_name, "description":default_index_description}
 
-# We know this Flask app is for local use. So we can disable the verbose Werkzeug logger
-log = logging.getLogger('werkzeug')
-log.setLevel(logging.ERROR)
-
 UPLOAD_FOLDER=str(os.environ.get("workspace","/data/projects/JqChatV2/workspace"))
-# UPLOAD_FOLDER=os.path.join(os.path.dirname(os.getcwd()), "workspace")
+
+def uploads(files:List[UploadFile])->List[str]:
+    ids=[]
+    for file in files:
+        if file.filename == '':
+            return ({'error': '请选择文件'}), 400
+        if file and allowed_file(file.filename):
+            # new_filename=uuid.uuid1().hex + "." + file.filename.rsplit(".",1)[1]
+            file_path = os.path.join(UPLOAD_FOLDER,"temp")
+            if not os.path.exists(file_path):
+                os.makedirs(file_path, exist_ok=True)
+            file_target = os.path.join(file_path, file.filename)
+            file_content = file.file.read()
+            with open(file_target, "wb") as f:  
+                f.write(file_content)  
+                ids.append(file.filename)
+                # file_info = inspect_file(file_target)
+                # os.environ["HAS_DATA_FILE_UPLOADED"] = 'True'
+                # message_buffer.append(f"已上传保存的文件名为{file.filename},请在分析过程中使用这个数据文件\n{file_info}'}" + "\n\n")
+    return ids
 
 api_router = APIRouter(prefix="/api", tags=["对外API"])
 @api_router.post('/v1/chat',summary="对话接口")
@@ -110,25 +125,6 @@ def chat(
         code_text = text
     return JSONResponse(content={"text":code_text},status_code=200)
 
-def uploads(files:List[UploadFile])->List[str]:
-    ids=[]
-    for file in files:
-        if file.filename == '':
-            return ({'error': '请选择文件'}), 400
-        if file and allowed_file(file.filename):
-            # new_filename=uuid.uuid1().hex + "." + file.filename.rsplit(".",1)[1]
-            file_path = os.path.join(UPLOAD_FOLDER,"temp")
-            if not os.path.exists(file_path):
-                os.makedirs(file_path, exist_ok=True)
-            file_target = os.path.join(file_path, file.filename)
-            file_content = file.file.read()
-            with open(file_target, "wb") as f:  
-                f.write(file_content)  
-                ids.append(file.filename)
-                # file_info = inspect_file(file_target)
-                # os.environ["HAS_DATA_FILE_UPLOADED"] = 'True'
-                # message_buffer.append(f"已上传保存的文件名为{file.filename},请在分析过程中使用这个数据文件\n{file_info}'}" + "\n\n")
-    return ids;
 
 
 @api_router.get('/v1/knowledges',summary="知识库列表")

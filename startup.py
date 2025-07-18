@@ -17,7 +17,7 @@ from jqcode.jq_kb_manegement.server.utils import set_httpx_config
 from jqcode.jq_utils.logger import jqkj_logger,set_multiprocessing_context
 from jqcode.jq_kb_manegement.server.utils import api_address, webui_address
 from jqcode.jq_kb_manegement.utils import get_config_dict, get_log_file, get_timestamp_ms
-from jqcode.jq_kb_manegement.configs import API_SERVER,WEBUI_SERVER, LOG_PATH, MODEL_PLATFORMS,VERSION
+from jqcode.jq_kb_manegement.configs import API_SERVER,WEBUI_SERVER, LOG_PATH, MODEL_PLATFORMS,VERSION,CHATCHAT_ROOT
 from jqcode.jq_config.general_config import llm_handler_file_path,if_log_verbose,logfile_path
 from jqcode.jq_splitters.jq_docx_tree_text_splitter import load_project_env
 logger = jqkj_logger(__file__).get_logger()
@@ -43,12 +43,12 @@ def _set_app_event(app: FastAPI, started_event:Event = None): # type: ignore
     app.router.lifespan_context = lifespan
 
 def run_api_server(
-    started_event:Event = None, run_mode: str = None,local_debug:bool=False # type: ignore
+    started_event:Event = None, local_debug:bool=False # type: ignore
 ):
     logger.info(f"Api MODEL_PLATFORMS: {MODEL_PLATFORMS}")
     set_httpx_config()
-    from jqcode.api_server.server_app import create_app
-    app = create_app(run_mode=run_mode)
+    from jq_server.jq_server_app import create_app
+    app = create_app()
     _set_app_event(app, started_event)
 
     host = API_SERVER["host"]
@@ -68,7 +68,7 @@ def run_api_server(
     app.mount("/workspace", StaticFiles(directory="workspace"), name="workspace")
     uvicorn.run(app, host=host, port=port)
 def run_webui(
-    started_event: Event = None, run_mode: str = None,local_debug:bool=False # type: ignore
+    started_event: Event = None, local_debug:bool=False # type: ignore
 ):
     # logger.info(f"Webui MODEL_PLATFORMS: {MODEL_PLATFORMS}")
     set_httpx_config()
@@ -76,7 +76,7 @@ def run_webui(
     port = WEBUI_SERVER["port"]
     if local_debug:
         port = port + 1
-    script_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), "web/webui.py")
+    script_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), "jqweb/webui.py")
     flag_options = {
         "server_address": host,
         "server_port": port,
@@ -140,11 +140,6 @@ def run_webui(
         "theme_font": None,
     }
     args = []
-    if run_mode == "lite":
-        args += [
-            "--",
-            "lite",
-        ]
     args+=["--gatherUsageStats","False"]
 
     log_file = get_log_file(log_path=LOG_PATH, sub_dir=f"run_webui_{get_timestamp_ms()}")
@@ -260,8 +255,6 @@ async def start_main_server(local_debug:bool):
 
 
     manager = mp.Manager()
-    run_mode = None
-
     args, parser = parse_args()
 
     # # 手动设置参数值
@@ -298,7 +291,6 @@ async def start_main_server(local_debug:bool):
             name=f"API Server",
             kwargs=dict(
                 started_event=api_started,
-                run_mode=run_mode,
                 local_debug = local_debug
             ),
             # daemon=False,
@@ -314,7 +306,6 @@ async def start_main_server(local_debug:bool):
             name=f"WEBUI Server",
             kwargs=dict(
                 started_event=webui_started,
-                run_mode=run_mode,
                 local_debug = local_debug
             ),
             daemon=True,
@@ -369,6 +360,7 @@ def main(local_debug: bool = False):
         if need_add_path not in set(sys.path):
             sys.path.append(str(need_add_path))
             print(f"  已将{need_add_path} 加入系统路径！")
+       
     os.environ["r2r_project_root_path"] = str(need_add_path)
     set_multiprocessing_context(mp,context="spawn",logger=logger)
     mp.freeze_support()    

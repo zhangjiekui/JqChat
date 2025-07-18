@@ -23,7 +23,7 @@ from jqcode.jq_kb_manegement.server.callback_handler.agent_callback_handler impo
 from jqcode.jq_kb_manegement.server.knowledge_base.model.kb_document_model import DocumentWithVSId
 from jqcode.jq_kb_manegement.server.utils import MsgType, get_config_models
 from jqcode.jq_kb_manegement.webui_pages.dialogue.utils import process_files
-from jqcode.jq_kb_manegement.webui_pages.utils import *
+from jq_kb_manegement.webui_pages.utils_to_be_replaced import *
 
 chat_box = ChatBox(assistant_avatar=get_img_base64("chatchat_icon_blue_square_v2.png"))
 

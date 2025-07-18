@@ -4,23 +4,24 @@ import sys
 import streamlit as st
 import streamlit_antd_components as sac
 
-from jqcode.jq_kb_manegement.server.utils import api_address
-from pages.dialogue.dialogue import  dialogue_page
-from pages.knowledge_base.knowledge_base import knowledge_base_page
-from web.utils.utils import ApiRequest,get_img_base64
-
 from jqcode.jq_kb_manegement.configs import VERSION
+from jqcode.jq_kb_manegement.server.utils import api_address
+from jqweb.pages.dialogue.dialogue import  dialogue_page
+from jqweb.pages.knowledge_base.knowledge_base import knowledge_base_page
+from jqweb.utils.utils import ApiRequest,get_img_base64
 api = ApiRequest(base_url=api_address())
+
+
 if __name__ == "__main__":
     is_lite = "lite" in sys.argv  # TODO: remove lite mode
 
     st.set_page_config(
         "晶奇聊天机器人",
-        get_img_base64("chatchat_icon_blue_square_v2.png"),
+        get_img_base64("logo_chat_avatar.png"),
         initial_sidebar_state="auto",
         menu_items={
-            "Get Help": "https://github.com/chatchat-space/Langchain-Chatchat",
-            "Report a bug": "https://github.com/chatchat-space/Langchain-Chatchat/issues",
+            "Get Help": "https://github.com/zhangjiekui/JqChat",
+            "Report a bug": "https://github.com/zhangjiekui/JqChat/issues",
              "About": f"""欢迎使用JingQi-Chat""",
         },
         layout="wide",
@@ -49,7 +50,7 @@ if __name__ == "__main__":
     with st.sidebar:
        
         st.image(
-            get_img_base64("logo-long-chatchat-trans-v3.png"), use_container_width=True
+            get_img_base64("logo_chat_avatar_jingqi_chat.png"), use_container_width=True
         )
         st.caption(
             f"""<p align="right">当前版本：{VERSION}</p>""",

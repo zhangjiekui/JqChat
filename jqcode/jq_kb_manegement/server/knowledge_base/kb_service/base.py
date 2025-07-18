@@ -475,7 +475,7 @@ def get_kb_details() -> List[Dict]:
     for i, v in enumerate(result.values()):
         v["No"] = i + 1
         data.append(v)
-
+    data.sort(key=lambda x: x["kb_name"])
     return data
 
 
@@ -520,6 +520,7 @@ def get_kb_file_details(kb_name: str) -> List[Dict]:
         v["No"] = i + 1
         data.append(v)
 
+    data.sort(key=lambda x: x["file_name"])
     return data
 
 

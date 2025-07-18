@@ -16,10 +16,7 @@ import time
 import uuid
 from pathlib import Path
 from typing import Dict, List, Optional, Union
-
 import json5
-
-
 from jqcode.jq_code_executor.code_utils import append_signal_handler, extract_code, has_chinese_chars, print_traceback
 from jqcode.jq_utils.logger import jqkj_logger
 logger = jqkj_logger(__file__).get_logger()
@@ -35,10 +32,6 @@ ALIB_FONT_FILE = str(Path(__file__).absolute().parent / 'resource' / 'AlibabaPuH
 
 _KERNEL_CLIENTS: dict = {}
 _MISC_SUBPROCESSES: Dict[str, subprocess.Popen] = {}
-
-
-
-
 def _kill_kernels_and_subprocesses(_sig_num=None, _frame=None):
     for v in _KERNEL_CLIENTS.values():
         v.shutdown()
@@ -63,18 +56,10 @@ class CodeExecutorTool():
 
     def __init__(self):
         self.work_dir: str = os.getenv('workspace')
-        # self.work_dir='workspace/'
-        # self.work_dir: str = self.cfg.get('work_dir', self.work_dir)
         self.instance_id: str = str(uuid.uuid4())
 
     def call(self,code: str,timeout: Optional[int] = 30, **kwargs) -> dict:
        
-        # try:
-        #     params = json5.loads(params)
-        #     code = params['code']
-        # except Exception:
-            # code = extract_code(params)
-        # # code=params
         if not code.strip():
             return ''
 
@@ -89,7 +74,7 @@ class CodeExecutorTool():
                 start_code = fin.read()
                 start_code = start_code.replace('{{M6_FONT_PATH}}', repr(ALIB_FONT_FILE)[1:-1])
                 # start_code += '\n%xmode Minimal'
-            logger.info(self._execute_code(kc, start_code))
+            logger.warning(self._execute_code(kc, start_code))
             _KERNEL_CLIENTS[kernel_id] = kc
             _MISC_SUBPROCESSES[kernel_id] = subproc
 

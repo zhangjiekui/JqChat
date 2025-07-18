@@ -20,7 +20,8 @@ except:
     # Streamlit <= 1.11.0
     from streamlit.scriptrunner import add_script_run_ctx
 
-from web.utils.utils import *
+# from web.utils.utils import *
+from jqweb.utils.utils import get_img_base64,ApiRequest,logger
 from jqcode.jq_agent.c0_init_env_models import env_models_instance
 from jqcode.jq_kb_manegement.server.knowledge_base.kb_service.base import (
     get_kb_details,
@@ -34,9 +35,7 @@ try:
 except:
     pass
 
-
-
-chat_box = ChatBox(assistant_avatar=get_img_base64("chatchat_icon_blue_square_v2.png"))
+chat_box = ChatBox(assistant_avatar=get_img_base64("logo_chat_avatar.png"))
 code_message:str=None
 lazyllm_queue = env_models_instance.lazyllm_queue
 max_img_num=5
@@ -86,12 +85,12 @@ def upload_docs(user,knowledge_id,files,is_knowledge, _api: ApiRequest) -> str:
     return _api.upload_docs(uid=user,knowledge_id=knowledge_id,is_knowledge=is_knowledge,files=files)
 #聊天
 def chat(code_message,query,user,doc:str,files,is_memory,is_rewrite,is_knowledge,_api:ApiRequest)  :
-    response=_api.chat_chat(code_message=code_message,query=query,user=user,doc=doc,is_memory=is_memory,is_rewrite=is_rewrite,is_knowledge=is_knowledge,files=files)
+    response=_api.chat_jqagent(code_message=code_message,query=query,user=user,doc=doc,is_memory=is_memory,is_rewrite=is_rewrite,is_knowledge=is_knowledge,files=files)
     return response
 
 #执行code
-def code(user,_api:ApiRequest)  :
-    return _api.code_chat(user=user)
+def code(code:str,_api:ApiRequest)  :
+    return _api.code_execute(code=code)
 
 
 # 初始化session中的是否纳入知识库选项 

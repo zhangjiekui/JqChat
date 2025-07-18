@@ -9,29 +9,23 @@ from st_aggrid import AgGrid, JsCode
 from st_aggrid.grid_options_builder import GridOptionsBuilder
 from streamlit_antd_components.utils import ParseItems
 
-from jqcode.jq_kb_manegement.configs import (
-    CHUNK_SIZE,
-    DEFAULT_VS_TYPE,
-    OVERLAP_SIZE,
-    ZH_TITLE_ENHANCE,
-    kbs_config,
-)
+from jqcode.jq_kb_manegement.configs import DEFAULT_VS_TYPE, kbs_config
+
 from jqcode.jq_kb_manegement.server.knowledge_base.kb_service.base import (
     get_kb_details,
-    get_kb_file_details,
+    get_kb_file_details
 )
 from jqcode.jq_kb_manegement.server.knowledge_base.utils import LOADER_DICT, get_file_path
 from jqcode.jq_kb_manegement.server.utils import get_config_models
+from jqcode.jq_agent.c0_init_env_models import env_models_instance
 
-from jqcode.jq_kb_manegement.webui_pages.utils import *
+from jqweb.utils.utils import *
 
-# SENTENCE_SIZE = 100
+
 
 cell_renderer = JsCode(
     """function(params) {if(params.value==true){return '✓'}else{return '×'}}"""
 )
-
-
 def config_aggrid(
     df: pd.DataFrame,
     columns: Dict[Tuple[str, str], Dict] = {},
@@ -65,16 +59,17 @@ def file_exists(kb: str, selected_rows: List) -> Tuple[str, str]:
             return file_name, file_path
     return "", ""
 
-
+ 
 def knowledge_base_page(api: ApiRequest, is_lite: bool = None):
     try:
         kb_list = {x["kb_name"]: x for x in get_kb_details()}
     except Exception as e:
         st.error(
-            f"获取知识库信息错误:{e}"
+            f"获取知识库信息错误：{e}"
         )
         st.stop()
     kb_names = list(kb_list.keys())
+    kb_names.sort()
 
     if (
         "selected_kb_name" in st.session_state
@@ -89,13 +84,14 @@ def knowledge_base_page(api: ApiRequest, is_lite: bool = None):
 
     def format_selected_kb(kb_name: str) -> str:
         if kb := kb_list.get(kb_name):
-            return f"{kb_name} ({kb['vs_type']} @ {kb['embed_model']})"
+            embed_model_name = env_models_instance.embedding_model_name
+            return f"{kb_name} (es @ {embed_model_name})"
         else:
             return kb_name
 
     selected_kb = st.selectbox(
         "请选择或新建知识库：",
-        kb_names + ["新建知识库"],
+        ["新建知识库"] + kb_names  ,
         format_func=format_selected_kb,
         index=selected_kb_index,
     )
@@ -106,7 +102,7 @@ def knowledge_base_page(api: ApiRequest, is_lite: bool = None):
                 "新建知识库名称",
                 placeholder="新知识库名称，不少于3个字符，不支持中文命名，且必须全部是小写字母",
                 key="kb_name",
-            )
+            ).lower()
             kb_info = st.text_input(
                 "知识库简介",
                 placeholder="新知识库简介，不少于20个字符，以提升Agent智能体的匹配成功率",
@@ -115,7 +111,8 @@ def knowledge_base_page(api: ApiRequest, is_lite: bool = None):
 
             col0, _ = st.columns([3, 1])
 
-            vs_types = list(kbs_config.keys())
+            # vs_types = list(kbs_config.keys())
+            vs_types = ['es']
             vs_type = col0.selectbox(
                 "向量库类型",
                 vs_types,
@@ -138,18 +135,32 @@ def knowledge_base_page(api: ApiRequest, is_lite: bool = None):
             )
 
         if submit_create_kb:
+            # lyq 知识库名称验证
             if not kb_name or not kb_name.strip():
                 st.error(f"知识库名称不能为空！")
+            elif len(kb_name) < 3:
+                st.error(f"知识库名称必须不少于3个字符！")
+
+            elif not kb_name.isalpha() and not any(char.isalpha() for char in kb_name):  # 确保包含字母，不能全是数字
+                st.error(f"知识库名称不支持中文，只能使用英文字母或数字组合，且必须包含字母！")
+
+            # lyq 知识库简介验证
+            elif not kb_info or len(kb_info.strip()) < 20:
+                st.error(f"知识库简介必须不少于20个字符，方便Agent匹配查找！")
+
             elif kb_name in kb_list:
                 st.error(f"名为 {kb_name} 的知识库已经存在！")
             elif embed_model is None:
-                st.error(f"请选择Embedding模型！")
+                st.error(f"请选择Embedding模型!")
+
             else:
                 ret = api.create_knowledge_base(
                     knowledge_base_name=kb_name,
                     vector_store_type=vs_type,
                     embed_model=embed_model,
+                    kb_info=kb_info,
                 )
+
                 st.toast(ret.get("msg", " "))
                 st.session_state["selected_kb_name"] = kb_name
                 st.session_state["selected_kb_info"] = kb_info
@@ -164,6 +175,24 @@ def knowledge_base_page(api: ApiRequest, is_lite: bool = None):
             [i for ls in LOADER_DICT.values() for i in ls],
             accept_multiple_files=True,
         )
+
+        chars_to_replace = [
+                            " ",    # 空格
+                            "(", ")",  # 英文括号
+                            "（", "）",  # 中文括号
+                        ]
+        
+        if files:  # 确保files不为空
+            for file in files:  # 遍历所有文件
+                if file.name:  # 确保文件名不为空
+                    new_filename = file.name
+                    for char in chars_to_replace:
+                        new_filename = new_filename.replace(char, "")
+                    file.name = new_filename
+
+
+
+
         kb_info = st.text_area(
             "请输入知识库介绍:",
             value=st.session_state["selected_kb_info"],
@@ -179,19 +208,20 @@ def knowledge_base_page(api: ApiRequest, is_lite: bool = None):
             st.session_state["selected_kb_info"] = kb_info
             api.update_kb_info(kb, kb_info)
 
-        # with st.sidebar:
-        with st.expander(
-            "文件处理配置",
-            expanded=True,
-        ):
+        chunk_size = 500  # 定义单段文本最大长度为500
+        chunk_overlap = 100  # 定义相邻文本重合长度为100
+
+        # 使用expander，但默认展开
+        with st.expander("文件处理配置", expanded=True):
             cols = st.columns(3)
-            chunk_size = cols[0].number_input("单段文本最大长度：", 1, 1000, CHUNK_SIZE)
-            chunk_overlap = cols[1].number_input(
-                "相邻文本重合长度：", 0, chunk_size, OVERLAP_SIZE
-            )
-            cols[2].write("")
-            cols[2].write("")
-            zh_title_enhance = cols[2].checkbox("开启中文标题加强", ZH_TITLE_ENHANCE)
+            # 单段文本最大长度显示为固定值500
+            with cols[0]:
+                st.write(f"单段文本最大长度：{chunk_size}")
+            # 相邻文本重合长度显示为固定值100
+            with cols[1]:
+                st.write(f"相邻文本重合长度：{chunk_overlap}")
+            # 第三列留空
+            cols[2].empty()
 
         if st.button(
             "添加文件到知识库",
@@ -200,11 +230,13 @@ def knowledge_base_page(api: ApiRequest, is_lite: bool = None):
         ):
             ret = api.upload_kb_docs(
                 files,
+                # file_path,
                 knowledge_base_name=kb,
                 override=True,
                 chunk_size=chunk_size,
                 chunk_overlap=chunk_overlap,
-                zh_title_enhance=zh_title_enhance,
+                zh_title_enhance=True,
+                batch_size=10,
             )
             if msg := check_success_msg(ret):
                 st.toast(msg, icon="✔")
@@ -233,7 +265,30 @@ def knowledge_base_page(api: ApiRequest, is_lite: bool = None):
                     "in_folder",
                     "in_es",
                 ]
-            ]
+            ] 
+     
+            # lyq 添加文件类型排序
+            def get_file_type_order(filename):
+                """定义文件类型排序优先级"""
+                filename = filename.lower()
+                priority = {
+                    '.docx': 0,
+                    '.doc': 1,
+                    '.pdf': 2
+                }
+                ext = '.' + filename.split('.')[-1] if '.' in filename else ''
+                return priority.get(ext, 999)
+            
+            # lyq 排序后重置索引，确保No列正确
+            doc_details = doc_details.assign(
+                type_order=doc_details['file_name'].apply(get_file_type_order)
+            ).sort_values(
+                ['type_order', 'file_name']
+            ).drop('type_order', axis=1).reset_index(drop=True)
+
+            # lyq No列重新编号
+            doc_details['No'] = range(1, len(doc_details) + 1)
+
             doc_details["in_folder"] = (
                 doc_details["in_folder"].replace(True, "✓").replace(False, "×")
             )
@@ -245,12 +300,9 @@ def knowledge_base_page(api: ApiRequest, is_lite: bool = None):
                 {
                     ("No", "序号"): {},
                     ("file_name", "文档名称"): {},
-                    # ("file_ext", "文档类型"): {},
-                    # ("file_version", "文档版本"): {},
                     ("document_loader", "文档加载器"): {},
                     ("docs_count", "文档数量"): {},
                     ("text_splitter", "分词器"): {},
-                    # ("create_time", "创建时间"): {},
                     ("in_folder", "源文件"): {},
                     ("in_es", "向量库"): {},
                 },
@@ -305,16 +357,17 @@ def knowledge_base_page(api: ApiRequest, is_lite: bool = None):
                 api.update_kb_docs(
                     kb,
                     file_names=file_names,
+                    file_path=os.path.dirname(file_path),
                     chunk_size=chunk_size,
                     chunk_overlap=chunk_overlap,
-                    zh_title_enhance=zh_title_enhance,
+                    zh_title_enhance=True,
                 )
                 st.rerun()
 
             # 将文件从向量库中删除，但不删除文件本身。
             if cols[2].button(
                 "从向量库删除",
-                disabled=not (selected_rows and selected_rows[0]["in_db"]),
+                disabled=not (selected_rows and selected_rows[0]["in_es"]),
                 use_container_width=True,
             ):
                 file_names = [row["file_name"] for row in selected_rows]
@@ -336,7 +389,7 @@ def knowledge_base_page(api: ApiRequest, is_lite: bool = None):
 
         if cols[0].button(
             "依据源文件重建向量库",
-            help="无需上传文件，通过其它方式将文档拷贝到对应知识库content目录下，点击本按钮即可重建知识库。",
+            help="无需上传文件,通过其它方式将文档拷贝到对应知识库content目录下,点击本按钮即可重建知识库。",
             use_container_width=True,
             type="primary",
         ):
@@ -345,14 +398,16 @@ def knowledge_base_page(api: ApiRequest, is_lite: bool = None):
                 empty.progress(0.0, "")
                 for d in api.recreate_vector_store(
                     kb,
+                    kb_info=kb_info,
                     chunk_size=chunk_size,
                     chunk_overlap=chunk_overlap,
-                    zh_title_enhance=zh_title_enhance,
+                    zh_title_enhance=True,
                 ):
                     if msg := check_error_msg(d):
                         st.toast(msg)
                     else:
-                        empty.progress(d["finished"] / d["total"], d["msg"])
+                        pass
+                        # empty.progress(d["finished"] / d["total"], d["msg"])
                 st.rerun()
 
         if cols[2].button(

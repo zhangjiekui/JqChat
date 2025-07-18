@@ -1,6 +1,4 @@
-import argparse
 import os
-from typing import Literal
 import uvicorn
 from fastapi import Body, FastAPI
 from fastapi.middleware.cors import CORSMiddleware
@@ -10,18 +8,9 @@ from starlette.responses import RedirectResponse
 from jqcode.jq_kb_manegement.configs import CHATCHAT_ROOT, MEDIA_PATH, OPEN_CROSS_DOMAIN, VERSION
 
 from jqcode.api_server.kb_routes import kb_router
-from jqcode.api_server.chat_api import api_router
-# from jqcode.jq_knowledge_manegement.server.api_server.chat_routes import chat_router
-
-# from jqcode.jq_knowledge_manegement.server.api_server.openai_routes import openai_router
-# from jqcode.jq_knowledge_manegement.server.api_server.server_routes import server_router
-# from jqcode.jq_knowledge_manegement.server.api_server.tool_routes import tool_router
-from jqcode.jq_kb_manegement.server.chat.completion import completion
 from jqcode.jq_kb_manegement.server.utils import MakeFastAPIOffline
-from datetime import timedelta
-
 def create_app(run_mode: str = None):
-    from jqcode.chat_routes import chat_router,workspace_router
+    from jq_server.jq_chat_routes import chat_router,workspace_router
     app = FastAPI(title="JqChat API Server", version=VERSION)
     MakeFastAPIOffline(app)
     # Add CORS middleware to allow all origins
@@ -43,20 +32,21 @@ def create_app(run_mode: str = None):
     app.include_router(chat_router)
     app.include_router(kb_router)
     app.include_router(workspace_router)
-    app.include_router(api_router)
+    # app.include_router(api_router)
     # # app.include_router(server_router)
 
     # 其它接口
-    app.post(
-        "/other/completion",
-        tags=["Other"],
-        summary="要求llm模型补全(通过LLMChain)",
-    )(completion)
+    # app.post(
+    #     "/other/completion",
+    #     tags=["Other"],
+    #     summary="要求llm模型补全(通过LLMChain)",
+    # )(completion)
 
     # 媒体文件
     app.mount("/media", StaticFiles(directory=MEDIA_PATH), name="media")
 
     # 项目相关图片
+    print(f"  本地知识库存储路径:{CHATCHAT_ROOT}")
     img_dir = os.path.join(CHATCHAT_ROOT, "img")
     app.mount("/img", StaticFiles(directory=img_dir), name="img")
 
@@ -80,13 +70,14 @@ app = create_app()
 
 
 if __name__ == "__main__":
+    import argparse
     parser = argparse.ArgumentParser(
-        prog="langchain-ChatGLM",
-        description="About langchain-ChatGLM, local knowledge based ChatGLM with langchain"
-        " ｜ 基于本地知识库的 ChatGLM 问答",
+        prog="Jq Rag Server",
+        description="Jq local knowledge based Rag"
+        " ｜ 基于本地知识库的问答",
     )
     parser.add_argument("--host", type=str, default="0.0.0.0")
-    parser.add_argument("--port", type=int, default=7861)
+    parser.add_argument("--port", type=int, default=7863)
     parser.add_argument("--ssl_keyfile", type=str)
     parser.add_argument("--ssl_certfile", type=str)
     # 初始化消息

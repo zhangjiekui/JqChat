@@ -1,20 +1,17 @@
 
-from typing import List
-import uuid
-from fastapi import APIRouter, Body, File, Form,  UploadFile
 import os
-from fastapi.responses import JSONResponse,FileResponse
-import logging
-import requests
-from jqcode.chat_prompt import *
+from typing import List
+from jqcode.jq_server.jq_chat_prompt import allowed_file
 from langchain_core.messages import ToolMessage
+from fastapi.responses import JSONResponse,FileResponse
+from fastapi import APIRouter, Body, File, Form,  UploadFile
 from jqcode.langgraph_in_class import GraphAgent,display_code, display_text
 from jqcode.jq_docstores.backend_docstore_utils.jq_es_metastores import JqElasticsearchUniMetaStore
 from jqcode.jq_docstores.jq_es_client import JqEsClient
-from jqcode.jq_kb_manegement.server.knowledge_base.kb_service.base import (
-    get_kb_details,
-)
+from jqcode.jq_code_executor.code_executor import CodeExecutorTool
+from jqcode.jq_kb_manegement.server.knowledge_base.kb_service.base import get_kb_details
 from jqcode.jq_utils.logger import jqkj_logger
+
 logger = jqkj_logger(__file__).get_logger()
 metastore = JqElasticsearchUniMetaStore()
 jq_es_client = JqEsClient()
@@ -22,8 +19,7 @@ es_index_name = "default"
 index_creator='manager'
 default_index_description = "向量库/知识库工具(vectorstore/knowledge base)：关于安徽晶奇网络科技股份有限公司（简称晶奇公司）、医疗卫生、医疗健康、医疗服务、医疗政策、信息化产品方案、技术文档等等方面的文档知识库. 凡是安徽晶奇网络科技股份有限公司及医疗健康相关的问题，都必须使用该vectorstore工具。"
 if not jq_es_client.client.indices.exists(index=es_index_name):
-    jq_es_client.create_doc_index(index_name=es_index_name,description=default_index_description,index_creator=index_creator)
-    
+    jq_es_client.create_doc_index(index_name=es_index_name,description=default_index_description,index_creator=index_creator)   
 
 try:    
     index_meta = metastore.search_docs_by_text(top_k=1,user_query_text=es_index_name,query_on_fileds=['index_name'],filter_by_status=['true'])
@@ -31,16 +27,10 @@ try:
 except:    
     index_meta_dict_default = {"index_name": es_index_name, "description":default_index_description}
 
-# We know this Flask app is for local use. So we can disable the verbose Werkzeug logger
-log = logging.getLogger('werkzeug')
-log.setLevel(logging.ERROR)
-
 UPLOAD_FOLDER=str(os.environ.get("workspace","/data/projects/JqChatV2/workspace"))
-# UPLOAD_FOLDER=os.path.join(os.path.dirname(os.getcwd()), "workspace")
 
 chat_router = APIRouter(prefix="/chat", tags=["Chat对话"])
 workspace_router=APIRouter(prefix="/workspace", tags=["文件下载"])
-# 
 
 """
 {
@@ -186,21 +176,25 @@ async def upload_file(
 
     return JSONResponse(content={'message': f'上传成功',"files":ids}, status_code=200)
 
-@chat_router.post('/knowledges',summary="知识库列表")
-def knowledges(query: str = Body(alias="query",description="查询字符串"),):
+@chat_router.post('/knowledges',summary="全部知识库列表")
+def knowledges():
     kb_list = {x["kb_name"]: x for x in get_kb_details()}
     return JSONResponse(content=kb_list, status_code=200)
 
-KERNEL_API_BASE = os.getenv("KERNEL_API_BASE",'http://localhost')
-API_PORT = os.getenv("API_PORT",5011)
-kernel_api_url = f"{KERNEL_API_BASE}:{API_PORT}/api"
 @chat_router.post('/code',summary="获取code执行结果")
-def code():
-    resp = requests.get(kernel_api_url)
-    results=resp.json()
-    return JSONResponse(content=results, status_code=200)
-
-    
+def code_execute(code:str|dict = None):
+    content = f"收到请求{code}"
+    logger.warning(content)
+    code_executor=CodeExecutorTool()
+    if isinstance(code,dict):
+        code = code.get("code")
+    result,success=code_executor.call(code=code)
+    code_execute_result = {
+        "result":result,
+        "success":success
+    }
+    return JSONResponse(content=code_execute_result, status_code=200)
+   
 @workspace_router.get('/knowledge/{knowledge}/content/{file}',summary="知识库ID下的文件")
 def download_knowledge(knowledge,file):
     file_path = os.path.join(UPLOAD_FOLDER,"knowledge_base",knowledge,"content",file)
@@ -210,7 +204,6 @@ def download_knowledge(knowledge,file):
 def download_code(file):
     file_path = os.path.join(UPLOAD_FOLDER, "code",file)
     return FileResponse(file_path)
-
 @workspace_router.get('/images/{image}',summary="显示生成的图片")
 def download_code(image):
     file_path = os.path.join(UPLOAD_FOLDER, "code",image)
