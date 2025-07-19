@@ -323,10 +323,20 @@ class ApiRequest:
         """
         对应/data/projects/JqChatV2/JqChat/jqcode/jq_server/jq_chat_routes.py中的def completions方法
         """
+        # data = {
+        #     "query": query,
+        #     "user": user,
+        #     "doc":doc,
+        #     "code_message":code_message,
+        #     "files":files,
+        #     "is_memory":is_memory,
+        #     "is_rewrite":is_rewrite,
+        #     "is_knowledge":is_knowledge
+        # }
         data = {
-            "query": query,
-            "user": user,
-            "doc":doc,
+            "user_prompt": query,
+            "user_id": user,
+            "es_index_name":doc,
             "code_message":code_message,
             "files":files,
             "is_memory":is_memory,
@@ -810,9 +820,10 @@ def get_img_base64(file_name: str) -> str:
 
 if __name__ == "__main__":
     api = ApiRequest(base_url="http://127.0.0.1:7862/", timeout=10)
+    api = ApiRequest()
     print(api.base_url)
     # result = api.chat_jqagent(code_message="代码已成功执行",files=[],query="你好",user="zjk",doc="",is_memory=True,is_rewrite=True,is_knowledge=False)
-    result = api.code_execute("print('hello world')")
+    result = api.code_execute("print('代码执行成功')")
     print(result)
     result = api.code_execute("代码中测试请求你是谁")
     print(result)

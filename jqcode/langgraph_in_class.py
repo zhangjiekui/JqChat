@@ -1925,13 +1925,13 @@ class GraphAgent:
         if reasoning_content:
             reasoning_content_str = ''
             if len(reasoning_content) == 1:
-                reasoning_content_str += reasoning_content[0] + '\n------\n'
+                reasoning_content_str += reasoning_content[0]
             else:
                 for i, content in enumerate(reasoning_content):
                     reasoning_content_str += f'\n**推理步骤{i+1}** ： {content}\n'
-                reasoning_content_str = f"{reasoning_content_str}\n------\n"
+                reasoning_content_str = f"{reasoning_content_str}"
             reasoning_content_formatted = f'<details>\n<summary>点击查看"模型思考过程" </summary>\n<font color="grey" size=16px>\n{reasoning_content_str}</font></details>'
-            answer = f'\n{reasoning_content_formatted}\n' + answer
+            answer = f'\n{reasoning_content_formatted}\n\n------\n' + answer
         # print(f"最终格式化的输出结果：\n{answer}\n")  
 
 
@@ -1985,6 +1985,7 @@ if __name__ == "__main__":
     
     # user_questions += ['请检索知识库，然后回答晶奇公司质量保证过程中的角色及角色的职责或含义解释，对应的人员（姓名）有哪些?其中的批准人是谁？']
     # user_questions += ["请检索知识库：信息"]
+    user_questions = ['请绘制sin(x)曲线']
     my_main_bot = GraphAgent(executable_tools=executable_tools,routing_tools_wrapped_in_class=route_tools,allow_conversation_memory=True)
 
     # from fastapi import FastAPI

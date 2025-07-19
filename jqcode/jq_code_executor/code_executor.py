@@ -74,7 +74,7 @@ class CodeExecutorTool():
                 start_code = fin.read()
                 start_code = start_code.replace('{{M6_FONT_PATH}}', repr(ALIB_FONT_FILE)[1:-1])
                 # start_code += '\n%xmode Minimal'
-            logger.warning(self._execute_code(kc, start_code))
+            logger.info(self._execute_code(kc, start_code)) #这行代码不能注释掉，否则代码一直会执行失败！
             _KERNEL_CLIENTS[kernel_id] = kc
             _MISC_SUBPROCESSES[kernel_id] = subproc
 

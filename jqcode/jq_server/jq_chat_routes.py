@@ -74,16 +74,27 @@ curl -X 'POST' \
 
 """
 
+# @chat_router.post('/completions',summary="对话接口")
+# def completions(
+#     user_prompt: str = Body(alias="query",description="用户输入"),
+#     es_index_name: str = Body(alias="doc", description="知识库ID"),
+#     user_id: str = Body(alias="user", description="用户随机ID"),
+#     files: List[str]=Body(alias="files",description="文档ID",default=None),
+#     is_rewrite: bool =Body(default=True,description="是否启用问题改写"),
+#     is_memory:bool=Body(default=True,description="是否启用记忆"),
+#     is_knowledge=Body(default=True,description="是否是知识库的文档"),
+#     code_message:str=Body(alias="code_message",default= None, description="执行code的信息"),
+#     ):
 @chat_router.post('/completions',summary="对话接口")
 def completions(
-    user_prompt: str = Body(alias="query",description="用户输入"),
-    es_index_name: str = Body(alias="doc", description="知识库ID"),
-    user_id: str = Body(alias="user", description="用户随机ID"),
-    files: List[str]=Body(alias="files",description="文档ID",default=None),
+    user_prompt: str = Body(description="用户问题/提示词"),
+    es_index_name: str = Body(description="知识库名称"),
+    user_id: str = Body(description="用户ID"),
+    files: List[str]=Body(default=None,description="文档列表"),
     is_rewrite: bool =Body(default=True,description="是否启用问题改写"),
     is_memory:bool=Body(default=True,description="是否启用记忆"),
     is_knowledge=Body(default=True,description="是否是知识库的文档"),
-    code_message:str=Body(alias="code_message",default= None, description="执行code的信息"),
+    code_message:str=Body(default= None, description="执行code的信息"),
     ):
     allow_conversation_memory=is_memory
     allow_question_rewrite=is_rewrite
