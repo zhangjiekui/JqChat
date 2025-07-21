@@ -496,8 +496,7 @@ class InitEnvModels:
     def __init__(self):
         self.env_loaded = load_project_env()
         assert self.env_loaded, "环境变量没有正确载入！"         
-        self.lazyllm_queue = FileSystemQueue()
-        self.lazyllm_queue_sid =self.lazyllm_queue.sid
+
                
         self.ollama_host = os.getenv("OLLAMA_HOST",'http://localhost:11434')        
         self.api_type =os.getenv("OPENAI_API_TYPE",'open_ai')        

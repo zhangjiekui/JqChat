@@ -14,6 +14,7 @@ from fastapi.responses import JSONResponse
 from ollama_api import OllamaClient
 import asyncio
 from sse_starlette.sse import EventSourceResponse
+from jqcode.jq_mcp.utils import ThreadWithResult, get_process_text,chat
 # 配置日志记录
 logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger(__name__)
@@ -136,7 +137,8 @@ async def chat_completions(request: Request) -> str | dict | ChatCompletion:
     await verify_api_key(request.headers.get("authorization"))    
     try:
         data = await request.json()
-        logger.info(f"Request data: {data}")        
+        streaming = data.get("stream", False)
+        logger.info(f"Request data: {streaming=}")        
         # 验证必要字段
         if "messages" not in data:
             raise HTTPException(
@@ -152,66 +154,86 @@ async def chat_completions(request: Request) -> str | dict | ChatCompletion:
                 query = query["text"]
             if isinstance(query, list) and len(query) > 0:
                 query = query[-1].get("text")
-        text = chat_bot.run_conversation(user_question=query)
 
-        # 模拟流式输出（替换为你的 chat_bot 生成逻辑）
-        async def event_stream():
-            # text = "这是分步返回的测试响应"
-            for char in text:
-                chunk = {
-                    "id": f"chatcmpl-{int(time.time()*1000)}",
-                    "object": "chat.completion.chunk",
-                    "created": int(time.time()),
-                    "model": "default",
-                    "choices": [{
-                        "index": 0,
-                        "delta": {"content": char},
-                        "finish_reason": None
-                    }]
-                }
-                yield json.dumps(chunk)
-                await asyncio.sleep(0.002)  # 控制输出速度
-            # 发送结束标记
-            yield json.dumps({
-                "choices": [{"finish_reason": "stop"}]
-            })
+        t1 = ThreadWithResult(target=chat, args=(chat_bot,query,False))
+        t2 = ThreadWithResult(target=get_process_text, args=(chat_bot.jq_queque,False))
+                    
+        t1.start()
+        t2.start()
         
-        return EventSourceResponse(event_stream())
+        # 等待线程结束
+        t1.join()
+        t2.join()
+        chat_result_list=t1.get_result()
+        log_result_generator=t2.get_result()
+        # log_result_list = list(log_result_generator)
+        combined_results = [log_result_generator, chat_result_list]   
+        
+        # 流式输出（替换为你的 chat_bot 生成逻辑）
+        if streaming:
+            async def event_stream():
+                # text = "这是分步返回的测试响应"
+                # for char in text:
+                for results in combined_results:
+                    for result in results:
+                        if result:
+                            chunk = {
+                                "id": f"chatcmpl-{int(time.time()*1000)}",
+                                "object": "chat.completion.chunk",
+                                "created": int(time.time()),
+                                "model": "default",
+                                "choices": [{
+                                    "index": 0,
+                                    "delta": {"content": result},
+                                    "finish_reason": None
+                                }]
+                            }
+                            yield json.dumps(chunk)
+                            await asyncio.sleep(0.001)  # 控制输出速度
+                
+                
+                # 发送结束标记
+                yield json.dumps({
+                    "choices": [{"finish_reason": "stop"}]
+                })
+            
+            return EventSourceResponse(event_stream())
 
         # 非流式响应：完全兼容OpenAI格式
-        # text = query = kb_name
-        response_data = {
-            "id": f"chatcmpl-{int(time.time()*1000)}",
-            "object": "chat.completion",
-            "created": int(time.time()),
-            "model": kb_name,
-            "system_fingerprint": "fp_" + str(hash(kb_name))[:8],  # 必需字段:cite[1]
-            "choices": [{
-                "index": 0,
-                "message": {  # 必须是字典而非对象
-                    "role": "assistant",
-                    "content": f"回复的字符串:{text}"  # 确保是纯字符串，我故意简化了，防止干扰显示
-                },
-                "logprobs": None,  # 必需字段:cite[5]
-                "finish_reason": "stop"
-            }],
-            "usage": {
-                "prompt_tokens": len(query.split()),  # 示例计算
-                "completion_tokens": len(text.split()),
-                "total_tokens": len(query.split()) + len(text.split()),
-                "completion_tokens_details": {  # 必需子字段:cite[1]
-                    "reasoning_tokens": 0,
-                    "accepted_prediction_tokens": 0,
-                    "rejected_prediction_tokens": 0
+        else:
+            text = "暂时模拟的文本"
+            response_data = {
+                "id": f"chatcmpl-{int(time.time()*1000)}",
+                "object": "chat.completion",
+                "created": int(time.time()),
+                "model": kb_name,
+                "system_fingerprint": "fp_" + str(hash(kb_name))[:8],  # 必需字段:cite[1]
+                "choices": [{
+                    "index": 0,
+                    "message": {  # 必须是字典而非对象
+                        "role": "assistant",
+                        "content": f"回复的字符串:{text}"  # 确保是纯字符串，我故意简化了，防止干扰显示
+                    },
+                    "logprobs": None,  # 必需字段:cite[5]
+                    "finish_reason": "stop"
+                }],
+                "usage": {
+                    "prompt_tokens": len(query.split()),  # 示例计算
+                    "completion_tokens": len(text.split()),
+                    "total_tokens": len(query.split()) + len(text.split()),
+                    "completion_tokens_details": {  # 必需子字段:cite[1]
+                        "reasoning_tokens": 0,
+                        "accepted_prediction_tokens": 0,
+                        "rejected_prediction_tokens": 0
+                    }
                 }
             }
-        }
-        print("\n\nResponse Data:")
-        print(response_data)
-        result = JSONResponse(content=response_data,headers={"Content-Type": "application/json"})  # 明确使用JSON响应
-        print("\n\nOpenAI API response:")
-        print(result)
-        return result  # 明确使用JSON响应
+            print("\n\nResponse Data:")
+            print(response_data)
+            result = JSONResponse(content=response_data,headers={"Content-Type": "application/json"})  # 明确使用JSON响应
+            print("\n\nOpenAI API response:")
+            print(result)
+            return result  # 明确使用JSON响应
 
 
         

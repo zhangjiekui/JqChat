@@ -7,7 +7,6 @@ import base64
 from io import BytesIO
 from PIL import Image
 
-from lazyllm import FileSystemQueue
 # from audio_recorder_streamlit import audio_recorder
 import streamlit as st
 from streamlit_chatbox import ChatBox
@@ -23,6 +22,7 @@ except:
 # from web.utils.utils import *
 from jqweb.utils.utils import get_img_base64,ApiRequest,logger
 from jqcode.jq_agent.c0_init_env_models import env_models_instance
+from jqcode.jq_queue.jq_queues import JqFileSystemQueue
 from jqcode.jq_kb_manegement.server.knowledge_base.kb_service.base import (
     get_kb_details,
 )
@@ -37,7 +37,6 @@ except:
 
 chat_box = ChatBox(assistant_avatar=get_img_base64("logo_chat_avatar.png"))
 code_message:str=None
-lazyllm_queue = env_models_instance.lazyllm_queue
 max_img_num=5
 img_size = (300,300)
 
@@ -123,14 +122,14 @@ class ThreadWithResult(threading.Thread):
             return None 
 
 
-def get_process_text(user_id,chat_box):
+def get_process_text(jq_queque,chat_box):
         leading_text = "#####  整体执行过程：  \n"
         text_string = leading_text        
         values = []       
         condition = True
         while condition:            
             try:
-                values =lazyllm_queue._dequeue(id=user_id)
+                values =jq_queque
                 if values:
                     for j,text in enumerate(values):
                         if text.strip() == "DONE":
@@ -142,7 +141,7 @@ def get_process_text(user_id,chat_box):
             except Exception as e:
                 condition = False
                 logger.warning(f"获取执行过程信息时：{e}")
-                lazyllm_queue.clear()
+                jq_queque.clear()
                 break
         # print("Done:全部完成")
         return text_string[len(leading_text):]
@@ -333,9 +332,9 @@ def dialogue_page(
             files=ctx.get('files')
             # @swm 这里有问题
             is_knowledge=ctx.get("is_knowledge")
-            
+            jq_queque = JqFileSystemQueue(user)
             t1 = ThreadWithResult(target=chat, args=(code_message,prompt,user,doc,files,is_memory,is_rewrite,is_knowledge,api))
-            t2 = ThreadWithResult(target=get_process_text, args=(user,chat_box))
+            t2 = ThreadWithResult(target=get_process_text, args=(jq_queque,chat_box))
             add_script_run_ctx(t2)        
             t1.start()
             t2.start()
@@ -356,7 +355,7 @@ def dialogue_page(
             ctx['base64_images']=[]
             ctx['vlm']=False 
             ctx['is_knowledge']=False
-            lazyllm_queue.clear()
+            jq_queque.clear()
 
 
 
