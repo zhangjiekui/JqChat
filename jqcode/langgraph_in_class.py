@@ -818,7 +818,7 @@ class GraphAgent:
                             text = text.replace("\n","..")
                             logger.warning(f'GraphRag Result String={text} ...共{len(r2r_search_context)}字，仅显示前{n}字...')
                             logger.warning("========GraphRag Result String========")
-                            print(text)
+                            # print(text)
                             # self.jq_queque.enqueue(f"图知识库检索结果（共{len(text)}字，仅显示前{n}字）：\n<br>{text}......")
                             self.jq_queque.enqueue(f"图知识库综合性检索结果（共{len(text)}字，合并成1个文档）")
                             logger.warning("========GraphRag Result String========")
@@ -1544,11 +1544,8 @@ class GraphAgent:
                             except Exception as e:
                                 filename = d_metadata.get('file_name',filename)
                                 logger.warning(f"从ES获取文件({es_index_doc_id=},{filename=})失败:{e}")
-                                # _file_not_available = f"{filename}[无法提供下载]"
-                                # if filename not in referens:
-                                if True:
-                                    referens.append(filename) 
-                                    referens_dict_list.append({"filename":filename,'content':doc.page_content,"downlable":False})                           
+                                referens.append(filename) 
+                                referens_dict_list.append({"filename":filename,'content':doc.page_content,"downlable":False})                           
                                 d_added = True
                                 
                 # assert d_added
@@ -1578,7 +1575,7 @@ class GraphAgent:
                         try:
                             if not filename:
                                 filename = "不对应具体文档"
-                            filename=f"{Path(r).name} + ({filename})"
+                            filename=f"{Path(r).name}({filename})"
                         except:
                             filename = r
                             logger.warning(f"{r=}：不是有效的文件路径")
@@ -1630,9 +1627,10 @@ class GraphAgent:
                 _user_variables_statedict = {"reference":referens_str}
                 self.update_user_variables(state,_user_variables_statedict)  
                 logger.debug(f'{referens_str=}')
-        if history_generation:
-            history_generation_document = Document(page_content=history_generation)
-            documents.append(history_generation_document)
+        # if history_generation:
+        #     history_generation_document = Document(page_content=history_generation,metadata={"source":"HistoricalGeneration"})
+        #     self.jq_queque.enqueue(f'将上次生成的答案也转换为1个参考文档')
+        #     documents.append(history_generation_document)
         generation = rag_node.invoke({"documents": documents, "question": question, "messages":messages},config=invoke_llm_config)
         self.jq_queque.enqueue(f'根据获得的{len(documents)}个文档，生成答案和参考文档/网址链接')
         logger.debug(f"{generation=}")
@@ -1979,7 +1977,7 @@ class GraphAgent:
                 answer = f"{answer}\n{qualified_text}"
 
             ai_alert_text = "！本回答由 AI 生成，内容仅供参考，请仔细甄别" + '\n\n------\n'
-            answer = f"{answer}\n{ai_alert_text}"
+            answer = f"{answer}<br>{ai_alert_text}"
 
         # print(f"最终格式化的输出结果：\n{answer}\n")  
 

@@ -83,7 +83,8 @@ def upload_docs(user,knowledge_id,files,is_knowledge, _api: ApiRequest) -> str:
     """
     return _api.upload_docs(uid=user,knowledge_id=knowledge_id,is_knowledge=is_knowledge,files=files)
 #聊天
-def chat(code_message,query,user,doc:str,files,is_memory,is_rewrite,is_knowledge,_api:ApiRequest)  :
+def chat(code_message,query,user,doc:str,files,is_memory,is_rewrite,is_knowledge,_api:ApiRequest):
+    logger.warning(f"user:{user}")
     response=_api.chat_jqagent(code_message=code_message,query=query,user=user,doc=doc,is_memory=is_memory,is_rewrite=is_rewrite,is_knowledge=is_knowledge,files=files)
     return response
 
@@ -129,7 +130,7 @@ def get_process_text(jq_queque,chat_box):
         condition = True
         while condition:            
             try:
-                values =jq_queque
+                values =jq_queque.dequeue()
                 if values:
                     for j,text in enumerate(values):
                         if text.strip() == "DONE":
