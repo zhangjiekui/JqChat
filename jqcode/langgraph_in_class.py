@@ -791,7 +791,7 @@ class GraphAgent:
         message = ""
         for i,retriever in enumerate(retrievers):
             message += f" 检索器[{i+1}]{retriever.name}，检索的目标知识库为{retriever.vectorstore._store.index} "
-            self.jq_queque.enqueue(f"知识库（{retriever.vectorstore._store.index}）检索：检索器[{i+1}]{retriever.name} ")
+            self.jq_queque.enqueue(f"向量知识库（{retriever.vectorstore._store.index}）检索：检索器[{i+1}]：{retriever.name} ")
         logger.warning(f"     vectorstore方法，执行实际文档检索的集成检索器为：{message}")
         try:
             
@@ -803,7 +803,7 @@ class GraphAgent:
                 logger.warning(f"     {msg}")
             else:
                 documents = vector_documents
-                self.jq_queque.enqueue(f"知识库检索到{len(vector_documents)}篇文档")
+                self.jq_queque.enqueue(f"向量知识库检索到{len(vector_documents)}篇文档")
                 logger.warning(f"     vectorstore检索到的相关文档数:{len(vector_documents)=}")
             
             if env_models_instance.USING_GRAPH_RAG: 
@@ -1490,6 +1490,8 @@ class GraphAgent:
                             else:
                                 to_be_copyed_file_path = _fp
                                 break
+                        else:                            
+                            d_added = True
                         
                 if not d_added:
                     if to_be_copyed_file_path:
@@ -1975,7 +1977,7 @@ class GraphAgent:
                 qualified_text = "本回答经 AI 自我质量评估：不合格，请谨慎使用"
                 answer = f"{answer}\n{qualified_text}"
 
-            ai_alert_text = "！本回答由 AI 生成，内容仅供参考，请仔细甄别"
+            ai_alert_text = "！本回答由 AI 生成，内容仅供参考，请仔细甄别" + '\n\n------\n'
             answer = f"{answer}\n{ai_alert_text}"
 
         # print(f"最终格式化的输出结果：\n{answer}\n")  

@@ -1,18 +1,17 @@
 import json
 import time
 import logging
+import asyncio
 from typing import List,Any
 from fastapi.middleware.cors import CORSMiddleware
+from starlette.middleware.sessions import SessionMiddleware
 from jqcode.langgraph_in_class import GraphAgent
 from jqcode.jq_docstores.backend_docstore_utils.jq_es_metastores import JqElasticsearchUniMetaStore
 from openai.types.responses.response_item import ResponseItem
-from openai.types.chat import ChatCompletion, ChatCompletionMessage
-from openai.types import CompletionUsage
+from openai.types.chat import ChatCompletion
 from fastapi import FastAPI, Header, HTTPException, Request, status
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
-from ollama_api import OllamaClient
-import asyncio
 from sse_starlette.sse import EventSourceResponse
 from jqcode.jq_mcp.utils import ThreadWithResult, get_process_text,chat
 # 配置日志记录
@@ -49,6 +48,9 @@ def get_kb_dict(kb_name:str) -> dict:
     return kb_dict
 
 app = FastAPI()
+# 配置 SessionMiddleware
+# secret_key = "your-secret-key"  # 确保这个密钥足够随机和安全
+# app.add_middleware(SessionMiddleware, secret_key=secret_key)
 # CORS配置(供Chatbox调用)
 app.add_middleware(
     CORSMiddleware,
@@ -60,15 +62,14 @@ app.add_middleware(
 
 # 有效API Key集合
 VALID_API_KEYS = {"","abc123"}  # 替换为实际密钥
-BY_PASS_VALIDATING = True
-# # 请求验证中间件
+BY_PASS_VALIDATING = False
+## 请求验证中间件
 @app.middleware("http")
 async def validate_request(request: Request, call_next):        
     try:
         # 记录请求信息
-        logger.info(f"Request received: {request.method} {request.url}")
-        logger.info(f"Headers: {request.headers}")
-        
+        # logger.info(f"Request received: {request.method} {request.url}")
+        # logger.info(f"Headers: {request.headers}")
         # 验证必要头信息
         if not BY_PASS_VALIDATING:
             if "authorization" not in request.headers:
@@ -149,47 +150,38 @@ async def chat_completions(request: Request) -> str | dict | ChatCompletion:
         kb_base_dict = get_kb_dict(kb_name)   
         chat_bot = GraphAgent(kb_base_dict=kb_base_dict)
         query = data["messages"][-1].get("content")
-        if not isinstance(query, str):
+        while not isinstance(query, str):
             if isinstance(query, dict) and "text" in query:
                 query = query["text"]
             if isinstance(query, list) and len(query) > 0:
                 query = query[-1].get("text")
+            else:
+                logger.warning(f"Invalid query type:{type(query)}")
+                pass
+            
 
         t1 = ThreadWithResult(target=chat, args=(chat_bot,query,False))
-        t2 = ThreadWithResult(target=get_process_text, args=(chat_bot.jq_queque,False))
-                    
-        t1.start()
-        t2.start()
-        
-        # 等待线程结束
-        t1.join()
-        t2.join()
-        chat_result_list=t1.get_result()
-        log_result_generator=t2.get_result()
-        # log_result_list = list(log_result_generator)
-        combined_results = [log_result_generator, chat_result_list]   
-        
+        t1.start()        
         # 流式输出（替换为你的 chat_bot 生成逻辑）
         if streaming:
             async def event_stream():
                 # text = "这是分步返回的测试响应"
                 # for char in text:
-                for results in combined_results:
-                    for result in results:
-                        if result:
-                            chunk = {
-                                "id": f"chatcmpl-{int(time.time()*1000)}",
-                                "object": "chat.completion.chunk",
-                                "created": int(time.time()),
-                                "model": "default",
-                                "choices": [{
-                                    "index": 0,
-                                    "delta": {"content": result},
-                                    "finish_reason": None
-                                }]
-                            }
-                            yield json.dumps(chunk)
-                            await asyncio.sleep(0.001)  # 控制输出速度
+                for result in get_process_text(chat_bot.jq_queque,t1,streaming=streaming):
+                    if result:
+                        chunk = {
+                            "id": f"chatcmpl-{int(time.time()*1000)}",
+                            "object": "chat.completion.chunk",
+                            "created": int(time.time()),
+                            "model": "default",
+                            "choices": [{
+                                "index": 0,
+                                "delta": {"content": result},
+                                "finish_reason": None
+                            }]
+                        }
+                        yield json.dumps(chunk)
+                        await asyncio.sleep(0.001)  # 控制输出速度
                 
                 
                 # 发送结束标记

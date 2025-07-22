@@ -9,7 +9,6 @@ class ThreadWithResult(threading.Thread):
         self.func = target  
         self.args = args
         self.result = ""  
-  
     def run(self):
         try:  
             self.result = self.func(*self.args)  # 在执行函数的同时，把结果赋值给result,  
@@ -20,20 +19,22 @@ class ThreadWithResult(threading.Thread):
                 logger.warning(self.result)
             else:
                 logger.warning("没有结果")
-                self.result = ""
-    
+                self.result = ""  
     # 然后通过get_result函数获取返回的结果
     def get_result(self):  
         try:  
             return self.result  
         except Exception as e:  
             return None 
-        
-def get_process_text(jq_queque:JqFileSystemQueue,streaming=False,leading_text:str = "#####  整体执行过程：  \n"):
+def get_process_text(jq_queque:JqFileSystemQueue,t:ThreadWithResult,streaming=True,
+                     leading_text:str = '<details>\n<summary>点击查看"整体执行过程"</summary>\n<font color="grey" size=16px>\n',
+                     ending_text:str = '\n<br></font></details>\n------\n',
+                     process_ending_text:str = "DONE"):
         if streaming:
             yield leading_text 
         text_string = leading_text  
-        values = []       
+        values = [] 
+        chat_result_list = []      
         condition = True
         accumulate_size :int = 0
         current_no :int = 0
@@ -43,11 +44,12 @@ def get_process_text(jq_queque:JqFileSystemQueue,streaming=False,leading_text:st
                 values =jq_queque.dequeue()
                 if values:
                     for j,text in enumerate(values):
-                        if text.strip() == "DONE":
+                        if text.strip() == process_ending_text:
                             condition = False
+                            jq_queque.clear()
                         current_no = accumulate_size+j+1
-                        text = f"\n {current_no}. "+text
-                        logger.warning(f"{accumulate_size=},{size=},{j=} {text}")
+                        text = f"\n {current_no}. " + text
+                        logger.debug(f"{accumulate_size=},{size=},{j=} {text}")
                         if streaming:
                             yield text
                         text_string += text
@@ -63,10 +65,29 @@ def get_process_text(jq_queque:JqFileSystemQueue,streaming=False,leading_text:st
                     text_string += text
                 jq_queque.clear()
                 break
+            
+        t.join()
+        if streaming:
+            yield ending_text
+            yield  "\n<br>"
+        else:
+            text_string +=ending_text
+            text_string += "\n<br>"
+        
+        chat_result_list = t.get_result()
+        if chat_result_list:
+            if streaming:
+                for result in chat_result_list:
+                    text = result.strip()
+                    if text:
+                        text_string += text                            
+                        yield result
+
         if not streaming:
             result = f'<details>\n<summary>点击查看"整体执行过程"</summary>\n<font color="grey" size=16px>\n{text_string[len(leading_text):]}\n<br></font></details>\n------\n'
-            # return [result]
-            yield result
+            if chat_result_list:
+                results = [result] + chat_result_list
+            yield from results
 def chat(chat_bot:GraphAgent, user_question:str,only_return_answer_text:bool=False):      
     results_list = chat_bot.run_conversation(user_question=user_question,only_return_answer_text=only_return_answer_text)
     return results_list
