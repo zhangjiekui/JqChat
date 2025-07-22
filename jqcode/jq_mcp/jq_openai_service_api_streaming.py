@@ -57,7 +57,7 @@ app.add_middleware(
     allow_origins=["*"],
     allow_methods=["*"],
     allow_headers=["*"],
-    expose_headers=["Content-Type", "Cache-Control"],  # 暴露流式响应必需头部
+    # expose_headers=["Content-Type", "Cache-Control"],  # 暴露流式响应必需头部
 )
 
 # 有效API Key集合
@@ -158,15 +158,13 @@ async def chat_completions(request: Request) -> str | dict | ChatCompletion:
             else:
                 logger.warning(f"Invalid query type:{type(query)}")
                 pass
-            
 
         t1 = ThreadWithResult(target=chat, args=(chat_bot,query,False))
-        t1.start()        
+        t1.start()
+      
         # 流式输出（替换为你的 chat_bot 生成逻辑）
         if streaming:
             async def event_stream():
-                # text = "这是分步返回的测试响应"
-                # for char in text:
                 for result in get_process_text(chat_bot.jq_queque,t1,streaming=streaming):
                     if result:
                         chunk = {
@@ -181,7 +179,7 @@ async def chat_completions(request: Request) -> str | dict | ChatCompletion:
                             }]
                         }
                         yield json.dumps(chunk)
-                        await asyncio.sleep(0.001)  # 控制输出速度
+                        # await asyncio.sleep(0.001)  # 控制输出速度
                 
                 
                 # 发送结束标记
@@ -193,7 +191,12 @@ async def chat_completions(request: Request) -> str | dict | ChatCompletion:
 
         # 非流式响应：完全兼容OpenAI格式
         else:
-            text = "暂时模拟的文本"
+            # text = "暂时模拟的文本"
+            result_generators = get_process_text(chat_bot.jq_queque,t1,streaming=streaming)
+            text = "".join(result_generators)
+            # print(">>>>>>>"*10)
+            # print(text)
+            # print(">>>>>>>"*10)
             response_data = {
                 "id": f"chatcmpl-{int(time.time()*1000)}",
                 "object": "chat.completion",
@@ -204,7 +207,7 @@ async def chat_completions(request: Request) -> str | dict | ChatCompletion:
                     "index": 0,
                     "message": {  # 必须是字典而非对象
                         "role": "assistant",
-                        "content": f"回复的字符串:{text}"  # 确保是纯字符串，我故意简化了，防止干扰显示
+                        "content": text  # 确保是纯字符串，我故意简化了，防止干扰显示
                     },
                     "logprobs": None,  # 必需字段:cite[5]
                     "finish_reason": "stop"
@@ -220,14 +223,9 @@ async def chat_completions(request: Request) -> str | dict | ChatCompletion:
                     }
                 }
             }
-            print("\n\nResponse Data:")
-            print(response_data)
-            result = JSONResponse(content=response_data,headers={"Content-Type": "application/json"})  # 明确使用JSON响应
-            print("\n\nOpenAI API response:")
-            print(result)
+            result = JSONResponse(content=response_data,status_code=status.HTTP_200_OK,headers={"Content-Type": "application/json"})  # 明确使用JSON响应
             return result  # 明确使用JSON响应
-
-
+        
         
     except Exception as e:
         logger.error(f"OpenAI API error: {str(e)}")

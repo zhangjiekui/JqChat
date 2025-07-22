@@ -69,10 +69,10 @@ def get_process_text(jq_queque:JqFileSystemQueue,t:ThreadWithResult,streaming=Tr
         t.join()
         if streaming:
             yield ending_text
-            yield  "\n<br>"
+            # yield  "\n<br>"
         else:
             text_string +=ending_text
-            text_string += "\n<br>"
+            # text_string += "\n<br>"
         
         chat_result_list = t.get_result()
         if chat_result_list:
@@ -84,9 +84,8 @@ def get_process_text(jq_queque:JqFileSystemQueue,t:ThreadWithResult,streaming=Tr
                         yield result
 
         if not streaming:
-            result = f'<details>\n<summary>点击查看"整体执行过程"</summary>\n<font color="grey" size=16px>\n{text_string[len(leading_text):]}\n<br></font></details>\n------\n'
             if chat_result_list:
-                results = [result] + chat_result_list
+                results = [text_string] + chat_result_list
             yield from results
 def chat(chat_bot:GraphAgent, user_question:str,only_return_answer_text:bool=False):      
     results_list = chat_bot.run_conversation(user_question=user_question,only_return_answer_text=only_return_answer_text)

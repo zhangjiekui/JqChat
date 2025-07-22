@@ -819,7 +819,8 @@ class GraphAgent:
                             logger.warning(f'GraphRag Result String={text} ...共{len(r2r_search_context)}字，仅显示前{n}字...')
                             logger.warning("========GraphRag Result String========")
                             print(text)
-                            self.jq_queque.enqueue(f"图数据库检索结果（共{len(text)}字，仅显示前{n}字）：\n<br>{text}......")
+                            # self.jq_queque.enqueue(f"图知识库检索结果（共{len(text)}字，仅显示前{n}字）：\n<br>{text}......")
+                            self.jq_queque.enqueue(f"图知识库综合性检索结果（共{len(text)}字，合并成1个文档）")
                             logger.warning("========GraphRag Result String========")
                             graph_documents = [Document(page_content=r2r_search_context,metadata={'source':"GraphRag"})] 
                             documents.extend(graph_documents)
@@ -975,7 +976,7 @@ class GraphAgent:
         query_generated = ''
         question = state["question"]
         user_variables_statedict = state["user_variables"]
-        maybe_existed_docs = state["documents"]        
+        maybe_existed_docs = state.get("documents",[])        
         maybe_existed_referens_str = user_variables_statedict[self.user_id]['reference']
         # 先使用agent,可以解决复杂搜索问题（需分解搜索多个子问题的情况）
         messages = self.jq_search_agent(question)
@@ -1471,27 +1472,25 @@ class GraphAgent:
                     _fp = d_metadata.get(key,'')
                     if _fp:
                         if _fp.startswith("http"):
-                            # if _fp not in referens:
-                            if True:
-                                referens.append(_fp)
-                                # referens_dict_list.append({_fp:{'content':doc.page_content,"downlable":True}})
-                                referens_dict_list.append({"filename":_fp,'content':doc.page_content,"downlable":True})
-                                d_added = True
-                                break
+                            referens.append(_fp)
+                            referens_dict_list.append({"filename":_fp,'content':doc.page_content,"downlable":True})
+                            d_added = True
+                            break
                             
                         elif os.path.isfile(_fp):
                             if "knowledge_base" in _fp:                       
-                                # if _fp not in referens:
-                                if True:
-                                    referens.append(_fp)
-                                    referens_dict_list.append({"filename":_fp,'content':doc.page_content,"downlable":True})
+                                referens.append(_fp)
+                                referens_dict_list.append({"filename":_fp,'content':doc.page_content,"downlable":True})
                                 d_added = True
                                 break
                             else:
                                 to_be_copyed_file_path = _fp
                                 break
-                        else:                            
+                        else:
+                            referens.append(_fp)
+                            referens_dict_list.append({"filename":_fp,'content':doc.page_content,"downlable":False})                            
                             d_added = True
+                            break
                         
                 if not d_added:
                     if to_be_copyed_file_path:
@@ -1512,12 +1511,9 @@ class GraphAgent:
                             finally:
                                 if os.path.exists(kb_filepath):
                                     os.chmod(kb_filepath, 644)
-                            
-                        # if kb_filepath not in referens:
-                        if True:
-                            referens.append(kb_filepath)
-                            # referens_dict_list.append({kb_filepath:{'content':doc.page_content,"downlable":True}})
-                            referens_dict_list.append({"filename":kb_filepath,'content':doc.page_content,"downlable":True})
+
+                        referens.append(kb_filepath)
+                        referens_dict_list.append({"filename":kb_filepath,'content':doc.page_content,"downlable":True})
                         d_added = True                        
                     else:
                         es_index_doc_id = d_metadata.get('es_index_doc_id',"")
@@ -1571,16 +1567,21 @@ class GraphAgent:
                     downlable = referens.get('downlable',False)
                     if downlable:
                         if r.startswith("http"):
-                            # referens_str += f"  [{i+1}]   [{r}]({r})  \n  <p class='referens_content'>{content}<p>  \n"
                             referens_str += f"[{i+1}] <a href='{r}'>{r}</a>  \n  <p class='referens_content'>{content}<p>  \n"
                             referens_str = referens_str.replace("'type_placeholder'","网页")                
-                        else:
+                        else:                            
                             filename=Path(r).name 
                             referens_str = referens_str.replace("'type_placeholder'","文档")
                             paths =r[r.index("knowledge_base")+15:]
                             referens_str += f"[{i+1}] <a href='{url}/knowledge/{paths}'>{filename}</a>  \n  <p class='referens_content' color='grey' font-size='18px'>{content}<p>  \n"
                     else:
-                        filename=Path(r).name
+                        try:
+                            if not filename:
+                                filename = "不对应具体文档"
+                            filename=f"{Path(r).name} + ({filename})"
+                        except:
+                            filename = r
+                            logger.warning(f"{r=}：不是有效的文件路径")
                         referens_str += f"[{i+1}] {filename}  \n  <p class='referens_content'>{content}<p>  \n"
                         
 # region
@@ -1964,8 +1965,8 @@ class GraphAgent:
                 for i, content in enumerate(reasoning_content):
                     reasoning_content_str += f'\n**推理步骤{i+1}** ： {content}'
                 reasoning_content_str = f"{reasoning_content_str}"
-            reasoning_content_formatted = f'\n<details>\n<summary>点击查看"模型思考过程" </summary>\n<font color="grey" size=16px>\n{reasoning_content_str}\n</font></details>'
-            answer = f'\n{reasoning_content_formatted}\n\n------\n' + answer + '\n\n------\n'
+            reasoning_content_formatted = f'<details>\n<summary>点击查看"模型思考过程" </summary>\n<font color="grey" size=16px>\n{reasoning_content_str}\n</font></details>'
+            answer = f'{reasoning_content_formatted}\n\n------\n' + answer + '\n\n------\n'
             
             # if self.answer_is_qualified:
             #     qualified_text = "生成的答案经AI自我评估检查：合格。"
