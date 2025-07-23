@@ -1,10 +1,15 @@
 import json
 import time
 import logging
-import asyncio
-from typing import List,Any
+from typing import List,Optional,Tuple
 from fastapi.middleware.cors import CORSMiddleware
+from starlette.requests import HTTPConnection
 from starlette.middleware.sessions import SessionMiddleware
+from starlette.middleware.authentication import AuthenticationMiddleware, AuthenticationBackend
+from starlette.authentication import (
+    AuthCredentials, AuthenticationBackend,
+    BaseUser, SimpleUser, UnauthenticatedUser
+)
 from jqcode.langgraph_in_class import GraphAgent
 from jqcode.jq_docstores.backend_docstore_utils.jq_es_metastores import JqElasticsearchUniMetaStore
 from openai.types.responses.response_item import ResponseItem
@@ -48,21 +53,51 @@ def get_kb_dict(kb_name:str) -> dict:
     return kb_dict
 
 app = FastAPI()
-# 配置 SessionMiddleware
-# secret_key = "your-secret-key"  # 确保这个密钥足够随机和安全
-# app.add_middleware(SessionMiddleware, secret_key=secret_key)
+
 # CORS配置(供Chatbox调用)
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
     allow_methods=["*"],
     allow_headers=["*"],
-    # expose_headers=["Content-Type", "Cache-Control"],  # 暴露流式响应必需头部
+    expose_headers=["Content-Type", "Cache-Control"],  # 暴露流式响应必需头部
 )
 
 # 有效API Key集合
 VALID_API_KEYS = {"","abc123"}  # 替换为实际密钥
-BY_PASS_VALIDATING = False
+BY_PASS_VALIDATING = True
+class BearerTokenAuthBackend(AuthenticationBackend):
+    """
+    Authentication backend that validates Bearer tokens
+    in the Authorization header.
+    """
+    async def authenticate(
+        self,
+        conn: HTTPConnection
+    ) -> Optional[Tuple[AuthCredentials, BaseUser]]:
+        auth_header = conn.headers.get("Authorization")
+
+        if not auth_header or not auth_header.lower().startswith("bearer "):
+            return None  # Unauthenticated
+
+        token = auth_header[7:].strip()
+
+        # Check against authorized tokens
+        valid_tokens = VALID_API_KEYS
+        if token not in valid_tokens:
+            return None  # Invalid token
+        user = SimpleUser(token)
+        # Assign roles/scopes as needed
+        return AuthCredentials(["authenticated"]),user
+
+app.add_middleware(AuthenticationMiddleware,backend=BearerTokenAuthBackend())
+# 配置 SessionMiddleware
+secret_key = "your-secret-key"  # 确保这个密钥足够随机和安全
+app.add_middleware(SessionMiddleware, secret_key=secret_key)
+
+# 有效API Key集合
+VALID_API_KEYS = {"","abc123"}  # 替换为实际密钥
+BY_PASS_VALIDATING = True
 ## 请求验证中间件
 @app.middleware("http")
 async def validate_request(request: Request, call_next):        
@@ -118,8 +153,9 @@ async def verify_api_key(authorization: str = Header(None)):
                 detail="Invalid API Key"
             )
         
-@app.get("/v1/models")
-async def listModels():
+@app.get("/models", response_model=None)
+@app.get("/v1/models", response_model=None)
+async def listModels(request: Request):
     return {
         "object": "list",
         "data": [
@@ -127,7 +163,7 @@ async def listModels():
                 "id": "default",
                 "object": "model",
                 "created": int(time.time()),
-                "owned_by": "organization"
+                "owned_by": "JqNetwork"
             }
         ]
     }
@@ -138,7 +174,7 @@ async def chat_completions(request: Request) -> str | dict | ChatCompletion:
     await verify_api_key(request.headers.get("authorization"))    
     try:
         data = await request.json()
-        streaming = data.get("stream", False)
+        streaming = data.get("stream", True)
         logger.info(f"Request data: {streaming=}")        
         # 验证必要字段
         if "messages" not in data:

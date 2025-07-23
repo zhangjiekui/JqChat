@@ -1638,8 +1638,10 @@ class GraphAgent:
             history_generation=history_generation.replace("####","######")
             if history_reference_str:
                 history_reference_str=history_reference_str.replace("####","######")
-
-            generation = f'{generation}\n\n##### **中间推理步骤（开始） \n尝试通过检索知识库({self.index_name})来解答您的问题，得到的结果如下：\n {history_reference_str} \n{history_generation}\n<br>因为根据知识库得到的答案似乎并没有很好解答您的问题，接着又尝试了搜索网络，才得到最终的答案。 \n\n#####  **中间推理步骤（结束） '
+            if not self.answer_is_qualified:
+                qualified_text = '\n\n------\n' + '<font color="red">本回答经 AI 自我质量评估：不合格。请仔细甄别！</font>' + '\n\n------\n'
+                generation = f'{generation}{qualified_text}'
+            generation = f'{generation}\n\n##### **中间推理步骤（开始） \n尝试通过检索知识库({self.index_name})来解答您的问题，得到的结果如下：\n {history_reference_str} \n{history_generation}\n<br>因为根据知识库生成的回答并没有很好解答您的问题，接着又尝试了搜索网络。 \n\n#####  **中间推理步骤（结束） '
             
 
         
@@ -1812,7 +1814,9 @@ class GraphAgent:
                 while not success and retry_times <= 3:
                     result,success=code_executor.call(code=code)
                     if success:
-                        message_content = f'执行代码成功[生成的文本内容为：{result.get("text") or "无生成的文本"};生成的图片位置为：{result.get("image") or "无生成的图片"}]。\n'
+                        # message_content = f'执行代码成功[生成的文本内容为：{result.get("text") or "无生成的文本"};生成的图片位置为：{result.get("image") or "无生成的图片"}]。\n'
+                        content = result.get("text") or result.get("image")
+                        message_content = f'执行代码成功：{content}\n'
                         if 'qwen3' in env_models_instance.chat_model.model_name:
                             message_content += '/no_think'  # 记录当前执行的工具名称                    
                         
@@ -1928,7 +1932,7 @@ class GraphAgent:
         
         #   {"$user_id":{"rag_args":"$rag_args","reference":"$reference"}}        
         user_variables_statedict = {self.user_id:{"rag_args":"","reference":"","reasoning_content":[]}}
-        result = self.graph.invoke({"messages": [input_message],"question":self.question_rewrited,"question_related_messages":[],"generation":'',"user_variables":user_variables_statedict,"question_searched":False},config=self.invoke_graph_config)
+        result = self.graph.invoke({"messages": [input_message],"documents":[],"question":self.question_rewrited,"question_related_messages":[],"generation":'',"user_variables":user_variables_statedict,"question_searched":False},config=self.invoke_graph_config)
         
         logger.debug(f"==USER[id:{self.user_id}]的问题[id:{self.question_id}]，允许问题改写:{allow_question_rewrite}")
         print(f'====问题和答案====')        
@@ -1972,12 +1976,12 @@ class GraphAgent:
             #     qualified_text = "生成的答案经AI自我评估检查：不合格！请谨慎使用！"
             # answer = f"{answer}\n{qualified_text}"
 
-            if not self.answer_is_qualified:
-                qualified_text = "本回答经 AI 自我质量评估：不合格，请谨慎使用"
-                answer = f"{answer}\n{qualified_text}"
+            # if not self.answer_is_qualified:
+            #     qualified_text = "本回答经 AI 自我质量评估：不合格，请谨慎使用"
+            #     answer = f"{answer}\n{qualified_text}"
 
-            ai_alert_text = "！本回答由 AI 生成，内容仅供参考，请仔细甄别" + '\n\n------\n'
-            answer = f"{answer}<br>{ai_alert_text}"
+            ai_alert_text = '<font color="red">本回答由 AI 生成</font>' + '\n\n------\n'
+            answer = f"{answer}{ai_alert_text}"
 
         # print(f"最终格式化的输出结果：\n{answer}\n")  
 

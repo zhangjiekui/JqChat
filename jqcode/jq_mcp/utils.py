@@ -78,15 +78,18 @@ def get_process_text(jq_queque:JqFileSystemQueue,t:ThreadWithResult,streaming=Tr
         if chat_result_list:
             if streaming:
                 for result in chat_result_list:
-                    text = result.strip()
-                    if text:
-                        text_string += text                            
-                        yield result
+                    chunks = [result[i:i+1024] for i in range(0, len(result), 1024)]
+                    for chunk in chunks:
+                        # await asyncio.sleep(0.1)  # 模拟数据处理时间
+                        yield chunk
+                        
+                    # yield result
 
         if not streaming:
+            results = [text_string]
             if chat_result_list:
                 results = [text_string] + chat_result_list
-            yield from results
+            return results
 def chat(chat_bot:GraphAgent, user_question:str,only_return_answer_text:bool=False):      
     results_list = chat_bot.run_conversation(user_question=user_question,only_return_answer_text=only_return_answer_text)
     return results_list
