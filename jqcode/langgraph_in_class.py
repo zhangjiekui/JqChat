@@ -985,7 +985,7 @@ class GraphAgent:
             if isinstance(message,ToolMessage):
                 _docs = eval(message.content)
                 docs.extend(_docs)
-        self.jq_queque.enqueue(f"调用晶奇智能体搜索，返回了{len(docs)}个结果")
+        self.jq_queque.enqueue(f"调用晶灵智能体搜索，返回了{len(docs)}个结果")
         # 如果agent未得到正确答案，再调用自己的Web search：get_web_search_documents
         if not docs:
             try:
