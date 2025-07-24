@@ -364,9 +364,6 @@ def knowledge_base_page(api: ApiRequest, is_lite: bool = None):
             time.sleep(1)
             st.rerun()
 
-        with st.sidebar:
-            keyword = st.text_input("查询关键字")
-            top_k = st.slider("匹配条数", 1, 100, 3)
 
         st.write("文件内文档列表。双击进行修改，在删除列填入 Y 可删除对应行。")
         docs = []

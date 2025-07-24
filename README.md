@@ -1,5 +1,6 @@
 **du -h --max-depth=1 / | sort -rh**
-
+## maxkb v1
+docker run --name=maxkbv1 --restart=always -p 9090:8080 -v ~/.maxkbv1:/opt/maxkbv1 1panel/maxkb:v1.10.9-lts
 
 ## 安装驱动和Cuda
  Runfile Installer 12.8.1

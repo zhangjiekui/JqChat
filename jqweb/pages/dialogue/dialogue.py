@@ -149,9 +149,13 @@ def get_process_text(jq_queque,chat_box):
 def dialogue_page(
     api: ApiRequest,
     is_lite: bool = False,
+    selected_kb = "default",
+    is_memory: bool = False,
+    is_rewrite: bool = False
 ):
     ctx = chat_box.context
-    ctx.setdefault("uid", uuid.uuid4().hex)
+    user = st.session_state['username']
+    ctx.setdefault("uid", f"{user}({uuid.uuid4().hex})")
     # 初始化文件ID和执行代码结果为None
     ctx.setdefault("files", [])
     ctx.setdefault("code_message",'')
@@ -207,40 +211,9 @@ def dialogue_page(
             else:
                 st.error(f"一次最多上传{max_img_num}张图片，但您上传了{num_files}张图片，上传失败!")
     
-    with st.sidebar:      
-        try:
-            kb_list = {x["kb_name"]: x for x in get_kb_details()}
-        except Exception as e:
-            st.error(
-                "获取知识库信息错误，请检查是否已按照 `README.md` 中 `4 知识库初始化与迁移` 步骤完成初始化或迁移，或是否为数据库连接错误。"
-            )
-            st.stop()
-        if (
-            "selected_kb_name" in st.session_state
-            and st.session_state["selected_kb_name"] in kb_names
-        ):
-            selected_kb_index = kb_names.index(st.session_state["selected_kb_name"])
-        else:
-            selected_kb_index = 0
-        def format_selected_kb(kb_name: str) -> str:
-            if kb := kb_list.get(kb_name):
-                return f"{kb_name}"
-            else:
-                return kb_name  
-        if "selected_kb_info" not in st.session_state:
-            st.session_state["selected_kb_info"] = ""
-        kb_names = list(kb_list.keys())
-        kb_names.sort()
-        selected_kb = st.selectbox(
-            "请选择知识库：",
-            ["不使用知识库"]+kb_names,
-            format_func=format_selected_kb,
-                index=selected_kb_index,
-        )
-        is_memory = st.checkbox("启用会话记忆",value=True)
-        is_rewrite=st.checkbox("启用问题重写",value=True)   
+
     # Display chat messages from history on app rerun
-    # chat_box.output_messages()
+    chat_box.output_messages()
     chat_input_placeholder = "请输入对话内容，换行请使用Shift+Enter；如果是仅想识别图片中的文字，直接输入ocr即可。"
 
     
