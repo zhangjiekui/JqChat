@@ -813,7 +813,7 @@ class GraphAgent:
                         r2r_search_context = r2r_search(self.r2r_client,query=question) #,chat_on_docs_list = self.chat_on_docs_list
 
                         if r2r_search_context:
-                            n = 200
+                            n = 20000
                             text = r2r_search_context[0:n]
                             text = text.replace("\n","..")
                             logger.warning(f'GraphRag Result String={text} ...共{len(r2r_search_context)}字，仅显示前{n}字...')
@@ -1980,7 +1980,7 @@ class GraphAgent:
             #     qualified_text = "本回答经 AI 自我质量评估：不合格，请谨慎使用"
             #     answer = f"{answer}\n{qualified_text}"
 
-            ai_alert_text = '<font color="red">本回答由 AI 生成</font>' + '\n\n------\n'
+            ai_alert_text = '<font color="red">内容由AI生成</font>' + '\n\n------\n'
             answer = f"{answer}{ai_alert_text}"
 
         # print(f"最终格式化的输出结果：\n{answer}\n")  

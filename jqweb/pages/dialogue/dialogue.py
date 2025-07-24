@@ -291,6 +291,8 @@ def dialogue_page(
                     for i,base64_image in enumerate(base64_images):
                         answer_text = vlm(image_path_or_base64=base64_image,is_decoded_image_text=True,query=prompt)
                         answer_texts += f"\n {i+1}. "+ answer_text
+                ai_alert_text = '\n\n------\n' + '<font color="red">内容由AI生成</font>' + '\n\n------\n'
+                answer_texts = f"{answer_texts}{ai_alert_text}"
                 chat_box.update_msg(answer_texts,streaming=False)
             else:
                 chat_box.update_msg("未获取到图片内容",streaming=False)
