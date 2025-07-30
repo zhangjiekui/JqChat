@@ -729,7 +729,8 @@ class InitEnvModels:
         self.all_indices = self.get_all_knowledge_base()
         self.strategy = DenseVectorStrategy(hybrid=False,rrf=False,distance=DistanceMetric.COSINE)
         self.default_chinese_analyzer_settings =self.ES_DEFAULT_CHINESE_SETTINGS
-    def get_langchain_chat_model(self, temperature=0.6,top_p =0.95, top_k=20, min_p=0, frequency_penalty=0.2, repetition_penalty=1.05, max_tokens=None, streaming=False,use_deepseek=True):
+    # https://www.modelscope.cn/models/Qwen/Qwen3-30B-A3B-Instruct-2507  temperature=0.7,top_p =0.8, top_k=20, min_p=0等参数设置依据
+    def get_langchain_chat_model(self, temperature=0.7,top_p =0.8, top_k=20, min_p=0, presence_penalty=0.6,frequency_penalty=0.2, repetition_penalty=1.05, max_tokens=None, streaming=False,use_deepseek=True):
         if max_tokens:
             if max_tokens!=self.llm_model_max_tokens:
                 logger.warning(f"您现在请求的llm {max_tokens=}，与环境配置中的{self.llm_model_max_tokens=}不同，请确认！")
@@ -748,6 +749,7 @@ class InitEnvModels:
                         verbose=True,
                         temperature=temperature,
                         top_p=top_p,
+                        presence_penalty = presence_penalty,
                         frequency_penalty=frequency_penalty,
                         max_tokens=max_tokens, 
                         # 设置vllm+qwen2.5的repetition_penalty: https://qwen.readthedocs.io/zh-cn/latest/framework/function_call.html#vllm

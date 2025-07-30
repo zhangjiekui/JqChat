@@ -217,7 +217,8 @@ system_code_prompt=f"""请尽量使用简体中文来解答用户问题。
         But if you need geographical charts, use geopandas with the geopandas.datasets module.
         If the user has just uploaded a file, focus on the file that was most recently uploaded (and optionally all previously uploaded files)
 
-        If the code modifies or produces a file/image, you must save the file/image to location '{env_models_instance.abs_workspace}/code', and add a print statement at the end of the code block that prints a link to it as HTML string: <a href='{env_models_instance.workspace_url}/download?file=INSERT_FILENAME_HERE'>下载文件</a>. Replace INSERT_FILENAME_HERE with the actual filename(only filename itself,no path prefix  needed).
+        If the code modifies or produces a file/image, you must save the file/image to location '{env_models_instance.abs_workspace}/code', and add a print statement at the end of the code block that prints a link to it as HTML string: <a href='{env_models_instance.workspace_url}/download?file=INSERT_FILENAME_HERE'>下载文件</a>. Replace INSERT_FILENAME_HERE with the actual filename(only filename itself,no path prefix needed).
+        并且最后的回答要优先直接展示图片，如果没有展示图片，就必须提供下载链接
     EndOf_GENERATE_PYTHON_INSTRUCTIONS
     """
         # http://10.1.150.105:7861/download?file=
@@ -863,11 +864,12 @@ class GraphAgent:
         
         # Check hallucination / answer_is_supported_by_documents    
         try:
-            # documents_contents = [d.page_content for d in documents]
-            # documents_contents_str = "\n".join(documents_contents)
-            # score = answer_is_supported_by_documents_grader.invoke({"documents": documents_contents_str, "generation": generation},config=invoke_llm_config)
-            # grade = score.k
-            grade = "yes" # 跳过上面的检查
+            documents = state["documents"]
+            documents_contents = [d.page_content for d in documents]
+            documents_contents_str = "\n".join(documents_contents)
+            score = answer_is_supported_by_documents_grader.invoke({"documents": documents_contents_str, "generation": generation},config=invoke_llm_config)
+            grade = score.k
+            # grade = "yes" # 跳过上面的检查
         except Exception as e:
             grade = "yes" # 继续按正常往下执行！
             print(f"---ERROR: 无法获取'answer_is_supported_by_documents_grader'的判别结果，详细错误信息如下:---")
@@ -928,6 +930,7 @@ class GraphAgent:
             # pprint.pprint("---DECISION: GENERATION IS NOT GROUNDED IN DOCUMENTS, RE-TRY---")
             # return "not supported"
             print("---DECISION: GENERATION IS NOT GROUNDED IN DOCUMENTS, BUT WE DO NOT RE-TRY (RE-GENERATION), JUST DIRECTLY TO 'END' NODE---")
+            self.jq_queque.enqueue("现有文档不足以支持生成合适的答案，将自动补充网络搜索！")
             print(f"not supported: {generation=}")
             return "not supported" # todo
 
@@ -1699,7 +1702,7 @@ class GraphAgent:
         Aiming to help the user in the best possible way with the below [USER_QUESTION] do one of the following:
         1. Write Python code, in a triple backtick Markdown code block, that supports what the user is trying to achieve. Follows the system instructions between [GENERATE_PYTHON_INSTRUCTIONS] and [EndOf_GENERATE_PYTHON_INSTRUCTIONS]
         2. Answer the question the user asks.
-        3. Ask follow-up questions to better understand what the user wants to achieve. 
+        3. 如果代码中生成了图片或文件，请务必在最后的回答中包括图片或文件，并给出图片或文件的下载链接. 
         
         [USER_QUESTION]
         {user_question}

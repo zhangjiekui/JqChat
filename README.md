@@ -365,117 +365,7 @@ python ktransformers/server/main.py  --architectures Qwen3MoeForCausalLM --port 
 
 
 ## lmcache/vllm-openai 0.85
-```
-docker run --runtime nvidia --gpus all \
---env "LMCACHE_USE_EXPERIMENTAL=True" \
---env "chunk_size=256" \
---env "local_cpu=True" \
---env "max_local_cpu_size=15" \
---env "CUDA_VISIBLE_DEVICES=2,3" \
--v ~/.cache/huggingface:/root/.cache/huggingface \
--v /data:/data \
---network host \
---name lmcache-vllm-openai \
---restart=always \
-lmcache/vllm-openai:2025-05-08-v1 \
-/data/models/Qwen/Qwen3-32B-FP8 \
---served-model-name qwen3 \
---kv-transfer-config '{"kv_connector":"LMCacheConnector","kv_role":"kv_both"}' \
---tensor-parallel-size 2 \
---no-enable-chunked-prefill \
---enable-reasoning --reasoning-parser deepseek_r1 \
---enable-auto-tool-choice \
---tool-call-parser hermes \
---rope-scaling '{"rope_type":"yarn","factor":4.0,"original_max_position_embeddings":32768}' \
---max-model-len 131072
-```
-    CUDA_VISIBLE_DEVICES=2,3 vllm serve /data/models/Qwen/Qwen3-32B-FP8 \
-    --served-model-name qwen3 \
-    --kv-transfer-config '{"kv_connector":"LMCacheConnector","kv_role":"kv_both"}' \
-    --tensor-parallel-size 2 \
-    --no-enable-chunked-prefill \
-    --enable-reasoning --reasoning-parser deepseek_r1 \
-    --enable-auto-tool-choice \
-    --tool-call-parser hermes \
-    --rope-scaling '{"rope_type":"yarn","factor":4.0,"original_max_position_embeddings":32768}' \
-    --max-model-len 131072
-```
 
-```
-docker run --runtime nvidia --gpus='"device=2,3"' \
---env "LMCACHE_USE_EXPERIMENTAL=True" \
---env "chunk_size=256" \
---env "local_cpu=True" \
---env "max_local_cpu_size=15" \
--v ~/.cache/huggingface:/root/.cache/huggingface \
--v /data:/data \
---network host \
---name lmcache-vllm-openai \
---restart=always \
-lmcache/vllm-openai:2025-05-08-v1 \
-serve --model /data/models/Qwen/Qwen3-30B-A3B-FP8 \
---served-model-name qwen3 \
---kv-transfer-config '{"kv_connector":"LMCacheConnector","kv_role":"kv_both"}' \
---tensor-parallel-size 2 \
---no-enable-chunked-prefill \
---enable-reasoning --reasoning-parser deepseek_r1 \
---enable-auto-tool-choice \
---tool-call-parser hermes \
---rope-scaling '{"rope_type":"yarn","factor":3.0,"original_max_position_embeddings":32768}' \
---max-model-len 131072 \
---enable-expert-parallel
-```
-
-```
-docker run --runtime nvidia --gpus='"device=2,3"' \
---env "LMCACHE_USE_EXPERIMENTAL=True" \
---env "chunk_size=256" \
---env "local_cpu=True" \
---env "max_local_cpu_size=15" \
--v ~/.cache/huggingface:/root/.cache/huggingface \
--v /data:/data \
---network host \
---name lmcache-vllm-openai \
---restart=always \
-lmcache/vllm-openai:2025-05-08-v1 \
-/data/models/Qwen/Qwen3-30B-A3B-FP8 \
---served-model-name qwen3 \
---kv-transfer-config '{"kv_connector":"LMCacheConnector","kv_role":"kv_both"}' \
---tensor-parallel-size 2 \
---no-enable-chunked-prefill \
---enable-reasoning --reasoning-parser deepseek_r1 \
---enable-auto-tool-choice \
---tool-call-parser hermes \
---rope-scaling '{"rope_type":"yarn","factor":4.0,"original_max_position_embeddings":32768}' \
---max-model-len 131072 \
---enable-expert-parallel
-```
-
-```
-    CUDA_VISIBLE_DEVICES=2,3 vllm serve /data/models/Qwen/Qwen3-30B-A3B-FP8 \
-    --served-model-name qwen3 \
-    --tensor-parallel-size 2 \
-    --enable-chunked-prefill \
-    --enable-reasoning --reasoning-parser deepseek_r1 \
-    --enable-auto-tool-choice \
-    --tool-call-parser hermes \
-    --rope-scaling '{"rope_type":"yarn","factor":2.0,"original_max_position_embeddings":32768}' \
-    --max-model-len 64000 \
-    --gpu-memory-utilization 0.90 \
-    --enable-expert-parallel \
-    --max-num-seqs 32
-```
-```
-    CUDA_VISIBLE_DEVICES=0,1 vllm serve /data/models/Qwen/Qwen3-32B-FP8 \
-    --served-model-name qwen3 \
-    --tensor-parallel-size 2 \
-    --enable-chunked-prefill \
-    --enable-reasoning --reasoning-parser deepseek_r1 \
-    --enable-auto-tool-choice \
-    --tool-call-parser hermes \
-    --max-model-len 32000 \
-    --gpu-memory-utilization 0.98 \
-    --max-num-seqs 32
 ```
 ## vllm8.2 配合使用 OneAPI
 
@@ -512,6 +402,20 @@ pip install pip install flashinfer_python-0.2.6.post1-cp39-abi3-linux_x86_64.whl
 [当前0.9.1有问题 Failed to check the "should dump" flag on TCPStore]
 pip install -U vllm --pre --extra-index-url https://wheels.vllm.ai/nightly
 
+workon vllmb
+CUDA_VISIBLE_DEVICES=2,3 nohup vllm serve /data/models/Qwen/Qwen3-30B-A3B-Instruct-2507-FP8 \
+--served-model-name qwen3 \
+--tensor-parallel-size 2 \
+--enable-chunked-prefill \
+--enable-auto-tool-choice \
+--tool-call-parser hermes \
+--max-model-len 81920 \
+--gpu-memory-utilization 0.90 \
+--enable-expert-parallel \
+--max-num-seqs 32 \
+--host 0.0.0.0 --port 9998 \
+--enable-prefix-caching >> /root/JqLogs/qwq.log 2>&1 &
+tail -f /root/JqLogs/qwq.log
 
 workon vllmb
 CUDA_VISIBLE_DEVICES=2,3 nohup vllm serve /data/models/Qwen/Qwen3-30B-A3B-FP8 \
