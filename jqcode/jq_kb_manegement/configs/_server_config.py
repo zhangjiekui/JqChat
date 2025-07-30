@@ -51,8 +51,8 @@ class ConfigServerFactory(core_config.ConfigFactory[ConfigServer]):
         # 各服务器默认绑定host。如改为"0.0.0.0"需要修改下方所有XX_SERVER的host
         self.DEFAULT_BIND_HOST = "0.0.0.0" if sys.platform != "win32" else "127.0.0.1"
         
-        self.WEBUI_SERVER_PORT = 8501
-        self.API_SERVER_PORT = 7861
+        self.WEBUI_SERVER_PORT = 8800
+        self.API_SERVER_PORT = 8860
         self.__init_server()
 
     def __init_server(self):

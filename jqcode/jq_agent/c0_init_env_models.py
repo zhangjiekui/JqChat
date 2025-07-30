@@ -477,6 +477,49 @@ def clean_up_list_when_encounter_null_element(messages_a: list, messages_b: list
     else:
         return []
 
+class JqOnlineEmbeddingTokenizer():
+    def __init__(self, embedding_model_name: str = "bce-embedding-base_v1", base_url:str="http://10.1.150.106:9997/v1", **kwargs):
+        self.tokenizer_name = embedding_model_name
+        self.base_url = base_url
+
+    def convert_ids_to_tokens(
+        self, input: Union[List, List[List]], **kwargs
+    ) -> List[str]:
+        """
+        Convert token IDs to human readable tokens via RESTful APIs.
+
+        Parameters
+        ----------
+        input: Union[List, List[List]]
+            Input token IDs to convert, can be a single list of token IDs or a list of token ID lists.
+            To convert multiple sequences in a single request, pass a list of token ID lists.
+
+        Returns
+        -------
+        list
+            A list of decoded tokens in human readable format.
+
+        Raises
+        ------
+        RuntimeError
+            Report the failure of token conversion and provide the error message.
+
+        """
+        url = f"{self._base_url}/v1/convert_ids_to_tokens"
+        request_body = {
+            "model": self._model_uid,
+            "input": input,
+        }
+        request_body.update(kwargs)
+        response = requests.post(url, json=request_body, headers=self.auth_headers)
+        if response.status_code != 200:
+            raise RuntimeError(
+                f"Failed to decode token ids, detail: "
+            )
+        response_data = response.json()
+        return response_data
+
+
 class SingletonDecorator:
     def __init__(self, cls):
         self._cls = cls
@@ -802,8 +845,6 @@ class InitEnvModels:
             #     openai_api_key="abc123",
             #     openai_api_base="http://10.1.150.106:9997/v1")
             # emb_test = embeddings_api.embed_query("test query text")
-
-
             embed_model = LocalAIEmbeddings(model=self.embedding_model_name,openai_api_base=self.embedding_model_base_url,openai_api_key="not empty",model_kwargs={'dimensions': self.embedding_model_dimentions})
             emb_test = embed_model.embed_query("test query text")
             embedding_model_8k = LocalAIEmbeddings(model=self.embedding_model_8k_name,deployment=self.embedding_model_name,api_key="abc123",openai_api_base=self.embedding_model_base_url,base_url=self.embedding_model_8k_base_url,embedding_ctx_length=self.embedding_model_8k_max_tokens*4,chunk_size=self.embedding_model_8k_max_tokens)
@@ -1126,7 +1167,7 @@ class InitEnvModels:
 
         if only_use_reranker:
             # reduce memory usage.
-            micro_bs = 10
+            micro_bs = 6
             num_chunks = len(text_chunks)            
             if num_chunks > micro_bs:
                 reranker.top_n = micro_bs

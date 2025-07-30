@@ -109,23 +109,40 @@ workon vllm
 CUDA_VISIBLE_DEVICES=0 nohup vllm serve /data/models/Qwen/Qwen3-Embedding-0___6B --served-model-name Qwen/Qwen3-Embedding-0.6B --port 8082 >> /root/JqLogs/embedding.log 2>&1 &
 tail -f /root/JqLogs/embedding.log
 
+
 ## Reranker 备用 
 workon vllm
 CUDA_VISIBLE_DEVICES=0 vllm serve /data/models/Qwen/Qwen3-Reranker-0___6B --served-model-name Qwen/Qwen3-Reranker-0.6B  max_num_seqs=8 gpu_memory_utilization=0.5 --hf_overrides '{"architectures": ["Qwen3ForSequenceClassification"],"classifier_from_token": ["no", "yes"],"is_original_qwen3_reranker": true}' --task score
 
 
+vllm serve /data/models/Qwen3-Reranker-0___6B/ --served-model-name qwen3reranker --task score
+curl http://10.1.150.106:9998/v1/rerank \
+  -H 'accept: application/json' \
+  -H 'Content-Type: application/json' \
+  -H 'Authorization: Bearer abc123' \
+  -d '{
+      "query": "A man is eating pasta.",
+      "documents": ["A man is eating food.","A woman is playing violin.","一个人在踢球","一个人在吃饭"],
+    "model": "Qwen3-Reranker-0.6B"
+  }'
+
 ```
 curl -X 'GET' \
-  'http://10.1.150.105:8081/v1/models' \
+  'http://10.1.150.106:8082/v1/models' \
   -H 'accept: application/json' \
   -H 'Authorization: Bearer abc123'
 ```
 ## Embedding测试
-curl http://10.1.150.105:8082/v1/embeddings   -H 'accept: application/json'   -H 'Content-Type: application/json' -H 'Authorization: Bearer abc123'  -d '{
+curl http://10.1.150.106:9998/v1/embeddings   -H 'accept: application/json'   -H 'Content-Type: application/json' -H 'Authorization: Bearer abc123'  -d '{
     "input": "Follow the white rabbit.",
-    "model": "Qwen/Qwen3-Embedding-0.6B",
+    "model": "Qwen3-Embedding-0.6B",
     "encoding_format": "float"
   }'
+### ollama
+curl http://localhost:11434/api/embed -d '{
+  "model": "dengcao/Qwen3-Reranker-0.6B:F16",
+  "input":"hello"
+}'
 
 ## Reranker测试
 curl http://10.1.150.105:8081/v1/rerank \
@@ -138,7 +155,7 @@ curl http://10.1.150.105:8081/v1/rerank \
     "model": "Qwen/Qwen3-Reranker-0.6B"
   }'
 
-  curl http://10.1.150.105:8081/v1/score \
+  curl http://10.1.150.106:8082/v1/score \
   -H 'accept: application/json' \
   -H 'Content-Type: application/json' \
   -H 'Authorization: Bearer abc123' \

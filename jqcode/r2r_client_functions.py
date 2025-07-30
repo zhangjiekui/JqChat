@@ -285,6 +285,12 @@ def r2r_create_documents(r2r_client,file_paths_or_lm_documents:list):
 
 if __name__ == "__main__":
     r2r_client = r2r_authed_client("admin")
+
+    # result_collections = r2r_client.collections.list(
+    #                                                 offset=0,
+    #                                                 limit=10,
+    #                                             )
+    # print(f"{result_collections=}")
     search_settings = SearchSettings(use_semantic_search=True,use_fulltext_search=True,use_hybrid_search=True,search_strategy="rag_fusion",limit=20)
     
     # https://github.com/SciPhi-AI/R2R/blob/bdc76755880c9c6422bd5ee0d433762841185805/py/core/main/services/retrieval_service.py
