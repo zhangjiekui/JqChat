@@ -627,6 +627,9 @@ class GraphAgent:
         self.img_url = ""
         self.answer_text = ""
         self.answer_is_qualified = True
+        self.qualified_or_not_text_placeholder = "|qualified_text_placeholder|"
+        self.not_qualified_text = '\n\n------\n' + '<font color="red">本回答经 AI 自我质量评估：不合格。请仔细甄别！</font>' + '\n\n------\n'
+        
 
         # self.jq_queque.enqueue('test enqueue')
         # print(f"{self.jq_queque.peek()=}")
@@ -900,13 +903,11 @@ class GraphAgent:
                 print(f"---ERROR: 无法获取'answer_grader'的判别结果，详细错误信息如下:---")
                 print(e)
                 print("---正常往下执行---") 
-            
-            self.answer_is_qualified = grade
 
             if grade == "yes":
                 print("---DECISION: GENERATION ADDRESSES QUESTION---")
                 self.jq_queque.enqueue("生成的答案经评估检查，很好的回答了用户问题，作为最终答案")
-                self.answer_is_qualified = True
+                self.answer_is_qualified = True                              
                 return "useful"
             else:
                 self.answer_is_qualified = False
@@ -1637,13 +1638,13 @@ class GraphAgent:
         generation = rag_node.invoke({"documents": documents, "question": question, "messages":messages},config=invoke_llm_config)
         self.jq_queque.enqueue(f'根据获得的{len(documents)}个文档，生成答案和参考文档/网址链接')
         logger.debug(f"{generation=}")
+        if self.qualified_or_not_text_placeholder not in generation:
+            generation = f'{generation}{self.qualified_or_not_text_placeholder}'
+
         if history_generation:
             history_generation=history_generation.replace("####","######")
             if history_reference_str:
                 history_reference_str=history_reference_str.replace("####","######")
-            if not self.answer_is_qualified:
-                qualified_text = '\n\n------\n' + '<font color="red">本回答经 AI 自我质量评估：不合格。请仔细甄别！</font>' + '\n\n------\n'
-                generation = f'{generation}{qualified_text}'
             generation = f'{generation}\n\n##### **中间推理步骤（开始） \n尝试通过检索知识库({self.index_name})来解答您的问题，得到的结果如下：\n {history_reference_str} \n{history_generation}\n<br>因为根据知识库生成的回答并没有很好解答您的问题，接着又尝试了搜索网络。 \n\n#####  **中间推理步骤（结束） '
             
 
@@ -1819,9 +1820,9 @@ class GraphAgent:
                     if success:
                         # message_content = f'执行代码成功[生成的文本内容为：{result.get("text") or "无生成的文本"};生成的图片位置为：{result.get("image") or "无生成的图片"}]。\n'
                         content = result.get("text") or result.get("image")
-                        message_content = f'执行代码成功：{content}\n'
-                        if 'qwen3' in env_models_instance.chat_model.model_name:
-                            message_content += '/no_think'  # 记录当前执行的工具名称                    
+                        message_content = f'执行代码成功，下面请直接生成最终的回答，不要再调用任何工具：{content}\n'
+                        # if 'qwen3' in env_models_instance.chat_model.model_name:
+                        #     message_content += '/no_think'  # 记录当前执行的工具名称                    
                         
                         logger.warning(f"......代码执行成功, {message_content=}......")
                         self.jq_queque.enqueue("代码执行成功")
@@ -1942,6 +1943,14 @@ class GraphAgent:
         print(f"原始问题>>:{user_question}")
         print(f"改写问题>>:{self.question_rewrited} [{allow_question_rewrite=}]")
         answer = result['messages'][-1].content
+        if self.qualified_or_not_text_placeholder not in answer:
+            if not self.answer_is_qualified:
+                answer = f"{answer}{self.not_qualified_text}"
+        else:
+            qualified_text="" if self.answer_is_qualified else self.not_qualified_text
+            answer = answer.replace(self.qualified_or_not_text_placeholder,qualified_text)
+
+
         answer = display_text(answer)
         jq_queue.enqueue(f"正在呈现最终结果")
         # user_variables_statedict前面已存在，且值会随着self.graph.invoke的执行而变化，所以不需要重新获取
@@ -1960,8 +1969,7 @@ class GraphAgent:
             referens_str_formated = f'<details>\n<summary>点击查看"{title_formatted}"</summary>\n<font color="grey" size=16px>\n{_referens_str}\n</font></details>'
             answer = f'\n{referens_str_formated}\n' + answer
 
-        reasoning_content = user_variables_statedict[self.user_id]['reasoning_content']
-        
+        reasoning_content = user_variables_statedict[self.user_id]['reasoning_content']        
         if reasoning_content:
             reasoning_content_str = ''
             if len(reasoning_content) == 1:
@@ -1972,19 +1980,9 @@ class GraphAgent:
                 reasoning_content_str = f"{reasoning_content_str}"
             reasoning_content_formatted = f'<details>\n<summary>点击查看"模型思考过程" </summary>\n<font color="grey" size=16px>\n{reasoning_content_str}\n</font></details>'
             answer = f'{reasoning_content_formatted}\n\n------\n' + answer + '\n\n------\n'
-            
-            # if self.answer_is_qualified:
-            #     qualified_text = "生成的答案经AI自我评估检查：合格。"
-            # else:
-            #     qualified_text = "生成的答案经AI自我评估检查：不合格！请谨慎使用！"
-            # answer = f"{answer}\n{qualified_text}"
-
-            # if not self.answer_is_qualified:
-            #     qualified_text = "本回答经 AI 自我质量评估：不合格，请谨慎使用"
-            #     answer = f"{answer}\n{qualified_text}"
-
-            ai_alert_text = '<font color="red">内容由AI生成</font>' + '\n\n------\n'
-            answer = f"{answer}{ai_alert_text}"
+        
+        ai_alert_text = '<font color="red">内容由AI生成</font>' + '\n\n------\n'
+        answer = f"{answer}{ai_alert_text}"
 
         # print(f"最终格式化的输出结果：\n{answer}\n")  
 
@@ -2045,7 +2043,7 @@ if __name__ == "__main__":
     
     # user_questions += ['请检索知识库，然后回答晶奇公司质量保证过程中的角色及角色的职责或含义解释，对应的人员（姓名）有哪些?其中的批准人是谁？']
     # user_questions += ["请检索知识库：信息"]
-    # user_questions = ['请绘制sin(x)曲线']
+    user_questions = ['全民健康信息平台包含的建设内容、系统或功能']
     my_main_bot = GraphAgent(executable_tools=executable_tools,routing_tools_wrapped_in_class=route_tools,allow_conversation_memory=True)
 
     # from fastapi import FastAPI

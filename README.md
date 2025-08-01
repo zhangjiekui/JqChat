@@ -434,6 +434,26 @@ CUDA_VISIBLE_DEVICES=2,3 nohup vllm serve /data/models/Qwen/Qwen3-30B-A3B-FP8 \
 --enable-prefix-caching >> /root/JqLogs/qwq.log 2>&1 &
 tail -f /root/JqLogs/qwq.log
 ```
+workon vllmb
+CUDA_VISIBLE_DEVICES=2,3 nohup vllm serve /data/models/Qwen/Qwen3-30B-A3B-Thinking-2507-FP8 \
+--served-model-name qwen3 \
+--tensor-parallel-size 2 \
+--enable-chunked-prefill \
+--enable-reasoning --reasoning-parser deepseek_r1 \
+--enable-auto-tool-choice \
+--tool-call-parser hermes \
+--max-model-len 81920 \
+--gpu-memory-utilization 0.90 \
+--enable-expert-parallel \
+--max-num-seqs 32 \
+--host 0.0.0.0 --port 9998 \
+--enable-prefix-caching >> /root/JqLogs/qwq.log 2>&1 &
+tail -f /root/JqLogs/qwq.log
+
+
+/data/models/Qwen3-30B-A3B-Thinking-2507-AWQ
+
+
 
 CUDA_VISIBLE_DEVICES=2,3 vllm serve /data/models/swift/QwenLong-L1-32B-AWQ
 CUDA_VISIBLE_DEVICES=0,1 vllm serve /data/models/PPDocBee2-3B/PPDocBee2-3B --tensor-parallel-size 2 --max-model-len 32768 --max_seq_len 4096
