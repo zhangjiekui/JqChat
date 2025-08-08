@@ -2,13 +2,14 @@ import sys
 import streamlit as st
 import streamlit_antd_components as sac
 from datetime import datetime
-
 from jqcode.jq_kb_manegement.configs import VERSION
 from jqcode.jq_kb_manegement.server.utils import api_address
 from jqweb.pages.dialogue.dialogue import dialogue_page
 from jqweb.pages.knowledge_base.knowledge_base import knowledge_base_page
 from jqweb.utils.utils import ApiRequest, get_img_base64
 from jqcode.jq_kb_manegement.server.knowledge_base.kb_service.base import get_kb_details
+from jqcode.jq_utils.logger import jqkj_logger
+logger = jqkj_logger(__file__).get_logger()
 
 api = ApiRequest(base_url=api_address())
 
@@ -113,7 +114,7 @@ if __name__ == "__main__":
             with col2:
                 st.error("仅供测试使用，禁止注册正式用户。",width=400)
         st.stop()
-
+    
     # 已登录，显示主应用内容
     st.set_page_config(
         "晶灵智能体",
@@ -269,6 +270,10 @@ if __name__ == "__main__":
         if st.button("🚪 退出登录", use_container_width=True, key="logout_btn"):
             logout()
 
+    user_rquest_url = st.context.url 
+    print(f"在webui.py中获取到请求的 {user_rquest_url = }")
+    logger.warning(f"在webui.py中获取到请求的 {user_rquest_url = }")
+    
     # 传递知识库相关参数到对话页面
     if selected_page == "知识库管理":
         knowledge_base_page(api=api, is_lite=is_lite)
@@ -279,7 +284,8 @@ if __name__ == "__main__":
             "is_lite": is_lite,
             "selected_kb": selected_kb if 'selected_kb' in locals() else "不使用知识库",
             "is_memory": st.session_state.get("main_memory_checkbox", True),
-            "is_rewrite": st.session_state.get("main_rewrite_checkbox", True)
+            "is_rewrite": st.session_state.get("main_rewrite_checkbox", True),
+            "user_rquest_url":user_rquest_url
         }
         dialogue_page(**dialogue_kwargs)
 

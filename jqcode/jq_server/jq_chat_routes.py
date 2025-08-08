@@ -95,6 +95,7 @@ def completions(
     is_memory:bool=Body(default=True,description="是否启用记忆"),
     is_knowledge=Body(default=True,description="是否是知识库的文档"),
     code_message:str=Body(default= None, description="执行code的信息"),
+    user_rquest_url:str=Body(default=None,description="用户请求的url"),
     ):
     allow_conversation_memory=is_memory
     allow_question_rewrite=is_rewrite
@@ -105,6 +106,8 @@ def completions(
     print(f'====用户的ID是：{user_id}===================================')
     print(f'====执行代码的信息：{code_message if code_message else "没有要执行的代码"}==========================')
     print(f'====上传的文件信息：{files if files else "没有上传的文件"}==========================')
+    print(f'====用户请求的url：{user_rquest_url}==========================')
+
     if not files:
         is_knowledge = False
     print(f'====上传的文件是否存入知识库：{is_knowledge}==========================')
@@ -133,7 +136,7 @@ def completions(
                 chat_on_docs_list.append(file)
     
     chat_bot = GraphAgent(memory_thread_id=user_id, kb_base_dict=index_meta_dict,chat_on_docs_list=chat_on_docs_list,add_docs_list_to_kb=add_docs_list_to_kb,
-                          allow_conversation_memory=allow_conversation_memory,allow_question_rewrite=allow_question_rewrite)
+                          allow_conversation_memory=allow_conversation_memory,allow_question_rewrite=allow_question_rewrite,user_rquest_url=user_rquest_url)
     text = chat_bot.run_conversation(user_question=user_prompt)
     
     # returned_str

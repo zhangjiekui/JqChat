@@ -166,13 +166,6 @@ class JqSQLiteQueue(JqFileSystemQueue):
                 ''', (id,))
                 conn.commit()
 
-fsquemap = {
-    'sqlite': JqSQLiteQueue,
-}
-
-fsquemap = {
-    'sqlite': JqSQLiteQueue,
-}
 JqFileSystemQueue.set_default(JqSQLiteQueue)
 
 if __name__ == '__main__':

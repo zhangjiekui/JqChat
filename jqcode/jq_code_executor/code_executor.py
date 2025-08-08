@@ -54,9 +54,14 @@ class CodeExecutorTool():
     description = 'Python代码沙盒，可用于执行Python代码。'
     parameters = [{'name': 'code', 'type': 'string', 'description': '待执行的代码', 'required': True}]
 
-    def __init__(self):
+    def __init__(self,user_rquest_url:str=None):
         self.work_dir: str = os.getenv('workspace')
         self.instance_id: str = str(uuid.uuid4())
+        if user_rquest_url:
+            valid_url = user_rquest_url
+        else:
+            valid_url = os.getenv("deployment_url",'http://10.1.150.105:7861/workspace')
+        self.user_rquest_url = valid_url
 
     def call(self,code: str,timeout: Optional[int] = 30, **kwargs) -> dict:
        
@@ -241,8 +246,13 @@ class CodeExecutorTool():
         assert isinstance(png_bytes, bytes)
         bytes_io = io.BytesIO(png_bytes)
         PIL.Image.open(bytes_io).save(local_image_file, 'png')
-        print(os.getenv('workspace_url'))
-        image_server_url = os.path.join(os.getenv('workspace_url', 'http://localhost:7861/workspace'),"images")
+
+        if "/workspace" not in self.user_rquest_url:
+            deployment_url = f'{self.user_rquest_url}/workspace'
+        else:
+            deployment_url = self.user_rquest_url
+        image_server_url = os.path.join(deployment_url,"images")
+        logger.warning(f"CodeExecutorTool _serve_image() deployment_url={deployment_url}")
         if image_server_url:
             return f'{image_server_url}/{image_file}'
         return local_image_file

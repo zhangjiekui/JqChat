@@ -83,9 +83,9 @@ def upload_docs(user,knowledge_id,files,is_knowledge, _api: ApiRequest) -> str:
     """
     return _api.upload_docs(uid=user,knowledge_id=knowledge_id,is_knowledge=is_knowledge,files=files)
 #聊天
-def chat(code_message,query,user,doc:str,files,is_memory,is_rewrite,is_knowledge,_api:ApiRequest):
+def chat(code_message,query,user,doc:str,files,is_memory,is_rewrite,is_knowledge,_api:ApiRequest,user_rquest_url:str):
     logger.warning(f"user:{user}")
-    response=_api.chat_jqagent(code_message=code_message,query=query,user=user,doc=doc,is_memory=is_memory,is_rewrite=is_rewrite,is_knowledge=is_knowledge,files=files)
+    response=_api.chat_jqagent(code_message=code_message,query=query,user=user,doc=doc,is_memory=is_memory,is_rewrite=is_rewrite,is_knowledge=is_knowledge,files=files,user_rquest_url=user_rquest_url)
     return response
 
 #执行code
@@ -151,8 +151,10 @@ def dialogue_page(
     is_lite: bool = False,
     selected_kb = "default",
     is_memory: bool = False,
-    is_rewrite: bool = False
+    is_rewrite: bool = False,
+    user_rquest_url:str = None,
 ):
+  
     ctx = chat_box.context
     user = st.session_state['username']
     ctx.setdefault("uid", f"{user}({uuid.uuid4().hex})")
@@ -309,7 +311,18 @@ def dialogue_page(
             # @swm 这里有问题
             is_knowledge=ctx.get("is_knowledge")
             jq_queque = JqFileSystemQueue(user)
-            t1 = ThreadWithResult(target=chat, args=(code_message,prompt,user,doc,files,is_memory,is_rewrite,is_knowledge,api))
+            # 是否需要替换端口？
+            api_port = api.base_url.split(":")[-1]
+            web_port = user_rquest_url.split(":")[-1]
+            # _user_rquest_url = user_rquest_url[0:-len(web_port)]
+            # request_url = _user_rquest_url + api_port
+
+            request_url = user_rquest_url
+            if "/workspace" not in request_url:
+                deployment_url = f"{request_url}/workspace"
+            else:
+                deployment_url = request_url
+            t1 = ThreadWithResult(target=chat, args=(code_message,prompt,user,doc,files,is_memory,is_rewrite,is_knowledge,api,deployment_url))
             t2 = ThreadWithResult(target=get_process_text, args=(jq_queque,chat_box))
             add_script_run_ctx(t2)        
             t1.start()
@@ -325,6 +338,26 @@ def dialogue_page(
             log_text = f'<details>\n<summary>点击查看"整体执行过程"</summary>\n<font color="grey" size=16px>\n{log_result}\n------\n</font></details>'
             chat_text = chat_result["text"]
             answer_text = f"{log_text}\n{chat_text}"
+
+
+            # if "127.0.0.1" in request_url or "localhost" in request_url or "0.0.0.0" in request_url:
+            #     logger.warning(f"根据user_request获取到 {request_url=}为本地地址，转换为服务器地址")
+            #     port = request_url
+            #     workspace_url_removed = env_models_instance.workspace_url.split(":")[-1]
+            #     removed_chars = len(workspace_url_removed)
+            #     workspace_url = env_models_instance.workspace_url[0:-removed_chars]
+            #     request_url = workspace_url + port
+            #     logger.warning(f"转换后的服务器地址为:{request_url=}")                
+
+            env_deployment_url = env_models_instance.get_deployment_url()
+            # 替换端口
+            answer_text = answer_text.replace(f":{api_port}/",f":{web_port}/")
+
+
+            if deployment_url!=env_deployment_url:
+                logger.warning(f"将最终AI结果中的ENV部署地址{env_deployment_url=}替换为实际服务地址{deployment_url=}")
+                answer_text = answer_text.replace(env_deployment_url,deployment_url)
+
             chat_box.update_msg(answer_text,streaming=False)
             #清空code执行回复信息和文件
             ctx['files']=[]

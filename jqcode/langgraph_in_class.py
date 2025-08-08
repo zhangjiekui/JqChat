@@ -182,47 +182,7 @@ class CODE_EXECUTION(BaseModel,extra='allow'):
 
 
 # region: Some utils mothods or varaiables
-system_code_prompt=f"""请尽量使用简体中文来解答用户问题。
-    Act as an EXPERT with ten years of experience in the domain of data anylasis, your role is to help inexperienced people explore/analyse data. 
-    Be sure to help the user understand what to focus on and give suggestions on where it would make sense to dig deeper.
-    If you need to use/generate Python code, follow the instructions under [GENERATE_PYTHON_INSTRUCTIONS].
-    GENERATE_PYTHON_INSTRUCTIONS:
-        First, think step by step what you want to do and write it down in Simplified Chinese.
-        Then generate valid Python code all in a code block 
-        Make sure all code is valid - it will be run in a Jupyter Python 3 kernel environment. 
-        MUST CHECK:
-            Define every variable before you use it.
-            Import every module/package before you use it.such as:
-                import numpy as np
-                import pandas as pd
-                import seaborn as sns
-                import matplotlib.pyplot as plt
-                import plotly.express as px
-                import plotly.graph_objects as go                
-        Following modules/packages are available:
-            For data wrangling/munging, you can use 
-                'numpy',
-                'dateparser',
-                'pandas',
-            For data visualization, you can use
-                'matplotlib',
-                'seaborn',
-                'plotly',
-        Be sure to generate charts with plotly/matplotlib/seaborn, matplotlib.pyplot is preferred. When pyplot is used, please add the following codes to properly display:\n
-        # 设置中文字体和负号显示
-        plt.rcParams['font.sans-serif'] = ['SimHei']  # 使用黑体显示中文
-        plt.rcParams['axes.unicode_minus'] = False    # 显示负号
-        # 设置中文字体和负号显示
-        
-        But if you need geographical charts, use geopandas with the geopandas.datasets module.
-        If the user has just uploaded a file, focus on the file that was most recently uploaded (and optionally all previously uploaded files)
 
-        If the code modifies or produces a file/image, you must save the file/image to location '{env_models_instance.abs_workspace}/code', and add a print statement at the end of the code block that prints a link to it as HTML string: <a href='{env_models_instance.workspace_url}/download?file=INSERT_FILENAME_HERE'>下载文件</a>. Replace INSERT_FILENAME_HERE with the actual filename(only filename itself,no path prefix needed).
-        并且最后的回答要优先直接展示图片，如果没有展示图片，就必须提供下载链接
-    EndOf_GENERATE_PYTHON_INSTRUCTIONS
-    """
-        # http://10.1.150.105:7861/download?file=
-        # /data/projects/JqChatV2/workspace/generated_files/
 
 usual_imports = """import numpy as np\nimport pandas as pd\nimport seaborn as sns\nimport matplotlib.pyplot as plt\nimport plotly.express as px\nimport plotly.graph_objects as go"""
 
@@ -534,7 +494,7 @@ class GraphAgent:
                  llm_model:ChatOpenAI=None,chat_on_docs_list:List[str]=None,add_docs_list_to_kb:bool=True, 
                  allow_conversation_memory=True,allow_question_rewrite = True,
                  kb_base_dict:dict={"index_name": 'zjk_jqesclient_reader_test_768im', "description":default_index_description}, 
-                 recursion_limit:int=25, memory_thread_id:str=shortuuid.uuid()) -> None:
+                 recursion_limit:int=25, memory_thread_id:str=shortuuid.uuid(),user_rquest_url:str=env_models_instance.deployment_url) -> None:
         
     # region: 初始化
         # 获取知识库相关的信息
@@ -546,6 +506,7 @@ class GraphAgent:
         self.allow_conversation_memory=allow_conversation_memory
         self.allow_question_rewrite = allow_question_rewrite
         self.user_id = memory_thread_id
+        self.user_rquest_url = user_rquest_url
         try:
             from r2r_client_functions import r2r_authed_client
             r2r_client = r2r_authed_client(user_id=self.user_id)
@@ -1561,7 +1522,8 @@ class GraphAgent:
                 
             if referens_dict_list:
                 referens_str = "#### 参考'type_placeholder': \n"
-                url = env_models_instance.workspace_url
+                url = self.user_rquest_url
+                logger.warning(f"  ==参考文献url：{url}")
                 for i,referens in enumerate(referens_dict_list):
                     r = referens.get('filename','')
                     content = referens.get('content','')
@@ -1617,7 +1579,7 @@ class GraphAgent:
         #                             r = kb_filepath
                             
         #                         paths =r[r.index("knowledge_base")+15:]
-        #                         url = env_models_instance.workspace_url                        
+        #                         url = self.user_rquest_url                       
         #                         referens_str += f"    [{i+1}] <a href='{url}/knowledge/{paths}'>{filename}</a>  \n"
         #                 else:
         #                     result = es_connection.get(index=files_index, id=index_id)
@@ -1698,6 +1660,49 @@ class GraphAgent:
                             
         context = "\n".join([m.content for m in question_related_messages if m.content and m.name!='history_ai'])
 
+        logger.warning(f"[Code Executor:system_code_prompt] {self.user_rquest_url=}")
+        system_code_prompt=f"""请尽量使用简体中文来解答用户问题。
+            Act as an EXPERT with ten years of experience in the domain of data anylasis, your role is to help inexperienced people explore/analyse data. 
+            Be sure to help the user understand what to focus on and give suggestions on where it would make sense to dig deeper.
+            If you need to use/generate Python code, follow the instructions under [GENERATE_PYTHON_INSTRUCTIONS].
+            GENERATE_PYTHON_INSTRUCTIONS:
+                First, think step by step what you want to do and write it down in Simplified Chinese.
+                Then generate valid Python code all in a code block 
+                Make sure all code is valid - it will be run in a Jupyter Python 3 kernel environment. 
+                MUST CHECK:
+                    Define every variable before you use it.
+                    Import every module/package before you use it.such as:
+                        import numpy as np
+                        import pandas as pd
+                        import seaborn as sns
+                        import matplotlib.pyplot as plt
+                        import plotly.express as px
+                        import plotly.graph_objects as go                
+                Following modules/packages are available:
+                    For data wrangling/munging, you can use 
+                        'numpy',
+                        'dateparser',
+                        'pandas',
+                    For data visualization, you can use
+                        'matplotlib',
+                        'seaborn',
+                        'plotly',
+                Be sure to generate charts with plotly/matplotlib/seaborn, matplotlib.pyplot is preferred. When pyplot is used, please add the following codes to properly display:\n
+                # 设置中文字体和负号显示
+                plt.rcParams['font.sans-serif'] = ['SimHei']  # 使用黑体显示中文
+                plt.rcParams['axes.unicode_minus'] = False    # 显示负号
+                # 设置中文字体和负号显示
+                
+                But if you need geographical charts, use geopandas with the geopandas.datasets module.
+                If the user has just uploaded a file, focus on the file that was most recently uploaded (and optionally all previously uploaded files)
+
+                If the code modifies or produces a file/image, you must save the file/image to location '{env_models_instance.abs_workspace}/code', and add a print statement at the end of the code block that prints a link to it as HTML string: <a href='{self.user_rquest_url}/download?file=INSERT_FILENAME_HERE'>下载文件</a>. Replace INSERT_FILENAME_HERE with the actual filename(only filename itself,no path prefix needed).
+                并且最后的回答要优先直接展示图片，如果没有展示图片，就必须提供下载链接
+            EndOf_GENERATE_PYTHON_INSTRUCTIONS
+            """
+                # http://10.1.150.105:7861/download?file=
+                # /data/projects/JqChatV2/workspace/generated_files/
+
         user_code_prompt = f"""First, here is a history of what I asked you to do earlier. 
         {context}        
         Aiming to help the user in the best possible way with the below [USER_QUESTION] do one of the following:
@@ -1765,7 +1770,7 @@ class GraphAgent:
                 break
             
         tool_name = 'code_execution'
-        code_executor=CodeExecutorTool()
+        code_executor=CodeExecutorTool(self.user_rquest_url)
         # 获取代码code和文本code_text
         code = ''
         code_text =''

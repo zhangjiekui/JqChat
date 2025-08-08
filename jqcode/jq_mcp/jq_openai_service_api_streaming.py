@@ -48,7 +48,7 @@ def get_kb_dict(kb_name:str) -> dict:
                 kb_dict=  {"index_name": kb_name, "description":description}
                 break
         if not kb_dict:
-            print(f"知识库 {kb_name} 不存在，将返回默认的知识库信息！")
+            logger.warning(f"知识库 {kb_name} 不存在，将返回默认的知识库信息！")
             kb_dict=  {"index_name": default_kb_name, "description":default_kb_description}
     return kb_dict
 

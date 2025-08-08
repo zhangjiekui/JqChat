@@ -379,5 +379,5 @@ def main(local_debug: bool = False):
 
 
 if __name__ == "__main__":
-    main(local_debug=True)
+    main(local_debug=False)
     # 端口配置文件/root/.chatchat/workspace/workspace_config.json
