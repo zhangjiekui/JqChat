@@ -287,7 +287,6 @@ if __name__ == "__main__":
             user_rquest_url_port = user_rquest_url.split(":")[-1]
             user_rquest_url = user_rquest_url.replace(user_rquest_url_port,api_url_port)
             print(f"因为是本地请求，需替换web_port({user_rquest_url_port})为api_port({api_url_port}),替换后的结果为： {user_rquest_url = }")
-
             break
     # 传递知识库相关参数到对话页面
     if selected_page == "知识库管理":

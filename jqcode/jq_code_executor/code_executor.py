@@ -16,10 +16,7 @@ import time
 import uuid
 from pathlib import Path
 from typing import Dict, List, Optional, Union
-import json5
-from PIL import Image, ImageDraw, ImageFont
-
-from jqcode.jq_code_executor.code_utils import append_signal_handler, extract_code, has_chinese_chars, print_traceback
+from jqcode.jq_code_executor.code_utils import append_signal_handler, print_traceback
 from jqcode.jq_utils.logger import jqkj_logger
 logger = jqkj_logger(__file__).get_logger()
 
@@ -65,6 +62,7 @@ class CodeExecutorTool():
         else:
             valid_url = os.getenv("deployment_url",'http://10.1.150.105:7861/workspace')
         self.user_rquest_url = valid_url
+        # _check_deps_for_code_interpreter()
 
     def call(self,code: str,timeout: Optional[int] = 30, **kwargs) -> dict:
        
