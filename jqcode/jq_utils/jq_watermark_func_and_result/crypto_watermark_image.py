@@ -4,7 +4,7 @@ from Crypto.Util.Padding import pad, unpad
 import hashlib
 import os
 import platform
-from jqcode.jq_utils.crypto_watermark_text import print_formatting
+from jqcode.jq_utils.jq_watermark_func_and_result.crypto_watermark_text import print_formatting
 
 # 初始化密钥和IV
 class ImageWatermark:
@@ -105,7 +105,7 @@ class ImageWatermark:
         return font
 
     def add_visible_watermark(self, image_path: str, watermark_text: str, output_path: str,
-                              position=(50, 50), font_size=50, color=(255, 255, 255, 128)):
+                              position=(50, 50), font_size=50, color=(255, 0, 0, 128)):
         """
         在图片上添加可见水印（文字），支持中文
         :param image_path: 原图路径
@@ -116,13 +116,24 @@ class ImageWatermark:
         :param color: 文字颜色 RGBA（最后一个是透明度）
         """
         img = Image.open(image_path).convert("RGBA")
-        txt_layer = Image.new('RGBA', img.size, (255, 255, 255, 0))
+        txt_layer = Image.new('RGBA', img.size, (255, 255, 255, 128))
         draw = ImageDraw.Draw(txt_layer)
 
         # 获取支持中文的字体
         font = self.get_chinese_font(font_size)
+        # 4. 添加文字（位置可根据需要调整）
+        width, height = img.size
+        # 兼容新旧版本的尺寸获取
+        if hasattr(draw, 'textlength'):
+            text_width = draw.textlength(watermark_text, font=font)
+            text_height = font.getbbox(watermark_text)[3]  # 获取字体高度
+        else:
+            text_width, text_height = draw.textsize(watermark_text, font=font)
 
-        draw.text(position, watermark_text, font=font, fill=color)
+        final_position = (width - text_width - position[0], height -text_height - position[1])  # 右下角
+        draw.text(final_position, watermark_text, font=font, fill=color)  # 红色文字
+
+        # draw.text(position, watermark_text, font=font, fill=color)
         watermarked = Image.alpha_composite(img, txt_layer)
         watermarked = watermarked.convert("RGB")  # 转回 RGB 保存为 JPG/PNG
         watermarked.save(output_path, format="PNG")
@@ -161,12 +172,12 @@ if __name__ == "__main__":
     
     wm = ImageWatermark("strong_password_123")
 
-    original_image = "jqcode/jq_utils/test.jpg"
-    invisible_output = "jqcode/jq_utils/watermarked_invisible.png"
-    visible_output = "jqcode/jq_utils/watermarked_visible.png"
+    original_image = "/data/projects/JqChatV2/JqChat/jqcode/jq_utils/jq_watermark_func_and_result/图片/test.jpg"
+    invisible_output = "/data/projects/JqChatV2/JqChat/jqcode/jq_utils/jq_watermark_func_and_result/图片/watermarked_invisible.png"
+    visible_output = "/data/projects/JqChatV2/JqChat/jqcode/jq_utils/jq_watermark_func_and_result/图片/watermarked_visible.png"
     print_formatting("原始图片","test.jpg")
     watermark = "JqAgentWatermark"
-    watermark = "晶奇智能体水印"
+    watermark = "内容由AI生成"
     print_formatting("水印文本",watermark)
 
     # 嵌入不可见水印
@@ -179,10 +190,7 @@ if __name__ == "__main__":
 
     # 添加可见水印（支持中文）
     print_formatting(f"将提取到的水印添加到{visible_output.split('/')[-1]}",extracted)
-    wm.add_visible_watermark(original_image, extracted, visible_output,
-                             position=(50, 50),
-                             font_size=50,
-                             color=(255, 255, 255, 128))  # 半透明白色
+    wm.add_visible_watermark(original_image, extracted, visible_output)  # 半透明白色
 
 
 

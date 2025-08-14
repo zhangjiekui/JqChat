@@ -17,6 +17,8 @@ import uuid
 from pathlib import Path
 from typing import Dict, List, Optional, Union
 import json5
+from PIL import Image, ImageDraw, ImageFont
+
 from jqcode.jq_code_executor.code_utils import append_signal_handler, extract_code, has_chinese_chars, print_traceback
 from jqcode.jq_utils.logger import jqkj_logger
 logger = jqkj_logger(__file__).get_logger()
@@ -32,6 +34,7 @@ ALIB_FONT_FILE = str(Path(__file__).absolute().parent / 'resource' / 'AlibabaPuH
 
 _KERNEL_CLIENTS: dict = {}
 _MISC_SUBPROCESSES: Dict[str, subprocess.Popen] = {}
+
 def _kill_kernels_and_subprocesses(_sig_num=None, _frame=None):
     for v in _KERNEL_CLIENTS.values():
         v.shutdown()
@@ -233,11 +236,13 @@ class CodeExecutorTool():
             if finished:
                 break
         # result = result.lstrip('\n')
-        logger.info(result)
+        logger.warning(result)
         return result,success
 
     def _serve_image(self, image_base64: str) -> str:
         import PIL.Image
+        from jqcode.jq_utils.jq_watermark_func_and_result.crypto_watermark_image import ImageWatermark
+        wm = ImageWatermark("strong_password_123")
 
         image_file = f'{uuid.uuid4()}.png'
         local_image_file = os.path.join(self.work_dir,"code", image_file)
@@ -246,7 +251,8 @@ class CodeExecutorTool():
         assert isinstance(png_bytes, bytes)
         bytes_io = io.BytesIO(png_bytes)
         PIL.Image.open(bytes_io).save(local_image_file, 'png')
-
+        wm.add_visible_watermark(local_image_file, "内容由AI生成", local_image_file)  # 半透明红色
+        logger.warning(f"CodeExecutorTool _serve_image() local_image_file={local_image_file}")
         if "/workspace" not in self.user_rquest_url:
             deployment_url = f'{self.user_rquest_url}/workspace'
         else:
@@ -256,7 +262,6 @@ class CodeExecutorTool():
         if image_server_url:
             return f'{image_server_url}/{image_file}'
         return local_image_file
-
 
 def _check_deps_for_code_interpreter():
     try:

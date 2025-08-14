@@ -146,7 +146,7 @@ question_rewrite_chain = question_rewrite_prompt | llm_model
 
 class WEB_SEARCH(BaseModel):
     """
-    The internet. Use web_search for questions that are related to anything else than agent memory , prompt engineering, and adversarial attacks, 特别是2024年及以后相关的问题及发生的事情.
+    网络搜索工具。 使用网络网络搜索工具从网络上获取相关信息以回答用户问题, 特别是2024年及以后的信息，尤其是用户问题中提及了“使用网络搜索”的时候，请优先调用网络搜索工具(WEB_SEARCH).
     """
     query: str = Field(description="The query to use when searching the internet.")
 
@@ -1661,7 +1661,7 @@ class GraphAgent:
         context = "\n".join([m.content for m in question_related_messages if m.content and m.name!='history_ai'])
 
         logger.warning(f"[Code Executor:system_code_prompt] {self.user_rquest_url=}")
-        system_code_prompt=f"""请尽量使用简体中文来解答用户问题。
+        _system_code_prompt=f"""请尽量使用简体中文来解答用户问题。
             Act as an EXPERT with ten years of experience in the domain of data anylasis, your role is to help inexperienced people explore/analyse data. 
             Be sure to help the user understand what to focus on and give suggestions on where it would make sense to dig deeper.
             If you need to use/generate Python code, follow the instructions under [GENERATE_PYTHON_INSTRUCTIONS].
@@ -1698,6 +1698,57 @@ class GraphAgent:
 
                 If the code modifies or produces a file/image, you must save the file/image to location '{env_models_instance.abs_workspace}/code', and add a print statement at the end of the code block that prints a link to it as HTML string: <a href='{self.user_rquest_url}/download?file=INSERT_FILENAME_HERE'>下载文件</a>. Replace INSERT_FILENAME_HERE with the actual filename(only filename itself,no path prefix needed).
                 并且最后的回答要优先直接展示图片，如果没有展示图片，就必须提供下载链接
+            EndOf_GENERATE_PYTHON_INSTRUCTIONS
+            """
+        system_code_prompt=f"""请尽量使用简体中文来解答用户问题。
+            Act as an EXPERT with ten years of experience in the domain of data anylasis, your role is to help inexperienced people explore/analyse data. 
+            Be sure to help the user understand what to focus on and give suggestions on where it would make sense to dig deeper.
+            If you need to use/generate Python code, follow the instructions under [GENERATE_PYTHON_INSTRUCTIONS].
+            GENERATE_PYTHON_INSTRUCTIONS:
+                First, think step by step what you want to do and write it down in Simplified Chinese.
+                Then generate valid Python code all in a code block 
+                Make sure all code is valid - it will be run in a Jupyter Python 3 kernel environment. 
+                MUST CHECK:
+                    Define every variable before you use it.
+                    Import every module/package before you use it.such as:
+                        import numpy as np
+                        import pandas as pd
+                        import seaborn as sns
+                        import matplotlib.pyplot as plt
+                        import plotly.express as px
+                        import plotly.graph_objects as go                
+                Following modules/packages are available:
+                    For data wrangling/munging, you can use 
+                        'numpy',
+                        'dateparser',
+                        'pandas',
+                    For data visualization, you can use
+                        'matplotlib',
+                        'seaborn',
+                        'plotly',
+                Be sure to generate charts with plotly/matplotlib/seaborn, matplotlib.pyplot is preferred. When pyplot is used, please add the following codes to properly display:\n
+                # 设置中文字体和负号显示
+                plt.rcParams['font.sans-serif'] = ['SimHei']  # 使用黑体显示中文
+                plt.rcParams['axes.unicode_minus'] = False    # 显示负号
+                # 设置中文字体和负号显示
+                
+                But if you need geographical charts, use geopandas with the geopandas.datasets module.
+                If the user has just uploaded a file, focus on the file that was most recently uploaded (and optionally all previously uploaded files)
+                如有图片，请直接展示图片(如plt.show())，无论如何都不要使用plt.savefig()等类似函数保存图片文件(如.png, .jpg, .jpeg, .gif, .bmp, .svg, .tiff, .tif),
+                Never use the following:
+                1. 'print' function
+                2. 'input' function
+                3. 'open' function
+                4. 'os' module
+                5. 'sys' module
+                6. 'subprocess' module
+                7. 'os.system' function
+                8. 'os.popen' function
+                9. 'os.exec' function
+                10. 'os.execl' function
+                11. 'plt.savefig' function
+
+
             EndOf_GENERATE_PYTHON_INSTRUCTIONS
             """
                 # http://10.1.150.105:7861/download?file=
@@ -1824,7 +1875,7 @@ class GraphAgent:
                     result,success=code_executor.call(code=code)
                     if success:
                         # message_content = f'执行代码成功[生成的文本内容为：{result.get("text") or "无生成的文本"};生成的图片位置为：{result.get("image") or "无生成的图片"}]。\n'
-                        content = result.get("text") or result.get("image")
+                        content = result.get("image")  or result.get("text")
                         message_content = f'执行代码成功，下面请直接生成最终的回答，不要再调用任何工具：{content}\n'
                         # if 'qwen3' in env_models_instance.chat_model.model_name:
                         #     message_content += '/no_think'  # 记录当前执行的工具名称                    
