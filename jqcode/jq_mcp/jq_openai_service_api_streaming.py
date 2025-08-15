@@ -1,3 +1,4 @@
+import os
 import json
 import time
 import logging
@@ -183,8 +184,9 @@ async def chat_completions(request: Request) -> str | dict | ChatCompletion:
                 detail="Missing required field: messages"
             )        
         kb_name = data.get("model", default_kb_name)
-        kb_base_dict = get_kb_dict(kb_name)   
-        chat_bot = GraphAgent(kb_base_dict=kb_base_dict)
+        kb_base_dict = get_kb_dict(kb_name)
+        api_deployment_url = os.getenv("api_deployment_url")   
+        chat_bot = GraphAgent(kb_base_dict=kb_base_dict,user_rquest_url=api_deployment_url)
         query = data["messages"][-1].get("content")
         while not isinstance(query, str):
             if isinstance(query, dict) and "text" in query:

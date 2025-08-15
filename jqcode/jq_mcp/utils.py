@@ -16,7 +16,7 @@ class ThreadWithResult(threading.Thread):
             self.result = self.func(self.args)
         finally:
             if self.result:
-                logger.warning(self.result)
+                logger.debug(self.result)
             else:
                 logger.warning("没有结果")
                 self.result = ""  

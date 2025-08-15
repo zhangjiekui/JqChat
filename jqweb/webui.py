@@ -274,7 +274,7 @@ if __name__ == "__main__":
     api_url = api.base_url 
     print(f"在webui.py中获取到请求的 {user_rquest_url = }")
     print(f"api_url为 {api_url = }")
-    # logger.warning(f"在webui.py中获取到请求的 {user_rquest_url = }")
+    logger.warning(f"在webui.py中获取到请求的 {user_rquest_url = }")
     local_server_url = "10.1.150.105"
     local_urls = ["127.0.0.1",local_server_url, "localhost", "0.0.0.0"]
 

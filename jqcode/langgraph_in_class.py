@@ -1735,8 +1735,10 @@ class GraphAgent:
                 But if you need geographical charts, use geopandas with the geopandas.datasets module.
                 If the user has just uploaded a file, focus on the file that was most recently uploaded (and optionally all previously uploaded files)
                 如有图片，请直接展示图片(如plt.show())，无论如何都不要使用plt.savefig()等类似函数保存图片文件(如.png, .jpg, .jpeg, .gif, .bmp, .svg, .tiff, .tif),
+                If the code modifies or produces a file(But not image mentioned above), you must save the file to location '{env_models_instance.abs_workspace}/code', and add a print statement at the end of the code block that prints a link to it as HTML string: <a href='{self.user_rquest_url}/download?file=INSERT_FILENAME_HERE'>下载文件</a>. Replace INSERT_FILENAME_HERE with the actual filename(only filename itself,no path prefix needed).
+
                 Never use the following:
-                1. 'print' function
+                1. 'plt.savefig' function
                 2. 'input' function
                 3. 'open' function
                 4. 'os' module
@@ -1746,7 +1748,7 @@ class GraphAgent:
                 8. 'os.popen' function
                 9. 'os.exec' function
                 10. 'os.execl' function
-                11. 'plt.savefig' function
+                
 
 
             EndOf_GENERATE_PYTHON_INSTRUCTIONS
@@ -1873,6 +1875,7 @@ class GraphAgent:
                 retry_times = 1
                 while not success and retry_times <= 3:
                     result,success=code_executor.call(code=code)
+                    # self.jq_queque.enqueue(code)
                     if success:
                         # message_content = f'执行代码成功[生成的文本内容为：{result.get("text") or "无生成的文本"};生成的图片位置为：{result.get("image") or "无生成的图片"}]。\n'
                         content = result.get("image")  or result.get("text")

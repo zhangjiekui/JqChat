@@ -706,6 +706,7 @@ class InitEnvModels:
         self.abs_workspace = abs_workspace
         self.workspace_url = workspace_url
         self.deployment_url = self.get_deployment_url()
+        self.api_deployment_url = self.get_api_deployment_url()
 
         self.ocr_mode = 'API'
         _pool_size = 32 if  self.ocr_mode == 'API' else 8
@@ -734,6 +735,9 @@ class InitEnvModels:
     def get_deployment_url(self):
         deployment_url = os.getenv("deployment_url",self.workspace_url)
         return deployment_url
+    def get_api_deployment_url(self):
+        api_deployment_url = os.getenv("api_deployment_url",self.workspace_url)
+        return api_deployment_url
     # https://www.modelscope.cn/models/Qwen/Qwen3-30B-A3B-Instruct-2507  temperature=0.7,top_p =0.8, top_k=20, min_p=0等参数设置依据
     def get_langchain_chat_model(self, temperature=0.7,top_p =0.8, top_k=20, min_p=0, presence_penalty=0.6,frequency_penalty=0.2, repetition_penalty=1.05, max_tokens=None, streaming=False,use_deepseek=True):
         if max_tokens:

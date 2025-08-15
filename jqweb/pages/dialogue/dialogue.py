@@ -355,8 +355,9 @@ def dialogue_page(
 
 
             if deployment_url!=env_deployment_url:
-                logger.warning(f"将最终AI结果中的ENV部署地址{env_deployment_url=}替换为实际服务地址{deployment_url=}")
-                answer_text = answer_text.replace(env_deployment_url,deployment_url)
+                if env_deployment_url in answer_text:
+                    logger.warning(f"将最终AI结果中的ENV部署地址{env_deployment_url=}替换为实际服务地址{deployment_url=}")
+                    answer_text = answer_text.replace(env_deployment_url,deployment_url)
 
             chat_box.update_msg(answer_text,streaming=False)
             #清空code执行回复信息和文件
