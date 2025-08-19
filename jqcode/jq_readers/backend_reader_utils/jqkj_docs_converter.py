@@ -503,11 +503,11 @@ def convert_doc_pdf2docx_on_win_and_linux(input_filepaths:Union[str,list],overwr
 
 
 if __name__ == "__main__":
-    # pdf_filepaths = [fr"/media/temp/软件开发成本度量规范.pdf"]
-    pdf_filepaths = [fr"/media/temp/A105-45民政部低收入家庭认定指导中心.pdf",
-                     fr"/media/temp/软件开发成本度量规范.pdf"]
-    destination_dir = '/media/temp/'
-    doc_filepaths = convert_doc_pdf2docx_on_win_and_linux(pdf_filepaths,overwrite=True, destination_dir=destination_dir)
+    pdf_filepaths = [fr"/root/pdf3md/output.md"]
+    # pdf_filepaths = [fr"/media/temp/A105-45民政部低收入家庭认定指导中心.pdf",
+    #                  fr"/media/temp/软件开发成本度量规范.pdf"]
+    destination_dir = '/root/pdf3md/'
+    # doc_filepaths = convert_doc_pdf2docx_on_win_and_linux(pdf_filepaths,overwrite=True, destination_dir=destination_dir)
 
     pass
 
@@ -516,7 +516,7 @@ if __name__ == "__main__":
     #          "/media/temp/发票识别接口文档.md",
     #          "/media/temp/OCR接口性能报告.doc"]
 
-    # batch_convert_files_to_docxs(files, overwrite=True, destination_dir='/media/temp/docxfiles/')
+    batch_convert_files_to_docxs(pdf_filepaths, overwrite=True, destination_dir=destination_dir)
 
 
     # pdf_filepaths = [fr"/media/temp/软件开发成本度量规范.pdf"]

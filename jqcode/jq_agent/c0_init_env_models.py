@@ -649,7 +649,7 @@ class InitEnvModels:
         self.postgres_conn_psycopg2 = f"postgresql+psycopg2://{self.POSTGRES_USER}:{self.POSTGRES_PASSWORD}@{self.POSTGRES_HOST}:{self.POSTGRES_PORT}/{self.POSTGRES_DBNAME}"
         self.postgres_conn_psycopg3 = f"postgresql+psycopg://{self.POSTGRES_USER}:{self.POSTGRES_PASSWORD}@{self.POSTGRES_HOST}:{self.POSTGRES_PORT}/{self.POSTGRES_DBNAME}"
         self.postgres_conn_conf_dict={"database": self.POSTGRES_DBNAME,"user":self.POSTGRES_USER,"password": self.POSTGRES_PASSWORD,"host": self.POSTGRES_HOST,"port":self.POSTGRES_PORT}
-        
+         
         try:
             # https://python.langchain.com/docs/integrations/llm_caching/
             from langchain_community.cache import SQLAlchemyCache
@@ -990,6 +990,8 @@ class InitEnvModels:
                           connection_conf:dict =None):
         from langchain_postgres import PGVector
         from langchain_community.graphs.age_graph import AGEGraph
+        from langchain_opengauss import openGaussAGEGraph
+        from langchain_opengauss.config import OpenGaussSettings
         from langchain_experimental.graph_transformers import LLMGraphTransformer
 
         from sqlalchemy import create_engine
@@ -1009,9 +1011,24 @@ class InitEnvModels:
 
 
         pg_vector_store = PGVector(async_mode=True,embeddings=self.embed_model,collection_name=index_name,connection=connection_str,use_jsonb=True,)
-        pg_graph_store =  AGEGraph(graph_name=index_name, conf=connection_conf)
+# self.postgres_conn_conf_dict={"database": self.POSTGRES_DBNAME,"user":self.POSTGRES_USER,"password": self.POSTGRES_PASSWORD,"host": self.POSTGRES_HOST,"port":self.POSTGRES_PORT}
+
+        pg_graph_store = AGEGraph(graph_name=index_name, conf=connection_conf,create=True)
+        pg_graph_store._enhanced_schema = False
+        pg_graph_store.enhanced_schema = False
+
+        try:
+            gauss_conf = OpenGaussSettings(database = self.POSTGRES_DBNAME,
+                                            user = self.POSTGRES_USER,
+                                            password = self.POSTGRES_PASSWORD,
+                                            host = self.POSTGRES_HOST,
+                                            port = self.POSTGRES_PORT
+                                        )
+            gauss_graph_store = openGaussAGEGraph(graph_name=index_name,conf=gauss_conf,create=True)
+        except:
+            gauss_graph_store = None
         kg_llm_transformer = LLMGraphTransformer(llm=self.chat_model)
-        return pg_vector_store,pg_graph_store,kg_llm_transformer
+        return pg_vector_store,pg_graph_store,gauss_graph_store,kg_llm_transformer
     
     
 
