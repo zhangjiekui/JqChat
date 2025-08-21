@@ -580,7 +580,7 @@ class InitEnvModels:
         self.llm_model_name = self.llm_model_card['name']
         self.llm_model_max_tokens = self.llm_model_card['max_tokens']
         self.llm_model_max_tokens = self.llm_model_card['max_tokens']
-        self.need_custom_tool_call_parse = self.llm_model_card.get('need_custom_tool_call_parse',False)
+        self.need_custom_tool_call_parse = self.llm_model_card.get('need_custom_tool_call_parse',True)
         self.need_json_mode = self.llm_model_card.get('need_json_mode',False)
         
         handlers = get_custom_handlers()

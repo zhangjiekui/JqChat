@@ -2025,7 +2025,8 @@ class GraphAgent:
             start = title.index('参') # 得到参考文档或参考网页
             title_formatted = title[start:start+4]
             _referens_str = referens_str.replace(title, '')
-            referens_str_formated = f'<details>\n<summary>点击查看"{title_formatted}"</summary>\n<font color="grey" size=16px>\n{_referens_str}\n</font></details>'
+            # referens_str_formated = f'<details>\n<summary>点击查看"{title_formatted}"</summary>\n<font color="grey" size=16px>\n{_referens_str}\n</font></details>'
+            referens_str_formated = f'<details>\n<summary>点击查看"{title_formatted}"</summary>\n<font color="grey">\n{_referens_str}\n</font></details>'
             answer = f'\n{referens_str_formated}\n' + answer
 
         reasoning_content = user_variables_statedict[self.user_id]['reasoning_content']        
@@ -2037,7 +2038,7 @@ class GraphAgent:
                 for i, content in enumerate(reasoning_content):
                     reasoning_content_str += f'\n**推理步骤{i+1}** ： {content}'
                 reasoning_content_str = f"{reasoning_content_str}"
-            reasoning_content_formatted = f'<details>\n<summary>点击查看"模型思考过程" </summary>\n<font color="grey" size=16px>\n{reasoning_content_str}\n</font></details>'
+            reasoning_content_formatted = f'<details>\n<summary>点击查看"模型思考过程" </summary>\n<font color="grey">\n{reasoning_content_str}\n</font></details>'
             answer = f'{reasoning_content_formatted}\n\n------\n' + answer + '\n\n------\n'
         
         ai_alert_text = '<font color="red">内容由AI生成</font>' + '\n\n------\n'
@@ -2102,7 +2103,7 @@ if __name__ == "__main__":
     
     # user_questions += ['请检索知识库，然后回答晶奇公司质量保证过程中的角色及角色的职责或含义解释，对应的人员（姓名）有哪些?其中的批准人是谁？']
     # user_questions += ["请检索知识库：信息"]
-    user_questions = ['全民健康信息平台包含的建设内容、系统或功能']
+    user_questions = ['请绘制sin(x)曲线']
     my_main_bot = GraphAgent(executable_tools=executable_tools,routing_tools_wrapped_in_class=route_tools,allow_conversation_memory=True)
 
     # from fastapi import FastAPI

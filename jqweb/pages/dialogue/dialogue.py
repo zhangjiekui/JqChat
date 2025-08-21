@@ -335,7 +335,7 @@ def dialogue_page(
             log_result=t2.get_result()
             
             # reasoning_content_str = f"{reasoning_content_str}\n------\n"
-            log_text = f'<details>\n<summary>点击查看"整体执行过程"</summary>\n<font color="grey" size=16px>\n{log_result}\n------\n</font></details>'
+            log_text = f'<details>\n<summary>点击查看"整体执行过程"</summary>\n<font color="grey">\n{log_result}\n------\n</font></details>'
             chat_text = chat_result["text"]
             answer_text = f"{log_text}\n{chat_text}"
 
