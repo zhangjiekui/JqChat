@@ -65,6 +65,7 @@ app.add_middleware(
 )
 
 # 有效API Key集合
+user_name_id: str = ''
 VALID_API_KEYS = {"","abc123"}  # 替换为实际密钥
 BY_PASS_VALIDATING = True
 class BearerTokenAuthBackend(AuthenticationBackend):
@@ -74,9 +75,10 @@ class BearerTokenAuthBackend(AuthenticationBackend):
     """
     async def authenticate(
         self,
-        conn: HTTPConnection
+        conn: HTTPConnection,
     ) -> Optional[Tuple[AuthCredentials, BaseUser]]:
         auth_header = conn.headers.get("Authorization")
+        
 
         if not auth_header or not auth_header.lower().startswith("bearer "):
             return None  # Unauthenticated
@@ -87,7 +89,7 @@ class BearerTokenAuthBackend(AuthenticationBackend):
         valid_tokens = VALID_API_KEYS
         if token not in valid_tokens:
             return None  # Invalid token
-        user = SimpleUser(token)
+        user = SimpleUser(user_name_id)
         # Assign roles/scopes as needed
         return AuthCredentials(["authenticated"]),user
 
@@ -101,8 +103,19 @@ VALID_API_KEYS = {"","abc123"}  # 替换为实际密钥
 BY_PASS_VALIDATING = True
 ## 请求验证中间件
 @app.middleware("http")
-async def validate_request(request: Request, call_next):        
+async def validate_request(request: Request, call_next): 
+    global user_name_id       
     try:
+        data = await request.json()
+        data = data.get("user",None)
+        if data:
+            try:
+                data = json.loads(data)
+                user_name = data.get("userName") or data.get("username")
+                user_id = data.get("userId") or data.get("userid")
+                user_name_id = f'{user_name}({user_id})'
+            except:
+                pass
         # 记录请求信息
         # logger.info(f"Request received: {request.method} {request.url}")
         # logger.info(f"Headers: {request.headers}")
@@ -185,8 +198,12 @@ async def chat_completions(request: Request) -> str | dict | ChatCompletion:
             )        
         kb_name = data.get("model", default_kb_name)
         kb_base_dict = get_kb_dict(kb_name)
-        api_deployment_url = os.getenv("api_deployment_url")   
-        chat_bot = GraphAgent(kb_base_dict=kb_base_dict,user_rquest_url=api_deployment_url)
+        api_deployment_url = os.getenv("api_deployment_url")
+        memory_thread_id = user_name_id or request.user.username
+        if memory_thread_id:
+            chat_bot = GraphAgent(kb_base_dict=kb_base_dict,user_rquest_url=api_deployment_url,memory_thread_id=memory_thread_id)
+        else:
+            chat_bot = GraphAgent(kb_base_dict=kb_base_dict,user_rquest_url=api_deployment_url)
         query = data["messages"][-1].get("content")
         while not isinstance(query, str):
             if isinstance(query, dict) and "text" in query:

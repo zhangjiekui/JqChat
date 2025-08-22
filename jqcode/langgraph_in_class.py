@@ -494,7 +494,7 @@ class GraphAgent:
                  llm_model:ChatOpenAI=None,chat_on_docs_list:List[str]=None,add_docs_list_to_kb:bool=True, 
                  allow_conversation_memory=True,allow_question_rewrite = True,
                  kb_base_dict:dict={"index_name": 'zjk_jqesclient_reader_test_768im', "description":default_index_description}, 
-                 recursion_limit:int=25, memory_thread_id:str=shortuuid.uuid(),user_rquest_url:str=env_models_instance.deployment_url) -> None:
+                 recursion_limit:int=25, memory_thread_id:str=f"匿名用户({shortuuid.uuid()})",user_rquest_url:str=env_models_instance.deployment_url) -> None:
         
     # region: 初始化
         # 获取知识库相关的信息
