@@ -1,5 +1,7 @@
 import time
 import uuid
+import shortuuid
+
 import asyncio
 import threading
 import io, os
@@ -310,7 +312,12 @@ def dialogue_page(
             files=ctx.get('files')
             # @swm 这里有问题
             is_knowledge=ctx.get("is_knowledge")
-            jq_queque = JqFileSystemQueue(user)
+            question_id = shortuuid.uuid()
+            ctx['question_id'] = question_id
+            user_and_question_id = f"{user}::{question_id}"
+            jq_queque = JqFileSystemQueue(id=user_and_question_id)
+            
+
             # 是否需要替换端口？
             api_port = api.base_url.split(":")[-1]
             web_port = user_rquest_url.split(":")[-1]
@@ -322,7 +329,7 @@ def dialogue_page(
                 deployment_url = f"{request_url}/workspace"
             else:
                 deployment_url = request_url
-            t1 = ThreadWithResult(target=chat, args=(code_message,prompt,user,doc,files,is_memory,is_rewrite,is_knowledge,api,deployment_url))
+            t1 = ThreadWithResult(target=chat, args=(code_message,prompt,user_and_question_id,doc,files,is_memory,is_rewrite,is_knowledge,api,deployment_url))
             t2 = ThreadWithResult(target=get_process_text, args=(jq_queque,chat_box))
             add_script_run_ctx(t2)        
             t1.start()
@@ -335,7 +342,7 @@ def dialogue_page(
             log_result=t2.get_result()
             
             # reasoning_content_str = f"{reasoning_content_str}\n------\n"
-            log_text = f'<details>\n<summary>点击查看"整体执行过程"</summary>\n<font color="grey">\n{log_result}\n------\n</font></details>'
+            log_text = f'<details open>\n<summary>点击查看"整体执行过程"</summary>\n<font color="grey">\n{log_result}\n------\n</font></details>'
             chat_text = chat_result["text"]
             answer_text = f"{log_text}\n{chat_text}"
 

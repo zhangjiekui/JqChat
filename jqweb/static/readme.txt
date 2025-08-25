@@ -1,0 +1,1 @@
+将这两个文件放到目录下：/data/projects/JqChatV2/workspace/static/

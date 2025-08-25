@@ -577,10 +577,16 @@ class GraphAgent:
 
         self.system_message = [SystemMessage(content=_system_message_content)]
         
-        
-        self.question_id:str= self.get_random_id()
-        # self.queque_id = f"{self.user_id}:{self.question_id}"
-        self.queque_id = f" {self.user_id}:{self.question_id} "
+        if "::" in self.user_id:
+            question_id = self.user_id.split("::")[-1]
+            self.question_id:str = question_id
+            self.queque_id = self.user_id
+        else:
+            self.question_id:str= self.get_random_id()
+            self.queque_id = f"{self.user_id}::{self.question_id}"
+
+            
+            
         self.jq_queque = JqFileSystemQueue(id=self.queque_id)
 
         self.agent_log = ""
@@ -1932,11 +1938,12 @@ class GraphAgent:
     def run_conversation(self,user_question:str,only_return_answer_text:bool=True):       
         print('================='*5)
         print('================='*5)
-        print(f"开始会话UserId:{self.user_id},Question:{user_question}")
+        print(f"用户User(ID)::QuestionID为: {self.queque_id}")
+        print(f"用户问题为: {user_question}") 
         print('================='*5)
         jq_queue=self.jq_queque
         jq_queue.clear()
-        jq_queue.enqueue(f"用户UserId为: {self.user_id}")
+        jq_queue.enqueue(f"用户User(ID)::QuestionID为: {self.queque_id}")
         jq_queue.enqueue(f"用户问题为: {user_question}")  
         # logger.info(f"老的{self.question_id=}")
         logger.debug(f"切记新的问题对话前，要先更新user_question 和 question_id！老的[{self.question_id=}]")
