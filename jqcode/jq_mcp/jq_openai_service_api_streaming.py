@@ -78,13 +78,10 @@ class BearerTokenAuthBackend(AuthenticationBackend):
         conn: HTTPConnection,
     ) -> Optional[Tuple[AuthCredentials, BaseUser]]:
         auth_header = conn.headers.get("Authorization")
-        
-
         if not auth_header or not auth_header.lower().startswith("bearer "):
             return None  # Unauthenticated
 
         token = auth_header[7:].strip()
-
         # Check against authorized tokens
         valid_tokens = VALID_API_KEYS
         if token not in valid_tokens:
@@ -100,19 +97,19 @@ app.add_middleware(SessionMiddleware, secret_key=secret_key)
 
 # 有效API Key集合
 VALID_API_KEYS = {"","abc123"}  # 替换为实际密钥
-BY_PASS_VALIDATING = True
+BY_PASS_VALIDATING = False
 ## 请求验证中间件
 @app.middleware("http")
 async def validate_request(request: Request, call_next): 
     global user_name_id       
     try:
         data = await request.json()
-        data = data.get("user",None)
-        if data:
+        user_info = data.get("user",None)
+        if user_info:
             try:
-                data = json.loads(data)
-                user_name = data.get("userName") or data.get("username")
-                user_id = data.get("userId") or data.get("userid")
+                user_info = json.loads(user_info)
+                user_name = user_info.get("userName") or user_info.get("username")
+                user_id = user_info.get("userId") or user_info.get("userid")
                 user_name_id = f'{user_name}({user_id})'
             except:
                 pass
@@ -189,6 +186,18 @@ async def chat_completions(request: Request) -> str | dict | ChatCompletion:
     try:
         data = await request.json()
         streaming = data.get("stream", True)
+        use_memory = True
+        rewrite_question = False
+        for _,v in data.items():
+            if isinstance(v,dict):
+                if "memory" in v:
+                    use_memory_str = v.get("memory","True")
+                    if use_memory_str.lower() == "false":
+                        use_memory = False
+                if "rewrite" in v:
+                    rewrite_question_str = v.get("rewrite","False")
+                    if rewrite_question_str.lower() == "true":
+                        rewrite_question = True        
         logger.info(f"Request data: {streaming=}")        
         # 验证必要字段
         if "messages" not in data:
@@ -201,9 +210,9 @@ async def chat_completions(request: Request) -> str | dict | ChatCompletion:
         api_deployment_url = os.getenv("api_deployment_url")
         memory_thread_id = user_name_id or request.user.username
         if memory_thread_id:
-            chat_bot = GraphAgent(kb_base_dict=kb_base_dict,user_rquest_url=api_deployment_url,memory_thread_id=memory_thread_id)
+            chat_bot = GraphAgent(kb_base_dict=kb_base_dict,user_rquest_url=api_deployment_url,memory_thread_id=memory_thread_id,allow_conversation_memory=use_memory,allow_question_rewrite=rewrite_question)
         else:
-            chat_bot = GraphAgent(kb_base_dict=kb_base_dict,user_rquest_url=api_deployment_url)
+            chat_bot = GraphAgent(kb_base_dict=kb_base_dict,user_rquest_url=api_deployment_url,allow_question_rewrite=rewrite_question)
         query = data["messages"][-1].get("content")
         while not isinstance(query, str):
             if isinstance(query, dict) and "text" in query:

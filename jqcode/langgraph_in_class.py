@@ -580,7 +580,7 @@ class GraphAgent:
         
         self.question_id:str= self.get_random_id()
         # self.queque_id = f"{self.user_id}:{self.question_id}"
-        self.queque_id = self.user_id
+        self.queque_id = f" {self.user_id}:{self.question_id} "
         self.jq_queque = JqFileSystemQueue(id=self.queque_id)
 
         self.agent_log = ""
@@ -1733,9 +1733,8 @@ class GraphAgent:
                 # 设置中文字体和负号显示
                 
                 But if you need geographical charts, use geopandas with the geopandas.datasets module.
-                If the user has just uploaded a file, focus on the file that was most recently uploaded (and optionally all previously uploaded files)
                 如有图片，请直接展示图片(如plt.show())，无论如何都不要使用plt.savefig()等类似函数保存图片文件(如.png, .jpg, .jpeg, .gif, .bmp, .svg, .tiff, .tif),
-                If the code modifies or produces a file(But not image mentioned above), you must save the file to location '{env_models_instance.abs_workspace}/code', and add a print statement at the end of the code block that prints a link to it as HTML string: <a href='{self.user_rquest_url}/download?file=INSERT_FILENAME_HERE'>下载文件</a>. Replace INSERT_FILENAME_HERE with the actual filename(only filename itself,no path prefix needed).
+                If the code need to produces a file(But not image mentioned above), you must write the file in UTF-8 encoding and save to location '{env_models_instance.abs_workspace}/code', and add a print statement at the end of the code block that prints a link to it as HTML string: <a href='{self.user_rquest_url}/download?file=INSERT_FILENAME_HERE'>下载文件</a>. Replace INSERT_FILENAME_HERE with the actual filename(only filename itself,no path prefix needed).
 
                 Never use the following:
                 1. 'plt.savefig' function
@@ -1879,7 +1878,7 @@ class GraphAgent:
                     if success:
                         # message_content = f'执行代码成功[生成的文本内容为：{result.get("text") or "无生成的文本"};生成的图片位置为：{result.get("image") or "无生成的图片"}]。\n'
                         content = result.get("image")  or result.get("text")
-                        message_content = f'执行代码成功，下面请直接生成最终的回答，不要再调用任何工具：{content}\n'
+                        message_content = f'执行代码成功，下面请直接生成最终的回答（回答时请忽略之前可能的代码执行错误信息，仅关注正确的执行/返回结果），如果存在文件或图片的链接，请务必把链接地址中的主机和端口替换成{self.user_rquest_url}，不要再调用任何工具：{content}\n'
                         # if 'qwen3' in env_models_instance.chat_model.model_name:
                         #     message_content += '/no_think'  # 记录当前执行的工具名称                    
                         
@@ -1936,6 +1935,7 @@ class GraphAgent:
         print(f"开始会话UserId:{self.user_id},Question:{user_question}")
         print('================='*5)
         jq_queue=self.jq_queque
+        jq_queue.clear()
         jq_queue.enqueue(f"用户UserId为: {self.user_id}")
         jq_queue.enqueue(f"用户问题为: {user_question}")  
         # logger.info(f"老的{self.question_id=}")
@@ -2066,6 +2066,7 @@ if __name__ == "__main__":
         "你是谁？请详细介绍一下你自己"
         "你装备了哪些工具？",
         "我现在的位置是在安徽晶奇网络科技股份有限公司附近，请查询15公里范围内的养老机构",
+        "我现在的位置是在安徽晶奇网络科技股份有限公司附近，请查询15公里范围内的养老机构。并将结果通过python转换成excel文件，提供http的网络下载地址"
         "晶奇公司质量保证过程中的角色及角色的职责或含义解释，对应的人员（姓名）有哪些?其中的批准人是谁？",
         '你好，我的名字是张结魁，我是安徽晶奇网络科技股份有限公司的，请记住我的信息',
         '请搜索我与晶奇公司的相关网页，说明我与晶奇公司的关系',
@@ -2085,7 +2086,8 @@ if __name__ == "__main__":
         "请搜索网络然后回答问题：What is the weather in SF and LA? ",
         "Who won the super bowl in 2024? In what state is the winning team headquarters located?What is the GDP of that state? ",
         "还记得我的名字吗？",
-        "请将下面的内容：序号,文件名称,文号 1,《关于研究智慧民政和智慧市政建设工作的纪要》,厦门市人民政府专题会议纪要〔2020〕285号 2,《关于进一步推进儿童福利机构优化提质和创新转型高质量发展的意见》,民发〔2021〕44号 3,《民政部办公厅关于印发〈金民工程一期项目试点工作方案〉的通知》,民办函〔2019〕108号 4,《中共中央关于制定国民经济和社会发展第十四个五年规划和二〇三五年远景目标的建议》, 5,《国务院办公厅关于推进养老服务发展的意见》,国办发〔2019〕5号 6,《民政部关于进一步扩大养老服务供给促进养老服务消费的实施意见》,民发〔2019〕88号 7,《国务院扶贫开发领导小组关于建立防止返贫监测和帮扶机制的指导意见》,国开发〔2020〕6号 8,《国务院关于国家基本公共服务标准（2 0 2 1 年 版 ） 的 批 复 》 , 国 函 〔 2 0 2 1 〕 2 0 号 9,《福建省促进电子证照应用管理暂行办法》,闽政办[2017]74号 10,厦门市人民政府办公厅关于进一步深化“互联网+政务服务”推进政务服务“一网、一门、一次”改革工作的通知,厦府办〔2018〕194号 11,《厦门市“十三五”民政事业发展专项规划（2016-2020）》, 12,厦门市城乡社区服务体系建设规划（2016-2020年）, 13,《关于加强和完善城乡社区治理的实施意见》,厦委发〔2018〕7号 转换为表格，使用python生成csv文件并提供下载地址",
+        """请将下面的内容：序号,文件名称,文号 1,《关于研究智慧民政和智慧市政建设工作的纪要》,厦门市人民政府专题会议纪要〔2020〕285号 2,《关于进一步推进儿童福利机构优化提质和创新转型高质量发展的意见》,民发〔2021〕44号 3,《民政部办公厅关于印发〈金民工程一期项目试点工作方案〉的通知》,民办函〔2019〕108号 4,《中共中央关于制定国民经济和社会发展第十四个五年规划和二〇三五年远景目标的建议》, 5,《国务院办公厅关于推进养老服务发展的意见》,国办发〔2019〕5号 6,《民政部关于进一步扩大养老服务供给促进养老服务消费的实施意见》,民发〔2019〕88号 7,《国务院扶贫开发领导小组关于建立防止返贫监测和帮扶机制的指导意见》,国开发〔2020〕6号 8,《国务院关于国家基本公共服务标准（2021年版 ）的批复》 , 国函 〔2021〕20号 9,《福建省促进电子证照应用管理暂行办法》,闽政办[2017]74号 10,厦门市人民政府办公厅关于进一步深化“互联网+政务服务”推进政务服务“一网、一门、一次”改革工作的通知,厦府办〔2018〕194号 11,《厦门市“十三五”民政事业发展专项规划（2016-2020）》, 12,厦门市城乡社区服务体系建设规划（2016-2020年）, 13,《关于加强和完善城乡社区治理的实施意见》,厦委发〔2018〕7号 \n
+        转换为表格，使用python生成excel文件并提供http的网络下载地址""",
         '我现在的位置是在安徽晶奇网络科技股份有限公司附近，请查询15公里范围内的养老机构，最多返回10个',
         "全民健康信息平台包含的建设内容、系统或功能",
         "请检索知识库：医院信息系统",

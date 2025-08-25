@@ -27,7 +27,7 @@ class ThreadWithResult(threading.Thread):
         except Exception as e:  
             return None 
 def get_process_text(jq_queque:JqFileSystemQueue,t:ThreadWithResult,streaming=True,
-                     leading_text:str = '<details>\n<summary>点击查看"整体执行过程"</summary>\n<font color="grey">\n',
+                     leading_text:str = '<details open>\n<summary>点击查看"整体执行过程"</summary>\n<font color="grey">\n',
                      ending_text:str = '\n<br></font></details>\n------\n',
                      process_ending_text:str = "DONE"):
         if streaming:

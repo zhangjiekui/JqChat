@@ -222,3 +222,8 @@ def download_code(file):
 def download_code(image):
     file_path = os.path.join(UPLOAD_FOLDER, "code",image)
     return FileResponse(file_path)
+
+@workspace_router.get('/static/{filename}', summary="返回静态文件")
+def get_static_file(filename: str):
+    file_path = os.path.join(UPLOAD_FOLDER,"static", filename)    
+    return FileResponse(file_path,media_type="text/html; charset=utf-8")

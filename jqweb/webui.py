@@ -20,7 +20,6 @@ USER_DB = {
     "user2": "userpassword2",
     "user3": "userpassword3",
 }
-
 def login_page():
     # 创建一个居中的容器来保持合适的页面宽度
     col1, col2, col3 = st.columns([1, 2, 1])
@@ -31,11 +30,63 @@ def login_page():
         username = st.text_input("用户名")
         password = st.text_input("密码", type="password")
 
+        # 添加用户协议和隐私政策链接及同意选项
+        # 使用CSS精确控制垂直对齐
+        st.markdown("""
+        <style>
+            div[data-testid="column"] {
+                align-items: center;  /* 垂直居中 */
+                display: flex;
+            }
+            /* 针对checkbox的特殊调整 */
+            .stCheckbox {
+                margin-top: 0 !important;
+                margin-bottom: 0 !important;
+                padding-top: 0 !important;
+                padding-bottom: 0 !important;
+            }
+            /* 确保markdown容器对齐 */
+            .stMarkdown {
+                display: flex;
+                align-items: center;
+            }
+        </style>
+        """, unsafe_allow_html=True)
+
+        # 创建等宽列布局
+        col1, col2 = st.columns([8, 10])
+
+        with col1:
+            # 调整checkbox的标签间距
+            agree_both = st.checkbox(
+                "我已阅读并同意",
+                value=True,
+                key="agree_both",
+                label_visibility="visible"
+            )
+
+        with col2:
+            # 使用span包裹并设置行高匹配
+            st.markdown("""
+                <span style="line-height: 20px;">
+                    <a href="/workspace/static/agreement.htm" target="_blank" style="color: #1f77b4; text-decoration: none;">用户协议</a>
+                    <span>和</span>
+                    <a href="/workspace/static/policy.htm" target="_blank" style="color: #1f77b4; text-decoration: none;">隐私政策</a>
+                </span>
+            """, unsafe_allow_html=True)
+       
+        # 登录按钮
         inline_col1, inline_col2, inline_col3 = st.columns(3)
         with inline_col2:
-            login_button = st.button("登录")
+            login_button = st.button("登录", type="primary")
         
         if login_button:
+            # 检查是否同意了协议
+            if not agree_both:
+                st.warning("⚠️ 请先同意用户协议和隐私政策")
+                return
+                
+            # 验证用户名和密码
             if username in USER_DB and USER_DB[username] == password:
                 st.session_state["logged_in"] = True
                 st.session_state["username"] = username
