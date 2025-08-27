@@ -2,20 +2,13 @@ import os
 import json
 import time
 import logging
-from typing import List,Optional,Tuple
+from typing import List
 from fastapi.middleware.cors import CORSMiddleware
-from starlette.requests import HTTPConnection
-from starlette.middleware.sessions import SessionMiddleware
-from starlette.middleware.authentication import AuthenticationMiddleware, AuthenticationBackend
-from starlette.authentication import (
-    AuthCredentials, AuthenticationBackend,
-    BaseUser, SimpleUser, UnauthenticatedUser
-)
+
 from jqcode.langgraph_in_class import GraphAgent
 from jqcode.jq_docstores.backend_docstore_utils.jq_es_metastores import JqElasticsearchUniMetaStore
-from openai.types.responses.response_item import ResponseItem
 from openai.types.chat import ChatCompletion
-from fastapi import FastAPI, Header, HTTPException, Request, status
+from fastapi import FastAPI, HTTPException, Request, status
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from sse_starlette.sse import EventSourceResponse
@@ -24,6 +17,9 @@ from jqcode.jq_mcp.utils import ThreadWithResult, get_process_text,chat
 logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger(__name__)
 
+# 有效API Key集合
+VALID_API_KEYS = {"","abc123"}  # 替换为实际密钥
+BY_PASS_VALIDATING = False
 default_kb_name = "zjk_jqesclient_reader_test_768im"
 default_kb_description = "关于安徽晶奇网络科技股份有限公司（简称晶奇公司），以及医疗卫生、医疗健康、医疗服务、医疗政策、民政养老、社会救助、低保、低收入人口认定、退伍军人、优待抚恤等领域的政策文件、信息化产品、建设方案、技术文档等等方面的文档知识库。 \n凡是涉及安徽晶奇网络科技股份有限公司及以上领域相关的问题，或者是用户提及检索知识库或vectorstore时，都必须使用vectorstore工具。"
 metastore = JqElasticsearchUniMetaStore()
@@ -63,66 +59,10 @@ app.add_middleware(
     allow_headers=["*"],
     expose_headers=["Content-Type", "Cache-Control"],  # 暴露流式响应必需头部
 )
-
-# 有效API Key集合
-user_name_id: str = ''
-VALID_API_KEYS = {"","abc123"}  # 替换为实际密钥
-BY_PASS_VALIDATING = True
-class BearerTokenAuthBackend(AuthenticationBackend):
-    """
-    Authentication backend that validates Bearer tokens
-    in the Authorization header.
-    """
-    async def authenticate(
-        self,
-        conn: HTTPConnection,
-    ) -> Optional[Tuple[AuthCredentials, BaseUser]]:
-        auth_header = conn.headers.get("Authorization")
-        if not auth_header or not auth_header.lower().startswith("bearer "):
-            return None  # Unauthenticated
-
-        token = auth_header[7:].strip()
-        # Check against authorized tokens
-        valid_tokens = VALID_API_KEYS
-        if token not in valid_tokens:
-            return None  # Invalid token
-        user = SimpleUser(user_name_id)
-        # Assign roles/scopes as needed
-        return AuthCredentials(["authenticated"]),user
-
-app.add_middleware(AuthenticationMiddleware,backend=BearerTokenAuthBackend())
-# 配置 SessionMiddleware
-secret_key = "your-secret-key"  # 确保这个密钥足够随机和安全
-app.add_middleware(SessionMiddleware, secret_key=secret_key)
-
-# 有效API Key集合
-VALID_API_KEYS = {"","abc123"}  # 替换为实际密钥
-BY_PASS_VALIDATING = False
 ## 请求验证中间件
 @app.middleware("http")
 async def validate_request(request: Request, call_next): 
-    global user_name_id       
     try:
-        data = await request.json()
-        user_info = data.get("user",None)
-        if user_info:
-            try:
-                user_info = json.loads(user_info)
-                user_name = user_info.get("userName") or user_info.get("username")
-                user_id = user_info.get("userId") or user_info.get("userid")
-                user_name_id = f'{user_name}({user_id})'
-            except:
-                pass
-        # 记录请求信息
-        # logger.info(f"Request received: {request.method} {request.url}")
-        # logger.info(f"Headers: {request.headers}")
-        # 验证必要头信息
-        if not BY_PASS_VALIDATING:
-            if "authorization" not in request.headers:
-                raise HTTPException(
-                    status_code=status.HTTP_400_BAD_REQUEST,
-                    detail="Missing Authorization header"
-                )            
         # 验证内容类型(针对POST/PUT)
         if request.method in ("POST", "PUT") and \
            "content-type" not in request.headers:
@@ -130,7 +70,21 @@ async def validate_request(request: Request, call_next):
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail="Missing Content-Type header"
             )
-            
+        # 验证必要头信息
+        if not BY_PASS_VALIDATING:
+            if "authorization" not in request.headers:
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail="Missing Authorization header"
+                )
+        authorization = request.headers["authorization"]
+        api_key = authorization[7:] # 提取Bearer后的部分            
+        if api_key not in VALID_API_KEYS:
+            logger.warning(f"Invalid API Key attempt: {api_key}")
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Invalid API Key"
+            )
         return await call_next(request)
         
     except HTTPException as e:
@@ -145,24 +99,7 @@ async def validate_request(request: Request, call_next):
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             content={"detail": "Internal server error"}
         )
-# API Key验证函数
-async def verify_api_key(authorization: str = Header(None)):
-    if BY_PASS_VALIDATING:
-        pass
-    else:
-        if not authorization or not authorization.startswith("Bearer "):
-            logger.warning("Invalid Authorization header format")
-            raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
-                detail="Invalid Authorization Header format. Expected 'Bearer <token>'"
-            )
-        api_key = authorization[7:]  # 提取Bearer后的部分
-        if api_key not in VALID_API_KEYS:
-            logger.warning(f"Invalid API Key attempt: {api_key}")
-            raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
-                detail="Invalid API Key"
-            )
+
         
 @app.get("/models", response_model=None)
 @app.get("/v1/models", response_model=None)
@@ -182,7 +119,7 @@ async def listModels(request: Request):
 # OpenAI聊天接口(POST)
 @app.post("/v1/chat/completions")
 async def chat_completions(request: Request) -> str | dict | ChatCompletion:
-    await verify_api_key(request.headers.get("authorization"))    
+    # await verify_api_key(request.headers.get("authorization"))    
     try:
         data = await request.json()
         streaming = data.get("stream", True)
@@ -208,7 +145,19 @@ async def chat_completions(request: Request) -> str | dict | ChatCompletion:
         kb_name = data.get("model", default_kb_name)
         kb_base_dict = get_kb_dict(kb_name)
         api_deployment_url = os.getenv("api_deployment_url")
-        memory_thread_id = user_name_id or request.user.username
+
+        user_info = data.get("metadata",None)
+        user_name_id = ''
+        if user_info:
+            try:
+                user_name = user_info.get("userName") or user_info.get("username")
+                user_id = user_info.get("userId") or user_info.get("userid")
+                user_name_id = f'{user_name}({user_id})'
+            except:
+                pass
+
+        memory_thread_id = user_name_id
+        # memory_thread_id = user_name_id or request.user.username
         if memory_thread_id:
             chat_bot = GraphAgent(kb_base_dict=kb_base_dict,user_rquest_url=api_deployment_url,memory_thread_id=memory_thread_id,allow_conversation_memory=use_memory,allow_question_rewrite=rewrite_question)
         else:
