@@ -47,7 +47,7 @@ LOADER_DICT = {
     "ExcelLoader": [".xlsx", ".xls"],
     "WordLoader": [".doc","docx"],
     "PdfLoader": [".pdf"],
-    "ImgLoader": [".png", ".jpg", ".jpeg", ".bmp"], #".gif",
+    # "ImgLoader": [".png", ".jpg", ".jpeg", ".bmp"], #".gif",
     "TextLoader": [".txt"],
     "JSONLoader": [".json"],
     "MarkdownLoader": [".md"]
@@ -222,12 +222,13 @@ def dialogue_page(
 
     
     with bottom():
-        cols = st.columns([1, 1, 15, 1])        
+        cols = st.columns([1, 0.1, 1, 30, 1])        
         if cols[0].button(":page_facing_up:", help="上传文档（知识库问答）"):
-           file_upload()        
-        if cols[1].button(":framed_picture:", help="上传图片（OCR/对话）"):
+           file_upload() 
+        cols[1].write("")  # 空白间隔       
+        if cols[2].button(":framed_picture:", help="上传图片（OCR/对话）"):
            img_upload()        
-        prompt = cols[2].chat_input(chat_input_placeholder, key="prompt",accept_file=False)        
+        prompt = cols[3].chat_input(chat_input_placeholder, key="prompt",accept_file=False)        
         if cols[-1].button(":wastebasket:", help="清空对话"):
             chat_box.reset_history()
              #清空code执行回复信息和文件
