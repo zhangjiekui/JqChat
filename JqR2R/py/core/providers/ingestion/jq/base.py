@@ -126,6 +126,11 @@ class JqIngestionProvider(IngestionProvider):
                     llm_provider=self.llm_provider,
                 )
         for doc_type, doc_parser_name in self.config.extra_parsers.items():
+            logger.error(f"JqIngestionProvider extra parser: {doc_parser_name}")
+            logger.error(f"JqIngestionProvider extra parser doc_type: {doc_type}")
+            logger.error(f"JqIngestionProvider EXTRA_PARSERS: {JqIngestionProvider.EXTRA_PARSERS[doc_type]}")
+
+
             self.parsers[f"{doc_parser_name}_{str(doc_type)}"] = (
                 JqIngestionProvider.EXTRA_PARSERS[doc_type][doc_parser_name](
                     config=self.config,

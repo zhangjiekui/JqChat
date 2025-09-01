@@ -488,12 +488,13 @@ default_index_description = "向量库/知识库工具(vectorstore/knowledge bas
 
 
 
-
+index_name = "zjk_jqesclient_reader_test_qwen1024dim"
+# index_name ='zjk_jqesclient_reader_test_768im'
 class GraphAgent:
     def __init__(self,executable_tools:list=executable_tools, routing_tools_wrapped_in_class:list=route_tools, 
                  llm_model:ChatOpenAI=None,chat_on_docs_list:List[str]=None,add_docs_list_to_kb:bool=True, 
                  allow_conversation_memory=True,allow_question_rewrite = True,
-                 kb_base_dict:dict={"index_name": 'zjk_jqesclient_reader_test_768im', "description":default_index_description}, 
+                 kb_base_dict:dict={"index_name": index_name, "description":default_index_description}, 
                  recursion_limit:int=25, memory_thread_id:str=f"匿名用户({shortuuid.uuid()})",user_rquest_url:str=env_models_instance.deployment_url) -> None:
         
     # region: 初始化
@@ -2112,7 +2113,7 @@ if __name__ == "__main__":
     
     # user_questions += ['请检索知识库，然后回答晶奇公司质量保证过程中的角色及角色的职责或含义解释，对应的人员（姓名）有哪些?其中的批准人是谁？']
     # user_questions += ["请检索知识库：信息"]
-    user_questions = ['请绘制sin(x)曲线']
+    # user_questions = ['请绘制sin(x)曲线']
     my_main_bot = GraphAgent(executable_tools=executable_tools,routing_tools_wrapped_in_class=route_tools,allow_conversation_memory=True)
 
     # from fastapi import FastAPI

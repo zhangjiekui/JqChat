@@ -10,7 +10,6 @@ import requests
 import base64
 import json
 import random
-from lazyllm import FileSystemQueue
 os.environ['USER_AGENT'] = 'myagent'
 import re
 import threading
@@ -597,6 +596,7 @@ class InitEnvModels:
         self.embedding_model_online = self.embedding_model_card['online']
         self.embedding_model_base_url = self.embedding_model_card.get('base_url',None) or self.base_url
         self.embedding_model_name_or_path = self.embedding_model_local if self.embedding_model_local and Path(self.embedding_model_local).exists() else self.embedding_model_online
+        self.reduce_emb_dimensions = self.embedding_model_card.get('reduce_emb_dimensions',False)
 
 
         self.embedding_model_8k_name =self.embedding_model_8k_card['name']
@@ -739,7 +739,7 @@ class InitEnvModels:
         api_deployment_url = os.getenv("api_deployment_url",self.workspace_url)
         return api_deployment_url
     # https://www.modelscope.cn/models/Qwen/Qwen3-30B-A3B-Instruct-2507  temperature=0.7,top_p =0.8, top_k=20, min_p=0等参数设置依据
-    def get_langchain_chat_model(self, temperature=0.7,top_p =0.8, top_k=20, min_p=0, presence_penalty=0.6,frequency_penalty=0.2, repetition_penalty=1.05, max_tokens=None, streaming=False,use_deepseek=True):
+    def get_langchain_chat_model(self, temperature=0.1,top_p =0.8, top_k=20, min_p=0, presence_penalty=0.6,frequency_penalty=0.2, repetition_penalty=1.05, max_tokens=None, streaming=False,use_deepseek=True):
         if max_tokens:
             if max_tokens!=self.llm_model_max_tokens:
                 logger.warning(f"您现在请求的llm {max_tokens=}，与环境配置中的{self.llm_model_max_tokens=}不同，请确认！")
@@ -856,7 +856,12 @@ class InitEnvModels:
             #     openai_api_key="abc123",
             #     openai_api_base="http://10.1.150.106:9997/v1")
             # emb_test = embeddings_api.embed_query("test query text")
-            embed_model = LocalAIEmbeddings(model=self.embedding_model_name,openai_api_base=self.embedding_model_base_url,openai_api_key="not empty",model_kwargs={'dimensions': self.embedding_model_dimentions})
+            
+            os.environ["VLLM_API_KEY"] = "abc123"
+            if self.reduce_emb_dimensions:
+                embed_model = LocalAIEmbeddings(model=self.embedding_model_name,openai_api_base=self.embedding_model_base_url,openai_api_key="abc123",model_kwargs={'dimensions': self.embedding_model_dimentions})
+            else:
+                embed_model = LocalAIEmbeddings(model=self.embedding_model_name,openai_api_base=self.embedding_model_base_url,openai_api_key="abc123")
             emb_test = embed_model.embed_query("test query text")
             embedding_model_8k = LocalAIEmbeddings(model=self.embedding_model_8k_name,deployment=self.embedding_model_name,api_key="abc123",openai_api_base=self.embedding_model_base_url,base_url=self.embedding_model_8k_base_url,embedding_ctx_length=self.embedding_model_8k_max_tokens*4,chunk_size=self.embedding_model_8k_max_tokens)
             # r2 = embed_model.embed_documents(["执行embed_documents测试......test documents text1","test documents text2"])

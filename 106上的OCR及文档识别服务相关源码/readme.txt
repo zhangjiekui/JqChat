@@ -35,6 +35,27 @@ print(torch.cuda.get_arch_list())
 source /usr/local/bin/virtualenvwrapper.sh
 workon xinfer2
 安装新版的xinference:V1.8.0
+
+安装vllm
+cd /data/TeslaP4VllmTorchCompiled/
+git clone https://github.com/vllm-project/vllm.git
+cd vllm
+git checkout -b v0.10.1.1
+git submodule sync
+git submodule update --init --recursive
+
+cd /data/TeslaP4VllmTorchCompiled/vllm
+export USE_NINJA=1
+export MAX_JOBS=6 
+export TORCH_CUDA_ARCH_LIST="6.1"
+export FORCE_CUDA=1
+export VLLM_DISABLE_BF16=1
+USE_NINJA=1 FORCE_CUDA=1 MAX_JOBS=6 TORCH_CUDA_ARCH_LIST="6.1" FA2_ARCHS="8.9" FA3_ARCHS="8.9"  VLLM_DISABLE_BF16=1 pip install --no-build-isolation -v -e .
+
+
+
+
+
 cd ~  (注意不要在cd ~/pytorch目录下)
 xinference-local --host 0.0.0.0 --port 9998
 分别运行Qwen3-Embedding-0.6B和Qwen3-Reranker-0.6B模型

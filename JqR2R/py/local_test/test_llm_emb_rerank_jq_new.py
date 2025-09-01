@@ -5,10 +5,10 @@ from uuid import UUID
 r2rconfig = R2RConfig.from_toml(config_path="/data/projects/JqChatV2/JqChat/JqR2R/py/r2r/jq.toml")  # type: ignore
 print("R2R服务测试--------请首先运行[python -m r2r.serve]启动R2R服务--------")
 client = R2RClient(base_url='http://10.1.150.105:7272') # can set remote w/ R2RClient(base_url=...)
-client.users.login("admin@example.com", "change_me_immediately")
+client.users.login("470137285@qq.com", "470137285")
 
 async_client = R2RAsyncClient(base_url='http://10.1.150.105:7272')
-async_client.users.login("admin@example.com", "change_me_immediately")
+async_client.users.login("470137285@qq.com", "470137285")
 print("R2RClient\R2RAsyncClient对象创建\登录成功")
 
 def test_semantic_search_multilingual(client: R2RClient):

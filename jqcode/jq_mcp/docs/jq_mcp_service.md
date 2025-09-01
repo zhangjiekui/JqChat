@@ -1,6 +1,11 @@
 ## 运行服务
 ```
 workon test
+nohup python /data/projects/JqChatV2/JqChat/jqcode/jq_mcp/jq_openai_service_api_streaming.py >> /root/JqLogs/jqmcp.log 2>&1 &
+tail -f /root/JqLogs/jqmcp.log
+```
+```
+workon test
 nohup python /data/projects/JqChatV2/JqChat/jqcode/jq_mcp/jq_mcp_service.py >> /root/JqLogs/jqmcp.log 2>&1 &
 tail -f /root/JqLogs/jqmcp.log
 ```
