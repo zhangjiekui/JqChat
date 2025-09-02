@@ -505,7 +505,8 @@ class GraphAgent:
         self.chat_on_docs_list = chat_on_docs_list
         self.add_docs_list_to_kb = add_docs_list_to_kb
         self.allow_conversation_memory=allow_conversation_memory
-        self.allow_question_rewrite = allow_conversation_memory and allow_question_rewrite #只有启用记忆后才能启用问题重写
+        self.allow_question_rewrite = allow_question_rewrite #只有启用记忆后才能启用问题重写
+        # self.allow_question_rewrite = allow_conversation_memory and allow_question_rewrite #只有启用记忆后才能启用问题重写
         
         if "::" in memory_thread_id:
             self.user_id = memory_thread_id.split("::")[0]
@@ -903,6 +904,25 @@ class GraphAgent:
                     self.jq_queque.enqueue("生成的答案经评估检查，并没有解决用户问题，自动补充网络搜索")
                     return "not useful"
         else:
+
+            self.answer_is_qualified = False
+            print("---DECISION: GENERATION IS NOT GROUNDED IN DOCUMENTS---")               
+            try:
+                question_has_searched = state["question_searched"][question]
+            except:
+                question_has_searched = False
+            
+            if question_has_searched:
+                print("---BUT WE HAVE WEB SEARCHED THE QUESTION, SO DIRECTLY ROUTE TO 'END' NODE---")
+                self.jq_queque.enqueue("生成的答案经评估检查，并没有解决用户问题，但已经进行过网络搜索，只能这样了")
+                return "useful"
+            else:
+                print(f"not supported: {generation=}")
+                # _user_variables_statedict = {"history_generation":generation}
+                # self.update_user_variables(state,add_dict=_user_variables_statedict)
+                self.jq_queque.enqueue("现有文档不足以支持生成合适的答案，将自动补充网络搜索")
+                return "not supported" # todo
+
             # pprint.pprint("---DECISION: GENERATION IS NOT GROUNDED IN DOCUMENTS, RE-TRY---")
             # return "not supported"
             print("---DECISION: GENERATION IS NOT GROUNDED IN DOCUMENTS, BUT WE DO NOT RE-TRY (RE-GENERATION), JUST DIRECTLY TO 'END' NODE---")
