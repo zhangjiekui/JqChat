@@ -99,10 +99,10 @@ concurrent_request_limit = 64
     add_generation_kwargs = { }
 
 [ingestion]
-#provider = "jq"
-provider = "unstructured_local"
-strategy = "auto"
-chunking_strategy = "by_title"
+provider = "jq"
+#provider = "unstructured_local"
+#strategy = "auto"
+#chunking_strategy = "by_title"
 document_summary_model = "openai/default"
 vision_img_model = "openai/qwenvl"
 vision_pdf_model = "openai/qwenvl"
@@ -117,7 +117,7 @@ automatic_extraction = true # enable automatic extraction of entities and relati
     enable_chunk_enrichment = false    
     n_chunks = 2
   [ingestion.extra_parsers]
-    pdf = ["zerox"] 
+    pdf = "zerox"
 
 [logging]
 provider = "r2r"

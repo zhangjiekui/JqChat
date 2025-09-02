@@ -505,12 +505,25 @@ class GraphAgent:
         self.chat_on_docs_list = chat_on_docs_list
         self.add_docs_list_to_kb = add_docs_list_to_kb
         self.allow_conversation_memory=allow_conversation_memory
-        self.allow_question_rewrite = allow_question_rewrite
-        self.user_id = memory_thread_id
+        self.allow_question_rewrite = allow_conversation_memory and allow_question_rewrite #只有启用记忆后才能启用问题重写
+        
+        if "::" in memory_thread_id:
+            self.user_id = memory_thread_id.split("::")[0]
+            question_id = memory_thread_id.split("::")[-1]
+            self.question_id:str = question_id
+            self.queque_id = memory_thread_id
+        else:
+            self.user_id = memory_thread_id
+            self.question_id:str= self.get_random_id()
+            self.queque_id = f"{memory_thread_id}::{self.question_id}"
+        self.user_name = self.user_id
+        if "(" in self.user_id and ")" in self.user_id:
+            self.user_name = self.user_id.split("(")[0]
+        self.invoke_graph_config =  {"recursion_limit":recursion_limit,"configurable": {"thread_id":self.user_name }}
         self.user_rquest_url = user_rquest_url
         try:
             from r2r_client_functions import r2r_authed_client
-            r2r_client = r2r_authed_client(user_id=self.user_id)
+            r2r_client = r2r_authed_client(user_id=self.user_name)
             self.r2r_client = r2r_client
             logger.warning("self.r2r_client初始化成功")
         except ImportError as e:
@@ -578,13 +591,7 @@ class GraphAgent:
 
         self.system_message = [SystemMessage(content=_system_message_content)]
         
-        if "::" in self.user_id:
-            question_id = self.user_id.split("::")[-1]
-            self.question_id:str = question_id
-            self.queque_id = self.user_id
-        else:
-            self.question_id:str= self.get_random_id()
-            self.queque_id = f"{self.user_id}::{self.question_id}"
+
 
             
             
@@ -607,7 +614,7 @@ class GraphAgent:
 
         self.question = ""
         self.question_rewrited = ""
-        self.invoke_graph_config =  {"recursion_limit":recursion_limit,"configurable": {"thread_id":memory_thread_id }}
+        
         # conn = sqlite3.connect("memory_checkpoints.sqlite", check_same_thread=False)
         # self.memory = SqliteSaver(conn)
 # https://github.com/NanGePlus/LangGraphChatBot/blob/68d5e014b6143bdb42f7df8f1ad4212ec2a5ec40/03_ChatBotWithPostgres/demoWithMemory.py
