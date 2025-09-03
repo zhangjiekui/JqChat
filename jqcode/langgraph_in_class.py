@@ -598,7 +598,6 @@ class GraphAgent:
             
         self.jq_queque = JqFileSystemQueue(id=self.queque_id)
 
-        self.agent_log = ""
         self.code_text = ""
         self.img_url = ""
         self.answer_text = ""
@@ -2090,7 +2089,8 @@ class GraphAgent:
         else:
             if self.img_url in answer:
                 self.img_url = ""
-            results = [self.agent_log,self.code_text,self.img_url,answer]
+            # results = [self.agent_log,self.code_text,self.img_url,answer]
+            results = [self.code_text,answer]
             return results
     # endregion: Graph定义            
         
@@ -2140,7 +2140,7 @@ if __name__ == "__main__":
     
     # user_questions += ['请检索知识库，然后回答晶奇公司质量保证过程中的角色及角色的职责或含义解释，对应的人员（姓名）有哪些?其中的批准人是谁？']
     # user_questions += ["请检索知识库：信息"]
-    # user_questions = ['请绘制sin(x)曲线']
+    user_questions = ['请绘制sin(x)曲线']
     my_main_bot = GraphAgent(executable_tools=executable_tools,routing_tools_wrapped_in_class=route_tools,allow_conversation_memory=True)
 
     # from fastapi import FastAPI
