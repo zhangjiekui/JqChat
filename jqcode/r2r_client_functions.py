@@ -1,5 +1,4 @@
 import os,re
-import asyncio
 import uuid
 from uuid import UUID
 from pathlib import Path
@@ -308,12 +307,12 @@ if __name__ == "__main__":
     #     pass
 
 
-    r2r_create_documents(r2r_client,file_paths_or_lm_documents=
-                         ["/data/projects/JqChatV2/JqChat/JqR2R/py/core/examples/data/DeepSeek_R1.pdf",
-                          "/data/projects/JqChatV2/JqChat/JqR2R/py/core/examples/supported_file_types/pdf.pdf",
-                          "/data/projects/JqChatV2/JqChat/2025年第五期总经理办公会纪要.docx",
+    # r2r_create_documents(r2r_client,file_paths_or_lm_documents=
+    #                      ["/data/projects/JqChatV2/JqChat/JqR2R/py/core/examples/data/DeepSeek_R1.pdf",
+    #                       "/data/projects/JqChatV2/JqChat/JqR2R/py/core/examples/supported_file_types/pdf.pdf",
+    #                       "/data/projects/JqChatV2/JqChat/2025年第五期总经理办公会纪要.docx",
                           
-                          ])
+    #                       ])
 
     # response = r2r_client.documents.list()
     # documents = response.results

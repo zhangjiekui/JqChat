@@ -1,0 +1,26 @@
+09/03/2025 17:11:15 - [INFO] -numexpr.utils->>>    Note: NumExpr detected 48 cores but "NUMEXPR_MAX_THREADS" not set, so enforcing safe limit of 8.
+09/03/2025 17:11:15 - [INFO] -numexpr.utils->>>    NumExpr defaulting to 8 threads.
+09/03/2025 17:11:15 - [INFO] -datasets->>>    PyTorch version 2.5.1 available.
+  已成功设置multiprocessing.set_start_method("spawn")  [WARNING:jqlogger( c0_init_env_models.py 第131行)]
+09/03/2025 17:11:17 - [INFO] -xoscar.backends.indigen.fate_sharing->>>    Using kernel-level fate-sharing.
+bce-embedding-base_v1 嵌入模型接口http://10.1.150.106:9997/v1获取成功，返回的嵌入维度为768  [WARNING:jqlogger( c0_init_env_models.py 第870行)]
+jina-reranker-v2  重排模型接口http://10.1.150.106:9997获取成功  [WARNING:jqlogger( c0_init_env_models.py 第898行)]
+设置全局的Postgresql lm_cache成功！  [WARNING:jqlogger( c0_init_env_models.py 第663行)]
+当前使用ChatDeepSeek接口,LLM模型为:model_name = qwen3, api_base = http://10.1.150.105:3000/v1  [WARNING:jqlogger( c0_init_env_models.py 第769行)]
+INFO:     Started server process [676279]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+ERROR:    [Errno 98] error while attempting to bind on address ('0.0.0.0', 8601): address already in use
+INFO:     Waiting for application shutdown.
+INFO:     Application shutdown complete.
+
+
+=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*
+=*=* 项目.env文件路径：/data/projects/JqChatV2/JqChat/.env
+=*=* load_dotenv('/data/projects/JqChatV2/JqChat/.env')成功！
+=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*
+
+
+当前使用的Elasticsearch URL为:| https://10.1.150.105:9200 |
+-------可以通过Kibana URL查看:| http://127.0.0.1:5601 | http://10.1.150.105:5601 |-------
+
