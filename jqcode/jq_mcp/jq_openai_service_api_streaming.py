@@ -13,7 +13,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from sse_starlette.sse import EventSourceResponse
 from jqcode.jq_mcp.utils import ThreadWithResult, get_process_text,chat
-from jqcode.langgraph_in_class import GraphAgent
+
 # 配置日志记录
 logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger(__name__)

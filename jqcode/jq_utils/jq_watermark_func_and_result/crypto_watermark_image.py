@@ -79,6 +79,9 @@ class ImageWatermark:
                     ".Fonts_CN/MSYH/MSYH.TTC",
                     ".Fonts_CN/MSYH/MSYHBD.TTC",
                     ".Fonts_CN/MSYH/MSYHL.TTC",
+                    "/data/projects/JqChatV2/JqChat/.Fonts_CN/MSYH/MSYH.TTC",
+                    "/data/projects/JqChatV2/JqChat/.Fonts_CN/MSYH/MSYHBD.TTC",
+                    "/data/projects/JqChatV2/JqChat/.Fonts_CN/MSYH/MSYHL.TTC",
                     "/usr/share/fonts/opentype/noto/NotoSansCJK-Bold.ttc",
                     "/usr/share/fonts/truetype/wqy/wqy-microhei.ttc",
                     "/usr/share/fonts/google-noto-cjk/NotoSansCJK-Bold.ttc"
