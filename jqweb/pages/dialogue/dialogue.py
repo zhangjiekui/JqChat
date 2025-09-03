@@ -40,7 +40,7 @@ except:
 chat_box = ChatBox(assistant_avatar=get_img_base64("logo_chat_avatar.png"))
 code_message:str=None
 max_img_num=5
-img_size = (300,300)
+img_size = (600,600)
 
 LOADER_DICT = {
     "CSVLoader": [".csv"],
@@ -222,13 +222,15 @@ def dialogue_page(
 
     
     with bottom():
-        cols = st.columns([1, 0.1, 1, 30, 1])        
+        # cols = st.columns([1, 0.1, 1, 0.1, 20, 1]) 
+        cols = st.columns([1,  1, 20, 1],gap="small",border=False)         
         if cols[0].button(":page_facing_up:", help="上传文档（知识库问答）"):
            file_upload() 
-        cols[1].write("")  # 空白间隔       
-        if cols[2].button(":framed_picture:", help="上传图片（OCR/对话）"):
+        # cols[1].write("")  # 空白间隔       
+        if cols[1].button(":framed_picture:", help="上传图片（OCR/对话）"):
            img_upload()        
-        prompt = cols[3].chat_input(chat_input_placeholder, key="prompt",accept_file=False)        
+        # cols[3].write("")  # 空白间隔 
+        prompt = cols[2].chat_input(chat_input_placeholder, key="prompt",accept_file=False)        
         if cols[-1].button(":wastebasket:", help="清空对话"):
             chat_box.reset_history()
              #清空code执行回复信息和文件
@@ -247,45 +249,31 @@ def dialogue_page(
     # chat input
     if prompt:
         use_vlm = ctx.get("vlm",False)
+        base64_images = ctx.get("base64_images",None)
         if use_vlm:            
-            img_files = ctx.get("files",None)
-            base64_images = ctx.get("base64_images",None)
+            # === 展示上传的图片（缩略图 + 可点击查看原图）===
+            img_files = ctx.get("files", None)
             if img_files:
-                if prompt.lower()=="ocr":
+                if prompt.lower() == "ocr":
                     prompt = "首先识别出有意义的区块，然后逐个区块完整识别并仅输出图中的文字（相当于ocr，去掉不必要的换行符，但保留必要的空格，使用‘||’分割文本块）。最后仅输出完整的文本，不要有任何额外的内容和解释。"
 
                 chat_box.user_say(prompt)
+
+                # 创建列：左侧为提示，其余为图片列
                 img_columns = [10] * max_img_num
                 all_columns = [2] + img_columns
                 cols = st.columns(all_columns)
 
-                # # 方式1
-                # for i,img_file in enumerate(img_files): 
-                #     img = Image.open(img_file) 
-                #     img_square = img.resize(img_size)
-                #     img_element = StImage(img_square)
-                #     with cols[i%max_img_num]:
-                #         chat_box.user_say(img_element)
-
                 # 方式2
                 for i,img_file in enumerate(img_files): 
-                    img = Image.open(img_file) 
-                    img_square = img.resize(img_size)
+                    # img = Image.open(img_file) 
+                    # img_square = img.resize(img_size)
+                    img_square = Image.open(img_file)
                     j = i+1
                     with cols[j]:
-                        st.image(img_square, use_container_width=True)
+                        st.image(img_square, use_container_width=False)
 
-                # 
-                # # 方式3
-                # messages = []
-                # for i,img_file in enumerate(img_files): 
-                #     img = Image.open(img_file) 
-                #     img_square = img.resize(img_size)
-                #     img_element = StImage(img_square)
-                #     messages.append(img_element)                    
-                # chat_box.user_say(messages)            
-            
-            # if base64_images:
+            if base64_images:
                 chat_box.ai_say("正在思考中...")                
                 vlm = env_models_instance.vlm
                 answer_texts = ""
