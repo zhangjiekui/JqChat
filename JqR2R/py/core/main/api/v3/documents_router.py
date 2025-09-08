@@ -486,6 +486,10 @@ class DocumentsRouter(BaseRouterV3):
                     document_id = id or generate_document_id(
                         file_data["filename"], auth_user.id
                     )
+
+                    updated_metadata = file_data.pop("updated_metadata", {})
+                    metadata.update(updated_metadata)
+                    print(metadata)
                 elif raw_text:
                     content_length = len(raw_text)
                     file_content = BytesIO(raw_text.encode("utf-8"))
@@ -2326,15 +2330,61 @@ class DocumentsRouter(BaseRouterV3):
             )
             return results  # type: ignore
 
+
+    
     @staticmethod
     async def _process_file(file):
+        converted_file_types = ["pdf","doc","md","html","htm"]
+        new_file_name:str = None
+        new_content_type:str = None
+        updated_metadata:dict = {}
         import base64
-
+        
+        file_ext = file.filename.split(".")[-1]
         content = await file.read()
+        
+        # convert file to docx
+        if file_ext.lower() in converted_file_types:
+            try:
+                # /data/projects/JqChatV2/JqChat/JqR2R/py/core/providers/ingestion/jq/jq_readers/backend_reader_utils/jqkj_docs_converter.py
+                from core.providers.ingestion.jq.jq_readers.backend_reader_utils.jqkj_docs_converter import _convert_file_to_docx
+                import os
+                from pathlib import Path
+
+                destination_dir = os.getcwd()
+                saved_file =await save_binary_data_to_file(content, f"{file.filename}")
+                _convert_file_to_docx((saved_file,False,destination_dir))
+                
+                original_file_suffix = Path(file.filename).suffix
+                converted_file = f"{destination_dir}/{file.filename.replace(original_file_suffix, '.docx')}"
+                converted_file = Path(converted_file)
+                with open(converted_file, "rb") as f:
+                    content = f.read()
+                new_file_name = converted_file.name
+                new_content_type = "application/vnd.openxmlformats-officedocument.wordprocessingml.document" 
+                updated_metadata = {"filename": f"原始文件名{file.filename}", "url": f"需将{converted_file}转换成url"}
+            except Exception as e:
+                new_file_name = None
+                new_content_type = None
+                updated_metadata = {}
+                logger.warning(e)
+     
 
         return {
-            "filename": file.filename,
+            "filename": new_file_name or file.filename,
             "content": base64.b64encode(content).decode("utf-8"),
-            "content_type": file.content_type,
+            "content_type": new_content_type or file.content_type,
             "content_length": len(content),
+            "updated_metadata":updated_metadata
         }
+
+async def save_binary_data_to_file(data: bytes, file_path: str):
+    """
+    将二进制数据保存为文件
+    :param data: 二进制数据（bytes）
+    :param file_path: 保存的文件路径（包含扩展名）
+    """
+    with open(file_path, 'wb') as f:
+        f.write(data)
+    print(f"文件已保存至: {file_path}")
+    return file_path

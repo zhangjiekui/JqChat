@@ -394,8 +394,64 @@ python -m llama_cpp.server --model /data/models/Qwen/qwen235q8/qwen235q8.gguf --
 
 ## https://github.com/ikawrakow/ik_llama.cpp/issues/419  -ot exps=CPU
 
-cmake -B build -DGGML_CUDA=OFF -DCMAKE_BUILD_TYPE=Release -DGGML_BLAS=ON -DGGML_BLAS_VENDOR=Intel10_64lp -DCMAKE_C_COMPILER=icx -DCMAKE_CXX_COMPILER=icpx -DGGML_NATIVE=ON
+<!-- cmake -B build -DGGML_CUDA=OFF -DCMAKE_BUILD_TYPE=Release -DGGML_BLAS=ON -DGGML_BLAS_VENDOR=Intel10_64lp -DCMAKE_C_COMPILER=icx -DCMAKE_CXX_COMPILER=icpx -DGGML_NATIVE=ON -->
+<!-- cmake -B build -DGGML_CUDA=ON -DGGML_SCHED_MAX_COPIES=1 -DGGML_CUDA_IQK_FORCE_BF16=1 -->
 
+git clone https://github.com/ikawrakow/ik_llama.cpp
+cd ik_llama.cpp
+cmake -B build -DCMAKE_BUILD_TYPE=Release -DGGML_CUDA=ON -DGGML_BLAS=OFF -DGGML_SCHED_MAX_COPIES=1 -DGGML_CUDA_IQK_FORCE_BF16=1
+cmake --build build --config Release -j 8
+
+cd ~/ik_llama.cpp
+CUDA_VISIBLE_DEVICES="0" \
+./build/bin/llama-server \
+    --model /data/models/DeepSeek-V3.1-GGUF/IQ5_K/DeepSeek-V3.1-IQ5_K-00001-of-00011.gguf \
+    --alias ubergarm/DeepSeek-V3.1-GGUF \
+    --ctx-size 32768 \
+    -ctk q8_0 \
+    -fa -fmoe \
+    -mla 3 -amb 512 \
+    -ngl 99 \
+    -ot exps=CPU \
+    --parallel 4 \
+    --threads 40 \
+    --host 0.0.0.0 \
+    --port 8080 \
+    --no-display-prompt \
+    --chat-template deepseek3 
+    --jinja \
+    --no-mmap \
+    --numa distribute
+    
+<!-- --model /data/models/Qwen/qwen235q8/qwen235q8.gguf     -->
+<!-- /data/models/qwen3-235b-a22b-128k_ud-q4_k_xl.gguf -->
+cd ~/ik_llama.cpp
+CUDA_VISIBLE_DEVICES="0" \
+./build/bin/llama-server \
+    --model /data/models/Qwen3-235B-A22B-Instruct-2507-GGUF/IQ2_KL/Qwen3-235B-A22B-Instruct-IQ2_KL-00001-of-00002.gguf  \
+    --alias ikmodel \
+    --ctx-size 32768 \
+    -ctk q8_0 \
+    -fa -fmoe \
+    -mla 3 -amb 512 \
+    -ngl 99 \
+    -ot exps=CPU \
+    --parallel 4 \
+    --threads 32 \
+    --host 0.0.0.0 \
+    --port 8080 \
+    --no-display-prompt \
+    --reasoning-budget 0 \
+    --jinja \
+    --no-mmap \
+    --numa distribute
+
+/data/models/Qwen/qwen235q8/qwen235q8.gguf
+/data/models/DeepSeek-V3.1-GGUF/IQ5_K/DeepSeek-V3.1-IQ5_K-00001-of-00011.gguf
+
+    <!-- --jinja \
+    --reasoning-budget 0 \
+    --chat-template-kwargs '{"thinking": true}' -->
 
 
 numactl -m 1 -C 128-255 ./llama-batched-bench -m /models1/unsloth/DeepSeek-R1-GGUF/DeepSeek-R1-Q4_K_M/DeepSeek-R1-Q4_K_M-00001-of-00009.gguf -c 8192 -b 2048 -ub 512 -ngl 0 -npp 128 -ntg 128 -npl 1,2,4,8 --cache-type-k q8_0 --numa numactl --threads 64 --threads-batch 128 -fa -fmoe -amb 1 -ser 7,1 -mla 0 --no-mmap
@@ -421,13 +477,6 @@ CUDA_VISIBLE_DEVICES=0 ./llama.cpp/llama-cli \
     --top-p 0.95 \
     --top-k 20 \
     --prompt "<|im_start|>user\nCreate a Flappy Bird game in Python. You must include these things:\n1. You must use pygame.\n2. The background color should be randomly chosen and is a light shade. Start with a light blue color.\n3. Pressing SPACE multiple times will accelerate the bird.\n4. The bird's shape should be randomly chosen as a square, circle or triangle. The color should be randomly chosen as a dark color.\n5. Place on the bottom some land colored as dark brown or yellow chosen randomly.\n6. Make a score shown on the top right side. Increment if you pass pipes and don't hit them.\n7. Make randomly spaced pipes with enough space. Color them randomly as dark green or light brown or a dark gray shade.\n8. When you lose, show the best score. Make the text inside the screen. Pressing q or Esc will quit the game. Restarting is pressing SPACE again.\nThe final game should be inside a markdown section in Python. Check your code for errors and fix them before the final markdown section.<|im_end|>\n<|im_start|>assistant\n"
-
-## ktransformers 部署qwen3b235q8
-docker run  --gpus all -p 8082:8082  --privileged    -v /data/models/:/data/models/ --name ktransformers --env "CUDA_VISIBLE_DEVICES=2,3" -itd approachingai/ktransformers:latest-FANCY
-
-docker exec -it ktransformers /bin/bash
-
-python ktransformers/server/main.py  --architectures Qwen3MoeForCausalLM --port 8082   --model_path /data/models/Qwen/qwen235q8/Qwen3-235B-A22B/   --gguf_path  /data/models/Qwen/qwen235q8/qwen235q8.gguf   --optimize_config_path ktransformers/optimize/optimize_rules/Qwen3Moe-serve.yaml   --max_new_tokens 32000  --backend_type balance_serve --model_name qwen3kt
 
 
 
@@ -1017,7 +1066,32 @@ tail -f /root/JqLogs/vllmvl.log
 
 
 
+###ls ktransformers docker 部署qwen3b235q8
+```
+docker run  --gpus all -p 8082:8082  --privileged    -v /data/models/:/data/models/ --name ktransformers --env "CUDA_VISIBLE_DEVICES=0" -itd approachingai/ktransformers:latest-FANCY
 
+docker exec -it ktransformers /bin/bash
+```
+```
+TORCH_CUDA_ARCH_LIST="8.9" python ktransformers/server/main.py \
+--port 8082 \
+--architectures Qwen3MoeForCausalLM \
+--model_name qwen3kt  \
+--model_path "/data/models/Qwen/qwen235q8/Qwen3-235B-A22B/"  \
+--gguf_path "/data/models/Qwen/qwen235q8/qwen235q8.gguf"  \
+--optimize_config_path ktransformers/optimize/optimize_rules/Qwen3Moe-serve.yaml  \
+--cpu_infer 32  \
+--temperature 0.7  \
+--top_p 0.8  \
+--top_k 20  \
+--repetition_penalty 1.05  \
+--max_new_tokens $((128*1024/4))  \
+--chunk_size 256  \
+--max_batch_size 4  \
+--backend_type balance_serve \
+--no-use_cuda_graph \
+--log_level DEBUG
+```
 
 ### 启动Ktransformers DeepSeek-R1-Q4_K_M （on GPU 0）:
 #### 安装NUMA库
@@ -1034,11 +1108,11 @@ git clone https://github.com/kvcache-ai/ktransformers.git
 cd ktransformers
 git submodule update --init --recursive
 #### 安装依赖：
-sudo apt install libtbb-dev libssl-dev libcurl4-openssl-dev 【libaio1】 libaio-dev libfmt-dev libgflags-dev zlib1g-dev patchelf
+<!-- [不要轻易使用]sudo apt install libtbb-dev libssl-dev libcurl4-openssl-dev 【libaio1】 libaio-dev libfmt-dev libgflags-dev zlib1g-dev patchelf -->
 
 #### 编译安装
 <!-- Install Dual NUMA dependencies -->
-sudo env USE_BALANCE_SERVE=1 USE_NUMA=1 PYTHONPATH="$(which python)" PATH="$(dirname $(which python)):$PATH" bash ./install.sh
+sudo env USE_BALANCE_SERVE=1 USE_NUMA=1 TORCH_CUDA_ARCH_LIST=8.9 PYTHONPATH="$(which python)" PATH="$(dirname $(which python)):$PATH" bash ./install.sh
 
 
 <!-- 原来的
@@ -1051,7 +1125,7 @@ cat /proc/sys/kernel/numa_balancing
 1
 ==== 内存的实际分配
 nvidia-smi 找到pid
-watch -n1 numastat -p pid
+watch -n1 numastat -p 3453832  pid
 
 Per-node process memory usage (in MBs) for PID 2402316 (ktransformers)
                            Node 0          Node 1           Total
@@ -1063,9 +1137,30 @@ Private                 471208.33       433322.20       904530.53
 ----------------  --------------- --------------- ---------------
 Total                   472328.98       433344.67       905673.64 -->
 
-<!-- Running DeepSeek-R1-Q4KM Models -->
+
 ```
 workon torch26cu126
+TORCH_CUDA_ARCH_LIST="8.9" CUDA_VISIBLE_DEVICES=0 python ktransformers/server/main.py \
+--port 8082 \
+--architectures Qwen3MoeForCausalLM \
+--model_name qwen3kt  \
+--model_path "/data/models/Qwen/qwen235q8/Qwen3-235B-A22B/"  \
+--gguf_path "/data/models/Qwen/qwen235q8/qwen235q8.gguf"  \
+--optimize_config_path ktransformers/optimize/optimize_rules/Qwen3Moe-serve.yaml  \
+--cpu_infer 32  \
+--temperature 0.7  \
+--top_p 0.8  \
+--top_k 20  \
+--repetition_penalty 1.05  \
+--max_new_tokens $((128*1024/4))  \
+--cache_lens $((128*1024/4))  \
+--chunk_size 256  \
+--max_batch_size 4  \
+--backend_type balance_serve
+
+
+
+<!-- Running DeepSeek-R1-Q4KM Models -->
 CUDA_VISIBLE_DEVICES=2,3 python ktransformers/server/main.py \
   --port 10002 \
   --model_path /data/models/DeepSeek-R1/ \

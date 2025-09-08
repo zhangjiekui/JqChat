@@ -28,6 +28,15 @@ from ...llm import (
 
 logger = logging.getLogger()
 
+file_type_processed_by_jqreader = ["pdf","doc","docx","md","html","htm"]
+
+DEFAULT_PARSERS_BACKED = {
+    "doc": parsers.DOCParser,
+    "html": parsers.HTMLParser,
+    "htm": parsers.HTMLParser,
+    "md": parsers.MDParser,
+    "pdf": parsers.BasicPDFParser,
+}
 
 class JqIngestionConfig(IngestionConfig):
     chunk_size: int = 512
@@ -38,21 +47,23 @@ class JqIngestionConfig(IngestionConfig):
 
 
 class JqIngestionProvider(IngestionProvider):
+
+
     DEFAULT_PARSERS = {
         DocumentType.BMP: parsers.BMPParser,
         DocumentType.CSV: parsers.CSVParser,
-        DocumentType.DOC: parsers.DOCParser,
-        DocumentType.DOCX: parsers.JqDOCXParser,
+        DocumentType.DOC: parsers.JqDOCXParser, # JqDOCXParser
+        DocumentType.DOCX: parsers.JqDOCXParser,# JqDOCXParser
         DocumentType.EML: parsers.EMLParser,
         DocumentType.EPUB: parsers.EPUBParser,
-        DocumentType.HTML: parsers.HTMLParser,
-        DocumentType.HTM: parsers.HTMLParser,
+        DocumentType.HTML: parsers.JqDOCXParser,# JqDOCXParser
+        DocumentType.HTM: parsers.JqDOCXParser, # JqDOCXParser
         DocumentType.ODT: parsers.ODTParser,
         DocumentType.JSON: parsers.JSONParser,
         DocumentType.MSG: parsers.MSGParser,
         DocumentType.ORG: parsers.ORGParser,
-        DocumentType.MD: parsers.MDParser,
-        DocumentType.PDF: parsers.BasicPDFParser,
+        DocumentType.MD: parsers.JqDOCXParser,  # JqDOCXParser
+        DocumentType.PDF: parsers.JqDOCXParser, # JqDOCXParser
         DocumentType.PPT: parsers.PPTParser,
         DocumentType.PPTX: parsers.PPTXParser,
         DocumentType.TXT: parsers.TextParser,
@@ -71,6 +82,7 @@ class JqIngestionProvider(IngestionProvider):
         DocumentType.TIFF: parsers.TIFFParser,
         DocumentType.XLS: parsers.XLSParser,
     }
+
 
     EXTRA_PARSERS = {
         DocumentType.CSV: {"advanced": parsers.CSVParserAdvanced},
@@ -130,7 +142,8 @@ class JqIngestionProvider(IngestionProvider):
             logger.error(f"JqIngestionProvider extra parser doc_type: {doc_type}")
             logger.error(f"JqIngestionProvider EXTRA_PARSERS: {JqIngestionProvider.EXTRA_PARSERS[doc_type]}")
 
-
+            if isinstance(doc_parser_name, list):
+                doc_parser_name = doc_parser_name[0]
             self.parsers[f"{doc_parser_name}_{str(doc_type)}"] = (
                 JqIngestionProvider.EXTRA_PARSERS[doc_type][doc_parser_name](
                     config=self.config,

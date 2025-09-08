@@ -11,6 +11,7 @@ import threading
 from threading import BoundedSemaphore
 lock = threading.Lock()
 pool = ThreadPoolExecutor(40)
+import tempfile
 semaphore = BoundedSemaphore(10) 
 
 from jqcode.jq_splitters.jq_docx_tree_text_splitter import load_project_env
@@ -363,45 +364,44 @@ def download_converted_files(file_paths: List[str], output_dir: Path, api_url = 
             json=file_paths,
             stream=True  # 使用流式下载
         )
-        
-        if response.status_code == 200:
-            # 从response读取zip文件内容
-            zip_data = BytesIO(response.content)
-            
-            # 读取zip并提取文件名和内容
+        response.raise_for_status()  # 检查状态
+        # 使用临时文件保存流式下载的 ZIP
+        with tempfile.NamedTemporaryFile(delete=False) as tmp_file:
+            for chunk in response.iter_content(chunk_size=8192):
+                tmp_file.write(chunk)
+            tmp_file_path = tmp_file.name
+        try:
+            # 从临时文件读取 ZIP
             converted_files = {}
-            with zipfile.ZipFile(zip_data) as zip_ref:
-                # 遍历zip中的所有文件
+            with zipfile.ZipFile(tmp_file_path) as zip_ref:
                 for zip_info in zip_ref.filelist:
-                    # 提取文件
                     file_content = zip_ref.read(zip_info.filename)
-                    file_path =  os.path.join(output_dir, zip_info.filename)
-                    
-                    # 保存文件
+                    file_path = os.path.join(output_dir, zip_info.filename)
+                    os.makedirs(os.path.dirname(file_path), exist_ok=True)
+
                     with open(file_path, 'wb') as f:
                         f.write(file_content)
-                    
+
                     converted_files[zip_info.filename] = str(file_path)
-            
+        except Exception as e:
+            logger.error(f"    ......下载转换文件{file_path}失败......")
+
+        finally:
+            # 清理临时文件
+            os.unlink(tmp_file_path)
+
             if not converted_files:
                 return {
                     "status": "error",
                     "message": "ZIP文件中没有找到任何文件"
                 }
+            else:
+                return {
+                    "status": "success",
+                    "message": "文件下载成功",
+                    "files": converted_files
+                }
             
-            return {
-                "status": "success",
-                "message": "文件下载成功",
-                "files": converted_files
-            }
-            
-        else:
-            error_detail = response.json().get('detail', '未知错误')
-            return {
-                "status": "error",
-                "message": f"下载失败: {error_detail}",
-                "status_code": response.status_code
-            }
             
     except Exception as e:
         logger.error(f"下载文件时发生错误: {str(e)}")
@@ -477,7 +477,7 @@ def convert_doc_pdf2docx_on_win_and_linux(input_filepaths:Union[str,list],overwr
                 with open(pdf_doc_filepath, 'rb') as f:
                     files = {'files': (pdf_doc_filepath.name, f)}
                     response = requests.post(api_url, files=files)
-                    
+                    response.raise_for_status()  # 检查状态
                     if response.status_code == 200:
                         result = response.json()
                         if result['success_count'] > 0:

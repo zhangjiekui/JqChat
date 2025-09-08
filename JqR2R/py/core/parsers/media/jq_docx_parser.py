@@ -12,9 +12,9 @@ from core.base.providers import (
 )
 
 
-class JqDOCXParser(AsyncParser[str | bytes]):
-    """A parser for DOCX data."""
 
+class JqDOCXParser(AsyncParser[str | bytes]):
+    """A parser for DOCX data."""   
     def __init__(
         self,
         config: IngestionConfig,
@@ -31,17 +31,24 @@ class JqDOCXParser(AsyncParser[str | bytes]):
     ) -> AsyncGenerator[str, None]:  # type: ignore
         """Ingest DOCX data and yield text from each paragraph."""
         if isinstance(data, str):
-            raise ValueError("DOCX data must be in bytes format.")
+            raise ValueError("DOCX/PDF etc. file data must be in bytes format.")
         document = kwargs.get("document",None)
         document_type = ''
         if document:
             document_type = document.document_type.value
-        if document_type != 'docx':
-            print("不是docx文件，需要进行转换")
+        from core.providers.ingestion.jq.base import file_type_processed_by_jqreader,DEFAULT_PARSERS_BACKED
+        if document_type != 'docx' and document_type in file_type_processed_by_jqreader:
+            default_parser_class = DEFAULT_PARSERS_BACKED.get(document_type,None)
+            print(f"转成docx文件出现错误，使用默认的Parser:{default_parser_class}")
+            chunks = ""
+            async for chunk in default_parser_class(self.config,self.database_provider,self.llm_provider).ingest(data, **kwargs):
+                chunks += chunk + "\n"
+                yield chunks        
+            
         else:
-            print("直接是docx文件，不需要进行转换")
-        doc = self.Document(BytesIO(data))
-        yield doc
+            print(f"本是或已转成docx文件，使用JqDOCXParser")
+            doc = self.Document(BytesIO(data))
+            yield doc
 
         # from jqcode.jq_readers.jqkj_readers import JqkjDocxReader
         # reader = JqkjDocxReader()

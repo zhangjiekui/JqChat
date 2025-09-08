@@ -224,10 +224,13 @@ def dialogue_page(
     with bottom():
         # cols = st.columns([1, 0.1, 1, 0.1, 20, 1]) 
         cols = st.columns([1,  1, 20, 1],gap="small",border=False)         
-        if cols[0].button(":page_facing_up:", help="上传文档（知识库问答）"):
+ 
+        # if cols[0].button(":page_facing_up:", help="上传文档（知识库问答）"):
+        if cols[0].button("📘",help="上传文档（知识库问答）"):
            file_upload() 
         # cols[1].write("")  # 空白间隔       
-        if cols[1].button(":framed_picture:", help="上传图片（OCR/对话）"):
+        # if cols[1].button(":framed_picture:", help="上传图片（OCR/对话）"):
+        if cols[1].button("🖼️", help="上传图片（OCR/对话）"):
            img_upload()        
         # cols[3].write("")  # 空白间隔 
         prompt = cols[2].chat_input(chat_input_placeholder, key="prompt",accept_file=False)        
