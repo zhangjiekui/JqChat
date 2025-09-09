@@ -579,6 +579,9 @@ class InitEnvModels:
         self.llm_model_name = self.llm_model_card['name']
         self.llm_model_max_tokens = self.llm_model_card['max_tokens']
         self.llm_model_max_tokens = self.llm_model_card['max_tokens']
+        self.llm_tokenize_url = self.llm_model_card.get('tokenize_url',"http://10.1.150.105:9998/tokenize")
+        self.llm_detokenize_url = self.llm_model_card.get('detokenize_url',"http://10.1.150.105:9998/detokenize")
+        self.llm_tokenize_api_key = self.llm_model_card.get('tokenize_api_key',_default_api_key)
         self.need_custom_tool_call_parse = self.llm_model_card.get('need_custom_tool_call_parse',True)
         self.need_json_mode = self.llm_model_card.get('need_json_mode',False)
         
@@ -595,8 +598,12 @@ class InitEnvModels:
         self.embedding_model_local = self.embedding_model_card['local']
         self.embedding_model_online = self.embedding_model_card['online']
         self.embedding_model_base_url = self.embedding_model_card.get('base_url',None) or self.base_url
-        self.embedding_model_name_or_path = self.embedding_model_local if self.embedding_model_local and Path(self.embedding_model_local).exists() else self.embedding_model_online
+        self.embedding_tokenize_url = self.embedding_model_card.get('tokenize_url',"http://10.1.150.106:9998/tokenize")
+        self.embedding_detokenize_url = self.embedding_model_card.get('detokenize_url',"http://10.1.150.106:9998/detokenize")
+        self.embedding_tokenize_api_key = self.embedding_model_card.get('tokenize_api_key',_default_api_key)
         self.reduce_emb_dimensions = self.embedding_model_card.get('reduce_emb_dimensions',False)
+        self.embedding_model_name_or_path = self.embedding_model_local if self.embedding_model_local and Path(self.embedding_model_local).exists() else self.embedding_model_online
+
 
 
         self.embedding_model_8k_name =self.embedding_model_8k_card['name']
