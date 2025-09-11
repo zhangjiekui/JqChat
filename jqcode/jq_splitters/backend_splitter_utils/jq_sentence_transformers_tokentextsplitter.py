@@ -2,8 +2,7 @@ import math
 from langchain.text_splitter import TextSplitter,Tokenizer,split_text_on_tokens
 from langchain_community.embeddings import HuggingFaceBgeEmbeddings
 from langchain_huggingface import HuggingFaceEmbeddings
-from jqcode.jq_agent.c0_init_env_models import env_models_instance
-from jqcode.jq_splitters.backend_splitter_utils.jq_chinese_recursive_text_splitter import JqChineseRecursiveTextSplitter
+
 
 from typing import (
     AbstractSet,
@@ -24,7 +23,7 @@ from typing import (
     cast,
 )
 
-embed_model,embedding_model_8k,reranker = env_models_instance.get_emb_8k_rerank_model()
+
 class SentenceTransformersTokenTextSplitter(TextSplitter):
     """
     复制修改了源码，可以与HuggingFaceEmbeddings/HuggingFaceBgeEmbeddings共享model和tokenizer，避免了各自独立加载
@@ -35,13 +34,17 @@ class SentenceTransformersTokenTextSplitter(TextSplitter):
     def __init__(
         self,
         chunk_overlap: Union[int,float] = 0.2,
-        emb_model_instance: Union[HuggingFaceEmbeddings, HuggingFaceBgeEmbeddings] = embed_model,
+        emb_model_instance: Union[HuggingFaceEmbeddings, HuggingFaceBgeEmbeddings] = None,
         tokens_per_chunk: Optional[int] = 500,
         **kwargs: Any,
     ) -> None:
         """Create a new TextSplitter."""
         
         # assert isinstance(emb_model_instance,(HuggingFaceEmbeddings,HuggingFaceBgeEmbeddings)),'model_name参数必须是Union[HuggingFaceEmbeddings, HuggingFaceBgeEmbeddings]'
+        if not emb_model_instance:
+            from jqcode.jq_agent.c0_init_env_models import env_models_instance
+            embed_model,embedding_model_8k,reranker = env_models_instance.get_emb_8k_rerank_model()
+            emb_model_instance = embed_model
         self.chinese_recursive_text_splitter = env_models_instance.text_splitter
         try:
             self.model_name = emb_model_instance.model_name 

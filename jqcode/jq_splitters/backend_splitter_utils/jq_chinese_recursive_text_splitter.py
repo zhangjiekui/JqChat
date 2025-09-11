@@ -1,12 +1,8 @@
 import os
 import re
 import math
-from functools import partial
 from typing import List, Optional, Any, Callable,Union
-from transformers import AutoTokenizer
 from langchain.text_splitter import RecursiveCharacterTextSplitter
-from langchain_community.embeddings import HuggingFaceBgeEmbeddings
-from langchain_huggingface import HuggingFaceEmbeddings
 from jqcode.jq_utils.logger import jqkj_logger
 from jqcode.jq_config import general_config
 
@@ -31,6 +27,9 @@ def _split_text_with_regex_from_end(
     else:
         splits = list(text)
     return [s for s in splits if s != ""]
+
+
+
 
 class _JqTokenizerWrapper():
     def __init__(self,tokenizer):
@@ -133,6 +132,7 @@ class JqChineseRecursiveTextSplitter(RecursiveCharacterTextSplitter):
             final_chunks.extend(merged_text)
         return [re.sub(r"\n{2,}", "\n", chunk.strip()) for chunk in final_chunks if chunk.strip()!=""]
 
+JqkjChineseRecursiveTextSplitter=JqChineseRecursiveTextSplitter
 def _test__JqkjTokenizerWrapper(_tokenizer):
     import tiktoken
 
@@ -186,8 +186,10 @@ def _test_JqkjChineseRecursiveTextSplitter(_tokenizer):
         print(i,id,text_splitter.tokenizer_wrapper.de_tokenize(id))
 
 if __name__ == "__main__":
-    from jqcode.jq_agent.c0_init_env_models import env_models_instance
-    _tokenizer = env_models_instance._tokenizer
+    # from jqcode.jq_agent.c0_init_env_models import env_models_instance
+    # _tokenizer = env_models_instance._tokenizer
+    from jqcode.jq_splitters.jq_docx_tree_text_splitter import JqkjDocTreeTokenTextSplitter,load_project_env,JQ_TOKENIZER,JQ_TEXT_SPLITTER,JQ_DocTreeTokenTextSplitter
+    _tokenizer = JQ_TOKENIZER
     _test__JqkjTokenizerWrapper(_tokenizer)
     # _test_JqkjChineseRecursiveTextSplitter(_tokenizer)
 

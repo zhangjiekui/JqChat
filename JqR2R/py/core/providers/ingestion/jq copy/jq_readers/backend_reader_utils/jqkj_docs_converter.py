@@ -47,8 +47,8 @@ jq_reader_list =pandoc_list+docpdf_list
 
 # dict: {".doc":ReadClass}
 
-# 循环dict：、
-#   如果key in JqReadderList:dict["key"] = JqReadder
+# 循环dict：
+#   如果key in JqReadderList:dict["key"] = JqReader
 
 
 

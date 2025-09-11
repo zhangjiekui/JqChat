@@ -104,7 +104,7 @@ class R2RApp:
             allow_headers=["*"],
         )
 
-    async def serve(self, host: str = "0.0.0.0", port: int = 7272):
+    async def serve(self, host: str = "0.0.0.0", port: int = 8282):
         import uvicorn
 
         from core.utils.logging_config import configure_logging
@@ -114,7 +114,8 @@ class R2RApp:
         config = uvicorn.Config(
             self.app,
             host=host,
-            port=port,
+            # port=port,
+            port = 8282,
             log_config=None,
         )
         server = uvicorn.Server(config)

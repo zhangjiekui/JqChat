@@ -31,6 +31,7 @@ from llama_index.core.utils import get_tqdm_iterable
 from llama_index.core.node_parser.node_utils import IdFuncCallable, build_nodes_from_splits
 from llama_index.core.node_parser.interface import MetadataAwareTextSplitter
 
+from transformers import AutoTokenizer
 from jqcode.jq_readers.backend_reader_utils.jqkj_doc_tree_utils import jieba_pre_process,TreeNodeType,get_doc_tree_from_document
 from jqcode.jq_splitters.backend_splitter_utils.jq_chinese_recursive_text_splitter import JqChineseRecursiveTextSplitter
 from jqcode.jq_agent.tools.jq_web_search_engine import is_query_chinese
@@ -43,7 +44,7 @@ try:
 except:
     default_id_func = None
 
-def load_project_env(): 
+def load_project_env(default_dotenv_path:str='/data/projects/JqChatV2/JqChat/.env'): 
     logger.debug(f"......开始执行JqChat/jqcode/jq_splitters/jq_docx_tree_text_splitter.py中的load_project_env()......")
     env_loaded_value_in_env = os.getenv("env_loaded",'')
     dotenv_loaded = False
@@ -53,7 +54,7 @@ def load_project_env():
         print('=*'*20)
         env_dir = find_dotenv()
         if not env_dir:
-            root_dir = Path().resolve()
+            root_dir = Path().resolve()            
             env_dir = root_dir/'JqChat/.env'
 
         print(f"=*=* 项目.env文件路径：{env_dir}")       
@@ -64,7 +65,14 @@ def load_project_env():
             os.environ["env_loaded"] = "True"
         else:
             print(f"=*=* load_dotenv('{env_dir}')失败，请检查！")
-            os.environ["env_loaded"] = "False"
+            print(f"=*=* 尝试load_dotenv('{default_dotenv_path}')")
+            dotenv_loaded = load_dotenv(default_dotenv_path)
+            if dotenv_loaded:
+                print(f"=*=* load_dotenv('{default_dotenv_path}')成功！")
+                os.environ["env_loaded"] = "True"
+            else:
+                print(f"=*=* load_dotenv('{default_dotenv_path}')失败，请检查！")
+                os.environ["env_loaded"] = "False"
         print('=*'*20)
         print('\n')
     else:
@@ -215,6 +223,30 @@ def get_pre_title_nodes_text(cur_node,cur_title_node,pre_title_node,cur_ancestor
         logger.error(f"get_pre_title_nodes_text出错：{e}")
         return cur_node,cur_node,'',pre_ancestors_text_placeholder
 
+def get_embedding_model_path():
+    EMBEDDING_MODEL_CARD = os.getenv("EMBEDDING_MODEL_CARD",'')
+    EMBEDDING_MODEL_CARD = json_repair.loads(EMBEDDING_MODEL_CARD)
+    embedding_model_local = EMBEDDING_MODEL_CARD['local']
+    embedding_model_online = EMBEDDING_MODEL_CARD['online']
+    embedding_model_max_tokens = EMBEDDING_MODEL_CARD['max_tokens']
+    return embedding_model_local,embedding_model_online,embedding_model_max_tokens
+
+embedding_model_local,embedding_model_online,embedding_model_max_tokens = get_embedding_model_path()    
+# print(f"{embedding_model_local=},{embedding_model_online=},{embedding_model_max_tokens=}")
+# pass
+def get_tokenizer(embedding_model_local:str=embedding_model_local,embedding_model_name_or_path:str=embedding_model_online):
+    tokenizer = None
+    try:
+        tokenizer = AutoTokenizer.from_pretrained(embedding_model_local)
+    except:
+        try:
+            tokenizer = AutoTokenizer.from_pretrained(embedding_model_name_or_path)
+        except Exception as e:
+            logger.error(f"加载tokenizer失败：{str(e)}")
+    return tokenizer
+
+JQ_TOKENIZER = get_tokenizer()
+JQ_TEXT_SPLITTER = JqChineseRecursiveTextSplitter(JQ_TOKENIZER,chunk_size=embedding_model_max_tokens,chunk_overlap=DEFAULT_CHUNK_OVERLAP)
 class JqkjDocTreeTokenTextSplitter(MetadataAwareTextSplitter):  
     _default_normal_tokens_chunk_size = DEFAULT_CHUNK_SIZE - DEFAULT_MODEL_RESERVED_TOKENS_SIZE - DEFAULT_METADATA_FORMAT_LEN
 
@@ -231,7 +263,7 @@ class JqkjDocTreeTokenTextSplitter(MetadataAwareTextSplitter):
     
     def __init__(
         self,
-        cr_text_splitter:JqChineseRecursiveTextSplitter,
+        cr_text_splitter:JqChineseRecursiveTextSplitter = JQ_TEXT_SPLITTER,
         # chunk_size: int = DEFAULT_CHUNK_SIZE,
         # chunk_overlap: Union[int,float] = DEFAULT_CHUNK_OVERLAP,
         model_reserved_tokens_size: int = DEFAULT_MODEL_RESERVED_TOKENS_SIZE,    
@@ -883,6 +915,7 @@ class JqkjDocTreeTokenTextSplitter(MetadataAwareTextSplitter):
 
         return chunks
 
+JQ_DocTreeTokenTextSplitter = JqkjDocTreeTokenTextSplitter.from_defaults(cr_text_splitter=JQ_TEXT_SPLITTER)
 def chain_qa_fun(query,retriever,llm,input_files=[]):
     from langchain.chains import RetrievalQA
     chain = RetrievalQA.from_chain_type(llm,retriever=retriever,return_source_documents=True, chain_type="stuff")

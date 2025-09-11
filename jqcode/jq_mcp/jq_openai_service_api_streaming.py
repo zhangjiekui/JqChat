@@ -3,7 +3,7 @@ import json
 import time
 import logging
 from typing import List
-from fastapi.middleware.cors import CORSMiddleware
+
 
 from jqcode.langgraph_in_class import GraphAgent
 from jqcode.jq_docstores.backend_docstore_utils.jq_es_metastores import JqElasticsearchUniMetaStore

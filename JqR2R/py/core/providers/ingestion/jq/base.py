@@ -15,8 +15,13 @@ from core.base import (
     R2RDocumentProcessingError,
     RecursiveCharacterTextSplitter,
     TextSplitter,
-    JqChineseRecursiveTextSplitter
 )
+
+try:
+    from core.base import JqChineseRecursiveTextSplitter
+except:
+    from r2r import JqChineseRecursiveTextSplitter
+
 from core.utils import generate_extraction_id
 
 from ...database import PostgresDatabaseProvider

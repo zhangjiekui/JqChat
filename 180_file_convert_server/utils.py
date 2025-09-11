@@ -140,7 +140,7 @@ async def save_binary_data_to_file(file_bytes: bytes, file_name: str,upload_dir:
 
 async def convert_file_to_docx(file_bytes: bytes, file_name: str, overwrite=False, upload_dir:Path= UPLOADS_DIR, output_dir:Path=OUTPUT_DIR):
     
-    orginal_saved = ""
+    original_saved = ""
     converted_saved = ""
     upload_path = upload_dir / file_name.name
     output_path = output_dir / f"{file_name.stem}.docx"  # 使用原文件名转换为docx
@@ -170,24 +170,24 @@ async def convert_file_to_docx(file_bytes: bytes, file_name: str, overwrite=Fals
     
     if os.path.exists(upload_path):
         logger.info(f"原始文件-->{upload_path}已保存")
-        orginal_saved = upload_path    
+        original_saved = upload_path    
     
     if os.path.exists(output_path):
         logger.warning(f"转换文件==>{upload_path} ==> {output_path}已完成并保存")
         converted_saved = output_path
 
     local_ip = get_local_ip()
-    orginal_file_url = orginal_saved
-    if orginal_file_url:
-        orginal_rel_path = str(orginal_file_url).replace("\\","/")
-        orginal_file_url = f"http://{local_ip}:{PORT}/download/{orginal_rel_path}"    
+    original_file_url = original_saved
+    if original_file_url:
+        original_rel_path = str(original_file_url).replace("\\","/")
+        original_file_url = f"http://{local_ip}:{PORT}/download/{original_rel_path}"    
     
     converted_file_url = converted_saved
     if converted_file_url:
         converted_rel_path = str(converted_file_url).replace("\\","/")
         converted_file_url = f"http://{local_ip}:{PORT}/download/{converted_rel_path}"
     result = {
-                "orginal": orginal_file_url,
+                "original": original_file_url,
                 "converted":converted_file_url
              }
     return result

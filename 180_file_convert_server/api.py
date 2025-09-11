@@ -9,11 +9,19 @@ from fastapi import FastAPI, UploadFile, File, HTTPException
 from fastapi.responses import FileResponse, StreamingResponse
 from loguru import logger
 from utils import convert_file_to_docx,ACCEPT_FILE_TYPES,PORT
+from fastapi.middleware.cors import CORSMiddleware
 
 app = FastAPI(title="PDF|DOC|MD|HTM|HTML 转 DOCX服务")
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_methods=["*"],
+    allow_headers=["*"],
+    expose_headers=["Content-Type", "Cache-Control"],  # 暴露流式响应必需头部
+)
 MAX_WORKERS = 8
 
-@app.post("/convert/batch/")
+@app.post("/convert/batch")
 async def convert_files(files: List[UploadFile] = File(...)):
     """批量上传PDF|DOC|MD|HTM|HTML文件并转换为DOCX格式"""
     if not files:
@@ -68,8 +76,8 @@ async def convert_files(files: List[UploadFile] = File(...)):
         except Exception as e:
             logger.warning("API接口中返回了失败的结果:{e}")
             result = {
-                "orginal_saved": "",
-                "converted_saved":""
+                "original": "",
+                "converted":""
             }
             return result
             
@@ -81,7 +89,7 @@ async def convert_files(files: List[UploadFile] = File(...)):
     # all = {"convert":results,"invalid":invalid_files}
     return results
    
-@app.post("/convert/")
+@app.post("/convert")
 async def convert_file(file: UploadFile = File(...)):
     """上传PDF|DOC|MD|HTM|HTML文件并转换为DOCX格式"""
     # 将文件名转换为Path对象
@@ -124,7 +132,7 @@ async def download_file(file_path: str):
     
 
 ##########################################################################
-@app.post("/download/batch/")
+@app.post("/download/batch")
 async def download_batch(files: List[str]):
     """
     批量下载文件，返回一个ZIP文件

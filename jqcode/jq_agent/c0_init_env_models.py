@@ -47,7 +47,7 @@ from langchain_core.messages import BaseMessage, HumanMessage,SystemMessage,Tool
 from langchain.callbacks.base import BaseCallbackHandler
 from langchain_core.callbacks import StdOutCallbackHandler,FileCallbackHandler
 from jqcode.jq_splitters.backend_splitter_utils.jq_chinese_recursive_text_splitter import JqChineseRecursiveTextSplitter
-from jqcode.jq_splitters.jq_docx_tree_text_splitter import JqkjDocTreeTokenTextSplitter,load_project_env
+from jqcode.jq_splitters.jq_docx_tree_text_splitter import JqkjDocTreeTokenTextSplitter,load_project_env,JQ_TOKENIZER,JQ_TEXT_SPLITTER,JQ_DocTreeTokenTextSplitter
 from transformers import AutoTokenizer
 from pydantic import PrivateAttr
 import json_repair
@@ -627,18 +627,19 @@ class InitEnvModels:
         self.embed_model,self.embedding_model_8k,self.reranker = None,None,None
         self.embed_model,self.embedding_model_8k,self.reranker = self.get_emb_8k_rerank_model()
         
-        try:
-            self._tokenizer = AutoTokenizer.from_pretrained(self.embedding_model_local)
-        except:
-            try:
-                self._tokenizer = AutoTokenizer.from_pretrained(self.embedding_model_name_or_path)
-            except Exception as e:
-                logger.error(f"加载tokenizer失败：{str(e)}")
-        # r = self._tokenizer.encode("中华人民共和国")
-        
-        self.text_splitter = JqChineseRecursiveTextSplitter(self._tokenizer,chunk_size=self.embedding_model_max_tokens,chunk_overlap=0.2)
-        self.doc_tree_spiltter = JqkjDocTreeTokenTextSplitter.from_defaults(cr_text_splitter=self.text_splitter)
+        self._tokenizer = JQ_TOKENIZER        
+        self.text_splitter = JQ_TEXT_SPLITTER
+        self.doc_tree_spiltter = JQ_DocTreeTokenTextSplitter
         # code_splitter = self.text_splitter.from_language(language=Language.PYTHON,tokenizer=self._tokenizer)
+        try:
+            text = "中华人民共和国抗日胜利80周年93大阅兵"
+            r1 = self._tokenizer.encode(text)
+            r2 = self._tokenizer.decode(r1)
+            r3 = self.text_splitter.split_text(text)
+            r4 = self.doc_tree_spiltter.split_text(text)            
+        except Exception as e:
+            logger.error(f"加载tokenizer/spiltter失败：{str(e)}")
+        # r = self._tokenizer.encode("中华人民共和国")
         
         self.ELASTIC_PASSWORD = os.getenv("ELASTIC_PASSWORD")
         self.CERT_FINGERPRINT = os.getenv("CERT_FINGERPRINT")
