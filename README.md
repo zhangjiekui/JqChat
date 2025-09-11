@@ -402,33 +402,42 @@ cd ik_llama.cpp
 cmake -B build -DCMAKE_BUILD_TYPE=Release -DGGML_CUDA=ON -DGGML_BLAS=OFF -DGGML_SCHED_MAX_COPIES=1 -DGGML_CUDA_IQK_FORCE_BF16=1
 cmake --build build --config Release -j 8
 
+
 cd ~/ik_llama.cpp
+workon test
 CUDA_VISIBLE_DEVICES="0" \
 ./build/bin/llama-server \
     --model /data/models/DeepSeek-V3.1-GGUF/IQ5_K/DeepSeek-V3.1-IQ5_K-00001-of-00011.gguf \
-    --alias ubergarm/DeepSeek-V3.1-GGUF \
-    --ctx-size 32768 \
+    --alias ds \
+    --ctx-size 8192 \
     -ctk q8_0 \
     -fa -fmoe \
     -mla 3 -amb 512 \
     -ngl 99 \
     -ot exps=CPU \
-    --parallel 4 \
-    --threads 40 \
+    --parallel 2 \
+    --threads 32 \
     --host 0.0.0.0 \
     --port 8080 \
     --no-display-prompt \
-    --chat-template deepseek3 
     --jinja \
+    --chat-template deepseek3 \
     --no-mmap \
     --numa distribute
+
+    --jinja \    
+    --no-mmap \    
+    --reasoning-budget 0 \
     
 <!-- --model /data/models/Qwen/qwen235q8/qwen235q8.gguf     -->
 <!-- /data/models/qwen3-235b-a22b-128k_ud-q4_k_xl.gguf -->
+<!-- /data/models/Qwen3-235B-A22B-Instruct-2507-GGUF/IQ5_K/Qwen3-235B-A22B-Instruct-IQ5_K-00001-of-00004.gguf -->
+<!-- sudo sysctl -w kernel.numa_balancing=0 -->
 cd ~/ik_llama.cpp
+workon test
 CUDA_VISIBLE_DEVICES="0" \
 ./build/bin/llama-server \
-    --model /data/models/Qwen3-235B-A22B-Instruct-2507-GGUF/IQ2_KL/Qwen3-235B-A22B-Instruct-IQ2_KL-00001-of-00002.gguf  \
+    --model /data/models/Qwen3-235B-A22B-Instruct-2507-GGUF/IQ2_KL/Qwen3-235B-A22B-Instruct-IQ2_KL-00001-of-00002.gguf \
     --alias ikmodel \
     --ctx-size 32768 \
     -ctk q8_0 \
@@ -630,6 +639,7 @@ flashinfer-python 0.2.3         /root/flashinfer
 
 【7B VL】
 workon sl
+workon vllmb
 CUDA_VISIBLE_DEVICES=1 VLLM_ALLOW_ENGINE_USE_RAY=1 nohup vllm serve /data/models/Qwen/Qwen2___5-VL-7B-Instruct-AWQ --served-model-name qwenvl --enable-auto-tool-choice --tool-call-parser hermes --gpu-memory-utilization 0.98 --port 8000 --host 0.0.0.0 --limit-mm-per-prompt image=5,video=5 --max-model-len 32768  --max-num-seqs 32 --enable-prefix-caching --enable-chunked-prefill >> /root/JqLogs/vllmvl.log 2>&1 &
 tail -f /root/JqLogs/vllmvl.log 
 ```
