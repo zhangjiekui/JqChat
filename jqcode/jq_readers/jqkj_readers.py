@@ -179,13 +179,14 @@ class JqkjDocxReader(BaseReader):
         # metadata = docx_document.metadata
         file = Path(file_path)
         filename=file.name
+        filestem=file.stem
         # image_file_path: Path = Path('/media/temp/wendang/OCR接口性能报告.docx')
         # logger.debug(f"构建文档树：{file}")
 
 
         node_numbering=1 
             # type = TreeNodeType.DOCUMENT('DIRECTORY', 'DOCUMENT', 'TEXT', 'TABLE', 'IMAGE',"INDEX")
-        file_tree = Node(f'{filename}',type=TreeNodeType.DOCUMENT, numbering=node_numbering,level=-100,text=f'{filename}') 
+        file_tree = Node(f'{filestem}',type=TreeNodeType.DOCUMENT, numbering=node_numbering,level=-100,text=f'{filestem}') 
             # page=0, style="FILE_NAME",prompt=prompt, tag=file_name,self_num_characters=self_num_characters, self_num_tokens=self_num_tokens,total_num_characters=0,total_num_tokens=0,
 
         parent_node = file_tree
@@ -371,8 +372,8 @@ class JqkjDocxReader(BaseReader):
 
                 table_number = len(docx_document.tables)
                 if table_number == 0:
-                    # logger.debug(f"[{str(filename)}]没有找到任何表格，请检查文件内容是否正确。") 
-                    logger.debug(f"没有找到任何表格，请检查文件内容解析是否准确。")   
+                    logger.debug(f"[{str(filename)}]没有找到任何表格，请检查文件内容是否正确。") 
+                    # logger.debug(f"没有找到任何表格，请检查文件内容解析是否准确。")   
                 else:
                     df_table_number = len(df_table_list)
                     table_nodes = anytree.search.findall(file_tree,filter_=lambda node:node.type==TreeNodeType.TABLE)
@@ -392,7 +393,7 @@ class JqkjDocxReader(BaseReader):
         all_tree_nodes = list(PreOrderIter(file_tree))
         img_nodes = [node for node in all_tree_nodes if node.type == TreeNodeType.IMAGE]
         if len(img_nodes):
-            img_src_and_data_tuple_list = [(f"{filename}/{treenode.image_filepath_jq}",treenode.img_blob_jq) for treenode in img_nodes] #得到[(img_src,img_data)...]
+            img_src_and_data_tuple_list = [(f"{filestem}/{treenode.image_filepath_jq}",treenode.img_blob_jq) for treenode in img_nodes] #得到[(img_src,img_data)...]
             logger.warning(f"\n$$$$$$$正在执行文件[{filename}]中的图片文字识别，共有{len(img_src_and_data_tuple_list)}张图片$$$$$$$")  
             start_time = time.time()
             results = treenodes_img_to_text_in_batch(img_src_and_data_tuple_list)

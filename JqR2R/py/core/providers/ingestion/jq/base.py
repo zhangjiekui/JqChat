@@ -17,10 +17,8 @@ from core.base import (
     TextSplitter,
 )
 
-try:
-    from core.base import JqChineseRecursiveTextSplitter
-except:
-    from r2r import JqChineseRecursiveTextSplitter
+from llama_index.core.schema import TextNode
+
 
 from core.utils import generate_extraction_id
 
@@ -52,8 +50,6 @@ class JqIngestionConfig(IngestionConfig):
 
 
 class JqIngestionProvider(IngestionProvider):
-
-
     DEFAULT_PARSERS = {
         DocumentType.BMP: parsers.BMPParser,
         DocumentType.CSV: parsers.CSVParser,
@@ -107,6 +103,8 @@ class JqIngestionProvider(IngestionProvider):
         DocumentType.SVG,
     }
 
+
+
     def __init__(
         self,
         config: JqIngestionConfig,
@@ -125,6 +123,11 @@ class JqIngestionProvider(IngestionProvider):
             | OpenAICompletionProvider
             | R2RCompletionProvider
         ) = llm_provider
+
+        from r2r import env_models_instance
+        self.jq_reader = env_models_instance.jq_docx_reader
+        self.jq_text_splitter = env_models_instance.jq_text_splitter            
+        self.doc_tree_spiltter = env_models_instance.jq_doctree_spiltter        
         self.parsers: dict[DocumentType, AsyncParser] = {}
         self.text_splitter = self._build_text_splitter()
         self._initialize_parsers()
@@ -181,11 +184,15 @@ class JqIngestionProvider(IngestionProvider):
             or self.config.chunk_overlap
         )
         if chunking_strategy == ChunkingStrategy.JQ:
-            return JqChineseRecursiveTextSplitter(
-                tokenizer=None,
-                chunk_size=chunk_size,
-                chunk_overlap=chunk_overlap,
-            )  
+            return self.jq_text_splitter
+            # from llama_index.core.schema import TextNode
+            # jq_reader = env_models_instance.jq_docx_reader
+            # doc_tree_spiltter = env_models_instance.jq_doctree_spiltter
+            # # JqChineseRecursiveTextSplitter(
+            # #         tokenizer=None,
+            # #         chunk_size=chunk_size,
+            # #         chunk_overlap=chunk_overlap,
+            # #     )  
 
 
         if chunking_strategy == ChunkingStrategy.RECURSIVE:
@@ -193,6 +200,7 @@ class JqIngestionProvider(IngestionProvider):
                 chunk_size=chunk_size,
                 chunk_overlap=chunk_overlap,
             )
+        
         elif chunking_strategy == ChunkingStrategy.CHARACTER:
             from core.base.utils.splitter.text import CharacterTextSplitter
 
@@ -239,18 +247,11 @@ class JqIngestionProvider(IngestionProvider):
             # chunks = text_spliiter.create_documents([text])
             chunks = splitter.create_documents([parsed_document])
 
-        elif isinstance(parsed_document, DocxDocumentObject):
-            from r2r import JqkjDocxReader,JqkjDocTreeTokenTextSplitter,JqChineseRecursiveTextSplitter
-            from llama_index.core.schema import TextNode
-
-            reader = JqkjDocxReader()
-            makeup_file_path="/app/docs/doc1.docx"
-
-            doc_tree,_ = reader.parse_docx_into_tree(parsed_document,file_path=makeup_file_path)             
-            text_splitter = JqChineseRecursiveTextSplitter(tokenizer=None)
-            doc_tree_spiltter = JqkjDocTreeTokenTextSplitter.from_defaults(cr_text_splitter=text_splitter)
-            lm_base_node = TextNode(text='',metadata={"source":makeup_file_path})
-            split_results = doc_tree_spiltter._parse_node_on_tree(lm_base_node,doc_tree)
+        elif isinstance(parsed_document, DocxDocumentObject):            
+            file_path_name = parsed_document.core_properties.identifier
+            lm_base_node = TextNode(text='',metadata={"source":file_path_name})
+            doc_tree,_ = self.jq_reader.parse_docx_into_tree(parsed_document,file_path=file_path_name)
+            split_results = self.doc_tree_spiltter._parse_node_on_tree(lm_base_node,doc_tree)
             chunks = [node.text for node in split_results]
 
         else:

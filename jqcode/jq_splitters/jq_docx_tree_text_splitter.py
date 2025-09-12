@@ -249,7 +249,6 @@ JQ_TOKENIZER = get_tokenizer()
 JQ_TEXT_SPLITTER = JqChineseRecursiveTextSplitter(JQ_TOKENIZER,chunk_size=embedding_model_max_tokens,chunk_overlap=DEFAULT_CHUNK_OVERLAP)
 class JqkjDocTreeTokenTextSplitter(MetadataAwareTextSplitter):  
     _default_normal_tokens_chunk_size = DEFAULT_CHUNK_SIZE - DEFAULT_MODEL_RESERVED_TOKENS_SIZE - DEFAULT_METADATA_FORMAT_LEN
-
     model_reserved_tokens_size: int = Field(default=DEFAULT_MODEL_RESERVED_TOKENS_SIZE , description="为嵌入模型预留的tokens(如BOS、EOS)数量。")    
     normal_tokens_chunk_size: int = Field(default= _default_normal_tokens_chunk_size, description="减去model_reserved_tokens_size后，能够喂入嵌入模型的正常tokens数量")
     # 注意：下面的chunk_size是已经去掉保留tokes后的，真正能够喂入模型的正常tokens数量
@@ -264,8 +263,6 @@ class JqkjDocTreeTokenTextSplitter(MetadataAwareTextSplitter):
     def __init__(
         self,
         cr_text_splitter:JqChineseRecursiveTextSplitter = JQ_TEXT_SPLITTER,
-        # chunk_size: int = DEFAULT_CHUNK_SIZE,
-        # chunk_overlap: Union[int,float] = DEFAULT_CHUNK_OVERLAP,
         model_reserved_tokens_size: int = DEFAULT_MODEL_RESERVED_TOKENS_SIZE,    
         callback_manager: Optional[CallbackManager] = None,
         include_metadata: bool = True,
@@ -276,9 +273,6 @@ class JqkjDocTreeTokenTextSplitter(MetadataAwareTextSplitter):
         chunk_size = cr_text_splitter._chunk_size
         chunk_overlap = cr_text_splitter._chunk_overlap
         _normal_tokens_chunk_size = chunk_size - model_reserved_tokens_size
-        
-        
-
         callback_manager = callback_manager or CallbackManager([])
         id_func = id_func or default_id_func
 
@@ -320,8 +314,6 @@ class JqkjDocTreeTokenTextSplitter(MetadataAwareTextSplitter):
     def from_defaults(
         cls,
         cr_text_splitter:JqChineseRecursiveTextSplitter,
-        # chunk_size: int = DEFAULT_CHUNK_SIZE,
-        # chunk_overlap: Union[int,float] = DEFAULT_CHUNK_OVERLAP,
         model_reserved_tokens_size: int = DEFAULT_MODEL_RESERVED_TOKENS_SIZE,
         callback_manager: Optional[CallbackManager] = None,
         include_metadata: bool = True,
@@ -332,8 +324,6 @@ class JqkjDocTreeTokenTextSplitter(MetadataAwareTextSplitter):
         callback_manager = callback_manager or CallbackManager([])
         return cls(
             cr_text_splitter,
-            # chunk_size = chunk_size,
-            # chunk_overlap = chunk_overlap,
             model_reserved_tokens_size = model_reserved_tokens_size, 
             callback_manager = callback_manager,
             include_metadata = include_metadata,
@@ -344,43 +334,6 @@ class JqkjDocTreeTokenTextSplitter(MetadataAwareTextSplitter):
     @classmethod
     def class_name(cls) -> str:
         return "JqkjDocTreeTokenTextSplitter"
-    
-    def write_chunkes_to_preview_file(self, text_splits: List[str], save_path_txt: str):
-        logger.info(f'\n==============================================================')
-        logger.info(f'将切分结果保存到{save_path_txt}......')
-        with open(save_path_txt,'w',encoding='utf-8') as f:            
-            min_percent =1.0
-            max_percent =0.0
-            for i,s in enumerate(text_splits):
-                tokens_num = self.tokens_len_func(text=s)
-                percent = tokens_num/self.chunk_size
-                if percent < min_percent:
-                    min_percent = percent
-                if percent > max_percent:
-                    max_percent = percent
-            min_percent_str = f'{min_percent*100:.1f}%'
-            max_percent_str = f'{max_percent*100:.1f}%'
-            f.write(f'##共切分为{len(text_splits)}个Chunks,最大tokens限制为{DEFAULT_CHUNK_SIZE}，tokens利用率最大为{max_percent_str}，最小为{min_percent_str}。##')
-            # logger.info(f'共切分为{len(text_splits)}个Chunks,最大tokens限制为{DEFAULT_CHUNK_SIZE}，tokens利用率最大为{max_percent_str}，最小为{min_percent_str}。')
-            
-            for i,s in enumerate(text_splits):
-                # if not s.startswith('<toc'):
-                #     continue
-                # assert s.startswith('<toc'),f'切分结果必须以"<toc"开头，当前结果为{s}'
-                tokens_num = self.tokens_len_func(text=s)
-                percent = tokens_num/self.chunk_size
-                percent_str = f'{percent*100:.1f}%'
-                error = ''
-
-                if tokens_num/(DEFAULT_CHUNK_SIZE) > 1.0:
-                    error = f'**tokens利用率{percent_str}超出100%是不对的！'
-                    logger.warning(f'\n{error}本Chunk共{tokens_num}个tokens,tokens限额为{DEFAULT_CHUNK_SIZE},以下是该chunk内容:')
-                    logger.warning(f'{s}')
-                # logger.info(f'\n\n==S{i}：{error} 本Chunk共{tokens_num}个tokens，{len(s)}个字符，tokens利用率{percent_str}\n')
-                f.write(f'\n\n==S{i+1}：{error}本Chunk共{tokens_num}个tokens,{len(s)}个字符，tokens利用率{percent_str},tokens限额为{DEFAULT_CHUNK_SIZE}\n')
-                f.write(f'{s}\n\n')
-        logger.info(f'......切分结果已保存到{save_path_txt}')
-
     def add_text(self,text_cached:str='',cur_text:str='',cur_node=None,chunks_saved:list=[],title_prefix=''):
         merge_status = True
         # if title_prefix:
@@ -414,8 +367,61 @@ class JqkjDocTreeTokenTextSplitter(MetadataAwareTextSplitter):
         # if title_prefix:
         #     if title_prefix not in text_cached:
         #         text_cached = title_prefix + text_cached
-        return text_cached,cur_text,chunks_saved,merge_status
+        return text_cached,cur_text,chunks_saved,merge_status    
+    def write_chunkes_to_preview_file(self, text_splits: List[str], txt_file_name: str,txt_file_dir:str=None):
+        if not txt_file_dir:
+            from jqcode.jq_agent.c0_init_env_models import env_models_instance
+            txt_file_dir = env_models_instance.abs_workspace + 'chunk_results/chunks_preview'
+        Path(txt_file_dir).mkdir(parents=True, exist_ok=True)
+        txt_file_path = os.path.join(txt_file_dir, txt_file_name)
+        logger.info(f'\n==============================================================')
+        logger.info(f'将切分Chunks预览结果保存到{txt_file_path}......')
+        with open(txt_file_path,'w',encoding='utf-8') as f:            
+            min_percent =1.0
+            max_percent =0.0
+            for i,s in enumerate(text_splits):
+                tokens_num = self.tokens_len_func(text=s)
+                percent = tokens_num/self.chunk_size
+                if percent < min_percent:
+                    min_percent = percent
+                if percent > max_percent:
+                    max_percent = percent
+            min_percent_str = f'{min_percent*100:.1f}%'
+            max_percent_str = f'{max_percent*100:.1f}%'
+            f.write(f'##共切分为{len(text_splits)}个Chunks,最大tokens限制为{DEFAULT_CHUNK_SIZE}，tokens利用率最大为{max_percent_str}，最小为{min_percent_str}。##')
+            # logger.info(f'共切分为{len(text_splits)}个Chunks,最大tokens限制为{DEFAULT_CHUNK_SIZE}，tokens利用率最大为{max_percent_str}，最小为{min_percent_str}。')
+            
+            for i,s in enumerate(text_splits):
+                # if not s.startswith('<toc'):
+                #     continue
+                # assert s.startswith('<toc'),f'切分结果必须以"<toc"开头，当前结果为{s}'
+                tokens_num = self.tokens_len_func(text=s)
+                percent = tokens_num/self.chunk_size
+                percent_str = f'{percent*100:.1f}%'
+                error = ''
 
+                if tokens_num/(DEFAULT_CHUNK_SIZE) > 1.0:
+                    error = f'**tokens利用率{percent_str}超出100%是不对的！'
+                    logger.warning(f'\n{error}本Chunk共{tokens_num}个tokens,tokens限额为{DEFAULT_CHUNK_SIZE},以下是该chunk内容:')
+                    logger.warning(f'{s}')
+                # logger.info(f'\n\n==S{i}：{error} 本Chunk共{tokens_num}个tokens，{len(s)}个字符，tokens利用率{percent_str}\n')
+                f.write(f'\n\n==S{i+1}：{error}本Chunk共{tokens_num}个tokens,{len(s)}个字符，tokens利用率{percent_str},tokens限额为{DEFAULT_CHUNK_SIZE}\n')
+                f.write(f'{s}\n\n')
+        logger.warning(f'......已将切分Chunks预览结果保存到文件:{txt_file_path}')
+        return txt_file_path
+    def write_chunkes_to_final_file_with_separator(self, text_splits: List[str], txt_file_name:str,txt_file_dir:str=None,separator='\n=chunk_delimiter=\n'):
+        if not txt_file_dir:
+            from jqcode.jq_agent.c0_init_env_models import env_models_instance
+            txt_file_dir = env_models_instance.abs_workspace + 'chunk_results/chunks_final'
+        Path(txt_file_dir).mkdir(parents=True, exist_ok=True)
+        txt_file_path = os.path.join(txt_file_dir, txt_file_name)
+        updated_text = separator.join(text_splits)
+        # 切分后的结果保存到文本文件
+        logger.info(f'将切分Chunks最终结果保存到{txt_file_path}......')
+        with open(txt_file_path,'w',encoding='utf-8') as f:
+            f.write(updated_text)
+        logger.warning(f"......已将切分Chunks最终结果保存到文件: {txt_file_path}")
+        return updated_text,txt_file_path
 
 
     def _parse_node_on_tree(self, lm_base_node: BaseNode, doc_tree: AnytreeNode, cutoff_ratio_as_chunk=0.8,get_to_first_title_directly=False) -> List[BaseNode]:
@@ -685,35 +691,23 @@ class JqkjDocTreeTokenTextSplitter(MetadataAwareTextSplitter):
         file_path_docx = lm_base_node.metadata.get("source",None) or lm_base_node.metadata.get("original_source_jq",None)
         if not file_path_docx:
             logger.error(f'lm_base_node的metadata(dict)中不存在key:"source"或"original_source_jq",lm_base_node的内容如下:\n{lm_base_node}')
+
         
         # 分离路径和文件名（包括扩展名）
         path, full_filename = os.path.split(file_path_docx)
         # 分离文件名和扩展名
         filename, extension = os.path.splitext(full_filename)
-        # 重新组合路径和文件名（不包括扩展名）
-        from jqcode.jq_agent.c0_init_env_models import env_models_instance
-        destination_dir = env_models_instance.abs_workspace + '/chunks_preview'
-        if not Path(destination_dir).exists():
-            logger.warning(f"输出目录[{destination_dir}]不存在!将尝试创建该目录。")
-            Path(destination_dir).mkdir(parents=True, exist_ok=True)
-        result_path = os.path.join(destination_dir, filename)
-        file_path_docx = result_path
-        
-        
-        
-        file_path_txt = file_path_docx+'.txt'
-        file_path_txt_preview = file_path_docx+'_preview.txt'
 
-        updated_text = '\n=chunk_delimiter=\n'.join(chunks_saved)
-        # 切分后的结果保存到文本文件
-        with open(file_path_txt,'w',encoding='utf-8') as f:
-            f.write(updated_text)
-        # 保存供检查、预览的文本文件
-        self.write_chunkes_to_preview_file(chunks_saved, file_path_txt_preview)
+  
+        # 保存预览和最终的文本文件
+        txt_file_name_preview = filename + '_preview.txt'
+        txt_file_name_final = filename + '.txt'        
+        txt_file_name_preview_path = self.write_chunkes_to_preview_file(chunks_saved, txt_file_name_preview)
+        updated_text,txt_file_name_path_final = self.write_chunkes_to_final_file_with_separator(chunks_saved, txt_file_name_final)        
         
-        # 更新原document node的信息        
+        # 更新原document node的信息
         lm_base_node.text = updated_text
-        lm_base_node.metadata["file_path_chunks_to_txt_jq"] = file_path_txt
+        lm_base_node.metadata["file_path_chunks_to_txt_jq"] = txt_file_name_path_final
         lm_base_node.metadata["file_path_docx_jq"] = file_path_docx
 
         _metadata = lm_base_node.metadata
@@ -916,6 +910,17 @@ class JqkjDocTreeTokenTextSplitter(MetadataAwareTextSplitter):
         return chunks
 
 JQ_DocTreeTokenTextSplitter = JqkjDocTreeTokenTextSplitter.from_defaults(cr_text_splitter=JQ_TEXT_SPLITTER)
+
+def test_JQ_DocTreeTokenTextSplitter(files: List[str]=[fr"/data/projects/JqChatV2/JqChat/社会救助暂行办法.docx"]):
+    from jqcode.jq_readers.jqkj_readers import _test_JqkjDocxReader
+    if files:
+        documents,trees,df_tables = _test_JqkjDocxReader(file_paths=files)
+    else:
+        documents,trees,df_tables = _test_JqkjDocxReader()
+    split_results = JQ_DocTreeTokenTextSplitter._parse_node_on_tree(documents[0],trees[0])
+    return documents,trees,df_tables,split_results
+
+
 def chain_qa_fun(query,retriever,llm,input_files=[]):
     from langchain.chains import RetrievalQA
     chain = RetrievalQA.from_chain_type(llm,retriever=retriever,return_source_documents=True, chain_type="stuff")
@@ -945,17 +950,19 @@ if __name__ == "__main__":
     from langchain.retrievers import ContextualCompressionRetriever
     from langchain.chains import RetrievalQA
     from jqcode.jq_splitters.backend_splitter_utils.jq_sentence_transformers_tokentextsplitter import SentenceTransformersTokenTextSplitter
-    from jqcode.jq_agent.c0_init_env_models import env_models_instance
     from jqcode.jq_readers.jqkj_readers import JqkjSimpleDirectoryReader      
     from llama_index.core.indices.vector_store.retrievers.retriever import VectorIndexRetriever
     from llama_index.core.tools import RetrieverTool
     from llama_index.core.postprocessor import SentenceTransformerRerank
     from llama_index.core import QueryBundle
-    from llama_index.core.retrievers  import RouterRetriever
-    
+    from llama_index.core.retrievers  import RouterRetriever    
     from llama_index.retrievers.bm25 import BM25Retriever as LM_BM25Retriever
-
+    from jqcode.jq_agent.c0_init_env_models import env_models_instance
     from jqcode.jq_agent.tools.jq_retriever import get_retriever
+
+    documents,trees,df_tables = test_JQ_DocTreeTokenTextSplitter()
+    
+
 
     
     top_n = 6

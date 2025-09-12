@@ -47,6 +47,7 @@ from langchain_core.messages import BaseMessage, HumanMessage,SystemMessage,Tool
 from langchain.callbacks.base import BaseCallbackHandler
 from langchain_core.callbacks import StdOutCallbackHandler,FileCallbackHandler
 from jqcode.jq_splitters.backend_splitter_utils.jq_chinese_recursive_text_splitter import JqChineseRecursiveTextSplitter
+from jqcode.jq_readers.jqkj_readers import JqkjDocxReader
 from jqcode.jq_splitters.jq_docx_tree_text_splitter import JqkjDocTreeTokenTextSplitter,load_project_env,JQ_TOKENIZER,JQ_TEXT_SPLITTER,JQ_DocTreeTokenTextSplitter
 from transformers import AutoTokenizer
 from pydantic import PrivateAttr
@@ -627,16 +628,19 @@ class InitEnvModels:
         self.embed_model,self.embedding_model_8k,self.reranker = None,None,None
         self.embed_model,self.embedding_model_8k,self.reranker = self.get_emb_8k_rerank_model()
         
+        
         self._tokenizer = JQ_TOKENIZER        
-        self.text_splitter = JQ_TEXT_SPLITTER
-        self.doc_tree_spiltter = JQ_DocTreeTokenTextSplitter
+        self.jq_text_splitter = JQ_TEXT_SPLITTER
+        self.jq_doctree_spiltter = JQ_DocTreeTokenTextSplitter
+        self.jq_docx_reader = JqkjDocxReader()
+        self.jq_logger = logger
         # code_splitter = self.text_splitter.from_language(language=Language.PYTHON,tokenizer=self._tokenizer)
         try:
             text = "中华人民共和国抗日胜利80周年93大阅兵"
             r1 = self._tokenizer.encode(text)
             r2 = self._tokenizer.decode(r1)
-            r3 = self.text_splitter.split_text(text)
-            r4 = self.doc_tree_spiltter.split_text(text)            
+            r3 = self.jq_text_splitter.split_text(text)
+            r4 = self.jq_doctree_spiltter.split_text(text)            
         except Exception as e:
             logger.error(f"加载tokenizer/spiltter失败：{str(e)}")
         # r = self._tokenizer.encode("中华人民共和国")
@@ -1200,7 +1204,7 @@ class InitEnvModels:
             doc.page_content = replace_multiple_newlines(doc.page_content)
             docs_list_cleaned.append(doc)
         if not text_splitter:
-            text_splitter = self.text_splitter
+            text_splitter = self.jq_text_splitter
         text_chunks = text_splitter.split_documents(docs_list_cleaned)
                 
         reranker = reranker if reranker else self.reranker
@@ -1314,7 +1318,7 @@ class InitEnvModels:
             if len(unique_history_messages_list) > 0:
                 embed_model  = embed_model if embed_model else self.embed_model
                 reranker  = reranker if reranker else self.reranker
-                text_splitter  = text_splitter if text_splitter else self.text_splitter 
+                text_splitter  = text_splitter if text_splitter else self.jq_text_splitter 
 
                 docs_from_messages = [Document(page_content=message_content,metadata={"message_index":message_index,"source":message_content}) for message_index, message_content in enumerate(unique_history_messages_list)]
                 chunks_relevant = self.split_and_get_chunks_relevant_from_documents(query, docs_from_messages,text_splitter=text_splitter,reranker=reranker,

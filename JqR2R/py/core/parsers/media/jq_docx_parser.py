@@ -34,8 +34,14 @@ class JqDOCXParser(AsyncParser[str | bytes]):
             raise ValueError("DOCX/PDF etc. file data must be in bytes format.")
         document = kwargs.get("document",None)
         document_type = ''
+        filename = ''
         if document:
             document_type = document.document_type.value
+            filename = document.metadata.get("title",'')
+            if filename:
+                if not filename.endswith(document_type):
+                    filename = filename + '.' + document_type
+                
         from core.providers.ingestion.jq.base import file_type_processed_by_jqreader,DEFAULT_PARSERS_BACKED
         if document_type != 'docx' and document_type in file_type_processed_by_jqreader:
             default_parser_class = DEFAULT_PARSERS_BACKED.get(document_type,None)
@@ -48,6 +54,7 @@ class JqDOCXParser(AsyncParser[str | bytes]):
         else:
             print(f"本是或已转成docx文件，使用JqDOCXParser")
             doc = self.Document(BytesIO(data))
+            doc.core_properties.identifier = filename
             yield doc
 
         # from jqcode.jq_readers.jqkj_readers import JqkjDocxReader

@@ -8,9 +8,6 @@ from sdk import *
 from shared import *
 from core.utils.logging_config import configure_logging
 from jqcode.jq_agent.c0_init_env_models import env_models_instance
-from jqcode.jq_readers.jqkj_readers import JqkjDocxReader
-from jqcode.jq_splitters.jq_docx_tree_text_splitter import JqkjDocTreeTokenTextSplitter
-from shared.utils.splitter.text import JqChineseRecursiveTextSplitter
 from jqcode.jq_utils.logger import jqkj_logger
 
 from importlib import metadata

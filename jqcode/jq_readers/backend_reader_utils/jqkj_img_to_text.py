@@ -6,7 +6,7 @@ from concurrent.futures import ProcessPoolExecutor as Pool
 from multiprocessing import BoundedSemaphore
 from jqcode.jq_readers.backend_reader_utils.pyemf3project.pyemf3 import EMF
 from jqcode.jq_readers.backend_reader_utils.pyemf3project.pyemf3.emr import EXTTEXTOUTW
-from jqcode.jq_agent.c0_init_env_models import env_models_instance
+
 from jqcode.jq_utils.logger import jqkj_logger,is_main_process
 logger = jqkj_logger(__file__).get_logger()
 
@@ -22,6 +22,7 @@ logger = jqkj_logger(__file__).get_logger()
 emf = EMF() #处理emf图片需要的
 
 def treenode_img_to_text(img_src_and_data_tuple_list:tuple,delete_emf_wmf_png_file=True):
+    from jqcode.jq_agent.c0_init_env_models import env_models_instance
     ocr = env_models_instance.get_ocr()
     ocr_mode = env_models_instance.ocr_mode
     png_file = ''   
@@ -109,6 +110,7 @@ def treenode_img_to_text(img_src_and_data_tuple_list:tuple,delete_emf_wmf_png_fi
     return result
 
 def treenodes_img_to_text_in_batch(img_src_and_data_tuple_list, processes=10):
+    from jqcode.jq_agent.c0_init_env_models import env_models_instance
     # 过滤掉 gif 图片
     filtered_img_src_and_data_tuple_list = [
         item for item in img_src_and_data_tuple_list 
