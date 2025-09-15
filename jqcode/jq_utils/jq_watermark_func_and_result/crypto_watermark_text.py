@@ -140,7 +140,7 @@ if __name__ == "__main__":
 
     
     # 水印嵌入演示 - 使用较长的水印
-    watermark_text = "晶奇智能体水印"  # 7个中文字符
+    watermark_text = "晶灵智能体水印"  # 7个中文字符
     print_formatting("嵌入的水印内容", watermark_text)
     watermarked = embed_watermark(original, watermark_text)
     print_formatting("嵌入水印后的文本（原始文本长度不足会在后头自动补充）", repr(watermarked))

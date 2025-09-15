@@ -108,7 +108,7 @@ class ImageWatermark:
         return font
 
     def add_visible_watermark(self, image_path: str, watermark_text: str, output_path: str,
-                              position=(50, 50), font_size=50, color=(255, 0, 0, 128)):
+                              position=(50, 50), font_size=20, color=(255, 0, 0, 128)):
         """
         在图片上添加可见水印（文字），支持中文
         :param image_path: 原图路径
@@ -132,7 +132,7 @@ class ImageWatermark:
             text_height = font.getbbox(watermark_text)[3]  # 获取字体高度
         else:
             text_width, text_height = draw.textsize(watermark_text, font=font)
-
+        final_position = ( 120,  50)  # 左上角
         final_position = (width - text_width - position[0], height -text_height - position[1])  # 右下角
         draw.text(final_position, watermark_text, font=font, fill=color)  # 红色文字
 
@@ -175,12 +175,12 @@ if __name__ == "__main__":
     
     wm = ImageWatermark("strong_password_123")
 
-    original_image = "/data/projects/JqChatV2/JqChat/jqcode/jq_utils/jq_watermark_func_and_result/图片/test.jpg"
+    original_image = "/data/projects/JqChatV2/JqChat/jqcode/jq_utils/jq_watermark_func_and_result/图片/sinx.png"
     invisible_output = "/data/projects/JqChatV2/JqChat/jqcode/jq_utils/jq_watermark_func_and_result/图片/watermarked_invisible.png"
     visible_output = "/data/projects/JqChatV2/JqChat/jqcode/jq_utils/jq_watermark_func_and_result/图片/watermarked_visible.png"
-    print_formatting("原始图片","test.jpg")
+    print_formatting("原始图片","sinx.png")
     watermark = "JqAgentWatermark"
-    watermark = "内容由AI生成"
+    watermark = "晶灵智能体(7dab1ae2ac724f4e9370f81229a55de6)"
     print_formatting("水印文本",watermark)
 
     # 嵌入不可见水印

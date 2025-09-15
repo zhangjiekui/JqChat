@@ -23,7 +23,7 @@ langchain.verbose = False
 
 from openai import OpenAI
 from langchain_openai import ChatOpenAI
-from BCEmbedding.tools.langchain import BCERerank
+
 from sentence_transformers import SentenceTransformer
 from elasticsearch import Elasticsearch
 from langchain_core.documents import Document
@@ -808,6 +808,7 @@ class InitEnvModels:
         return self.chat_model
     
     def _get_emb_8k_rerank_model(self,embedding_model_name=None, embedding_model_name_8k=None, rerank_model_name=None, device = ['cpu','cpu','cpu'],final_docs_num_reranked=4): #device = ['cuda:1','cuda:2''cuda:3']
+        from BCEmbedding.tools.langchain import BCERerank
         name_or_path = embedding_model_name if embedding_model_name else self.embedding_model_name_or_path       
         if 'bge' in name_or_path: 
             # 有query_instruction https://github.com/langchain-ai/langchain/blob/ee94ef55ee6ab064da08340817955f821dfa6261/libs/langchain/langchain/embeddings/huggingface.py#L187

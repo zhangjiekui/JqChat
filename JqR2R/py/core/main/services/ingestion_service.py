@@ -246,12 +246,15 @@ class IngestionService:
                 file_content = file_content_stream.read()
 
             # Build a barebones Document object
+            if document_info.metadata.get("title",None) is None:
+                title = file_name or document_info.title 
+                document_info.metadata.update({"title": title})
             doc = Document(
                 id=document_info.id,
                 collection_ids=document_info.collection_ids,
                 owner_id=document_info.owner_id,
                 metadata={
-                    "document_type": document_info.document_type.value,
+                    "document_type": document_info.document_type.value,                    
                     **document_info.metadata,
                 },
                 document_type=document_info.document_type,

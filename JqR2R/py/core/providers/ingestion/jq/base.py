@@ -18,8 +18,6 @@ from core.base import (
 )
 
 from llama_index.core.schema import TextNode
-
-
 from core.utils import generate_extraction_id
 
 from ...database import PostgresDatabaseProvider
@@ -231,7 +229,7 @@ class JqIngestionProvider(IngestionProvider):
 
     def chunk(
         self,
-        parsed_document: str | DocumentChunk | DocxDocumentObject,
+        parsed_document: str | DocumentChunk | TextNode ,
         ingestion_config_override: dict,
     ) -> AsyncGenerator[Any, None]:
         splitter = self.text_splitter
@@ -247,11 +245,11 @@ class JqIngestionProvider(IngestionProvider):
             # chunks = text_spliiter.create_documents([text])
             chunks = splitter.create_documents([parsed_document])
 
-        elif isinstance(parsed_document, DocxDocumentObject):            
-            file_path_name = parsed_document.core_properties.identifier
-            lm_base_node = TextNode(text='',metadata={"source":file_path_name})
-            doc_tree,_ = self.jq_reader.parse_docx_into_tree(parsed_document,file_path=file_path_name)
-            split_results = self.doc_tree_spiltter._parse_node_on_tree(lm_base_node,doc_tree)
+        elif isinstance(parsed_document, TextNode):            
+            file_path_name = parsed_document.metadata.get('source','未知文件名')
+            doc = parsed_document.metadata.pop('doc')            
+            doc_tree,_ = self.jq_reader.parse_docx_into_tree(doc,file_path=file_path_name)
+            split_results = self.doc_tree_spiltter._parse_node_on_tree(parsed_document,doc_tree)
             chunks = [node.text for node in split_results]
 
         else:

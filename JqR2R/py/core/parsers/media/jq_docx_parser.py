@@ -3,7 +3,7 @@ from io import BytesIO
 from typing import AsyncGenerator
 
 from docx import Document
-
+from llama_index.core.schema import TextNode
 from core.base.parsers.base_parser import AsyncParser
 from core.base.providers import (
     CompletionProvider,
@@ -53,9 +53,9 @@ class JqDOCXParser(AsyncParser[str | bytes]):
             
         else:
             print(f"本是或已转成docx文件，使用JqDOCXParser")
-            doc = self.Document(BytesIO(data))
-            doc.core_properties.identifier = filename
-            yield doc
+            doc = self.Document(BytesIO(data))            
+            yield TextNode(text='',metadata={"doc":doc,"source":filename})
+
 
         # from jqcode.jq_readers.jqkj_readers import JqkjDocxReader
         # reader = JqkjDocxReader()
