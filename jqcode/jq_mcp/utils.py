@@ -26,7 +26,7 @@ class ThreadWithResult(threading.Thread):
             return self.result  
         except Exception as e:  
             return None 
-def get_process_text(jq_queque:JqFileSystemQueue,t:ThreadWithResult,streaming=True,
+def get_process_text(jq_queque:JqFileSystemQueue,t:ThreadWithResult,streaming=True,num_per_chunk = 512,
                      leading_text:str = '<details open>\n<summary>点击查看"整体执行过程"</summary>\n<font color="grey">\n',
                      ending_text:str = '\n<br></font></details>\n------\n',
                      process_ending_text:str = "DONE"):
@@ -75,10 +75,12 @@ def get_process_text(jq_queque:JqFileSystemQueue,t:ThreadWithResult,streaming=Tr
             # text_string += "\n<br>"
         
         chat_result_list = t.get_result()
+        
         if chat_result_list:
             if streaming:
-                for result in chat_result_list:
-                    chunks = [result[i:i+1024] for i in range(0, len(result), 1024)]
+                for index,result in enumerate(chat_result_list):
+                    logger.warning(f"chat_result_list[{index}]: {result=}")
+                    chunks = [result[i:i+num_per_chunk] for i in range(0, len(result), num_per_chunk)]
                     for chunk in chunks:
                         # await asyncio.sleep(0.1)  # 模拟数据处理时间
                         yield chunk

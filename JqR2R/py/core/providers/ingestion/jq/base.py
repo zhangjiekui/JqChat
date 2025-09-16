@@ -246,7 +246,7 @@ class JqIngestionProvider(IngestionProvider):
             chunks = splitter.create_documents([parsed_document])
 
         elif isinstance(parsed_document, TextNode):            
-            file_path_name = parsed_document.metadata.get('source','未知文件名')
+            file_path_name = parsed_document.metadata.get('source','未知文件.docx')
             doc = parsed_document.metadata.pop('doc')            
             doc_tree,_ = self.jq_reader.parse_docx_into_tree(doc,file_path=file_path_name)
             split_results = self.doc_tree_spiltter._parse_node_on_tree(parsed_document,doc_tree)

@@ -16,7 +16,7 @@ from jqcode.jq_utils.logger import jqkj_logger
 
 logger = jqkj_logger(__file__).get_logger()
 required_exts_in_reader = list(filetype_reader_dict.keys())
-doc_tree_spiltter = env_models_instance.doc_tree_spiltter
+doc_tree_spiltter = env_models_instance.jq_doctree_spiltter
 embed_model = env_models_instance.get_emb_8k_rerank_model()[0]
 
 class JqEsClient():

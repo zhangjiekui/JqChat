@@ -2045,6 +2045,12 @@ class GraphAgent:
 
 
         answer = display_text(answer)
+        if self.img_url:
+            filename = Path(self.img_url).name
+            if filename not in answer:
+                answer = f"{answer}\n{self.img_url}" 
+            self.img_url = None
+
         jq_queue.enqueue(f"正在呈现最终结果")
         # user_variables_statedict前面已存在，且值会随着self.graph.invoke的执行而变化，所以不需要重新获取
         # 下面的代码反而无法获取最新的值
@@ -2076,10 +2082,8 @@ class GraphAgent:
             answer = f'{reasoning_content_formatted}\n\n------\n' + answer + '\n\n------\n'
         
         ai_alert_text = '<font color="red">内容由AI生成</font>' + '\n\n------\n'
+              
         answer = f"{answer}{ai_alert_text}"
-
-        # print(f"最终格式化的输出结果：\n{answer}\n")  
-
 
         print(f"==AI回答:>>:{answer}")
         print('================='*5)
@@ -2087,11 +2091,12 @@ class GraphAgent:
         if only_return_answer_text:
             return answer
         else:
-            if self.img_url in answer:
-                self.img_url = ""
-            # results = [self.agent_log,self.code_text,self.img_url,answer]
             results = [self.code_text,answer]
+            print(f"=========================最终结果=========================")
+            print(results)
+            print(f"=========================最终结果=========================")
             return results
+                      
     # endregion: Graph定义            
         
 tavily_search_tool = TavilySearchResults(max_results=6) #increased number of results
