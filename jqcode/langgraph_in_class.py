@@ -1181,16 +1181,10 @@ class GraphAgent:
             returned_tool_calling_nums = 0
 
         if returned_tool_calling_nums==0 and env_models_instance.need_custom_tool_call_parse: 
-            if self.model.model_name.lower().startswith("qwen"):
-                # arg_name = "arguments" 
-                arg_name = "parameters"
-            elif self.model.model_name.lower().startswith("deepseek"):
-                arg_name = "parameters"
-            else:
-                arg_name = "parameters" 
             try:
                 tool_calls = []
                 tool_call_content = result.content
+
                 if '<tool_call>' in result.content and '</tool_call>' in result.content:
                     pattern = r'<tool_call>(.*?)</tool_call>'
                     match = re.search(pattern, result.content, re.DOTALL)
@@ -1212,7 +1206,7 @@ class GraphAgent:
                             break
                         else:
                             if tool_name in self.all_tools_names:
-                                parameters = tool_call[arg_name]
+                                parameters = tool_call.get("parameters",tool_call.get("arguments",{}))
                                 if not isinstance(parameters,dict):
                                     parameters = json_repair.loads(parameters)
                                 tool_calls.append({"name":tool_name,"args":parameters,"id":f'call_{str(uuid.uuid4())}'})
@@ -2200,7 +2194,7 @@ if __name__ == "__main__":
     # response = test_jqchat_service()
     # print(response)
     # pass
-
+    user_questions=['请绘制cos(x)曲线']
     for user_question in user_questions:
         if user_question == '请绘制sin(x)曲线':
             pass
