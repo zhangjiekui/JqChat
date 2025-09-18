@@ -17,7 +17,6 @@ import uuid
 from pathlib import Path
 from typing import Dict, List, Optional, Union
 from jqcode.jq_code_executor.code_utils import append_signal_handler, print_traceback
-from jqcode.jq_agent.c0_init_env_models import env_models_instance
 from jqcode.jq_utils.logger import jqkj_logger
 logger = jqkj_logger(__file__).get_logger()
 

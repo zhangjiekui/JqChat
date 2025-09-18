@@ -1,17 +1,16 @@
-from PIL import Image, ImageDraw, ImageFont
-from Crypto.Cipher import AES
-from Crypto.Util.Padding import pad, unpad
-import hashlib
 import os
-import platform
-from jqcode.jq_utils.jq_watermark_func_and_result.crypto_watermark_text import print_formatting
-from pathlib import Path
-
-import piexif
-from PIL import Image
-from PIL.PngImagePlugin import PngInfo
 import json
+# import piexif
+import hashlib
+import platform
+from PIL import Image
+from pathlib import Path
+from Crypto.Cipher import AES
+from PIL.PngImagePlugin import PngInfo
+from Crypto.Util.Padding import pad, unpad
+from PIL import Image, ImageDraw, ImageFont
 from jqcode.jq_agent.c0_init_env_models import env_models_instance
+from jqcode.jq_utils.jq_watermark_func_and_result.crypto_watermark_text import print_formatting
 
 # 构造数据
 visible_text = env_models_instance.aigc_visible_text
@@ -257,6 +256,8 @@ if __name__ == "__main__":
     # print(f"返回结果文件路径: {result}")
 
     print("====仅仅验证结果========================================================================================================")
-    wm.validate_image("/data/projects/JqChatV2/JqChat/jqcode/jq_utils/jq_watermark_func_and_result/图片/5391ac5b-5b6c-4e4f-8b04-5e66e1af9783.png")
-    wm.validate_image("/data/projects/JqChatV2/JqChat/jqcode/jq_utils/jq_watermark_func_and_result/图片/validate2.png")
+    wm.validate_image("/data/projects/JqChatV2/JqChat/jqcode/jq_utils/jq_watermark_func_and_result/图片/v1-1.png")
+    wm.validate_image("/data/projects/JqChatV2/JqChat/jqcode/jq_utils/jq_watermark_func_and_result/图片/v1-2.png")
+    wm.validate_image("/data/projects/JqChatV2/JqChat/jqcode/jq_utils/jq_watermark_func_and_result/图片/v2-1.png")
+    wm.validate_image("/data/projects/JqChatV2/JqChat/jqcode/jq_utils/jq_watermark_func_and_result/图片/v2-2.png")
     
