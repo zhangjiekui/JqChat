@@ -17,6 +17,7 @@ import uuid
 from pathlib import Path
 from typing import Dict, List, Optional, Union
 from jqcode.jq_code_executor.code_utils import append_signal_handler, print_traceback
+from jqcode.jq_agent.c0_init_env_models import env_models_instance
 from jqcode.jq_utils.logger import jqkj_logger
 logger = jqkj_logger(__file__).get_logger()
 
@@ -54,14 +55,14 @@ class CodeExecutorTool():
     description = 'Python代码沙盒，可用于执行Python代码。'
     parameters = [{'name': 'code', 'type': 'string', 'description': '待执行的代码', 'required': True}]
 
-    def __init__(self,user_rquest_url:str=None):
+    def __init__(self,user_request_url:str=None):
         self.work_dir: str = os.getenv('workspace')
         self.instance_id: str = str(uuid.uuid4())
-        if user_rquest_url:
-            valid_url = user_rquest_url
+        if user_request_url:
+            valid_url = user_request_url
         else:
             valid_url = os.getenv("deployment_url",'http://10.1.150.105:7861/workspace')
-        self.user_rquest_url = valid_url
+        self.user_request_url = valid_url
         # _check_deps_for_code_interpreter()
 
     def call(self,code: str,timeout: Optional[int] = 30, **kwargs) -> dict:
@@ -244,17 +245,18 @@ class CodeExecutorTool():
 
         image_file = f'{uuid.uuid4()}.png'
         local_image_file = os.path.join(self.work_dir,"code", image_file)
-
         png_bytes = base64.b64decode(image_base64)
         assert isinstance(png_bytes, bytes)
         bytes_io = io.BytesIO(png_bytes)
         PIL.Image.open(bytes_io).save(local_image_file, 'png')
-        wm.add_visible_watermark(local_image_file, "内容由AI生成", local_image_file)  # 半透明红色
+        wm = ImageWatermark()
+        result = wm.encrypt_and_or_decrypt_img(local_image_file)
+        assert str(result) == str(local_image_file), f"加密水印图片失败: {result} != {local_image_file}"
         logger.warning(f"CodeExecutorTool _serve_image() local_image_file={local_image_file}")
-        if "/workspace" not in self.user_rquest_url:
-            deployment_url = f'{self.user_rquest_url}/workspace'
+        if "/workspace" not in self.user_request_url:
+            deployment_url = f'{self.user_request_url}/workspace'
         else:
-            deployment_url = self.user_rquest_url
+            deployment_url = self.user_request_url
         image_server_url = os.path.join(deployment_url,"images")
         logger.warning(f"CodeExecutorTool _serve_image() deployment_url={deployment_url}")
         if image_server_url:

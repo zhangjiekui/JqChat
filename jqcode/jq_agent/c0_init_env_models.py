@@ -743,6 +743,19 @@ class InitEnvModels:
         self.all_indices = self.get_all_knowledge_base()
         self.strategy = DenseVectorStrategy(hybrid=False,rrf=False,distance=DistanceMetric.COSINE)
         self.default_chinese_analyzer_settings =self.ES_DEFAULT_CHINESE_SETTINGS
+
+        ContentProducer = "JQWL001"
+        ProduceID =  "7dab1ae2ac724f4e9370f81229a55de6"
+        # “内容由AI生成-JQWL001-7dab1ae2ac724f4e9370f81229a55de6”
+        self.aigc_visible_text = "内容由AI生成"
+        self.aigc_invisible_watermark = f"{self.aigc_visible_text}-{ContentProducer}-{ProduceID}"
+        self.aigc_metadata = {    
+            "AIGC": 
+            {        
+                "ContentProducer": ContentProducer,        
+                "ProduceID": ProduceID
+            }
+}
     
     def get_deployment_url(self):
         deployment_url = os.getenv("deployment_url",self.workspace_url)

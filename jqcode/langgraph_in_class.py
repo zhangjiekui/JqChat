@@ -495,7 +495,7 @@ class GraphAgent:
                  llm_model:ChatOpenAI=None,chat_on_docs_list:List[str]=None,add_docs_list_to_kb:bool=True, 
                  allow_conversation_memory=True,allow_question_rewrite = True,
                  kb_base_dict:dict={"index_name": index_name, "description":default_index_description}, 
-                 recursion_limit:int=25, memory_thread_id:str=f"匿名用户({shortuuid.uuid()})",user_rquest_url:str=env_models_instance.deployment_url) -> None:
+                 recursion_limit:int=25, memory_thread_id:str=f"匿名用户({shortuuid.uuid()})",user_request_url:str=env_models_instance.deployment_url) -> None:
         
     # region: 初始化
         # 获取知识库相关的信息
@@ -521,12 +521,15 @@ class GraphAgent:
         if "(" in self.user_id and ")" in self.user_id:
             self.user_name = self.user_id.split("(")[0]
         self.invoke_graph_config =  {"recursion_limit":recursion_limit,"configurable": {"thread_id":self.user_name }}
-        self.user_rquest_url = user_rquest_url
+        self.user_request_url = user_request_url
+        self.r2r_client = None
         try:
             from r2r_client_functions import r2r_authed_client
             r2r_client = r2r_authed_client(user_id=self.user_name)
             self.r2r_client = r2r_client
             logger.warning("self.r2r_client初始化成功")
+            # logger.warning("self.r2r_client初始化:测试，放弃使用r2r_client")
+            self.r2r_client = None
         except ImportError as e:
             logger.error(f"Failed to import r2r:{e}"            )
             logger.error("To run the server, install the required dependencies: pip install 'r2r[core]'")
@@ -1549,7 +1552,7 @@ class GraphAgent:
                 
             if referens_dict_list:
                 referens_str = "#### 参考'type_placeholder': \n"
-                url = self.user_rquest_url
+                url = self.user_request_url
                 logger.warning(f"  ==参考文献url：{url}")
                 for i,referens in enumerate(referens_dict_list):
                     r = referens.get('filename','')
@@ -1606,7 +1609,7 @@ class GraphAgent:
         #                             r = kb_filepath
                             
         #                         paths =r[r.index("knowledge_base")+15:]
-        #                         url = self.user_rquest_url                       
+        #                         url = self.user_request_url                       
         #                         referens_str += f"    [{i+1}] <a href='{url}/knowledge/{paths}'>{filename}</a>  \n"
         #                 else:
         #                     result = es_connection.get(index=files_index, id=index_id)
@@ -1687,7 +1690,7 @@ class GraphAgent:
                             
         context = "\n".join([m.content for m in question_related_messages if m.content and m.name!='history_ai'])
 
-        logger.warning(f"[Code Executor:system_code_prompt] {self.user_rquest_url=}")
+        logger.warning(f"[Code Executor:system_code_prompt] {self.user_request_url=}")
         _system_code_prompt=f"""请尽量使用简体中文来解答用户问题。
             Act as an EXPERT with ten years of experience in the domain of data anylasis, your role is to help inexperienced people explore/analyse data. 
             Be sure to help the user understand what to focus on and give suggestions on where it would make sense to dig deeper.
@@ -1723,7 +1726,7 @@ class GraphAgent:
                 But if you need geographical charts, use geopandas with the geopandas.datasets module.
                 If the user has just uploaded a file, focus on the file that was most recently uploaded (and optionally all previously uploaded files)
 
-                If the code modifies or produces a file/image, you must save the file/image to location '{env_models_instance.abs_workspace}/code', and add a print statement at the end of the code block that prints a link to it as HTML string: <a href='{self.user_rquest_url}/download?file=INSERT_FILENAME_HERE'>下载文件</a>. Replace INSERT_FILENAME_HERE with the actual filename(only filename itself,no path prefix needed).
+                If the code modifies or produces a file/image, you must save the file/image to location '{env_models_instance.abs_workspace}/code', and add a print statement at the end of the code block that prints a link to it as HTML string: <a href='{self.user_request_url}/download?file=INSERT_FILENAME_HERE'>下载文件</a>. Replace INSERT_FILENAME_HERE with the actual filename(only filename itself,no path prefix needed).
                 并且最后的回答要优先直接展示图片，如果没有展示图片，就必须提供下载链接
             EndOf_GENERATE_PYTHON_INSTRUCTIONS
             """
@@ -1761,7 +1764,7 @@ class GraphAgent:
                 
                 But if you need geographical charts, use geopandas with the geopandas.datasets module.
                 如有图片，请直接展示图片(如plt.show())，无论如何都不要使用plt.savefig()等类似函数保存图片文件(如.png, .jpg, .jpeg, .gif, .bmp, .svg, .tiff, .tif),
-                If the code need to produces a file(But not image mentioned above), you must write the file in UTF-8 encoding and save to location '{env_models_instance.abs_workspace}/code', and add a print statement at the end of the code block that prints a link to it as HTML string: <a href='{self.user_rquest_url}/download?file=INSERT_FILENAME_HERE'>下载文件</a>. Replace INSERT_FILENAME_HERE with the actual filename(only filename itself,no path prefix needed).
+                If the code need to produces a file(But not image mentioned above), you must write the file in UTF-8 encoding and save to location '{env_models_instance.abs_workspace}/code', and add a print statement at the end of the code block that prints a link to it as HTML string: <a href='{self.user_request_url}/download?file=INSERT_FILENAME_HERE'>下载文件</a>. Replace INSERT_FILENAME_HERE with the actual filename(only filename itself,no path prefix needed).
 
                 Never use the following:
                 1. 'plt.savefig' function
@@ -1849,7 +1852,7 @@ class GraphAgent:
                 break
             
         tool_name = 'code_execution'
-        code_executor=CodeExecutorTool(self.user_rquest_url)
+        code_executor=CodeExecutorTool(self.user_request_url)
         # 获取代码code和文本code_text
         code = ''
         code_text =''
@@ -1905,7 +1908,7 @@ class GraphAgent:
                     if success:
                         # message_content = f'执行代码成功[生成的文本内容为：{result.get("text") or "无生成的文本"};生成的图片位置为：{result.get("image") or "无生成的图片"}]。\n'
                         content = result.get("image")  or result.get("text")
-                        message_content = f'执行代码成功，下面请直接生成最终的回答（回答时请忽略之前可能的代码执行错误信息，仅关注正确的执行/返回结果），如果存在文件或图片的链接，请务必把链接地址中的主机和端口替换成{self.user_rquest_url}，不要再调用任何工具：{content}\n'
+                        message_content = f'执行代码成功，下面请直接生成最终的回答（回答时请忽略之前可能的代码执行错误信息，仅关注正确的执行/返回结果），如果存在文件或图片的链接，请务必把链接地址中的主机和端口替换成{self.user_request_url}，不要再调用任何工具：{content}\n'
                         # if 'qwen3' in env_models_instance.chat_model.model_name:
                         #     message_content += '/no_think'  # 记录当前执行的工具名称                    
                         

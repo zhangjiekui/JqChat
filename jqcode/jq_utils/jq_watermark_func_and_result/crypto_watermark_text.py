@@ -129,7 +129,7 @@ def print_formatting(leading_text, print_text):
     print(f">>> {leading_text}:") 
     # print("-" * 20) 
     print(f"{print_text}")
-    print("\n")
+    # print("\n")
 
 if __name__ == "__main__":
     crypto = TextWatermark("strong_password_123")

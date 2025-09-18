@@ -85,9 +85,9 @@ def upload_docs(user,knowledge_id,files,is_knowledge, _api: ApiRequest) -> str:
     """
     return _api.upload_docs(uid=user,knowledge_id=knowledge_id,is_knowledge=is_knowledge,files=files)
 #聊天
-def chat(code_message,query,user,doc:str,files,is_memory,is_rewrite,is_knowledge,_api:ApiRequest,user_rquest_url:str):
+def chat(code_message,query,user,doc:str,files,is_memory,is_rewrite,is_knowledge,_api:ApiRequest,user_request_url:str):
     logger.warning(f"user:{user}")
-    response=_api.chat_jqagent(code_message=code_message,query=query,user=user,doc=doc,is_memory=is_memory,is_rewrite=is_rewrite,is_knowledge=is_knowledge,files=files,user_rquest_url=user_rquest_url)
+    response=_api.chat_jqagent(code_message=code_message,query=query,user=user,doc=doc,is_memory=is_memory,is_rewrite=is_rewrite,is_knowledge=is_knowledge,files=files,user_request_url=user_request_url)
     return response
 
 #执行code
@@ -154,7 +154,7 @@ def dialogue_page(
     selected_kb = "default",
     is_memory: bool = False,
     is_rewrite: bool = False,
-    user_rquest_url:str = None,
+    user_request_url:str = None,
 ):
   
     ctx = chat_box.context
@@ -312,11 +312,11 @@ def dialogue_page(
 
             # 是否需要替换端口？
             api_port = api.base_url.split(":")[-1]
-            web_port = user_rquest_url.split(":")[-1]
-            # _user_rquest_url = user_rquest_url[0:-len(web_port)]
-            # request_url = _user_rquest_url + api_port
+            web_port = user_request_url.split(":")[-1]
+            # _user_request_url = user_request_url[0:-len(web_port)]
+            # request_url = _user_request_url + api_port
 
-            request_url = user_rquest_url
+            request_url = user_request_url
             if "/workspace" not in request_url:
                 deployment_url = f"{request_url}/workspace"
             else:

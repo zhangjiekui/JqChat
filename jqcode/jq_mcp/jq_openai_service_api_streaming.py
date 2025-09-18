@@ -160,9 +160,9 @@ async def chat_completions(request: Request) -> str | dict | ChatCompletion:
         memory_thread_id = user_name_id
         # memory_thread_id = user_name_id or request.user.username
         if memory_thread_id:
-            chat_bot = GraphAgent(kb_base_dict=kb_base_dict,user_rquest_url=api_deployment_url,memory_thread_id=memory_thread_id,allow_conversation_memory=use_memory,allow_question_rewrite=rewrite_question)
+            chat_bot = GraphAgent(kb_base_dict=kb_base_dict,user_request_url=api_deployment_url,memory_thread_id=memory_thread_id,allow_conversation_memory=use_memory,allow_question_rewrite=rewrite_question)
         else:
-            chat_bot = GraphAgent(kb_base_dict=kb_base_dict,user_rquest_url=api_deployment_url,allow_question_rewrite=rewrite_question)
+            chat_bot = GraphAgent(kb_base_dict=kb_base_dict,user_request_url=api_deployment_url,allow_question_rewrite=rewrite_question)
         query = data["messages"][-1].get("content")
         while not isinstance(query, str):
             if isinstance(query, dict) and "text" in query:

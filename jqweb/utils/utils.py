@@ -318,7 +318,7 @@ class ApiRequest:
         is_memory:bool=True, #是否启用记忆
         is_rewrite:bool=True,#是否启用问题改写
         is_knowledge:bool=True,#是否将文档纳入知识库
-        user_rquest_url:str=None, #用户请求的url
+        user_request_url:str=None, #用户请求的url
         **kwargs,
     ):
         """
@@ -343,10 +343,10 @@ class ApiRequest:
             "is_memory":is_memory,
             "is_rewrite":is_rewrite,
             "is_knowledge":is_knowledge,
-            "user_rquest_url":user_rquest_url
+            "user_request_url":user_request_url
         }
         logger.warning(f"ApiRequest {self.base_url=}")
-        logger.warning(f"WebRequest {user_rquest_url=}")
+        logger.warning(f"WebRequest {user_request_url=}")
         response = self.post(f"/chat/completions", json=data, stream=False, **kwargs)
         return  self._get_response_value(response, as_json=True)
     # 对应/data/projects/JqChatV2/JqChat/jqcode/jq_server/jq_chat_routes.py中的def code方法

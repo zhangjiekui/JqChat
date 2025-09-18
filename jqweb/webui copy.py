@@ -270,23 +270,23 @@ if __name__ == "__main__":
         if st.button("🚪 退出登录", use_container_width=True, key="logout_btn"):
             logout()
 
-    user_rquest_url = st.context.url
+    user_request_url = st.context.url
     api_url = api.base_url 
-    print(f"在webui.py中获取到请求的 {user_rquest_url = }")
+    print(f"在webui.py中获取到请求的 {user_request_url = }")
     print(f"api_url为 {api_url = }")
-    logger.warning(f"在webui.py中获取到请求的 {user_rquest_url = }")
+    logger.warning(f"在webui.py中获取到请求的 {user_request_url = }")
     local_server_url = "10.1.150.105"
     local_urls = ["127.0.0.1",local_server_url, "localhost", "0.0.0.0"]
 
     for local_url in local_urls:
-        if local_url in user_rquest_url:
+        if local_url in user_request_url:
             if local_url!=local_server_url:
-                user_rquest_url = user_rquest_url.replace(local_url,local_server_url)
-                print(f"因为是本地请求{local_url=}，需替换为服务器地址({local_server_url=}),替换后的结果为： {user_rquest_url = }")
+                user_request_url = user_request_url.replace(local_url,local_server_url)
+                print(f"因为是本地请求{local_url=}，需替换为服务器地址({local_server_url=}),替换后的结果为： {user_request_url = }")
             api_url_port = api_url.split(":")[-1]
-            user_rquest_url_port = user_rquest_url.split(":")[-1]
-            user_rquest_url = user_rquest_url.replace(user_rquest_url_port,api_url_port)
-            print(f"因为是本地请求，需替换web_port({user_rquest_url_port})为api_port({api_url_port}),替换后的结果为： {user_rquest_url = }")
+            user_request_url_port = user_request_url.split(":")[-1]
+            user_request_url = user_request_url.replace(user_request_url_port,api_url_port)
+            print(f"因为是本地请求，需替换web_port({user_request_url_port})为api_port({api_url_port}),替换后的结果为： {user_request_url = }")
             break
     # 传递知识库相关参数到对话页面
     if selected_page == "知识库管理":
@@ -299,7 +299,7 @@ if __name__ == "__main__":
             "selected_kb": selected_kb if 'selected_kb' in locals() else "不使用知识库",
             "is_memory": st.session_state.get("main_memory_checkbox", True),
             "is_rewrite": st.session_state.get("main_rewrite_checkbox", True),
-            "user_rquest_url":user_rquest_url
+            "user_request_url":user_request_url
         }
         dialogue_page(**dialogue_kwargs)
 

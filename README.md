@@ -108,11 +108,21 @@ tail -f /root/JqLogs/rerank.log
 workon vllm
 CUDA_VISIBLE_DEVICES=0 nohup vllm serve /data/models/Qwen/Qwen3-Embedding-0___6B --served-model-name Qwen/Qwen3-Embedding-0.6B --port 8082 >> /root/JqLogs/embedding.log 2>&1 &
 tail -f /root/JqLogs/embedding.log
+###106服务器
+source ~/.bashrc
+workon xinferv190
+VLLM_ATTENTION_BACKEND=FLEX_ATTENTION CUDA_VISIBLE_DEVICES=0 VLLM_USE_V1=0 nohup vllm serve /data/models/Qwen/Qwen3-Embedding-0___6B --served-model-name Qwen/Qwen3-Embedding-0.6B --port 8082 >> /root/JqLogs/embedding.log 2>&1 &
+tail -f /root/JqLogs/embedding.log
 
 
 ## Reranker 备用 
 workon vllm
 CUDA_VISIBLE_DEVICES=0 vllm serve /data/models/Qwen/Qwen3-Reranker-0___6B --served-model-name Qwen/Qwen3-Reranker-0.6B  max_num_seqs=8 gpu_memory_utilization=0.5 --hf_overrides '{"architectures": ["Qwen3ForSequenceClassification"],"classifier_from_token": ["no", "yes"],"is_original_qwen3_reranker": true}' --task score
+
+###106服务器
+source ~/.bashrc
+workon xinferv190
+VLLM_USE_FLASHINFER_SAMPLER=0
 
 
 vllm serve /data/models/Qwen3-Reranker-0___6B/ --served-model-name qwen3reranker --task score

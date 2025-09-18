@@ -5,41 +5,100 @@ import hashlib
 import os
 import platform
 from jqcode.jq_utils.jq_watermark_func_and_result.crypto_watermark_text import print_formatting
+from pathlib import Path
 
-# 初始化密钥和IV
+import piexif
+from PIL import Image
+from PIL.PngImagePlugin import PngInfo
+import json
+from jqcode.jq_agent.c0_init_env_models import env_models_instance
+
+# 构造数据
+visible_text = env_models_instance.aigc_visible_text
+invisible_watermark = env_models_instance.aigc_invisible_watermark
+aigc_metadata = env_models_instance.aigc_metadata
+
 class ImageWatermark:
-    def __init__(self, secret_key: str):
+    def __init__(self, secret_key: str='jqkj%#%)**)', visible_text=visible_text, invisible_watermark=invisible_watermark, aigc_metadata=aigc_metadata, validate_final_result:bool=False):
         self.key = hashlib.sha256(secret_key.encode()).digest()
-        self.iv = os.urandom(16)
+        # self.iv = os.urandom(16)
+        self.iv = b"\xae\xfa\x10\xea\r0\xc1{\x0bP'\xa7\xd5\r\xa2\xea"
+        self.visible_text = visible_text
+        self.invisible_watermark = invisible_watermark
+        self.aigc_metadata = aigc_metadata
+        self.position=(50, 50)
+        self.font_size=20
+        self.color_for_img_layer = (255, 255, 255, 128)
+        self.color_for_visible_text = (255, 0, 0, 128)
+        self.validate_final_result = validate_final_result
 
     def _bytes_to_bin(self, data: bytes) -> str:
         return ''.join(format(b, '08b') for b in data)
 
     def _bin_to_bytes(self, binary_str: str) -> bytes:
-        n = int(binary_str, 2)
-        return n.to_bytes((n.bit_length() + 7) // 8, 'big')
+        # n = int(binary_str, 2)
+        # return n.to_bytes((n.bit_length() + 7) // 8, 'big')
+        return bytes(int(binary_str[i:i+8], 2) for i in range(0, len(binary_str), 8))
+
 
     def encrypt(self, plaintext: str) -> bytes:
         cipher = AES.new(self.key, AES.MODE_CBC, self.iv)
-        padded_data = pad(plaintext.encode(), AES.block_size)
+        padded_data = pad(plaintext.encode(encoding="utf-8"), AES.block_size)
         return cipher.encrypt(padded_data)
 
     def decrypt(self, ciphertext: bytes) -> str:
         cipher = AES.new(self.key, AES.MODE_CBC, self.iv)
         decrypted = cipher.decrypt(ciphertext)
-        return unpad(decrypted, AES.block_size).decode()
+        return unpad(decrypted, AES.block_size).decode(encoding="utf-8",errors='ignore')
 
-    def embed_watermark(self, image_path: str, watermark_text: str, output_path: str):
+    def encrypt_and_or_decrypt_img(self, image_path: str):
+        # 图片类型转换
+        scr_file_path = Path(image_path)
+        file_type = scr_file_path.suffix
+        if file_type in ['.jpg', '.jpeg']:
+            png_file_path = scr_file_path.with_suffix('.png')
+            Image.open(image_path).convert("RGB").save(png_file_path)
+            print_formatting(f"  已将.jpg/.jpeg图片转换为.png格式", f"{png_file_path.name}")
+            image_path = png_file_path
+            scr_file_path = Path(image_path)
+
+        img = Image.open(image_path).convert("RGBA")
+    ## 第一步：添加可见文本visible_text
+        print_formatting("为图片添加可见文本",f"{self.visible_text}")
+        txt_layer = Image.new('RGBA', img.size, self.color_for_img_layer)
+        draw = ImageDraw.Draw(txt_layer)
+        # 获取支持中文的字体
+        font = self.get_chinese_font(self.font_size)
+        # 添加文字（位置可根据需要调整）
+        width, height = img.size
+        # 兼容新旧版本的尺寸获取
+        if hasattr(draw, 'textlength'):
+            text_width = draw.textlength(self.visible_text, font=font)
+            text_height = font.getbbox(self.visible_text)[3]  # 获取字体高度
+        else:
+            text_width, text_height = draw.textsize(self.visible_text, font=font)
+        # final_position = (90,  60)  # 左上角
+        final_position = (width - text_width - self.position[0], height -text_height - self.position[1])  # 右下角
+        draw.text(final_position, self.visible_text, font=font, fill=self.color_for_visible_text)  # 红色文字
+        img_with_text = Image.alpha_composite(img, txt_layer)
+
+        file_path_with_text = scr_file_path.parent / (scr_file_path.stem + "_with_text" + scr_file_path.suffix)
+        file_path_with_text = Path(file_path_with_text)
+        img_with_text = img_with_text.convert("RGB")
+        if self.validate_final_result:           
+            img_with_text.save(file_path_with_text, format="PNG")
+            print_formatting(f"   [+] 已添加可见文本，并保存", f"{file_path_with_text.name}")
+        
+    ## 第二步：添加不可见水印invisible_watermark    
         # Step 1: 加密水印
-        encrypted_watermark = self.encrypt(watermark_text)
+        print_formatting(f"为图片添加不可见水印", self.invisible_watermark)
+        encrypted_watermark = self.encrypt(self.invisible_watermark)
         watermark_bin = self._bytes_to_bin(encrypted_watermark)
 
-        # Step 2: 读取图片
-        img = Image.open(image_path).convert("RGB")
-        pixels = list(img.getdata())
+        # Step 2: 嵌入水印到每个像素的最低位
+                
+        pixels = list(img_with_text.getdata())
         new_pixels = []
-
-        # Step 3: 嵌入水印到每个像素的最低位
         bit_index = 0
         for r, g, b in pixels:
             if bit_index < len(watermark_bin):
@@ -53,13 +112,47 @@ class ImageWatermark:
                 bit_index += 1
             new_pixels.append((r, g, b))
 
-        # Step 4: 保存图片
-        img.putdata(new_pixels)
-        img.save(output_path, format="PNG")
-        # print(f"[+] 不可见水印已嵌入到 {output_path.split('/')[-1]}")
-        print_formatting(f"[+] 不可见水印已嵌入到", f"{output_path.split('/')[-1]}")
+        # Step 3: 保存图片
+        img_with_text.putdata(new_pixels)
+        file_path_with_text_watermark = file_path_with_text.parent / (file_path_with_text.stem + "_watermark" + file_path_with_text.suffix)
+        file_path_with_text_watermark = Path(file_path_with_text_watermark)
+        if self.validate_final_result:
+            img_with_text.save(file_path_with_text_watermark, format="PNG")
+            print_formatting(f"   [+] 已添加不可见水印，并保存", file_path_with_text_watermark.name)
+    
+    ## 第三步：添加元数据aigc_metadata        
+        print_formatting("为图片添加AIGC元数据",f"{self.aigc_metadata}")
+        file_type = file_path_with_text_watermark.suffix
+        # 转为 JSON 字符串
+        aigc_json = json.dumps(self.aigc_metadata, ensure_ascii=False)
+        if file_type in ['.png']:
+            # 从原始图片中复制元数据（如果有的话）
+            pnginfo = PngInfo()
+            if 'pnginfo' in img_with_text.info:
+                for k, v in img_with_text.info['pnginfo'].items():
+                    pnginfo.add_text(k, v)
+            
+            pnginfo.add_text("AIGC_JSON", aigc_json)
+            file_path_with_text_watermark_and_metadata = file_path_with_text_watermark.parent / (file_path_with_text_watermark.stem + "_and_metadata" + file_path_with_text_watermark.suffix) 
+            file_path_with_text_watermark_and_metadata = Path(file_path_with_text_watermark_and_metadata)
+            if self.validate_final_result:
+                img_with_text.save(file_path_with_text_watermark_and_metadata, pnginfo=pnginfo)
+                scr_file_path = file_path_with_text_watermark_and_metadata
+                print_formatting(f"   [+] 已添加AIGC元数据，并保存", file_path_with_text_watermark_and_metadata.name)
+            else:
+                img_with_text.save(scr_file_path, pnginfo=pnginfo)
+                print_formatting(f"图片已添加文本/水印/元数据", scr_file_path.name)
+                self.validate_image(scr_file_path)
+                return scr_file_path            
+        else:
+            print_formatting(f"暂不支持的图片格式",file_type)
+            return None
 
-    def get_chinese_font(self, font_size=50):
+    ## 第四步：验证最终结果
+        if self.validate_final_result:          
+            self.validate_image(scr_file_path)
+
+    def get_chinese_font(self, font_size=20):
         """自动获取系统中文字体"""
         system = platform.system()
         font = None
@@ -106,45 +199,12 @@ class ImageWatermark:
             font = ImageFont.load_default()
             
         return font
-
-    def add_visible_watermark(self, image_path: str, watermark_text: str, output_path: str,
-                              position=(50, 50), font_size=20, color=(255, 0, 0, 128)):
-        """
-        在图片上添加可见水印（文字），支持中文
-        :param image_path: 原图路径
-        :param watermark_text: 水印文字
-        :param output_path: 输出路径
-        :param position: 文字位置 (x, y)
-        :param font_size: 字体大小
-        :param color: 文字颜色 RGBA（最后一个是透明度）
-        """
-        img = Image.open(image_path).convert("RGBA")
-        txt_layer = Image.new('RGBA', img.size, (255, 255, 255, 128))
-        draw = ImageDraw.Draw(txt_layer)
-
-        # 获取支持中文的字体
-        font = self.get_chinese_font(font_size)
-        # 4. 添加文字（位置可根据需要调整）
-        width, height = img.size
-        # 兼容新旧版本的尺寸获取
-        if hasattr(draw, 'textlength'):
-            text_width = draw.textlength(watermark_text, font=font)
-            text_height = font.getbbox(watermark_text)[3]  # 获取字体高度
-        else:
-            text_width, text_height = draw.textsize(watermark_text, font=font)
-        final_position = ( 120,  50)  # 左上角
-        final_position = (width - text_width - position[0], height -text_height - position[1])  # 右下角
-        draw.text(final_position, watermark_text, font=font, fill=color)  # 红色文字
-
-        # draw.text(position, watermark_text, font=font, fill=color)
-        watermarked = Image.alpha_composite(img, txt_layer)
-        watermarked = watermarked.convert("RGB")  # 转回 RGB 保存为 JPG/PNG
-        watermarked.save(output_path, format="PNG")
-        print_formatting(f"[+] 提取到的水印已添加到", f"{output_path.split('/')[-1]}")
-
-    def extract_watermark(self, image_path: str, watermark_length: int) -> str:
+    def extract_watermark(self, image_or_path: Image.Image | str, watermark_length: int) -> str:
         # Step 1: 读取图片
-        img = Image.open(image_path).convert("RGB")
+        if isinstance(image_or_path, str):
+            img = Image.open(image_or_path).convert("RGB")
+        else:
+            img = image_or_path
         pixels = list(img.getdata())
 
         # Step 2: 提取水印比特流
@@ -170,33 +230,33 @@ class ImageWatermark:
         except Exception as e:
             return f"[!] 解密失败: {e}"
 
-# 测试代码
+    def validate_image(self, scr_file_path: str):
+        # 验证图片中元数据是否添加成功
+        img_with_text_and_watermark_watermark = Image.open(scr_file_path).convert("RGB")
+        print_formatting(f"🎯 最终验证图片{Path(scr_file_path).name}中元数据是否添加成功",img_with_text_and_watermark_watermark.info)  # 查看是否包含 'AIGC_JSON'
+
+        # 解密和提取水印
+        encrypt_watermark_length = len(self.encrypt(self.invisible_watermark))
+        watermark = self.extract_watermark(img_with_text_and_watermark_watermark, watermark_length=encrypt_watermark_length)
+        print_formatting(f"🎯 最终验证图片{Path(scr_file_path).name}中不可见水印是否提取成功",watermark)
+        # 查看可见文本
+        print_formatting(f"🎯 打开查看图片{Path(scr_file_path).name}中可见文本是否添加成功",self.visible_text) 
+
 if __name__ == "__main__":
+    # 测试代码   
+    validate_image = fr"/data/projects/JqChatV2/JqChat/jqcode/jq_utils/jq_watermark_func_and_result/图片/test.jpg"
+    wm = ImageWatermark()
+
+    # print("====不验证结果========================================================================================================")
+    # result = wm.encrypt_and_or_decrypt_img(validate_image)
+    # print(f"返回结果文件路径: {result}")
+
+    # print("====验证结果========================================================================================================")
+    # wm = ImageWatermark(validate_final_result=True)
+    # result = wm.encrypt_and_or_decrypt_img(validate_image)
+    # print(f"返回结果文件路径: {result}")
+
+    print("====仅仅验证结果========================================================================================================")
+    wm.validate_image("/data/projects/JqChatV2/JqChat/jqcode/jq_utils/jq_watermark_func_and_result/图片/5391ac5b-5b6c-4e4f-8b04-5e66e1af9783.png")
+    wm.validate_image("/data/projects/JqChatV2/JqChat/jqcode/jq_utils/jq_watermark_func_and_result/图片/validate2.png")
     
-    wm = ImageWatermark("strong_password_123")
-
-    original_image = "/data/projects/JqChatV2/JqChat/jqcode/jq_utils/jq_watermark_func_and_result/图片/sinx.png"
-    invisible_output = "/data/projects/JqChatV2/JqChat/jqcode/jq_utils/jq_watermark_func_and_result/图片/watermarked_invisible.png"
-    visible_output = "/data/projects/JqChatV2/JqChat/jqcode/jq_utils/jq_watermark_func_and_result/图片/watermarked_visible.png"
-    print_formatting("原始图片","sinx.png")
-    watermark = "JqAgentWatermark"
-    watermark = "晶灵智能体(7dab1ae2ac724f4e9370f81229a55de6)"
-    print_formatting("水印文本",watermark)
-
-    # 嵌入不可见水印
-    wm.embed_watermark(original_image, watermark, invisible_output)
-    
-    # 提取水印
-    watermark_len = len(wm.encrypt(watermark))
-    extracted = wm.extract_watermark(invisible_output, watermark_len)
-    print_formatting(f"从{invisible_output.split('/')[-1]}中提取到水印",extracted)
-
-    # 添加可见水印（支持中文）
-    print_formatting(f"将提取到的水印添加到{visible_output.split('/')[-1]}",extracted)
-    wm.add_visible_watermark(original_image, extracted, visible_output)  # 半透明白色
-
-
-
-    print(f"\n🎯 原始水印: '{watermark}'")
-    print(f"🎯 提取水印: '{extracted}'")
-    print(f"🎯 匹配结果: {'✅ 成功' if watermark == extracted else '❌ 失败'}")
