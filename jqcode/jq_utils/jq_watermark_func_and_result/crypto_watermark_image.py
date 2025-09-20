@@ -125,12 +125,16 @@ class ImageWatermark:
         # 转为 JSON 字符串
         aigc_json = json.dumps(self.aigc_metadata, ensure_ascii=False)
         if file_type in ['.png']:
-            # 从原始图片中复制元数据（如果有的话）
             pnginfo = PngInfo()
-            if 'pnginfo' in img_with_text.info:
-                for k, v in img_with_text.info['pnginfo'].items():
-                    pnginfo.add_text(k, v)
-            
+            try:
+            # 从原始图片中复制元数据（如果有的话）
+                ORIGINAL = img_with_text.info
+                if ORIGINAL:
+                    O_DICT = {"ORIGINAL": ORIGINAL}
+                    original_json = json.dumps(O_DICT, ensure_ascii=False)
+                    pnginfo.add_text("ORIGINAL_JSON", original_json)
+            except:
+                pass
             pnginfo.add_text("AIGC_JSON", aigc_json)
             file_path_with_text_watermark_and_metadata = file_path_with_text_watermark.parent / (file_path_with_text_watermark.stem + "_and_metadata" + file_path_with_text_watermark.suffix) 
             file_path_with_text_watermark_and_metadata = Path(file_path_with_text_watermark_and_metadata)
@@ -243,21 +247,24 @@ class ImageWatermark:
 
 if __name__ == "__main__":
     # 测试代码   
-    validate_image = fr"/data/projects/JqChatV2/JqChat/jqcode/jq_utils/jq_watermark_func_and_result/图片/test.jpg"
+    validate_image = fr"/data/projects/JqChatV2/JqChat/jqcode/jq_utils/jq_watermark_func_and_result/图片/QQ_test_with_text_watermark_and_metadata.png"
     wm = ImageWatermark()
+    wm.validate_image(validate_image)
 
     # print("====不验证结果========================================================================================================")
     # result = wm.encrypt_and_or_decrypt_img(validate_image)
     # print(f"返回结果文件路径: {result}")
 
-    # print("====验证结果========================================================================================================")
-    # wm = ImageWatermark(validate_final_result=True)
-    # result = wm.encrypt_and_or_decrypt_img(validate_image)
-    # print(f"返回结果文件路径: {result}")
+    print("====验证结果========================================================================================================")
+    wm = ImageWatermark(validate_final_result=True)
+    result = wm.encrypt_and_or_decrypt_img(validate_image)
+    print(f"返回结果文件路径: {result}")
+    wm.validate_image(validate_image)
 
-    print("====仅仅验证结果========================================================================================================")
-    wm.validate_image("/data/projects/JqChatV2/JqChat/jqcode/jq_utils/jq_watermark_func_and_result/图片/v1-1.png")
-    wm.validate_image("/data/projects/JqChatV2/JqChat/jqcode/jq_utils/jq_watermark_func_and_result/图片/v1-2.png")
-    wm.validate_image("/data/projects/JqChatV2/JqChat/jqcode/jq_utils/jq_watermark_func_and_result/图片/v2-1.png")
-    wm.validate_image("/data/projects/JqChatV2/JqChat/jqcode/jq_utils/jq_watermark_func_and_result/图片/v2-2.png")
-    
+    # print("====仅仅验证结果========================================================================================================")
+    # wm.validate_image("/data/projects/JqChatV2/JqChat/jqcode/jq_utils/jq_watermark_func_and_result/图片/v1-1.png")
+    # wm.validate_image("/data/projects/JqChatV2/JqChat/jqcode/jq_utils/jq_watermark_func_and_result/图片/v1-2.png")
+    # wm.validate_image("/data/projects/JqChatV2/JqChat/jqcode/jq_utils/jq_watermark_func_and_result/图片/v2-1.png")
+    # wm.validate_image("/data/projects/JqChatV2/JqChat/jqcode/jq_utils/jq_watermark_func_and_result/图片/v2-2.png")
+    # print("====以下是一个错误验证结果========================================================================================================")
+    # wm.validate_image("/data/projects/JqChatV2/JqChat/jqcode/jq_utils/jq_watermark_func_and_result/图片/过程.png")

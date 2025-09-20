@@ -3,8 +3,6 @@ import json
 import time
 import logging
 from typing import List
-
-
 from jqcode.langgraph_in_class import GraphAgent
 from jqcode.jq_docstores.backend_docstore_utils.jq_es_metastores import JqElasticsearchUniMetaStore
 from openai.types.chat import ChatCompletion
@@ -15,7 +13,10 @@ from sse_starlette.sse import EventSourceResponse
 from jqcode.jq_mcp.utils import ThreadWithResult, get_process_text,chat
 
 # 配置日志记录
-logging.basicConfig(level=logging.DEBUG)
+logging.basicConfig(
+    level=logging.WARNING,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+)
 logger = logging.getLogger(__name__)
 
 # 有效API Key集合
@@ -52,6 +53,18 @@ def get_kb_dict(kb_name:str) -> dict:
 
 app = FastAPI()
 
+# 定义装饰器别名，允许在没有limiter时跳过
+def optional_limiter(limit_str: str):
+    def decorator(func):
+        # 检查 limiter 变量是否存在
+        if limiter:
+            logger.warning(f"🎯 Applying rate limit '{limit_str}' to {func.__name__}")
+            return limiter.limit(limit_str)(func)
+        else:
+            logger.warning(f"⚠️ Skipping rate limit for {func.__name__} (limiter not active)")
+        return func
+    return decorator
+
 # CORS配置(供Chatbox调用)
 app.add_middleware(
     CORSMiddleware,
@@ -60,7 +73,43 @@ app.add_middleware(
     allow_headers=["*"],
     expose_headers=["Content-Type", "Cache-Control"],  # 暴露流式响应必需头部
 )
-## 请求验证中间件
+
+# 增加限流
+# 初始化限流器，失败则设为 None
+limiter = None
+try: 
+    from slowapi import Limiter, _rate_limit_exceeded_handler
+    from slowapi.util import get_remote_address
+    from slowapi.errors import RateLimitExceeded
+    from slowapi.middleware import SlowAPIMiddleware
+    # Initialize limiter
+    limiter = Limiter(key_func=get_remote_address)
+    app.state.limiter = limiter
+    app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
+    if limiter:
+        app.add_middleware(SlowAPIMiddleware)  # 可选：启用中间件支持
+except ImportError:
+    logger.warning("未安装slowapi，请使用以下命令安装：pip install slowapi")
+except Exception as e:
+    logger.warning(f"slowapi限流添加错误：{e}")
+
+@app.exception_handler(RateLimitExceeded)
+async def custom_rate_limit_handler(request: Request, exc: RateLimitExceeded):
+    client_ip = request.client.host if request.client else "unknown"
+    # print(f"🚨 限流触发: {request.url} | 客户端: {client_ip} | 限流规则: {exc.detail}")
+    logger.warning(f"🚨 限流触发: {request.url} | 客户端: {client_ip} | 限流规则: {exc.detail}")
+    return _rate_limit_exceeded_handler(request, exc)  # 返回默认响应
+
+# 监控中间件：放在 validate 之前，确保能捕获所有 429
+@app.middleware("http")
+async def monitor_rate_limit(request: Request, call_next):
+    response = await call_next(request)
+    if response.status_code == 429:
+        # print(f"🚨 限流触发: {request.url} from {request.client.host}")
+        logger.debug(f"🚨 限流触发: {request.url} from {request.client.host}")
+    return response
+
+# 验证中间件
 @app.middleware("http")
 async def validate_request(request: Request, call_next): 
     try:
@@ -73,19 +122,24 @@ async def validate_request(request: Request, call_next):
             )
         # 验证必要头信息
         if not BY_PASS_VALIDATING:
-            if "authorization" not in request.headers:
+            auth_header = request.headers.get("authorization")
+            if not auth_header:
                 raise HTTPException(
                     status_code=status.HTTP_400_BAD_REQUEST,
                     detail="Missing Authorization header"
                 )
-        authorization = request.headers["authorization"]
-        api_key = authorization[7:] # 提取Bearer后的部分            
-        if api_key not in VALID_API_KEYS:
-            logger.warning(f"Invalid API Key attempt: {api_key}")
-            raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
-                detail="Invalid API Key"
-            )
+            if not auth_header.startswith("Bearer "):
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail="Invalid Authorization header format. Expected 'Bearer <token>'."
+                )
+            api_key = auth_header[7:] # 安全地提取Bearer后的部分           
+            if api_key not in VALID_API_KEYS:
+                logger.warning(f"Invalid API Key attempt: {api_key}")
+                raise HTTPException(
+                    status_code=status.HTTP_403_FORBIDDEN,
+                    detail="Invalid API Key"
+                )
         return await call_next(request)
         
     except HTTPException as e:
@@ -104,7 +158,9 @@ async def validate_request(request: Request, call_next):
         
 @app.get("/models", response_model=None)
 @app.get("/v1/models", response_model=None)
+@optional_limiter("2/second") # ← 限流装饰器在内层
 async def listModels(request: Request):
+    logger.warning(f"✅ limiter active: {limiter is not None}, app.state.limiter: {hasattr(app.state, 'limiter')}")
     return {
         "object": "list",
         "data": [
@@ -116,26 +172,20 @@ async def listModels(request: Request):
             }
         ]
     }
-
 # OpenAI聊天接口(POST)
+
 @app.post("/v1/chat/completions")
+@optional_limiter("2/second") # ← 限流装饰器在内层
 async def chat_completions(request: Request) -> str | dict | ChatCompletion:
-    # await verify_api_key(request.headers.get("authorization"))    
+    logger.warning(f"✅ limiter active: {limiter is not None}, app.state.limiter: {hasattr(app.state, 'limiter')}")   
     try:
         data = await request.json()
-        streaming = data.get("stream", True)
+        streaming_str = data.get("stream", True)
+        if isinstance(streaming_str, str):
+            streaming =False if streaming_str.lower() == "false" else True
         use_memory = True
         rewrite_question = False
-        for _,v in data.items():
-            if isinstance(v,dict):
-                if "memory" in v:
-                    use_memory_str = v.get("memory","True")
-                    if use_memory_str.lower() == "false":
-                        use_memory = False
-                if "rewrite" in v:
-                    rewrite_question_str = v.get("rewrite","False")
-                    if rewrite_question_str.lower() == "true":
-                        rewrite_question = True        
+    
         logger.info(f"Request data: {streaming=}")        
         # 验证必要字段
         if "messages" not in data:
@@ -147,15 +197,34 @@ async def chat_completions(request: Request) -> str | dict | ChatCompletion:
         kb_base_dict = get_kb_dict(kb_name)
         api_deployment_url = os.getenv("api_deployment_url")
 
-        user_info = data.get("metadata",None)
+        metadata = data.get("metadata",None)
         user_name_id = ''
-        if user_info:
+        if metadata:
             try:
-                user_name = user_info.get("userName") or user_info.get("username")
-                user_id = user_info.get("userId") or user_info.get("userid")
-                user_name_id = f'{user_name}({user_id})'
+                user_info = metadata.get("userInfo",{})  or metadata.get("userinfo",{})
+                if user_info:
+                    user_name = user_info.get("userName") or user_info.get("username")
+                    user_id = user_info.get("userId") or user_info.get("userid")
+                    user_name_id = f'{user_name}({user_id})'
+                use_memory_str = metadata.get("memory","True")
+                if use_memory_str.lower() == "false":
+                    use_memory = False
+                rewrite_question_str = metadata.get("rewrite","False")
+                if rewrite_question_str.lower() == "true":
+                    rewrite_question = True  
             except:
                 pass
+        else:
+            for _,v in data.items():
+                if isinstance(v,dict):
+                    if "memory" in v:
+                        use_memory_str = v.get("memory","True")
+                        if use_memory_str.lower() == "false":
+                            use_memory = False
+                    if "rewrite" in v:
+                        rewrite_question_str = v.get("rewrite","False")
+                        if rewrite_question_str.lower() == "true":
+                            rewrite_question = True    
 
         memory_thread_id = user_name_id
         # memory_thread_id = user_name_id or request.user.username
@@ -253,7 +322,7 @@ if __name__ == "__main__":
     uvicorn.run(
         app,
         host="0.0.0.0",
-        port=8600,
+        port=8601,
         log_level="debug",
         timeout_keep_alive=60
     )
