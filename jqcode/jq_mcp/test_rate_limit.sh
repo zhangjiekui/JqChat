@@ -44,7 +44,7 @@ echo
         }
     }'
 
-    for i in {1..3}; do
+    for i in {1..5}; do
         echo "[$(date '+%H:%M:%S')] 🔁 第 $i 次请求到 /v1/chat/completions"
         echo "----------------------------------------"
 
@@ -65,29 +65,30 @@ echo
     echo
 } | tee -a "$LOG_FILE"
 
+
 # ========== 测试 2: /v1/models (1/second 限流) ==========
-# {
-#     echo "🚀 开始测试 [1/second]: GET /v1/models"
-#     echo "=========================================="
-#     echo
+{
+    echo "🚀 开始测试 [1/second]: GET /v1/models"
+    echo "=========================================="
+    echo
 
-#     for i in {1..3}; do
-#         echo "[$(date '+%H:%M:%S')] 🔁 第 $i 次请求到 /v1/models"
-#         echo "----------------------------------------"
+    for i in {1..5}; do
+        echo "[$(date '+%H:%M:%S')] 🔁 第 $i 次请求到 /v1/models"
+        echo "----------------------------------------"
 
-#         curl -v --noproxy "*" -H "Authorization: $AUTH_TOKEN" \
-#              "http://$TARGET_HOST:$TARGET_PORT/v1/models" \
-#              2>&1 | tee -a "$LOG_FILE"
+        curl -v --noproxy "*" -H "Authorization: $AUTH_TOKEN" \
+             "http://$TARGET_HOST:$TARGET_PORT/v1/models" \
+             2>&1 | tee -a "$LOG_FILE"
 
-#         if [ $i -lt 3 ]; then
-#             sleep 0.1
-#         fi
-#     done
+        if [ $i -lt 3 ]; then
+            sleep 0.1
+        fi
+    done
 
-#     echo
-#     echo "✅ /v1/models 测试完成"
-#     echo
-# } | tee -a "$LOG_FILE"
+    echo
+    echo "✅ /v1/models 测试完成"
+    echo
+} | tee -a "$LOG_FILE"
 
 # ========== 汇总报告 ==========
 echo "📊 ===== 最终测试报告 =====" | tee -a "$LOG_FILE"
