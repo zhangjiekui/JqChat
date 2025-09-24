@@ -1,0 +1,102 @@
+# 运行容器
+# docker run -it yuyin2204ubuntu:v0.3 /bin/sh
+FROM ubuntu:22.04
+
+ENV DEBIAN_FRONTEND=noninteractive
+# 第一步：先安装 ca-certificates（使用 http 临时源或默认源）
+# 使用官方源（http 不需要证书验证）
+RUN sed -i 's|https://|http://|g' /etc/apt/sources.list && \
+    apt-get update && \
+    apt-get install -y ca-certificates && \
+    rm -rf /var/lib/apt/lists/*
+# 设置 apt 清华源
+RUN sed -i 's@http://.*archive.ubuntu.com@https://mirrors.tuna.tsinghua.edu.cn@g' /etc/apt/sources.list && \
+    sed -i 's@http://.*security.ubuntu.com@https://mirrors.tuna.tsinghua.edu.cn@g' /etc/apt/sources.list
+# 替换为阿里云源
+# RUN sed -i 's@http://.*archive.ubuntu.com@https://mirrors.aliyun.com@g' /etc/apt/sources.list && \
+#     sed -i 's@http://.*security.ubuntu.com@https://mirrors.aliyun.com@g' /etc/apt/sources.list
+
+ENV LANG=zh_CN.UTF-8
+ENV LC_ALL=zh_CN.UTF-8
+
+RUN apt-get update && \
+    apt-get install -y python3 python3-pip software-properties-common tzdata libsox-dev sox nano ffmpeg && \
+    # 安装中文字体和语言包
+    locales \
+    language-pack-zh-hans \
+    fonts-wqy-zenhei \
+    # 设置时区为上海
+    ln -sf /usr/share/zoneinfo/Asia/Shanghai /etc/localtime && \
+    echo "Asia/Shanghai" > /etc/timezone && \
+    dpkg-reconfigure -f noninteractive tzdata && \
+    rm -rf /var/lib/apt/lists/*
+# 生成 locale
+RUN locale-gen zh_CN.UTF-8
+# 编辑 ~/.bashrc 或 ~/.profile
+RUN echo 'export LANG=zh_CN.UTF-8' >> ~/.bashrc
+RUN echo 'export LC_ALL=zh_CN.UTF-8' >> ~/.bashrc
+RUN source ~/.bashrc
+
+# 👇 关键步骤：创建 python 和 pip 的软链接
+RUN ln -sf /usr/bin/python3 /usr/bin/python && \
+    ln -sf /usr/bin/pip3 /usr/bin/pip
+
+# 设置 pip 清华源
+RUN pip config set global.index-url https://pypi.tuna.tsinghua.edu.cn/simple
+
+RUN pip install --upgrade pip
+RUN pip install --upgrade setuptools
+RUN pip install --ignore-installed blinker
+RUN pip install paddlepaddle==2.6.0  paddlespeech==1.4.2 paddlespeech-ctcdecoders==0.2.0 
+RUN pip install fastapi uvicorn PyMySQL SQLAlchemy redis fleep soxbindings python-magic
+RUN pip install scipy==1.10.0 aistudio-sdk==0.2.6 dbutils
+
+# 创建项目目录
+WORKDIR /app
+# 复制应用代码
+COPY logger_middle ./logger_middle
+COPY logger_middle/nltk_data /root/nltk_data
+COPY logger_middle/models /root/
+
+# 👇 关键：声明容器监听的端口
+EXPOSE 9119
+# 启动命令
+# 设置工作目录为 logger_middle 所在路径，然后执行 main.py
+WORKDIR /app/logger_middle
+#之前的启动命令是 CMD ["python", "logger_middle/main.py"]，可能导致读取不到配置文件
+#可以通过以下方式覆盖
+# docker run -d --name yuyinlatest -p 9119:9119 --privileged yuyin2204ubuntu:latest sh -c "cd logger_middle && python main.py"
+# docker run -d --name yuyinlatest_final -p 9119:9119 --privileged yuyinlatest_final:latest sh -c "cd logger_middle && python main.py"
+CMD ["python", "main.py"]
+
+
+# 导出镜像
+# docker save -o dockeryuyin_final_zh.tar yuyin2204ubuntu:v0.3
+# 导入镜像 加载镜像
+# docker load -i dockeryuyin.tar
+# 运行容器
+# docker run -d --name yuyin -p 9119:9119 --privileged yuyin2204ubuntu:v0.3
+# 测试修改容器
+# docker run -it --name yuyin_debug yuyin2204ubuntu:v0.3 /bin/sh
+
+######################    latest     ######################
+# 导出镜像
+# docker save -o dockeryuyinlatest.tar yuyin2204ubuntu:latest
+# 导入镜像 加载镜像
+# docker load -i dockeryuyinlatest.tar
+# 运行容器
+# docker run -d --name yuyinlatest -p 9119:9119 --privileged yuyin2204ubuntu:latest
+# 测试修改容器
+# docker run -it --name yuyinlatest_debug_2 yuyin2204ubuntu:latest /bin/sh
+
+# docker cp yuyin_debug:/home/appuser/.paddlenlp /data/dockeryuyin/logger_middle/models/
+# docker cp yuyin_debug:/home/appuser/.paddlespeech /data/dockeryuyin/logger_middle/models/
+
+
+# docker commit yuyinlatest_final yuyin_final_zh:latest
+# docker run -d --name yuyin_final_zh2 -p 9121:9119 --privileged yuyin_final_zh:latest
+
+## 将容器保存为新的镜像
+# docker commit yuyin_final_zh3 yuyin_final_zh3:latest
+## 导出镜像
+# docker save -o docker_yuyin_final_zh_v10.tar yuyin_final_zh:v1.0

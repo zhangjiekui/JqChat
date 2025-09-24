@@ -1,0 +1,114 @@
+# 使用 Ubuntu 22.04 作为基础镜像
+FROM ubuntu:22.04
+
+# 设置非交互式环境变量，避免安装过程中弹出交互提示
+ENV DEBIAN_FRONTEND=noninteractive
+
+# 第一步：先安装 ca-certificates（使用 http 临时源或默认源）
+# 使用官方源（http 不需要证书验证）
+RUN sed -i 's|https://|http://|g' /etc/apt/sources.list && \
+    apt-get update && \
+    apt-get install -y ca-certificates && \
+    rm -rf /var/lib/apt/lists/*
+
+# 设置 apt 清华源 (或者选择阿里云源，见下方注释)
+RUN sed -i 's@http://.*archive.ubuntu.com@https://mirrors.tuna.tsinghua.edu.cn@g' /etc/apt/sources.list && \
+    sed -i 's@http://.*security.ubuntu.com@https://mirrors.tuna.tsinghua.edu.cn@g' /etc/apt/sources.list
+# 替换为阿里云源 (如果需要)
+# RUN sed -i 's@http://.*archive.ubuntu.com@https://mirrors.aliyun.com@g' /etc/apt/sources.list && \
+#     sed -i 's@http://.*security.ubuntu.com@https://mirrors.aliyun.com@g' /etc/apt/sources.list
+
+# 设置语言环境变量
+ENV LANG=zh_CN.UTF-8
+ENV LC_ALL=zh_CN.UTF-8
+
+# 第二步：安装所需软件包，包括修复 locale 相关的包
+# 关键修改 1: 将 'locales' 从命令行参数移动到 apt-get install 的软件包列表中
+RUN apt-get update && \
+    apt-get install -y \
+        python3 \
+        python3-pip \
+        software-properties-common \
+        tzdata \
+        libsox-dev \
+        sox \
+        nano \
+        ffmpeg \
+        # 关键修改 1: 正确安装 locales 包
+        locales \
+        # 安装中文字体和语言包
+        language-pack-zh-hans \
+        fonts-wqy-zenhei && \
+    # 设置时区为上海
+    ln -sf /usr/share/zoneinfo/Asia/Shanghai /etc/localtime && \
+    echo "Asia/Shanghai" > /etc/timezone && \
+    dpkg-reconfigure -f noninteractive tzdata && \
+    rm -rf /var/lib/apt/lists/*
+
+# 第三步：生成 locale
+# 关键修改 2: 确保 locales 包已安装后再运行 locale-gen
+RUN locale-gen zh_CN.UTF-8
+
+# 编辑 ~/.bashrc 或 ~/.profile (这步通常不是必须的，因为 ENV 已设置，但保留也无妨)
+RUN echo 'export LANG=zh_CN.UTF-8' >> ~/.bashrc && \
+    echo 'export LC_ALL=zh_CN.UTF-8' >> ~/.bashrc
+# 注意：Dockerfile 中的 source ~/.bashrc 在当前 RUN 层级不会影响后续 RUN 指令。
+# ENV 已经足够设置环境变量。
+
+# 👇 关键步骤：创建 python 和 pip 的软链接
+RUN ln -sf /usr/bin/python3 /usr/bin/python && \
+    ln -sf /usr/bin/pip3 /usr/bin/pip
+
+# 设置 pip 清华源 (注意检查清华源是否因流量被限制，可临时换源)
+RUN pip config set global.index-url https://pypi.tuna.tsinghua.edu.cn/simple
+# 如果遇到清华源限制，可临时使用阿里云源或其他源
+# RUN pip config set global.index-url https://mirrors.aliyun.com/pypi/simple
+
+# 升级 pip 和 setuptools
+RUN pip install --upgrade pip
+RUN pip install --upgrade setuptools
+
+# 安装 Python 依赖包
+# 注意：--ignore-installed blinker 通常用于解决依赖冲突，确保必要性
+RUN pip install --ignore-installed blinker
+RUN pip install paddlepaddle==2.6.0  paddlespeech==1.4.2 paddlespeech-ctcdecoders==0.2.0 
+# 分批安装大包，减少单次安装失败风险
+# RUN pip install paddlepaddle==2.6.0 
+# RUN pip install paddlespeech==1.4.2
+# RUN pip install paddlespeech-ctcdecoders==0.2.0
+RUN pip install fastapi uvicorn PyMySQL SQLAlchemy redis fleep soxbindings python-magic
+RUN pip install scipy==1.10.0 aistudio-sdk==0.2.6 dbutils
+RUN pip install gunicorn
+
+# 创建项目目录
+WORKDIR /app
+
+# 复制应用代码 (请确保构建上下文中有这些文件夹)
+COPY logger_middle ./logger_middle
+COPY logger_middle/nltk_data /root/nltk_data
+COPY logger_middle/models /root/
+
+# 👇 关键：声明容器监听的端口
+EXPOSE 9119
+
+# 设置工作目录为 logger_middle 所在路径
+WORKDIR /app/logger_middle
+
+# 启动命令
+# CMD ["python", "main.py"]
+
+# 使用 Gunicorn 启动应用，由 Gunicorn 管理多个 Uvicorn Worker 进程
+# -w 10: 启动 10 个 worker 进程
+# -k uvicorn.workers.UvicornWorker: 指定使用 Uvicorn Worker 类
+# --bind 0.0.0.0:9119: 绑定到容器的 9119 端口
+# --timeout 120: 设置请求超时时间为 120 秒 (可根据需要调整)
+# --keep-alive 5: 设置 Keep-Alive 时间为 5 秒 (可根据需要调整)
+# --max-requests 1000: worker 处理 1000 个请求后重启，有助于防止内存泄漏 (可根据需要调整)
+# --max-requests-jitter 100: 为 max-requests 添加抖动，避免所有 worker 同时重启 (可根据需要调整)
+# --access-logfile '-' --error-logfile '-': 将日志输出到标准输出/错误，方便 Docker 管理
+# main:app: 指定 ASGI 应用 (模块名:变量名)
+CMD ["gunicorn", "-w", "10", "-k", "uvicorn.workers.UvicornWorker", "--bind", "0.0.0.0:9119", "--timeout", "120", "--keep-alive", "5", "--max-requests", "1000", "--max-requests-jitter", "100", "--access-logfile", "-", "--error-logfile", "-", "main:app"]
+
+
+# 导出镜像
+# docker save -o dockeryuyin_final_zh_v1.2.tar yuyin2204ubuntu_zh:v1.2

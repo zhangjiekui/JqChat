@@ -69,6 +69,7 @@ def optional_limiter(limit_str: str):
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
+    allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
     expose_headers=["Content-Type", "Cache-Control"],  # 暴露流式响应必需头部
@@ -112,9 +113,11 @@ async def monitor_rate_limit(request: Request, call_next):
 # 验证中间件
 @app.middleware("http")
 async def validate_request(request: Request, call_next): 
+    if request.method == "OPTIONS":
+        return await call_next(request)
     try:
         # 验证内容类型(针对POST/PUT)
-        if request.method in ("POST", "PUT") and \
+        if request.method in ("POST","GET", "PUT") and \
            "content-type" not in request.headers:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
@@ -233,14 +236,15 @@ async def chat_completions(request: Request) -> str | dict | ChatCompletion:
             chat_bot = GraphAgent(kb_base_dict=kb_base_dict,user_request_url=api_deployment_url,memory_thread_id=memory_thread_id,allow_conversation_memory=use_memory,allow_question_rewrite=rewrite_question)
         else:
             chat_bot = GraphAgent(kb_base_dict=kb_base_dict,user_request_url=api_deployment_url,allow_question_rewrite=rewrite_question)
-        query = data["messages"][-1].get("content")
+        query = data["messages"][-1].get("content", "") or data["messages"][-1].get("text", "")
         while not isinstance(query, str):
             if isinstance(query, dict) and "text" in query:
                 query = query["text"]
             if isinstance(query, list) and len(query) > 0:
                 query = query[-1].get("text")
             else:
-                logger.warning(f"Invalid query type:{type(query)}")
+                logger.warning(f"Invalid query type {type(query)=} or content: {query=}")
+                query = "警告！为获取到有效的提问内容，请检查！"
                 pass
 
         t1 = ThreadWithResult(target=chat, args=(chat_bot,query,False))

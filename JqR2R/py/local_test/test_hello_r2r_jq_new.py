@@ -4,7 +4,7 @@ def r2r_test():
     print("R2R服务测试--------请首先启动R2R服务--------")
     from r2r import R2RClient
     client = R2RClient(base_url='http://10.1.150.105:7272') # can set remote w/ R2RClient(base_url=...)
-    client.users.login("admin@example.com", "change_me_immediately")
+    client.users.login("admin@example.com", "admin@123456")
     try:
         doc=client.documents.create(file_path="/data/projects/JqChatV2/JqChat/PPQA000_质量保证过程.docx")
         print(doc)

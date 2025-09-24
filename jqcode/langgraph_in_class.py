@@ -529,7 +529,7 @@ class GraphAgent:
             self.r2r_client = r2r_client
             logger.warning("self.r2r_client初始化成功")
             # logger.warning("self.r2r_client初始化:测试，放弃使用r2r_client")
-            self.r2r_client = None
+            # self.r2r_client = None
         except ImportError as e:
             logger.error(f"Failed to import r2r:{e}"            )
             logger.error("To run the server, install the required dependencies: pip install 'r2r[core]'")
@@ -2197,7 +2197,7 @@ if __name__ == "__main__":
     # response = test_jqchat_service()
     # print(response)
     # pass
-    user_questions=['请绘制cos(x)曲线']
+    user_questions=[['请检索知识库，然后回答晶奇公司质量保证过程中的角色及角色的职责或含义解释，对应的人员（姓名）有哪些?其中的批准人是谁？']]
     for user_question in user_questions:
         if user_question == '请绘制sin(x)曲线':
             pass

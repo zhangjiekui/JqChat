@@ -359,10 +359,11 @@ class JqXinferenceReranker(BaseDocumentCompressor):
                 passages.append(passage.replace('\n', ' '))
                 valid_doc_list.append(d)
         
-        if isinstance(query, list):
-            logger.warning("query is not a string, only customed Qwen Reranker support List(query:str).please check your input")
+        if isinstance(query, list):            
             if "Qwen" not in self._model._model_uid:
-                logger.warning("Not Qwen Reranker, only use the first query in the list:query = query[0]")
+                if len(query)>1:
+                    logger.warning("query is not a string, only customed Qwen Reranker support List(query:str).please check your input")
+                    logger.warning(f"Not Qwen Reranker, only use the first query in the list:query = query[0]，But got {len(query)=} queries")
                 query = query[0]
                 assert isinstance(query, str), f"Not Qwen Reranker, assert query should be a string, but got {type(query)}"        
         
