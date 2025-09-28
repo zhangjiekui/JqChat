@@ -108,6 +108,10 @@ const messageStyles = {
         format: 'wav',
         files: { acceptedFormats: '.wav' },
       }"
+      :microphone="{
+        format: 'wav',
+        button: { position: 'inside-left' },
+      }"
       :remarkable="remarkable"
       :directconnection="{
         openAI: {
