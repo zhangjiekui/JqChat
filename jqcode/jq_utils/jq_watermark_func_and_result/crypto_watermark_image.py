@@ -247,7 +247,7 @@ class ImageWatermark:
 
 if __name__ == "__main__":
     # 测试代码   
-    validate_image = fr"/data/projects/JqChatV2/JqChat/jqcode/jq_utils/jq_watermark_func_and_result/图片/QQ_test_with_text_watermark_and_metadata.png"
+    validate_image = fr"/data/projects/JqChatV2/JqChat/jqcode/jq_utils/jq_watermark_func_and_result/图片/8501.png"
     wm = ImageWatermark()
     wm.validate_image(validate_image)
 

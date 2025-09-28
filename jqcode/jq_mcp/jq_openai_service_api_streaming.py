@@ -20,9 +20,10 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 # 有效API Key集合
-VALID_API_KEYS = {"","abc123"}  # 替换为实际密钥
+VALID_API_KEYS = {"","abc123","sk-0S7bV3oaznhuevN899Db0cDa20Ae4c5485Ce5862A86063C8"}  # 替换为实际密钥
 BY_PASS_VALIDATING = False
 default_kb_name = "zjk_jqesclient_reader_test_768im"
+default_kb_name = "default"
 default_kb_description = "关于安徽晶奇网络科技股份有限公司（简称晶奇公司），以及医疗卫生、医疗健康、医疗服务、医疗政策、民政养老、社会救助、低保、低收入人口认定、退伍军人、优待抚恤等领域的政策文件、信息化产品、建设方案、技术文档等等方面的文档知识库。 \n凡是涉及安徽晶奇网络科技股份有限公司及以上领域相关的问题，或者是用户提及检索知识库或vectorstore时，都必须使用vectorstore工具。"
 metastore = JqElasticsearchUniMetaStore()
 def get_kbs() -> List[dict]:
@@ -327,7 +328,7 @@ if __name__ == "__main__":
     uvicorn.run(
         app,
         host="0.0.0.0",
-        port=8601,
+        port=8600,
         log_level="debug",
         timeout_keep_alive=60
     )

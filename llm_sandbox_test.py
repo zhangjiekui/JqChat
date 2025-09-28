@@ -50,7 +50,7 @@ plt.show()
 # output_path = "/data/projects/JqChatV2/workspace/code/ema_comparison.png"
 output_path = "ema_comparison.png"
 plt.savefig(output_path, bbox_inches='tight')
-print(f'<a href="http://10.1.150.105:7861/workspace/download?file={output_path.split("/")[-1]}">下载文件</a>')
+# print(f'<a href="http://10.1.150.105:7861/workspace/download?file={output_path.split("/")[-1]}">下载文件</a>')
 
 '''
 

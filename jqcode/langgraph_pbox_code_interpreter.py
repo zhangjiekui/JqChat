@@ -66,7 +66,10 @@ plt.grid(True, linestyle='--', alpha=0.6)
 # 保存图像
 output_path = "/data/projects/JqChatV2/workspace/code/ema_comparison.png"
 plt.savefig(output_path, bbox_inches='tight')
-print(f'<a href="http://10.1.150.105:7861/workspace/download?file={output_path.split("/")[-1]}">下载文件</a>')
+plt.savefig(output_path+"1", bbox_inches='tight')
+print(f'图像已保存到 {output_path}')
+print(f'图像已保存到 {output_path}+"1"')
+# print(f'<a href="http://10.1.150.105:7861/workspace/download?file={output_path.split("/")[-1]}">下载文件</a>')
 
 '''
 result = csb_manager.execute_code (

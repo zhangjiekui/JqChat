@@ -1,4 +1,10 @@
 **du -h --max-depth=1 / | sort -rh**
+
+## bytedance/SandboxFusion 支持多种语言
+https://github.com/bytedance/SandboxFusion
+docker run -it -p 3080:8080 --name bytedancesandbox vemlp-cn-beijing.cr.volces.com/preset-images/code-sandbox:server-20250609
+
+
 ## maxkb v1
 docker run --name=maxkbv1 --restart=always -p 9090:8080 -v ~/.maxkbv1:/opt/maxkbv1 1panel/maxkb:v1.10.9-lts
 
@@ -505,22 +511,30 @@ CUDA_VISIBLE_DEVICES=0 ./llama.cpp/llama-cli \
 ```
 ## vllm8.2 配合使用 OneAPI
 
-```
 workon vllmb
 CUDA_VISIBLE_DEVICES=2,3 VLLM_ALLOW_ENGINE_USE_RAY=1 LMCACHE_USE_EXPERIMENTAL=True LMCACHE_LOCAL_CPU=True LMCACHE_MAX_LOCAL_CPU_SIZE=5.0 LM_CACHE_LOCAL_DEVICE=cpu nohup vllm serve /data/models/Qwen/Qwen2___5-VL-32B-Instruct-AWQ --served-model-name qwenvl --enable-auto-tool-choice --tool-call-parser hermes --gpu-memory-utilization 0.80 --port 9996 --host 0.0.0.0 --limit-mm-per-prompt image=5,video=5 --max-model-len 32768 --tensor-parallel-size 2 --max-num-seqs 16 --enable-prefix-caching --enable-chunked-prefill=False --kv-transfer-config '{"kv_connector":"LMCacheConnector", "kv_role":"kv_both", "kv_buffer_device":"cpu","kv_buffer_size":1000000000.0}' >> /root/JqLogs/vllmvl.log 2>&1 &
 tail -f /root/JqLogs/vllmvl.log 
 ```
-```
-workon vllmb
-CUDA_VISIBLE_DEVICES=2,3 VLLM_ALLOW_ENGINE_USE_RAY=1 LMCACHE_USE_EXPERIMENTAL=True LMCACHE_LOCAL_CPU=True LMCACHE_MAX_LOCAL_CPU_SIZE=20.0 nohup vllm serve /data/models/Qwen/Qwen2___5-VL-32B-Instruct-AWQ --served-model-name qwenvl --enable-auto-tool-choice --tool-call-parser hermes --gpu-memory-utilization 0.90 --port 9996 --host 0.0.0.0 --limit-mm-per-prompt image=5,video=5 --max-model-len 32768  --tensor-parallel-size 2 --max-num-seqs 32 --enable-prefix-caching --enable-chunked-prefill  >> /root/JqLogs/vllmvl.log 2>&1 &
-tail -f /root/JqLogs/vllmvl.log 
-```
 ### 模型部署
-``` qwen25qwq gpu0_1
-workon vllmb
-VLLM_ATTENTION_BACKEND=FLASHINFER CUDA_VISIBLE_DEVICES=0,1 nohup vllm serve /data/models/Qwen/QwQ-32B-AWQ/ --served-model-name qwen25qwq --enable-auto-tool-choice --tool-call-parser hermes --enable-reasoning --reasoning-parser deepseek_r1 --host 0.0.0.0 --port 9998 --max-model-len 32768 --tensor-parallel-size 2 --gpu-memory-utilization 0.95 --max-num-seqs 64 --enable-prefix-caching --enable-chunked-prefill --kv_cache_dtype fp8 >> /root/JqLogs/qwq.log 2>&1 &
-tail -f /root/JqLogs/qwq.log
+#### jqagent
 ```
+workon test
+cd /data/projects/JqChatV2/JqChat/JqR2R/py
+nohup python /data/projects/JqChatV2/JqChat/jqcode/jq_mcp/jq_openai_service_api_streaming.py >> /root/JqLogs/jqmcp.log 2>&1 &
+tail -f /root/JqLogs/jqmcp.log
+```
+#### qwen2.5 Omni gpu0
+https://github.com/QwenLM/Qwen2.5-Omni?spm=a2ty_o01.29997173.0.0.638dc921nqocE5&file=Qwen2.5-Omni#-docker
+
+```
+docker run --gpus '"device=0"' --ipc=host --network=host --rm --name omni -v /data/models/Qwen/:/data/models/Qwen/   -it qwenllm/qwen-omni:2.5-cu121 bash
+bash docker/docker_web_demo.sh --checkpoint /data/models/Qwen/Qwen2___5-Omni-3B --flash-attn2
+```
+```
+workon vllmb
+CUDA_VISIBLE_DEVICES=0 vllm serve /data/models/Qwen/Qwen2___5-Omni-3B --served-model-name omni --gpu-memory-utilization 0.9 --host 0.0.0.0 --port 7600
+```
+#### Qwen3-30B-A3B-FP8 gpu2_3
 ``` Qwen3-30B-A3B-FP8 gpu2_3
 [py3.10]pip install /root/flash_attn-2.8.0.post2+cu12torch2.7cxx11abiFALSE-cp310-cp310-linux_x86_64.whl
 [py3.11]pip install /root/flash_attn-2.8.0.post2+cu12torch2.7cxx11abiTRUE-cp311-cp311-linux_x86_64.whl
@@ -537,7 +551,9 @@ cd dist
 pip install pip install flashinfer_python-0.2.6.post1-cp39-abi3-linux_x86_64.whl
 [当前0.9.1有问题 Failed to check the "should dump" flag on TCPStore]
 pip install -U vllm --pre --extra-index-url https://wheels.vllm.ai/nightly
+```
 
+```
 workon vllmb
 CUDA_VISIBLE_DEVICES=2,3 nohup vllm serve /data/models/Qwen/Qwen3-30B-A3B-Instruct-2507-FP8 \
 --served-model-name qwen3 \
@@ -570,6 +586,7 @@ CUDA_VISIBLE_DEVICES=2,3 nohup vllm serve /data/models/Qwen/Qwen3-30B-A3B-FP8 \
 --enable-prefix-caching >> /root/JqLogs/qwq.log 2>&1 &
 tail -f /root/JqLogs/qwq.log
 ```
+```
 workon vllmb
 CUDA_VISIBLE_DEVICES=2,3 nohup vllm serve /data/models/Qwen/Qwen3-30B-A3B-Thinking-2507-FP8 \
 --served-model-name qwen3 \
@@ -588,45 +605,6 @@ tail -f /root/JqLogs/qwq.log
 
 
 /data/models/Qwen3-30B-A3B-Thinking-2507-AWQ
-
-
-
-CUDA_VISIBLE_DEVICES=2,3 vllm serve /data/models/swift/QwenLong-L1-32B-AWQ
-CUDA_VISIBLE_DEVICES=0,1 vllm serve /data/models/PPDocBee2-3B/PPDocBee2-3B --tensor-parallel-size 2 --max-model-len 32768 --max_seq_len 4096
-
-``` QwenLong-L1-32B-AWQ gpu2_3_131072 
-workon vllmb
-CUDA_VISIBLE_DEVICES=2,3 nohup vllm serve /data/models/swift/QwenLong-L1-32B-AWQ \
---served-model-name qwenlong \
---tensor-parallel-size 2 \
---enable-chunked-prefill \
---enable-reasoning --reasoning-parser deepseek_r1 \
---enable-auto-tool-choice \
---tool-call-parser hermes \
---rope-scaling '{"rope_type":"yarn","factor":4.0,"original_max_position_embeddings":32768}' \
---max-model-len 131072 \
---gpu-memory-utilization 0.98 \
---max-num-seqs 8 \
---host 0.0.0.0 --port 9998 \
---enable-prefix-caching >> /root/JqLogs/qwq.log 2>&1 &
-tail -f /root/JqLogs/qwq.log
-```
-``` QwenLong-L1-32B-AWQ gpu2_3_64000
-workon vllmb
-CUDA_VISIBLE_DEVICES=2,3 nohup vllm serve /data/models/swift/QwenLong-L1-32B-AWQ \
---served-model-name qwenlong \
---tensor-parallel-size 2 \
---enable-chunked-prefill \
---enable-reasoning --reasoning-parser deepseek_r1 \
---enable-auto-tool-choice \
---tool-call-parser hermes \
---rope-scaling '{"rope_type":"yarn","factor":2.0,"original_max_position_embeddings":32768}' \
---max-model-len 64000 \
---gpu-memory-utilization 0.85 \
---max-num-seqs 32 \
---host 0.0.0.0 --port 9998 \
---enable-prefix-caching >> /root/JqLogs/qwq.log 2>&1 &
-tail -f /root/JqLogs/qwq.log
 ```
 
 
@@ -641,125 +619,18 @@ workon vllm
 CUDA_VISIBLE_DEVICES=2,3 VLLM_USE_V1=1 nohup vllm serve /data/models/Qwen/Qwen2___5-VL-32B-Instruct-AWQ --served-model-name qwenvl --enable-auto-tool-choice --tool-call-parser hermes --gpu-memory-utilization 0.85 --port 9996 --host 0.0.0.0 --limit-mm-per-prompt image=5,video=5 --max-model-len 32768  --tensor-parallel-size 2 --max-num-seqs 16 --enable-prefix-caching --enable-chunked-prefill >> /root/JqLogs/vllmvl.log 2>&1 &
 tail -f /root/JqLogs/vllmvl.log 
 ```
-
+#### qwen2.5 VL7B gpu1
 ``` **qwenvl gpu2** 
 vllmv0.9.1
 flash_attn 2.8.0.post2
 flashinfer-python 0.2.3         /root/flashinfer
 
-【7B VL】
 workon sl
 workon vllmb
 CUDA_VISIBLE_DEVICES=1 VLLM_ALLOW_ENGINE_USE_RAY=1 nohup vllm serve /data/models/Qwen/Qwen2___5-VL-7B-Instruct-AWQ --served-model-name qwenvl --enable-auto-tool-choice --tool-call-parser hermes --gpu-memory-utilization 0.98 --port 8000 --host 0.0.0.0 --limit-mm-per-prompt image=5,video=5 --max-model-len 32768  --max-num-seqs 32 --enable-prefix-caching --enable-chunked-prefill >> /root/JqLogs/vllmvl.log 2>&1 &
 tail -f /root/JqLogs/vllmvl.log 
 ```
 
-``` **qwenvl gpu0,1** vllmv0.9.1[实际推理速度更慢]
-workon vllm2
-CUDA_VISIBLE_DEVICES=0,1 VLLM_ALLOW_ENGINE_USE_RAY=1 nohup vllm serve /data/models/Qwen/Qwen2___5-VL-7B-Instruct-AWQ --served-model-name qwenvl --enable-auto-tool-choice --tool-call-parser hermes --gpu-memory-utilization 0.98 --port 8000 --host 0.0.0.0 --limit-mm-per-prompt image=5,video=5 --max-model-len 32768  --tensor-parallel-size 2 --max-num-seqs 32 --enable-prefix-caching --enable-chunked-prefill >> /root/JqLogs/vllmvl.log 2>&1 &
-tail -f /root/JqLogs/vllmvl.log 
-```
-
-``` qwenvl gpu2_3
-workon vllmb
-CUDA_VISIBLE_DEVICES=2,3 VLLM_ALLOW_ENGINE_USE_RAY=1 nohup vllm serve /data/models/mlx-community/Qwen2___5-VL-32B-Instruct-4bit --served-model-name qwenvl --enable-auto-tool-choice --tool-call-parser hermes --gpu-memory-utilization 0.98 --port 8000 --host 0.0.0.0 --limit-mm-per-prompt image=5,video=5 --max-model-len 32768 --tensor-parallel-size 2 --max-num-seqs 16 --enable-prefix-caching --enable-chunked-prefill >> /root/JqLogs/vllmvl.log 2>&1 &
-tail -f /root/JqLogs/vllmvl.log 
-```
-
-
-
-``` qwen25b32 gpu3
-workon vllmb 
-CUDA_VISIBLE_DEVICES=3 nohup vllm serve /data/xinference/modelscope/hub/qwen/Qwen2.5-32B-Instruct-AWQ --served-model-name qwen25b32 --enable-auto-tool-choice --tool-call-parser hermes --host 0.0.0.0 --port 9997 --max-model-len 8000 --tensor-parallel-size 1 --use_v2_block_manager --gpu-memory-utilization 0.97 --max-num-seqs 32 --enable-prefix-caching --enable-chunked-prefill --kv_cache_dtype fp8 >> /root/JqLogs/Qwen25B32.log 2>&1 &
-tail -f /root/JqLogs/Qwen25B32.log
-```
-
-```
-长度能跑到60000 --max-model-len 60000
-PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True
-VLLM_ATTENTION_BACKEND=FLASHINFER
---kv_cache_dtype fp8 \
-workon vllmb 
-VLLM_ATTENTION_BACKEND=FLASHINFER CUDA_VISIBLE_DEVICES=0,1 nohup vllm serve /data/models/graelo/Qwen2___5-14B-Instruct-1M-AWQ \
-  --tensor-parallel-size 2 \
-  --max-model-len 60000 \
-  --enable-chunked-prefill \
-  --enable-prefix-caching \
-  --max-num-batched-tokens 131072 \
-  --max-num-seqs 128 \
-  --served-model-name qwen25m1 \
-  --gpu-memory-utilization 0.98 \
-  --host 0.0.0.0 \
-  --port 9999 \
-  --enable-auto-tool-choice \
-  --tool-call-parser hermes \
-  --kv_cache_dtype fp8 \
-  >> /root/JqLogs/qwen25m1.log 2>&1 &
-  tail -f /root/JqLogs/qwen25m1.log
-
-
-下面的长度能跑60000失败 --max-model-len 60000
-workon vllmb 
-CUDA_VISIBLE_DEVICES=0,1 nohup vllm serve /data/models/graelo/Qwen2___5-14B-Instruct-1M-AWQ \
-  --tensor-parallel-size 2 \
-  --max-model-len 50000 \
-  --enable-chunked-prefill \
-  --enable-prefix-caching \
-  --max-num-batched-tokens 131072 \
-  --max-num-seqs 128 \
-  --served-model-name qwen25m1 \
-  --gpu-memory-utilization 0.98 \
-  --host 0.0.0.0 \
-  --port 9999 \
-  --enable-auto-tool-choice \
-  --tool-call-parser hermes \
-  >> /root/JqLogs/qwen25m1.log 2>&1 &
-  tail -f /root/JqLogs/qwen25m1.log
-
-
-
-
-
-
-
-
-workon vllmb 
-<!-- CUDA_VISIBLE_DEVICES=0,1 nohup vllm serve /data/models/Qwen/Qwen2___5-7B-Instruct-1M \ -->
-workon vllmb 
-CUDA_VISIBLE_DEVICES=0,1 vllm serve /data/models/Qwen/Qwen2___5-7B-Instruct-1M \
-  --tensor-parallel-size 2 \
-  --max-model-len 100000 \
-  --enable-chunked-prefill \
-  --enable-prefix-caching \
-  --max-num-batched-tokens 40000 \
-  --max-num-seqs 128 \
-  --served-model-name qwen25m1 \
-  --gpu-memory-utilization 0.98 \
-  --enforce-eager \
-  --host 0.0.0.0 \
-  --port 9999 \
-  --enable-auto-tool-choice \
-  --tool-call-parser hermes \
-  >> /root/JqLogs/qwen25m1.log 2>&1 &
-  tail -f /root/JqLogs/qwen25m1.log
-```
-
-```
-workon vllmb 
-CUDA_VISIBLE_DEVICES=3 vllm serve /data/models/Qwen/Qwen2___5-7B-Instruct-1M \
-  --tensor-parallel-size 1 \
-  --max-model-len 32768 \
-  --enable-chunked-prefill \
-  --enable-prefix-caching \
-  --max-num-batched-tokens 3200 \
-  --max-num-seqs 128 \
-  --served-model-name qwen25m1 \
-  --enforce-eager \
-  --host 0.0.0.0 \
-  --port 9999 \
-  >> /root/JqLogs/qwen25m1.log 2>&1 &
-  tail -f /root/JqLogs/qwen25m1.log
-```
 
 ### OneAPI 配置
 登录信息
