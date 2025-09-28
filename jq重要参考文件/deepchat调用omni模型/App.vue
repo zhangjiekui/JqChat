@@ -103,13 +103,17 @@ const messageStyles = {
       v-if="!loading"
       images="true"
       camera="true"
-      mixedFiles="false"
+      :mixedFiles="{
+        maxNumberOfFiles: 3,
+        files: { acceptedFormats: '.txt, .pdf,.doc,.docx' },
+      }"
       :audio="{
         format: 'wav',
         files: { acceptedFormats: '.wav' },
       }"
       :microphone="{
         format: 'wav',
+        files: { acceptedFormats: '.wav' },
         button: { position: 'inside-left' },
       }"
       :remarkable="remarkable"

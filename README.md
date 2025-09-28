@@ -527,12 +527,24 @@ tail -f /root/JqLogs/jqmcp.log
 https://github.com/QwenLM/Qwen2.5-Omni?spm=a2ty_o01.29997173.0.0.638dc921nqocE5&file=Qwen2.5-Omni#-docker
 
 ```
-docker run --gpus '"device=0"' --ipc=host --network=host --rm --name omni -v /data/models/Qwen/:/data/models/Qwen/   -it qwenllm/qwen-omni:2.5-cu121 bash
+docker run --gpus '"device=0"' --ipc=host --network=host --rm -p 7600:7600 --name omni -v /data/models/Qwen/:/data/models/Qwen/   -it qwenllm/qwen-omni:2.5-cu121 bash
+
+sudo docker run --gpus '"device=0"' -d --restart always --name omni \
+    -v /var/run/docker.sock:/var/run/docker.sock -p 7600:7600 \
+    --mount type=bind,source=/data/models/Qwen/Qwen2___5-Omni-3B,target=/data/shared/Qwen/Qwen2.5-Omni-3B \
+    -it qwenllm/qwen-omni:2.5-cu121
+
+
+vllm serve /data/shared/Qwen/Qwen2.5-Omni-3B --served-model-name omni --gpu-memory-utilization 0.9 --host 0.0.0.0 --port 7600
+
 bash docker/docker_web_demo.sh --checkpoint /data/models/Qwen/Qwen2___5-Omni-3B --flash-attn2
 ```
 ```
+<!-- --mm-processor-kwargs '{"use_audio_in_video": true}'  暂不支持启动时使用 https://github.com/vllm-project/vllm/pull/15130-->
+<!-- 使用定制的vllm https://github.com/QwenLM/Qwen2.5-Omni?tab=readme-ov-file#deployment-with-vllm -->
 workon vllmb
-CUDA_VISIBLE_DEVICES=0 vllm serve /data/models/Qwen/Qwen2___5-Omni-3B --served-model-name omni --gpu-memory-utilization 0.9 --host 0.0.0.0 --port 7600
+VLLM_USE_V1=1 CUDA_VISIBLE_DEVICES=0 nohup vllm serve /data/models/Qwen/Qwen2___5-Omni-3B --served-model-name omni --mm-processor-kwargs '{"use_audio_in_video": false}' --gpu-memory-utilization 0.9  --host 0.0.0.0 --port 7600  >> /root/JqLogs/omni.log 2>&1 &
+tail -f /root/JqLogs/omni.log
 ```
 #### Qwen3-30B-A3B-FP8 gpu2_3
 ``` Qwen3-30B-A3B-FP8 gpu2_3

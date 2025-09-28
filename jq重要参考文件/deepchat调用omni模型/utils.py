@@ -76,63 +76,65 @@ class MediaConnector:
         try:
             result = media_io.load_base64(media_type, data)
             print("===============vllm默认方法===================")
-            print(f"音频类型:{media_type}")
-            print(f"vllm默认方法返回的正确结果result[0:100]:{result[0:100]}")
+            print(f"媒体类型:{media_type}")
             print("==================================")
             return result
         except Exception as e:
-            # convert to ValueError to be properly caught upstream
-            print("==================================")
-            print(f"失败：/root/.virtualenvs/vllmb/lib/python3.11/site-packages/vllm/multimodal/utils.py media_io.load_base64 ")
-            print(f"错误详情:{e}")
-            print("尝试自定义的FFmpeg方法修正音频数据")
-            print(f"{media_type}=")
-            # print(f"{data}=")
-            print("==================================")
-            # 构建 FFmpeg 命令
-            import subprocess
-            import base64
-            audio_data = base64.b64decode(data)
-            args = [
-                'ffmpeg',
-                '-hide_banner',
-                '-loglevel', 'error',
-                '-i', '-',  # 输入从 stdin
-                '-ar', '16000',  # 采样率 16kHz
-                '-ac', '1',  # 单声道
-                '-acodec', 'pcm_s16le',  # PCM 16位小端格式
-                '-f', 'wav',  # 强制输出格式为 WAV, 参数顺序：将 -ar, -ac, -acodec 放在 -f 之前
-                '-y',  # 覆盖输出（虽然对 stdout 没有实际作用，但更明确）
-                # '-fflags', '+bitexact',  # 确保一致的输出, 但可能会引起问题
-                '-'  # 输出到 stdout
-            ]
-            
-            # 执行转换
-            p = subprocess.Popen(args, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-            wav_data, stderr = p.communicate(input=audio_data)
-            if p.returncode != 0:
-                error_msg = stderr.decode() if stderr else "未知错误"
-                return {"code": 500, "message": "音频转换失败", "error": error_msg}
-            
-            # 验证输出数据
-            if not wav_data:
-                return {"code": 500, "message": "转换后没有生成音频数据"}
-            
-            # 验证 WAV 格式
-            if len(wav_data) < 44:
-                return {"code": 500, "message": "生成的 WAV 数据不完整"}
-            
-            # 检查 WAV 头
-            if not wav_data.startswith(b'RIFF'):
-                return {"code": 500, "message": "生成的数据不是有效的 WAV 格式"}
-            data = base64.b64encode(wav_data)
-            result = media_io.load_base64(media_type, data)
-            print("===============经修正音频数据，再调用vllm默认方法===================")
-            print(f"音频类型:{media_type}")
-            print(f"经修正音频数据，再调用vllm默认方法，返回的正确结果result[0:100]:{result[0:100]}")
-            print("==================================")
-            return result
-
+            if 'wav' in media_type or 'mp3' in media_type:
+                # convert to ValueError to be properly caught upstream
+                print("==================================")
+                print(f"失败：/root/.virtualenvs/vllmb/lib/python3.11/site-packages/vllm/multimodal/utils.py media_io.load_base64 ")
+                print(f"错误详情:{e}")
+                print("尝试自定义的FFmpeg方法修正音频数据")
+                print(f"{media_type=}")
+                # print(f"{data}=")
+                print("==================================")
+                # 构建 FFmpeg 命令
+                import subprocess
+                import base64
+                audio_data = base64.b64decode(data)
+                args = [
+                    'ffmpeg',
+                    '-hide_banner',
+                    '-loglevel', 'error',
+                    '-i', '-',  # 输入从 stdin
+                    '-ar', '16000',  # 采样率 16kHz
+                    '-ac', '1',  # 单声道
+                    '-acodec', 'pcm_s16le',  # PCM 16位小端格式
+                    '-f', 'wav',  # 强制输出格式为 WAV, 参数顺序：将 -ar, -ac, -acodec 放在 -f 之前
+                    '-y',  # 覆盖输出（虽然对 stdout 没有实际作用，但更明确）
+                    # '-fflags', '+bitexact',  # 确保一致的输出, 但可能会引起问题
+                    '-'  # 输出到 stdout
+                ]
+                
+                # 执行转换
+                p = subprocess.Popen(args, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+                wav_data, stderr = p.communicate(input=audio_data)
+                if p.returncode != 0:
+                    error_msg = stderr.decode() if stderr else "未知错误"
+                    return {"code": 500, "message": "音频转换失败", "error": error_msg}
+                
+                # 验证输出数据
+                if not wav_data:
+                    return {"code": 500, "message": "转换后没有生成音频数据"}
+                
+                # 验证 WAV 格式
+                if len(wav_data) < 44:
+                    return {"code": 500, "message": "生成的 WAV 数据不完整"}
+                
+                # 检查 WAV 头
+                if not wav_data.startswith(b'RIFF'):
+                    return {"code": 500, "message": "生成的数据不是有效的 WAV 格式"}
+                data = base64.b64encode(wav_data)
+                result = media_io.load_base64(media_type, data)
+                print("===============经修正音频数据，再调用vllm默认方法===================")
+                print(f"音频类型:{media_type}")
+                print(f"经修正音频数据，再调用vllm默认方法，返回的正确结果result[0:100]:{result[0:100]}")
+                print("==================================")
+                return result
+            else:
+                print("===========不是'wav音频文件，跳过'=======================")
+                raise e
     def _load_file_url(
         self,
         url_spec: ParseResult,
