@@ -86,7 +86,7 @@ class AioSandbox:
     def call(self, code:str="print('hello world!')", lang="python"):
         return self.exec_python_or_js_code(code = code, lang = lang)
     # run code in the sandbox
-    def exec_python_or_js_code(self, code:str="print('hello world!')", lang="python"):
+    def exec_python_or_js_code(self, code:str="print('python: hello world!')", lang="python"):
         status = False
         text = ""
         image = ""
@@ -129,6 +129,7 @@ code_executor_in_sandbox = AioSandbox()
 if __name__ == "__main__":
     sandbox = AioSandbox()
     print(sandbox.exec_python_or_js_code())
+    print(sandbox.exec_python_or_js_code(code="console.log('javascript: hello world!')", lang="javascript"))
     # print(sandbox.read_file_content())
     # print(sandbox.exec_shell_command())
     print("============================================================================")
@@ -179,8 +180,26 @@ if __name__ == "__main__":
 
 # 修改镜像，安装Python包
     # docker run -it --rm --entrypoint /bin/bash enterprise-public-cn-beijing.cr.volces.com/vefaas-public/all-in-one-sandbox:1.0.0.125
+    # pip config set global.index-url https://mirrors.aliyun.com/pypi/simple/  #https://pypi.tuna.tsinghua.edu.cn/simple
     # /opt/python3.12/bin/pip list
     # /opt/python3.12/bin/pip install plotly seaborn
+    # mv /etc/apt/sources.list  /etc/apt/sources.list.bak
+    # nano /etc/apt/sources.list
+"""
+    # 默认注释了源码镜像以提高 apt update 速度，如有需要可取消注释
+        deb https://mirrors.tuna.tsinghua.edu.cn/ubuntu/ jammy main restricted universe multiverse
+        # deb-src https://mirrors.tuna.tsinghua.edu.cn/ubuntu/ jammy main restricted universe multiverse
+
+        deb https://mirrors.tuna.tsinghua.edu.cn/ubuntu/ jammy-updates main restricted universe multiverse
+        # deb-src https://mirrors.tuna.tsinghua.edu.cn/ubuntu/ jammy-updates main restricted universe multiverse
+
+        deb https://mirrors.tuna.tsinghua.edu.cn/ubuntu/ jammy-backports main restricted universe multiverse
+        # deb-src https://mirrors.tuna.tsinghua.edu.cn/ubuntu/ jammy-backports main restricted universe multiverse
+
+        deb https://mirrors.tuna.tsinghua.edu.cn/ubuntu/ jammy-security main restricted universe multiverse
+        # deb-src https://mirrors.tuna.tsinghua.edu.cn/ubuntu/ jammy-security main restricted universe multiverse
+"""
+
 
 # 拷贝中文字体
 # docker cp /data/projects/JqChatV2/JqChat/.Fonts_CN/MSYH jqsandbox:/usr/share/fonts/truetype/msyh/
@@ -207,3 +226,4 @@ Github:    https://github.com/agent-infra/sandbox
 
 
 
+# http://10.1.150.105:7080/mcp
