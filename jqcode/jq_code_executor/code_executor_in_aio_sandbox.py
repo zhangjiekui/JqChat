@@ -181,11 +181,12 @@ if __name__ == "__main__":
     # docker run -it --rm --entrypoint /bin/bash enterprise-public-cn-beijing.cr.volces.com/vefaas-public/all-in-one-sandbox:1.0.0.125
     # /opt/python3.12/bin/pip list
     # /opt/python3.12/bin/pip install plotly seaborn
+
 # 拷贝中文字体
-# docker cp /data/projects/JqChatV2/JqChat/.Fonts_CN jqsandbox:/usr/share/fonts/truetype/msyh/
 # docker cp /data/projects/JqChatV2/JqChat/.Fonts_CN/MSYH jqsandbox:/usr/share/fonts/truetype/msyh/
 # 验证系统可识别字体
 # fc-list : family | grep -i "yahei"
+# fc-list : family | grep -i "simhei"
 
 # 保存和运行镜像
     # docker commit 67202306d56e aio_sandbox_jq:v1.0cd 
