@@ -28,6 +28,7 @@ import shutil
 from base64 import b64decode
 from pathlib import Path
 from jqcode.jq_code_executor.code_executor import CodeExecutorTool
+from jqcode.jq_code_executor.code_executor_in_aio_sandbox import code_executor_in_sandbox
 import json_repair
 import shortuuid
 import uuid
@@ -202,7 +203,7 @@ def merge_code_with_usual_imports(code:str,usual_imports_list=usual_imports_list
                 code_lines_striped.remove(code_line)
                 new_code_line = "import matplotlib.pyplot as plt\n"
                 if 'font.sans-serif' not in code:
-                    new_code_line += "plt.rcParams['font.sans-serif'] = ['SimHei']\n"
+                    new_code_line += "plt.rcParams['font.sans-serif'] = ['WenQuanYi Zen Hei', 'SimHei', 'Microsoft YaHei', 'DejaVu Sans']\n"
                 if 'axes.unicode_minus' not in code:
                     new_code_line += "plt.rcParams['axes.unicode_minus'] = False\n"
                 code_lines_striped.insert(0,new_code_line)
@@ -1719,7 +1720,7 @@ class GraphAgent:
                         'plotly',
                 Be sure to generate charts with plotly/matplotlib/seaborn, matplotlib.pyplot is preferred. When pyplot is used, please add the following codes to properly display:\n
                 # 设置中文字体和负号显示
-                plt.rcParams['font.sans-serif'] = ['SimHei']  # 使用黑体显示中文
+                plt.rcParams['font.sans-serif'] = ['WenQuanYi Zen Hei', 'SimHei', 'Microsoft YaHei', 'DejaVu Sans']  # 使用黑体显示中文
                 plt.rcParams['axes.unicode_minus'] = False    # 显示负号
                 # 设置中文字体和负号显示
                 
@@ -1758,7 +1759,7 @@ class GraphAgent:
                         'plotly',
                 Be sure to generate charts with plotly/matplotlib/seaborn, matplotlib.pyplot is preferred. When pyplot is used, please add the following codes to properly display:\n
                 # 设置中文字体和负号显示
-                plt.rcParams['font.sans-serif'] = ['SimHei']  # 使用黑体显示中文
+                plt.rcParams['font.sans-serif'] = ['WenQuanYi Zen Hei', 'SimHei', 'Microsoft YaHei', 'DejaVu Sans']  # 使用黑体显示中文
                 plt.rcParams['axes.unicode_minus'] = False    # 显示负号
                 # 设置中文字体和负号显示
                 
@@ -1852,7 +1853,11 @@ class GraphAgent:
                 break
             
         tool_name = 'code_execution'
-        code_executor=CodeExecutorTool(self.user_request_url)
+        if code_executor_in_sandbox.check_status():
+            code_executor_in_sandbox.set_user_request_url(self.user_request_url)
+            code_executor = code_executor_in_sandbox
+        else:
+            code_executor=CodeExecutorTool(self.user_request_url)
         # 获取代码code和文本code_text
         code = ''
         code_text =''
@@ -1908,7 +1913,7 @@ class GraphAgent:
                     if success:
                         # message_content = f'执行代码成功[生成的文本内容为：{result.get("text") or "无生成的文本"};生成的图片位置为：{result.get("image") or "无生成的图片"}]。\n'
                         content = result.get("image")  or result.get("text")
-                        message_content = f'执行代码成功，下面请直接生成最终的回答（回答时请忽略之前可能的代码执行错误信息，仅关注正确的执行/返回结果），如果存在文件或图片的链接，请务必把链接地址中的主机和端口替换成{self.user_request_url}，不要再调用任何工具：{content}\n'
+                        message_content = f'执行代码成功，返回结果为：{content}；下面请直接生成最终的回答（回答时请忽略之前可能的代码执行错误信息，仅关注正确的执行/返回结果），如果存在文件或图片的链接，请务必把链接地址中的主机和端口替换成{self.user_request_url}，不要再调用任何工具。\n'
                         # if 'qwen3' in env_models_instance.chat_model.model_name:
                         #     message_content += '/no_think'  # 记录当前执行的工具名称                    
                         
@@ -2043,7 +2048,7 @@ class GraphAgent:
 
         answer = display_text(answer)
         if self.img_url:
-            filename = Path(self.img_url).name
+            filename = Path(self.img_url).stem
             if filename not in answer:
                 answer = f"{answer}\n{self.img_url}" 
             self.img_url = None
@@ -2197,7 +2202,8 @@ if __name__ == "__main__":
     # response = test_jqchat_service()
     # print(response)
     # pass
-    # user_questions=[['请检索知识库，然后回答晶奇公司质量保证过程中的角色及角色的职责或含义解释，对应的人员（姓名）有哪些?其中的批准人是谁？']]
+
+    user_questions=['请直接执行代码：print("Hello World")']
     for user_question in user_questions:
         if user_question == '请绘制sin(x)曲线':
             pass

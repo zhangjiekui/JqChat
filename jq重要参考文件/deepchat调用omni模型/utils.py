@@ -133,7 +133,7 @@ class MediaConnector:
                 print("==================================")
                 return result
             else:
-                print("===========不是'wav音频文件，跳过'=======================")
+                print("===========不是'wav/mp3音频文件，跳过'=======================")
                 raise e
     def _load_file_url(
         self,

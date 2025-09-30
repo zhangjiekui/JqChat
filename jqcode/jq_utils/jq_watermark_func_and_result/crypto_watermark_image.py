@@ -25,7 +25,7 @@ class ImageWatermark:
         self.visible_text = visible_text
         self.invisible_watermark = invisible_watermark
         self.aigc_metadata = aigc_metadata
-        self.position=(50, 50)
+        self.position=(50, 60)
         self.font_size=20
         self.color_for_img_layer = (255, 255, 255, 128)
         self.color_for_visible_text = (255, 0, 0, 128)
@@ -77,7 +77,7 @@ class ImageWatermark:
         else:
             text_width, text_height = draw.textsize(self.visible_text, font=font)
         # final_position = (90,  60)  # 左上角
-        final_position = (width - text_width - self.position[0], height -text_height - self.position[1])  # 右下角
+        final_position = (width - text_width - self.position[0], height - text_height - self.position[1])  # 右下角
         draw.text(final_position, self.visible_text, font=font, fill=self.color_for_visible_text)  # 红色文字
         img_with_text = Image.alpha_composite(img, txt_layer)
 
