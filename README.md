@@ -557,79 +557,49 @@ workon vllmb
 VLLM_USE_V1=1 CUDA_VISIBLE_DEVICES=0 nohup vllm serve /data/models/Qwen/Qwen2___5-Omni-3B --served-model-name omni --mm-processor-kwargs '{"use_audio_in_video": false}' --gpu-memory-utilization 0.9  --host 0.0.0.0 --port 7600  >> /root/JqLogs/omni.log 2>&1 &
 tail -f /root/JqLogs/omni.log
 ```
-#### Qwen3-30B-A3B-FP8 gpu2_3
-``` Qwen3-30B-A3B-FP8 gpu2_3
-[py3.10]pip install /root/flash_attn-2.8.0.post2+cu12torch2.7cxx11abiFALSE-cp310-cp310-linux_x86_64.whl
-[py3.11]pip install /root/flash_attn-2.8.0.post2+cu12torch2.7cxx11abiTRUE-cp311-cp311-linux_x86_64.whl
 
-[FLASHINFER in vllmb ]
-export TORCH_CUDA_ARCH_LIST='7.5 8.0 8.9 9.0 10.0+PTX'
-export FLASHINFER_ENABLE_SM90=1
-pip install build
-pip install -U setuptools
-python -m flashinfer.aot
-python -m build --no-isolation --wheel
-ls -la dist/
-cd dist
-pip install pip install flashinfer_python-0.2.6.post1-cp39-abi3-linux_x86_64.whl
-[当前0.9.1有问题 Failed to check the "should dump" flag on TCPStore]
-pip install -U vllm --pre --extra-index-url https://wheels.vllm.ai/nightly
-```
 
+
+
+#### Qwen3-VL-30B-A3B-Instruct-FP8 gpu2_3
 ```
-workon vllmb
+workon vllm
+CUDA_VISIBLE_DEVICES=2,3 nohup vllm serve /data/models/Qwen/Qwen3-VL-30B-A3B-Instruct-FP8/ \
+--served-model-name qwen3 \
+--tensor-parallel-size 2 \
+--enable-chunked-prefill \
+--enable-auto-tool-choice \
+--tool-call-parser hermes \
+--max-model-len 65536 \
+--gpu-memory-utilization 0.96 \
+--enable-expert-parallel \
+--max-num-seqs 32 \
+--host 0.0.0.0 --port 9998 \
+--limit-mm-per-prompt.video 0 \
+--enable-expert-parallel \
+--enable-prefix-caching >> /root/JqLogs/qwq.log 2>&1 &
+tail -f /root/JqLogs/qwq.log
+
+
+--async-scheduling \
+--mm-encoder-tp-mode data \
+```
+#### Qwen3-30B-A3B-Instruct-2507-FP8 gpu2_3 [128000上下文长度]
+```
+workon vllm
 CUDA_VISIBLE_DEVICES=2,3 nohup vllm serve /data/models/Qwen/Qwen3-30B-A3B-Instruct-2507-FP8 \
 --served-model-name qwen3 \
 --tensor-parallel-size 2 \
 --enable-chunked-prefill \
 --enable-auto-tool-choice \
 --tool-call-parser hermes \
---max-model-len 81920 \
---gpu-memory-utilization 0.90 \
+--max-model-len 128000 \
+--gpu-memory-utilization 0.94 \
 --enable-expert-parallel \
 --max-num-seqs 32 \
 --host 0.0.0.0 --port 9998 \
 --enable-prefix-caching >> /root/JqLogs/qwq.log 2>&1 &
 tail -f /root/JqLogs/qwq.log
-
-workon vllmb
-CUDA_VISIBLE_DEVICES=2,3 nohup vllm serve /data/models/Qwen/Qwen3-30B-A3B-FP8 \
---served-model-name qwen3 \
---tensor-parallel-size 2 \
---enable-chunked-prefill \
---enable-reasoning --reasoning-parser deepseek_r1 \
---enable-auto-tool-choice \
---tool-call-parser hermes \
---rope-scaling '{"rope_type":"yarn","factor":2.0,"original_max_position_embeddings":32768}' \
---max-model-len 64000 \
---gpu-memory-utilization 0.90 \
---enable-expert-parallel \
---max-num-seqs 32 \
---host 0.0.0.0 --port 9998 \
---enable-prefix-caching >> /root/JqLogs/qwq.log 2>&1 &
-tail -f /root/JqLogs/qwq.log
-```
-```
-workon vllmb
-CUDA_VISIBLE_DEVICES=2,3 nohup vllm serve /data/models/Qwen/Qwen3-30B-A3B-Thinking-2507-FP8 \
---served-model-name qwen3 \
---tensor-parallel-size 2 \
---enable-chunked-prefill \
---enable-reasoning --reasoning-parser deepseek_r1 \
---enable-auto-tool-choice \
---tool-call-parser hermes \
---max-model-len 81920 \
---gpu-memory-utilization 0.90 \
---enable-expert-parallel \
---max-num-seqs 32 \
---host 0.0.0.0 --port 9998 \
---enable-prefix-caching >> /root/JqLogs/qwq.log 2>&1 &
-tail -f /root/JqLogs/qwq.log
-
-
-/data/models/Qwen3-30B-A3B-Thinking-2507-AWQ
-```
-
 
 【 Qwen2.5-VL does not support _Backend.FLASHINFER backend now】
 ``` qwenvl gpu2_3

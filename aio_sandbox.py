@@ -179,6 +179,7 @@ if __name__ == "__main__":
 # 保存和运行镜像
     # docker commit 67202306d56e aio_sandbox_jq:v1.0
     # docker run -it -p 7080:8080 --name jqsandbox  aio_sandbox_jq:v1.0
+    # ！！！需映射/data/projects/JqChatV2/workspace到容器中
     # sh /opt/gem/run.sh
 
 """

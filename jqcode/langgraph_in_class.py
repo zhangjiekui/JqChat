@@ -2206,7 +2206,7 @@ if __name__ == "__main__":
     # print(response)
     # pass
 
-    user_questions=['请直接执行代码：print("Hello World")']
+    # user_questions=['请直接执行代码：print("Hello World")']
     for user_question in user_questions:
         if user_question == '请绘制sin(x)曲线':
             pass
