@@ -185,26 +185,29 @@ def r2r_search(r2r_client,query:str,chat_on_docs_list:list=None, limit: int = 10
 # endregion
     search_results = r2r_format_search_results_for_llm(query,search_response.results,limit=limit,min_score_threshold=min_score_threshold)
     return search_results
-@func_set_timeout(50)
-def r2r_authed_client(user_id,user_email='',password="admin@123456",server_url='http://10.1.150.105:7272'):
+@func_set_timeout(500)
+def r2r_authed_client(user_id,user_email='',password='',server_url='http://10.1.150.105:7272'):
     r2r_client = R2RClient(base_url=server_url)
+    if not user_id:
+        user_id = 'admin'
     if not is_valid_email(user_email):
         if not is_valid_email(user_id):
-            user_email = f"{user_id}@example.com"
-            user_email = f"admin@example.com"
+            user_email = f"{user_id}@jqsoft.net"
+        if not password:
+            password = f"{user_id}@123456"
+
             
 
-    users_response = r2r_client.users.list()
-    users = users_response.results
-    users_emails = [user.email for user in users] 
-    if user_email not in users_emails:
-        try:
-            create_user_response = r2r_client.users.create(email=user_email, password=password)
-            logger.warning(f"Success to create user {user_email}")
-        except Exception as e:
-            logger.error(f"Failed to create user {user_email}:{e}")
-    try:
-        
+    # users_response = r2r_client.users.list()
+    # users = users_response.results
+    # users_emails = [user.email for user in users] 
+    # if user_email not in users_emails:
+    #     try:
+    #         create_user_response = r2r_client.users.create(email=user_email, password=password)
+    #         logger.warning(f"Success to create user {user_email}")
+    #     except Exception as e:
+    #         logger.error(f"Failed to create user {user_email}:{e}")
+    try:        
         user_login_response = r2r_client.users.login(user_email, password)
         logger.warning(f"User {user_email} success to login in r2r server")
     except Exception as e:

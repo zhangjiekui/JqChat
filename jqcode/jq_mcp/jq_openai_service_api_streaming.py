@@ -11,6 +11,11 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from sse_starlette.sse import EventSourceResponse
 from jqcode.jq_mcp.utils import ThreadWithResult, get_process_text,chat
+from jqcode.r2r_client_functions import r2r_authed_client
+
+
+
+
 
 # 配置日志记录
 logging.basicConfig(
@@ -198,8 +203,8 @@ async def chat_completions(request: Request) -> str | dict | ChatCompletion:
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail="Missing required field: messages"
             )        
-        kb_name = data.get("model", default_kb_name)
-        kb_base_dict = get_kb_dict(kb_name)
+        # kb_name = data.get("model", default_kb_name)
+        # kb_base_dict = get_kb_dict(kb_name)
         api_deployment_url = os.getenv("api_deployment_url")
 
         metadata = data.get("metadata",None)
@@ -207,10 +212,21 @@ async def chat_completions(request: Request) -> str | dict | ChatCompletion:
         if metadata:
             try:
                 user_info = metadata.get("userInfo",{})  or metadata.get("userinfo",{})
+                user_info = user_info or metadata
                 if user_info:
                     user_name = user_info.get("userName") or user_info.get("username")
                     user_id = user_info.get("userId") or user_info.get("userid")
                     user_name_id = f'{user_name}({user_id})'
+                
+                kb_dict = metadata.get("kb",{})
+                kb_id = kb_dict.get("id",None)
+                kb_name = kb_dict.get("name",default_kb_name)
+                if user_name and kb_id:
+                    r2r_client = r2r_authed_client(user_id=user_name)
+                    kb_info = r2r_client.collections.retrieve(kb_id).results
+                    kb_base_dict = {"index_name": kb_info.name or default_kb_name, "description":kb_info.description or default_kb_description}
+                else:                    
+                    kb_base_dict = get_kb_dict(kb_name)
                 use_memory_str = metadata.get("memory","True")
                 if use_memory_str.lower() == "false":
                     use_memory = False
@@ -328,7 +344,7 @@ if __name__ == "__main__":
     uvicorn.run(
         app,
         host="0.0.0.0",
-        port=8600,
+        port=8601,
         log_level="debug",
         timeout_keep_alive=60
     )

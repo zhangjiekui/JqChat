@@ -777,55 +777,54 @@ class GraphAgent:
             self.jq_queque.enqueue(f"向量知识库（{retriever.vectorstore._store.index}）检索：检索器[{i+1}]：{retriever.name} ")
         logger.warning(f"     vectorstore方法，执行实际文档检索的集成检索器为：{message}")
         try:
-            
             vector_documents = self.retriever.invoke(question,config=invoke_llm_config)
-                
-            if len(vector_documents)==0:
-                msg=f"未从知识库{retriever.vectorstore._store.index}中检索到任何相关文档！"
-                self.jq_queque.enqueue(msg)
-                logger.warning(f"     {msg}")
-            else:
-                documents = vector_documents
-                self.jq_queque.enqueue(f"向量知识库检索到{len(vector_documents)}篇文档")
-                logger.warning(f"     vectorstore检索到的相关文档数:{len(vector_documents)=}")
-            
-            if env_models_instance.USING_GRAPH_RAG: 
-                try:
-                    if self.r2r_client:
-                        from jqcode.r2r_client_functions import r2r_search
-                        r2r_search_context = r2r_search(self.r2r_client,query=question) #,chat_on_docs_list = self.chat_on_docs_list
-
-                        if r2r_search_context:
-                            n = 20000
-                            text = r2r_search_context[0:n]
-                            text = text.replace("\n","..")
-                            logger.warning(f'GraphRag Result String={text} ...共{len(r2r_search_context)}字，仅显示前{n}字...')
-                            logger.warning("========GraphRag Result String========")
-                            # print(text)
-                            # self.jq_queque.enqueue(f"图知识库检索结果（共{len(text)}字，仅显示前{n}字）：\n<br>{text}......")
-                            self.jq_queque.enqueue(f"图知识库综合性检索结果（共{len(text)}字，合并成1个文档）")
-                            logger.warning("========GraphRag Result String========")
-                            graph_documents = [Document(page_content=r2r_search_context,metadata={'source':"GraphRag"})] 
-                            documents.extend(graph_documents)
-                        else:
-                            msg=f"未从Graph知识库中检索到任何相关实体、关系或文档！"
-                            logger.warning(f"     {msg}")
-                    else:
-                        logger.warning(f'R2R Client未正确初始化：{self.r2r_client=}')
-                except Exception as e:
-                    logger.error(f"GraphRag检索出现错误：{e}")
-
-                
-            if len(documents)==0:
-                msg=f"未从知识库/图谱库{retriever.vectorstore._store.index}（Vector/Graph）中检索到任何相关文档！"
-                self.jq_queque.enqueue(f"{msg}")
-                documents = [Document(page_content=msg)]
-                logger.warning(f"     {msg}")
-
         except Exception as e:
             err_msg = f"从知识库({retriever.vectorstore._store.index})中检索{question=}出现错误：{e}"
-            logger.error(err_msg)
-            documents = [Document(page_content=err_msg)]
+            logger.error(err_msg)        
+        
+        if len(vector_documents)==0:
+            msg=f"未从知识库{retriever.vectorstore._store.index}中检索到任何相关文档！"
+            self.jq_queque.enqueue(msg)
+            logger.warning(f"     {msg}")
+        else:
+            documents = vector_documents
+            self.jq_queque.enqueue(f"向量知识库检索到{len(vector_documents)}篇文档")
+            logger.warning(f"     vectorstore检索到的相关文档数:{len(vector_documents)=}")
+
+        if env_models_instance.USING_GRAPH_RAG: 
+            try:
+                if self.r2r_client:
+                    from jqcode.r2r_client_functions import r2r_search
+                    r2r_search_context = r2r_search(self.r2r_client,query=question) #,chat_on_docs_list = self.chat_on_docs_list
+
+                    if r2r_search_context:
+                        n = 20000
+                        text = r2r_search_context[0:n]
+                        text = text.replace("\n","..")
+                        logger.warning(f'GraphRag Result String={text} ...共{len(r2r_search_context)}字，仅显示前{n}字...')
+                        logger.warning("========GraphRag Result String========")
+                        # print(text)
+                        # self.jq_queque.enqueue(f"图知识库检索结果（共{len(text)}字，仅显示前{n}字）：\n<br>{text}......")
+                        self.jq_queque.enqueue(f"图知识库{retriever.vectorstore._store.index}综合性检索结果（共{len(text)}字，合并成1个文档）")
+                        logger.warning("========GraphRag Result String========")
+                        graph_documents = [Document(page_content=r2r_search_context,metadata={'source':"GraphRag"})] 
+                        documents.extend(graph_documents)
+                    else:
+                        msg=f"未从Graph知识库中检索到任何相关实体、关系或文档！"
+                        logger.warning(f"     {msg}")
+                else:
+                    logger.warning(f'R2R Client未正确初始化：{self.r2r_client=}')
+            except Exception as e:
+                logger.error(f"GraphRag检索出现错误：{e}")
+
+            
+        if len(documents)==0:
+            msg=f"未从知识库/图谱库{retriever.vectorstore._store.index}（Vector/Graph）中检索到任何相关文档！"
+            self.jq_queque.enqueue(f"{msg}")
+            documents = [Document(page_content=msg)]
+            logger.warning(f"     {msg}")
+
+
         return {"documents": documents, "question": question,"user_variables":state["user_variables"]}
 
 
@@ -2064,9 +2063,13 @@ class GraphAgent:
             # answer = f'\n{referens_str}\n' + answer
             splits = referens_str.split('\n')
             title = splits[0]
-            start = title.index('参') # 得到参考文档或参考网页
-            title_formatted = title[start:start+4]
-            _referens_str = referens_str.replace(title, '')
+            if 'type_placeholder' in title:
+                title_formatted = '参考文档(GraphRag)'
+                _referens_str = referens_str.replace(title, '')
+            else:
+                start = title.index('参') # 得到参考文档或参考网页
+                title_formatted = title[start:start+4]
+                _referens_str = referens_str.replace(title, '')
             # referens_str_formated = f'<details>\n<summary>点击查看"{title_formatted}"</summary>\n<font color="grey" size=16px>\n{_referens_str}\n</font></details>'
             referens_str_formated = f'<details>\n<summary>点击查看"{title_formatted}"</summary>\n<font color="grey">\n{_referens_str}\n</font></details>'
             answer = f'\n{referens_str_formated}\n' + answer

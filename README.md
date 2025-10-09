@@ -515,6 +515,17 @@ workon vllmb
 CUDA_VISIBLE_DEVICES=2,3 VLLM_ALLOW_ENGINE_USE_RAY=1 LMCACHE_USE_EXPERIMENTAL=True LMCACHE_LOCAL_CPU=True LMCACHE_MAX_LOCAL_CPU_SIZE=5.0 LM_CACHE_LOCAL_DEVICE=cpu nohup vllm serve /data/models/Qwen/Qwen2___5-VL-32B-Instruct-AWQ --served-model-name qwenvl --enable-auto-tool-choice --tool-call-parser hermes --gpu-memory-utilization 0.80 --port 9996 --host 0.0.0.0 --limit-mm-per-prompt image=5,video=5 --max-model-len 32768 --tensor-parallel-size 2 --max-num-seqs 16 --enable-prefix-caching --enable-chunked-prefill=False --kv-transfer-config '{"kv_connector":"LMCacheConnector", "kv_role":"kv_both", "kv_buffer_device":"cpu","kv_buffer_size":1000000000.0}' >> /root/JqLogs/vllmvl.log 2>&1 &
 tail -f /root/JqLogs/vllmvl.log 
 ```
+### jqai-ui运行
+cd /data/projects/ai-ui/
+docker build -t jqai:v1.0.0 .
+docker run --name jqai -p 4090:4090 -d jqai:v1.0.0
+
+
+cd /data/projects/ai-ui/
+构建 make 或 make build
+运行 make run
+账号密码：admin	FastbuildAI&123456
+
 ### 模型部署
 #### jqagent
 ```
