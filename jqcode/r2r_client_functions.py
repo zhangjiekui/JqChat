@@ -185,7 +185,7 @@ def r2r_search(r2r_client,query:str,chat_on_docs_list:list=None, limit: int = 10
 # endregion
     search_results = r2r_format_search_results_for_llm(query,search_response.results,limit=limit,min_score_threshold=min_score_threshold)
     return search_results
-@func_set_timeout(500)
+@func_set_timeout(30)
 def r2r_authed_client(user_id,user_email='',password='',server_url='http://10.1.150.105:7272'):
     r2r_client = R2RClient(base_url=server_url)
     if not user_id:

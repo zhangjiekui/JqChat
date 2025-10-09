@@ -805,7 +805,7 @@ class GraphAgent:
                         logger.warning("========GraphRag Result String========")
                         # print(text)
                         # self.jq_queque.enqueue(f"图知识库检索结果（共{len(text)}字，仅显示前{n}字）：\n<br>{text}......")
-                        self.jq_queque.enqueue(f"图知识库{retriever.vectorstore._store.index}综合性检索结果（共{len(text)}字，合并成1个文档）")
+                        self.jq_queque.enqueue(f"图知识库{self.index_name}综合性检索结果（共{len(text)}字，合并成1个文档）")
                         logger.warning("========GraphRag Result String========")
                         graph_documents = [Document(page_content=r2r_search_context,metadata={'source':"GraphRag"})] 
                         documents.extend(graph_documents)

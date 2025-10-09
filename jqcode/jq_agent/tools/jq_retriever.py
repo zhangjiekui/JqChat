@@ -24,6 +24,8 @@ def get_retriever(vectorstore:ElasticsearchStore=None,index_name:str='',index_de
     es_connection = env_models_instance.get_es_connection()
     doc_paths_exists = []
     vector_retriever = None
+    if index_name:
+        index_name = index_name.lower() # Elasticsearch的index_name必须小写
 
 # 如果是已经有了vectorstore
     if vectorstore:
