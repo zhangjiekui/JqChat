@@ -1227,7 +1227,7 @@ class InitEnvModels:
 
         if only_use_reranker:
             # reduce memory usage.
-            micro_bs = 6
+            micro_bs = 20
             num_chunks = len(text_chunks)            
             if num_chunks > micro_bs:
                 reranker.top_n = micro_bs
