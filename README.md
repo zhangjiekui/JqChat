@@ -415,36 +415,56 @@ python -m llama_cpp.server --model /data/models/Qwen/qwen235q8/qwen235q8.gguf --
 
 git clone https://github.com/ikawrakow/ik_llama.cpp
 cd ik_llama.cpp
-cmake -B build -DCMAKE_BUILD_TYPE=Release -DGGML_CUDA=ON -DGGML_BLAS=OFF -DGGML_SCHED_MAX_COPIES=1 -DGGML_CUDA_IQK_FORCE_BF16=1
+cmake -B build -DCMAKE_BUILD_TYPE=Release -DGGML_CUDA=ON -DGGML_BLAS=OFF -DGGML_AVX512=ON -DGGML_AVX512_VNNI=ON -DGGML_SCHED_MAX_COPIES=1 -DGGML_CUDA_IQK_FORCE_BF16=1
 cmake --build build --config Release -j 8
 
+<!--   -DLLAMA_CURL=OFF ^
+  -DGGML_CUDA=ON ^
+  -DGGML_BLAS=OFF ^
+  -DGGML_AVX512=ON ^
+  -DGGML_AVX512_VNNI=ON ^
+  -DGGML_AVX512_BF16=OFF -->
 
+<!-- 下面的运行参数效果很好 -->
 cd ~/ik_llama.cpp
 workon test
 CUDA_VISIBLE_DEVICES="0" \
 ./build/bin/llama-server \
     --model /data/models/DeepSeek-V3.1-GGUF/IQ5_K/DeepSeek-V3.1-IQ5_K-00001-of-00011.gguf \
     --alias ds \
-    --ctx-size 8192 \
-    -ctk q8_0 \
+    --ctx-size 20480 \
+    --cache-type-k q8_0 \
+    --cache-type-v q5_1 \
+    --ubatch-size 512 \
+    --batch-size 512 \
     -fa -fmoe \
-    -mla 3 -amb 512 \
-    -ngl 99 \
+    -mla 3 -amb 1024 \
+    -ngl 999 \
+    -rtr \
     -ot exps=CPU \
     --parallel 2 \
-    --threads 32 \
+    --threads 40 \
     --host 0.0.0.0 \
     --port 8080 \
     --no-display-prompt \
     --jinja \
-    --chat-template deepseek3 \
+    --chat-template-file ~/ik_llama.cpp/models/templates/deepseek-ai-DeepSeek-V3.1.jinja \
+    --reasoning-format auto \
+    --reasoning-budget 0 \
     --no-mmap \
+    --flash-attn \
     --numa distribute
 
     --jinja \    
-    --no-mmap \    
+    -ot exps=CPU \
+    --no-mmap \ 
+    --reasoning-format auto \   
     --reasoning-budget 0 \
-    
+
+cd ~/ik_llama.cpp
+workon test
+taskset -c 8-15 nice --20 ./build/bin/llama-server --cache-type-k q8_0 --cache-type-v q5_1 --batch_size 4096 --ubatch_size 4096 --ctx-size 20480 --host 0.0.0.0 --port 8080 -fa -fmoe -ngl 999 -ngld 999 -ot "blk\.([0-6])\.ffn_.*=CUDA0" -ot exps=CPU --parallel 1 --threads 8 --no-mmap --numa distribute --model /data/models/GLM-4.6-128GB-RAM-IK-GGUF/24GB+128GB_V4/GLM-4.6-slow.gguf-00001-of-00003.gguf
+
 <!-- --model /data/models/Qwen/qwen235q8/qwen235q8.gguf     -->
 <!-- /data/models/qwen3-235b-a22b-128k_ud-q4_k_xl.gguf -->
 <!-- /data/models/Qwen3-235B-A22B-Instruct-2507-GGUF/IQ5_K/Qwen3-235B-A22B-Instruct-IQ5_K-00001-of-00004.gguf -->
@@ -600,6 +620,9 @@ CUDA_VISIBLE_DEVICES=2,3 nohup vllm serve /data/models/Qwen/Qwen3-30B-A3B-Instru
 --host 0.0.0.0 --port 9998 \
 --enable-prefix-caching >> /root/JqLogs/qwq.log 2>&1 &
 tail -f /root/JqLogs/qwq.log
+
+<!-- --async-scheduling \
+--mm-encoder-tp-mode data \ -->
 
 【 Qwen2.5-VL does not support _Backend.FLASHINFER backend now】
 ``` qwenvl gpu2_3
@@ -1043,12 +1066,31 @@ TORCH_CUDA_ARCH_LIST="8.9" CUDA_VISIBLE_DEVICES=0 python ktransformers/server/ma
 --backend_type balance_serve
 
 
+<!-- 检查并确保cache_lens = max_new_tokens + 2048 -->
+workon torch26cu126
+TORCH_CUDA_ARCH_LIST="8.9" CUDA_VISIBLE_DEVICES=0 LK_THREADS=62 python ~/lktransformers/ktransformers/server/main.py \
+--gguf_path /data/models/DeepSeek-V3.1-GGUF/IQ5_K/ \
+--model_path deepseek-ai/DeepSeek-V3.1 \
+--model_name qwen3kt \
+--cpu_infer 24 \
+--max_new_tokens 16384 \
+--cache_lens 18432 \
+--temperature 0.6 \
+--top_p 0.95 \
+--optimize_config_path ~/lktransformers/ktransformers/optimize/optimize_rules/DeepSeek-V3-Chat-serve.yaml \
+--use_cuda_graph \
+--host 0.0.0.0 \
+--port 8082 \
+--max_batch_size 4 \
+--backend_type balance_serve \
+--chunk_size 1024
+
 
 <!-- Running DeepSeek-R1-Q4KM Models -->
 CUDA_VISIBLE_DEVICES=2,3 python ktransformers/server/main.py \
   --port 10002 \
-  --model_path /data/models/DeepSeek-R1/ \
-  --gguf_path /data/models/DeepSeek-R1-Q4_K_M_ollama_gguf/ \
+  --model_path deepseek-ai/DeepSeek-V3.1 \
+  --gguf_path /data/models/DeepSeek-V3.1-GGUF/IQ5_K/ \
   --optimize_config_path ktransformers/optimize/optimize_rules/DeepSeek-V3-Chat-serve.yaml \
   --max_new_tokens 1024 \
   --cache_lens 32768 \

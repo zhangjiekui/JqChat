@@ -167,7 +167,7 @@ async def validate_request(request: Request, call_next):
         
 @app.get("/models", response_model=None)
 @app.get("/v1/models", response_model=None)
-@optional_limiter("2/second") # ← 限流装饰器在内层
+@optional_limiter("5/second") # ← 限流装饰器在内层
 async def listModels(request: Request):
     logger.warning(f"✅ limiter active: {limiter is not None}, app.state.limiter: {hasattr(app.state, 'limiter')}")
     return {
@@ -185,7 +185,7 @@ async def listModels(request: Request):
 # OpenAI聊天接口(POST)
 @app.post("/v1/chat/completions")
 # @optional_limiter("1/hour")  # 每小时1次，测试用
-@optional_limiter("1/second") # ← 限流装饰器在内层
+@optional_limiter("3/second") # ← 限流装饰器在内层
 async def chat_completions(request: Request) -> str | dict | ChatCompletion:
     logger.warning(f"✅ limiter active: {limiter is not None}, app.state.limiter: {hasattr(app.state, 'limiter')}")   
     try:
@@ -203,8 +203,8 @@ async def chat_completions(request: Request) -> str | dict | ChatCompletion:
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail="Missing required field: messages"
             )        
-        # kb_name = data.get("model", default_kb_name)
-        # kb_base_dict = get_kb_dict(kb_name)
+        kb_name = data.get("model", default_kb_name)
+        kb_base_dict = get_kb_dict(kb_name)
         api_deployment_url = os.getenv("api_deployment_url")
 
         metadata = data.get("metadata",None)

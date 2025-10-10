@@ -288,7 +288,7 @@ if __name__ == "__main__":
             st.session_state["selected_kb_name"] = selected_kb if selected_kb != "不使用知识库" else "default"
             
             is_memory = st.checkbox("启用会话记忆", value=True, key="main_memory_checkbox")
-            is_rewrite = st.checkbox("启用问题重写", value=True, key="main_rewrite_checkbox")
+            is_rewrite = st.checkbox("启用问题重写", value=False, key="main_rewrite_checkbox")
             
             st.markdown('</div>', unsafe_allow_html=True)
             st.markdown("---")
