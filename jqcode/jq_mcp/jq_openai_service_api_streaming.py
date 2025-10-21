@@ -6,12 +6,13 @@ from typing import List
 from jqcode.langgraph_in_class import GraphAgent
 from jqcode.jq_docstores.backend_docstore_utils.jq_es_metastores import JqElasticsearchUniMetaStore
 from openai.types.chat import ChatCompletion
-from fastapi import FastAPI, HTTPException, Request, status
+from fastapi import FastAPI, HTTPException, Request, status, BackgroundTasks
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from sse_starlette.sse import EventSourceResponse
 from jqcode.jq_mcp.utils import ThreadWithResult, get_process_text,chat
 from jqcode.r2r_client_functions import r2r_authed_client
+# from fastapi_bgtasks_dashboard import mount_bg_tasks_dashboard
 
 
 
@@ -58,7 +59,7 @@ def get_kb_dict(kb_name:str) -> dict:
     return kb_dict
 
 app = FastAPI()
-
+# mount_bg_tasks_dashboard(app=app)
 # 定义装饰器别名，允许在没有limiter时跳过
 def optional_limiter(limit_str: str):
     def decorator(func):
@@ -182,11 +183,16 @@ async def listModels(request: Request):
         ]
     }
 
+def simple_bg_task(name: str):
+    import time
+    print(f"Started task for {name}")
+    time.sleep(20)
+    print(f"Finished task for {name}")
 # OpenAI聊天接口(POST)
 @app.post("/v1/chat/completions")
 # @optional_limiter("1/hour")  # 每小时1次，测试用
 @optional_limiter("3/second") # ← 限流装饰器在内层
-async def chat_completions(request: Request) -> str | dict | ChatCompletion:
+async def chat_completions(request: Request,  background_tasks: BackgroundTasks) -> str | dict | ChatCompletion:
     logger.warning(f"✅ limiter active: {limiter is not None}, app.state.limiter: {hasattr(app.state, 'limiter')}")   
     try:
         data = await request.json()
@@ -215,6 +221,7 @@ async def chat_completions(request: Request) -> str | dict | ChatCompletion:
                 user_info = user_info or metadata
                 if user_info:
                     user_name = user_info.get("userName") or user_info.get("username")
+                    # background_tasks.add_task(simple_bg_task, user_name)
                     user_id = user_info.get("userId") or user_info.get("userid")
                     user_name_id = f'{user_name}({user_id})'
                 

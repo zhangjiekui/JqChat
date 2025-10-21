@@ -494,7 +494,7 @@ index_name ='zjk_jqesclient_reader_test_768im'
 class GraphAgent:
     def __init__(self,executable_tools:list=executable_tools, routing_tools_wrapped_in_class:list=route_tools, 
                  llm_model:ChatOpenAI=None,chat_on_docs_list:List[str]=None,add_docs_list_to_kb:bool=True, 
-                 allow_conversation_memory=True,allow_question_rewrite = False,
+                 allow_conversation_memory=True,allow_question_rewrite = True,
                  kb_base_dict:dict={"index_name": index_name, "description":default_index_description}, 
                  recursion_limit:int=25, memory_thread_id:str=f"admin({shortuuid.uuid()})",user_request_url:str=env_models_instance.deployment_url) -> None:
         

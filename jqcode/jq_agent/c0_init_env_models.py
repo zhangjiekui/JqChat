@@ -207,10 +207,12 @@ class Ocr_API:
         return result
 
 
-# ocr_api= Ocr_API()
-# image_path_or_base64="/data/projects/JqChatV2/JqChat/graph.jpg"
-# r1=ocr_api(image_path_or_base64=image_path_or_base64) 
-# print(r1)  
+if VERBOSE:
+    ocr_api= Ocr_API()
+    image_path_or_base64="/data/projects/JqChatV2/JqChat/graph.jpg"
+    r1=ocr_api(image_path_or_base64=image_path_or_base64) 
+    print(r1)  
+
 
 class Ocr_GOT_API:    
     def __init__(self,model_uid='GOT-OCR2_0',base_url:str = "http://10.1.150.106:9997",auth_headers={}):
@@ -636,6 +638,7 @@ class InitEnvModels:
         self.jq_docx_reader = JqkjDocxReader()
         self.jq_logger = logger
         # code_splitter = self.text_splitter.from_language(language=Language.PYTHON,tokenizer=self._tokenizer)
+        
         try:
             text = "中华人民共和国抗日胜利80周年93大阅兵"
             r1 = self._tokenizer.encode(text)
@@ -871,7 +874,7 @@ class InitEnvModels:
        
         try:
             # embed_model = LocalAIEmbeddings(model=self.embedding_model_name,deployment=self.embedding_model_name,api_key="abc123",headers={'Authorization': 'Bearer abc123'},openai_api_base=self.embedding_model_base_url,base_url=self.embedding_model_base_url,embedding_ctx_length=self.embedding_model_max_tokens*8,chunk_size=self.embedding_model_max_tokens)
-            import openai
+            # import openai
 
             # Assume that the model is already launched.
             # The api_key can't be empty, any string is OK.
@@ -889,10 +892,13 @@ class InitEnvModels:
                 embed_model = LocalAIEmbeddings(model=self.embedding_model_name,openai_api_base=self.embedding_model_base_url,openai_api_key="abc123",model_kwargs={'dimensions': self.embedding_model_dimentions})
             else:
                 embed_model = LocalAIEmbeddings(model=self.embedding_model_name,openai_api_base=self.embedding_model_base_url,openai_api_key="abc123")
-            emb_test = embed_model.embed_query("test query text")
+            
             embedding_model_8k = LocalAIEmbeddings(model=self.embedding_model_8k_name,deployment=self.embedding_model_name,api_key="abc123",openai_api_base=self.embedding_model_base_url,base_url=self.embedding_model_8k_base_url,embedding_ctx_length=self.embedding_model_8k_max_tokens*4,chunk_size=self.embedding_model_8k_max_tokens)
-            # r2 = embed_model.embed_documents(["执行embed_documents测试......test documents text1","test documents text2"])
-            # print(r2)
+                
+            emb_test = embed_model.embed_query("test query text")
+            if VERBOSE:
+                r2 = embed_model.embed_documents(["执行embed_documents测试......test documents text1","test documents text2"])
+                print(r2)
             if is_main_process(): 
                 logger.warning(f"{self.embedding_model_name} 嵌入模型接口{self.embedding_model_base_url}获取成功，返回的嵌入维度为{len(emb_test)}")
         except Exception as e:
@@ -914,13 +920,13 @@ class InitEnvModels:
                 from xinference.client.restful.restful_client import RESTfulRerankModelHandle
                 model = RESTfulRerankModelHandle(self.rerank_model_name,self.rerank_model_base_url, auth_headers={'Authorization': 'Bearer abc123'})
                 reranker = JqXinferenceReranker(top_n=6,model=model)
-
-            query = "A man is eating pasta."
-            corpus = ["A man is eating food.","A woman is playing violin.","一个人在踢球","一个人在吃饭"]
-            rerank_test1 = reranker.rerank(corpus, query,top_n=3)
-            logger.debug(rerank_test1)
-            rerank_test2 = reranker.compress_documents(corpus, query)
-            logger.debug(rerank_test2)
+            if VERBOSE:
+                query = "A man is eating pasta."
+                corpus = ["A man is eating food.","A woman is playing violin.","一个人在踢球","一个人在吃饭"]
+                rerank_test1 = reranker.rerank(corpus, query,top_n=3)
+                logger.debug(rerank_test1)
+                rerank_test2 = reranker.compress_documents(corpus, query)
+                logger.debug(rerank_test2)
             if is_main_process(): 
                 logger.warning(f"{self.rerank_model_name}  重排模型接口{self.rerank_model_base_url}获取成功")
         except Exception as e:

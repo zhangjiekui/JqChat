@@ -426,6 +426,7 @@ cmake --build build --config Release -j 8
   -DGGML_AVX512_BF16=OFF -->
 
 <!-- 下面的运行参数效果很好 -->
+<!-- DeepSeek-V3.1-IQ5_K -->
 cd ~/ik_llama.cpp
 workon test
 CUDA_VISIBLE_DEVICES="0" \
@@ -455,6 +456,37 @@ CUDA_VISIBLE_DEVICES="0" \
     --flash-attn \
     --numa distribute
 
+<!-- GLM-4.6 -->
+cd ~/ik_llama.cpp
+workon test
+CUDA_VISIBLE_DEVICES="0" \
+./build/bin/llama-server \
+    --model /data/models/GLM-4.6-128GB-RAM-IK-GGUF/24GB+128GB_V4/GLM-4.6-slow.gguf-00001-of-00003.gguf \
+    --alias ds \
+    --ctx-size 20480 \
+    --cache-type-k q8_0 \
+    --cache-type-v q5_1 \
+    --ubatch-size 512 \
+    --batch-size 1024 \
+    -fa -fmoe \
+    -mla 3 -amb 1024 \
+    -ngl 999 \
+    -ngld 999 \
+    -rtr \
+    -ot "blk\.([0-7])\.ffn_.*=CUDA0" \
+    -ot exps=CPU \
+    --parallel 2 \
+    --threads 40 \
+    --host 0.0.0.0 \
+    --port 8080 \
+    --no-display-prompt \
+    --jinja \
+    --reasoning-format auto \
+    --reasoning-budget 0.2 \
+    --no-mmap \
+    --flash-attn \
+    --numa distribute
+
     --jinja \    
     -ot exps=CPU \
     --no-mmap \ 
@@ -463,7 +495,11 @@ CUDA_VISIBLE_DEVICES="0" \
 
 cd ~/ik_llama.cpp
 workon test
-taskset -c 8-15 nice --20 ./build/bin/llama-server --cache-type-k q8_0 --cache-type-v q5_1 --batch_size 4096 --ubatch_size 4096 --ctx-size 20480 --host 0.0.0.0 --port 8080 -fa -fmoe -ngl 999 -ngld 999 -ot "blk\.([0-6])\.ffn_.*=CUDA0" -ot exps=CPU --parallel 1 --threads 8 --no-mmap --numa distribute --model /data/models/GLM-4.6-128GB-RAM-IK-GGUF/24GB+128GB_V4/GLM-4.6-slow.gguf-00001-of-00003.gguf
+CUDA_VISIBLE_DEVICES="0" taskset -c 8-15 nice --20 ./build/bin/llama-server --cache-type-k q8_0 --cache-type-v q5_1 --batch_size 4096 --ubatch_size 4096 --ctx-size 20480 --host 0.0.0.0 --port 8080 -fa -fmoe -ngl 999 -ngld 999 -ot "blk\.([0-6])\.ffn_.*=CUDA0" -ot exps=CPU --parallel 1 --threads 8 --no-mmap --numa distribute --model /data/models/GLM-4.6-128GB-RAM-IK-GGUF/24GB+128GB_V4/GLM-4.6-slow.gguf-00001-of-00003.gguf --alias ds
+
+cd ~/ik_llama.cpp
+workon test
+CUDA_VISIBLE_DEVICES="0" taskset -c 8-15 nice --20 ./build/bin/llama-server --cache-type-k q8_0 --cache-type-v q5_1 --batch_size 4096 --ubatch_size 4096 --ctx-size 20480 --host 0.0.0.0 --port 8080 -fa -fmoe -ngl 999 -ngld 999 -ot exps=CPU --parallel 1 --threads 8 --no-mmap --numa distribute --model /data/models/GLM-4.6-128GB-RAM-IK-GGUF/24GB+128GB_V4/GLM-4.6-slow.gguf-00001-of-00003.gguf --alias ds
 
 <!-- --model /data/models/Qwen/qwen235q8/qwen235q8.gguf     -->
 <!-- /data/models/qwen3-235b-a22b-128k_ud-q4_k_xl.gguf -->
@@ -635,6 +671,23 @@ workon vllm
 CUDA_VISIBLE_DEVICES=2,3 VLLM_USE_V1=1 nohup vllm serve /data/models/Qwen/Qwen2___5-VL-32B-Instruct-AWQ --served-model-name qwenvl --enable-auto-tool-choice --tool-call-parser hermes --gpu-memory-utilization 0.85 --port 9996 --host 0.0.0.0 --limit-mm-per-prompt image=5,video=5 --max-model-len 32768  --tensor-parallel-size 2 --max-num-seqs 16 --enable-prefix-caching --enable-chunked-prefill >> /root/JqLogs/vllmvl.log 2>&1 &
 tail -f /root/JqLogs/vllmvl.log 
 ```
+#### Qwen3-VL-8B-Instruct-FP8 gpu0
+workon vllm
+CUDA_VISIBLE_DEVICES=1 nohup vllm serve /data/models/Qwen/Qwen3-VL-8B-Instruct-FP8 \
+  --max-model-len 20000 \
+  --host 0.0.0.0 \
+  --port 8000 \
+  --gpu-memory-utilization 0.96 \
+  --served-model-name qwenvl \
+  --limit-mm-per-prompt.video 1 \
+  --limit-mm-per-prompt.image 5 \
+  --async-scheduling \
+  --max-num-seqs 32 >> /root/JqLogs/vllmvl.log 2>&1 &
+tail -f /root/JqLogs/vllmvl.log
+
+
+
+
 #### qwen2.5 VL7B gpu1
 ``` **qwenvl gpu2** 
 vllmv0.9.1
