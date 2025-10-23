@@ -585,6 +585,8 @@ cd /data/projects/ai-ui/
 ### 模型部署
 #### jqagent
 ```
+sudo lsof -i :8600
+
 workon test
 cd /data/projects/JqChatV2/JqChat/JqR2R/py
 nohup python /data/projects/JqChatV2/JqChat/jqcode/jq_mcp/jq_openai_service_api_streaming.py >> /root/JqLogs/jqmcp.log 2>&1 &
