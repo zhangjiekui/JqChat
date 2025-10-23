@@ -2,14 +2,35 @@
 
 FROM python:3.12-slim AS builder
 
-#RUN sed -i 's/http:\/\/archive.ubuntu.com/http:\/\/mirrors.tuna.tsinghua.edu.cn\/ubuntu/g' /etc/apt/sources.list
+# 替换为阿里云的 Debian 源（适配 deb822 格式）
+RUN sed -i 's|https://deb.debian.org|https://mirrors.aliyun.com|g' /etc/apt/sources.list.d/debian.sources && \
+    sed -i 's|http://deb.debian.org|https://mirrors.aliyun.com|g' /etc/apt/sources.list.d/debian.sources
+
 # Install system dependencies
+# 安装系统依赖 + Rust（使用清华镜像）
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends \
+        gcc \
+        g++ \
+        libc6-dev \
+        curl \
+        libffi-dev \
+        gfortran \
+        libopenblas-dev \
+        poppler-utils \
+    && \
+    # 清理 apt 缓存
+    apt-get clean && \
+    rm -rf /var/lib/apt/lists/* 
+# 设置 Rust 国内镜像（使用清华源，USTC 不支持 rustup）
+ENV RUSTUP_DIST_SERVER=https://mirrors.tuna.tsinghua.edu.cn/rustup
+ENV RUSTUP_UPDATE_ROOT=https://mirrors.tuna.tsinghua.edu.cn/rustup/rustup
 RUN apt-get update && apt-get install -y --no-install-recommends \
     gcc g++ musl-dev curl libffi-dev gfortran libopenblas-dev \
     poppler-utils \
     && apt-get clean && rm -rf /var/lib/apt/lists/* \
-    && curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
-
+    && curl --http1.1 -sSf https://sh.rustup.rs | sh -s -- -y --no-modify-path
+# && curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
 # Add Rust to PATH
 ENV PATH="/root/.cargo/bin:${PATH}"
 
@@ -30,6 +51,10 @@ RUN pip install --no-cache-dir -U lark peft transformers -i https://pypi.tuna.ts
 
 # Create the final image
 FROM python:3.12-slim
+# 替换为阿里云的 Debian 源（适配 deb822 格式）
+RUN sed -i 's|https://deb.debian.org|https://mirrors.aliyun.com|g' /etc/apt/sources.list.d/debian.sources && \
+    sed -i 's|http://deb.debian.org|https://mirrors.aliyun.com|g' /etc/apt/sources.list.d/debian.sources
+# 替换为清华的 pip 源    
 RUN pip config set global.index-url https://mirrors.tuna.tsinghua.edu.cn/pypi/web/simple
 # Minimal runtime deps
 RUN apt-get update && apt-get install -y --no-install-recommends \
@@ -45,16 +70,17 @@ WORKDIR /app
 # Copy the rest of your source code
 COPY . /app
 VOLUME /data/models/bce-embedding-base_v1
+VOLUME /data/projects/JqChatV2/JqChat
 
 # Expose environment variables and port
 ARG R2R_PORT=8000 R2R_HOST=0.0.0.0
 ENV R2R_PORT=$R2R_PORT R2R_HOST=$R2R_HOST
-# ENV R2R_POSTGRES_USER=langchain
-# ENV R2R_POSTGRES_DBNAME=postgres
-# ENV R2R_POSTGRES_PASSWORD=langchain
-# ENV R2R_POSTGRES_HOST=10.1.150.105
-# ENV R2R_POSTGRES_PORT=6000
-# ENV R2R_PROJECT_NAME=jq_new_project
+ENV R2R_POSTGRES_USER=langchain
+ENV R2R_POSTGRES_DBNAME=postgres
+ENV R2R_POSTGRES_PASSWORD=langchain
+ENV R2R_POSTGRES_HOST=10.1.150.105
+ENV R2R_POSTGRES_PORT=7000
+ENV R2R_PROJECT_NAME=jq_new_project
 
 
 EXPOSE $R2R_PORT

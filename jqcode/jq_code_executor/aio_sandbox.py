@@ -159,8 +159,10 @@ if __name__ == "__main__":
     plt.show()
     """
 
-    result = sandbox.exec_python_or_js_code(code=py_code, lang="python")
-    if result.get("status"):
+    result_list = sandbox.exec_python_or_js_code(code=py_code, lang="python")
+    result = result_list[0].get("result",None)
+    status = result_list[1]
+    if status:        
         text = result.get("text",None)
         image = result.get("image",None)
         print(f"{text=}")
@@ -176,11 +178,21 @@ if __name__ == "__main__":
     # /opt/python3.12/bin/pip list
     # /opt/python3.12/bin/pip install plotly seaborn
 
-# 保存和运行镜像
+# 保存和运行镜像[测试]
     # docker commit 67202306d56e aio_sandbox_jq:v1.0
-    # docker run -it -p 7080:8080 --name jqsandbox  aio_sandbox_jq:v1.0
     # ！！！需映射/data/projects/JqChatV2/workspace到容器中
+    # docker run -it -p 7080:8080 -v /data/projects/JqChatV2/workspace:/data/projects/JqChatV2/workspace --name jqsandbox  aio_sandbox_jq:v1.0
     # sh /opt/gem/run.sh
+
+# 正式运行镜像
+"""
+docker run -d \
+  -p 7080:8080 \
+  -v /data/projects/JqChatV2/workspace:/data/projects/JqChatV2/workspace \
+  --name jqsandbox \
+  aio_sandbox_jq:v1.0 \
+  sh /opt/gem/run.sh
+"""
 
 """
 Github:    https://github.com/agent-infra/sandbox

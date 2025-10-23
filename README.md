@@ -681,9 +681,10 @@ CUDA_VISIBLE_DEVICES=1 nohup vllm serve /data/models/Qwen/Qwen3-VL-8B-Instruct-F
   --served-model-name qwenvl \
   --limit-mm-per-prompt.video 1 \
   --limit-mm-per-prompt.image 5 \
-  --async-scheduling \
   --max-num-seqs 32 >> /root/JqLogs/vllmvl.log 2>&1 &
 tail -f /root/JqLogs/vllmvl.log
+
+<!--   --async-scheduling \ -->
 
 
 
@@ -716,7 +717,7 @@ os.environ['NUMEXPR_MAX_THREAD']='20'
 os.environ['R2R_POSTGRES_USER']="langchain"
 os.environ['R2R_POSTGRES_PASSWORD']="langchain"
 os.environ['R2R_POSTGRES_HOST']="10.1.150.105"
-os.environ['R2R_POSTGRES_PORT']="6000"
+os.environ['R2R_POSTGRES_PORT']="7000"
 os.environ['R2R_POSTGRES_DBNAME']="postgres"
 os.environ['R2R_PROJECT_NAME']="jq_new_project"
 os.environ['HATCHET_CLIENT_TOKEN']="eyJhbGciOiJFUzI1NiIsImtpZCI6InQ3ZF81ZyJ9.eyJhdWQiOiJodHRwOi8vaG9zdC5kb2NrZXIuaW50ZXJuYWw6NzI3NCIsImV4cCI6NDg5NTgxNDE5NywiZ3JwY19icm9hZGNhc3RfYWRkcmVzcyI6ImhhdGNoZXQtZW5naW5lOjcwNzciLCJpYXQiOjE3NDIyMTQxOTcsImlzcyI6Imh0dHA6Ly9ob3N0LmRvY2tlci5pbnRlcm5hbDo3Mjc0Iiwic2VydmVyX3VybCI6Imh0dHA6Ly9ob3N0LmRvY2tlci5pbnRlcm5hbDo3Mjc0Iiwic3ViIjoiNzA3ZDA4NTUtODBhYi00ZTFmLWExNTYtZjFjNDU0NmNiZjUyIiwidG9rZW5faWQiOiI3YWNkZWM4Yy1kNDdiLTQ1ZmMtOGMwNi1kZmVmNmJlMTc5MTYifQ.9V7039q8l8URALS-8pi-hZIaIDoDAbTKao78gaNM3jAkag5F1cYMumKwU-9MK1m7PThmzR9f1L2L5TdEb1mi-w"
@@ -793,7 +794,7 @@ image name：jqr2r_with_code_model_volume:latest
       - /data/projects/JqChatV2/JqChat/.env:/app/.env
 ```
 cd /data/projects/JqChatV2/JqChat/JqR2R/docker/
-docker compose -f compose.full.jq.yaml up -d
+docker compose -p r2r355 -f compose.full.jq.yaml up -d --build --no-recreate
 # `--profile postgres` can be omitted when using external Postgres
 
 
@@ -816,8 +817,8 @@ docker run  -p 7272:7272 -v /data/models/bce-embedding-base_v1:/data/models/bce-
 # 运行界面：http://10.1.150.105:7273/   
 # 填入服务地址：http://10.1.150.105:7272
 # 登录信息
-# Email: admin@example.com
-# Password: change_me_immediately
+# Email: admin@jqsoft.net
+# Password: admin@123456
 
 然后可以运行代码测试：
 ###注意，在本地开发测试时，在语句from r2r import * 之前 需要加入路径，代码如下###

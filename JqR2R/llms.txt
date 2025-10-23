@@ -746,8 +746,8 @@ concurrent_request_limit = 256
 provider = "r2r"
 require_authentication = true
 require_email_verification = false
-default_admin_email = "admin@example.com"
-default_admin_password = "change_me_immediately"
+default_admin_email = "admin@jqsoft.net"
+default_admin_password = "admin@123456"
 access_token_lifetime_in_minutes = 60
 refresh_token_lifetime_in_days = 7
 secret_key = "your-secret-key"
@@ -871,8 +871,8 @@ R2R’s authentication system supports secure user registration, login, session 
 provider = "r2r"
 require_authentication = true
 require_email_verification = false
-default_admin_email = "admin@example.com"
-default_admin_password = "change_me_immediately"
+default_admin_email = "admin@jqsoft.net"
+default_admin_password = "admin@123456"
 access_token_lifetime_in_minutes = 60
 refresh_token_lifetime_in_days = 7
 secret_key = "your-secret-key"
@@ -2179,7 +2179,7 @@ For large collections, utilize R2R’s orchestration capabilities via Hatchet UI
 
 - **URL**: [http://localhost:7274](http://localhost:7274)
 - **Login Credentials**:
-  - **Email**: admin@example.com
+  - **Email**: admin@jqsoft.net
   - **Password**: Admin123!!
 
 **Features:**
@@ -2495,7 +2495,7 @@ Access the Hatchet front-end application at [http://localhost:7274](http://local
 
 Use the following credentials to log in:
 
-- **Email**: admin@example.com
+- **Email**: admin@jqsoft.net
 - **Password**: Admin123!!
 
 ![Logging into Hatchet](https://files.buildwithfern.com/https://sciphi.docs.buildwithfern.com/2024-12-13T18:29:49.890Z/images/hatchet_login.png)
@@ -2895,8 +2895,8 @@ async function main() {
         { path: "examples/data/raskolnikov.txt", name: "raskolnikov.txt" },
     ];
 
-    const EMAIL = "admin@example.com";
-    const PASSWORD = "change_me_immediately";
+    const EMAIL = "admin@jqsoft.net";
+    const PASSWORD = "admin@123456";
 
     console.log("Logging in...");
     await client.users.login(EMAIL, PASSWORD);
@@ -2961,8 +2961,8 @@ const client = new r2rClient("http://localhost:7272");
 Authenticate the session using default superuser credentials.
 
 ```javascript
-const EMAIL = "admin@example.com";
-const PASSWORD = "change_me_immediately";
+const EMAIL = "admin@jqsoft.net";
+const PASSWORD = "admin@123456";
 
 console.log("Logging in...");
 await client.users.login(EMAIL, PASSWORD);
@@ -3298,8 +3298,8 @@ access_token_lifetime_in_minutes = 60
 refresh_token_lifetime_in_days = 7
 require_authentication = true
 require_email_verification = false
-default_admin_email = "admin@example.com"
-default_admin_password = "change_me_immediately"
+default_admin_email = "admin@jqsoft.net"
+default_admin_password = "admin@123456"
 ```
 
 - **`require_authentication`**: Set to `false` for development/testing; `true` for production.
@@ -3317,7 +3317,7 @@ from r2r import R2RClient
 client = R2RClient("http://localhost:7272")
 
 # Login as admin
-login_result = client.users.login("admin@example.com", "change_me_immediately")
+login_result = client.users.login("admin@jqsoft.net", "admin@123456")
 
 # Access superuser features
 users_overview = client.users.list()
@@ -11017,8 +11017,8 @@ access_token_lifetime_in_minutes = 60
 refresh_token_lifetime_in_days = 7
 require_authentication = false
 require_email_verification = false
-default_admin_email = "admin@example.com"
-default_admin_password = "change_me_immediately"
+default_admin_email = "admin@jqsoft.net"
+default_admin_password = "admin@123456"
 
 [completion]
 provider = "litellm"

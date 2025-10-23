@@ -10,7 +10,7 @@ def config():
 
     class TestConfig:
         base_url = "http://localhost:7272"
-        superuser_email = "admin@example.com"
+        superuser_email = "admin@jqsoft.net"
         superuser_password = "admin@123456"
         known_collection_id = "122fdf6a-e116-546b-a8f6-e4cb2e2c0a09"  # Example known collection ID
 

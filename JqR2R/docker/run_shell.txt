@@ -1,2 +1,2 @@
 cd /data/projects/JqChatV2/JqChat/JqR2R/docker
-docker compose -f compose.full.jq.yaml -p jqr2r355 --profile postgres up -d
+docker compose -f compose.full.jq.yaml -p jqr2r355_pro --profile postgres up -d

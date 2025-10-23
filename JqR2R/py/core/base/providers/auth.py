@@ -28,7 +28,7 @@ class AuthConfig(ProviderConfig):
     secret_key: Optional[str] = None
     require_authentication: bool = False
     require_email_verification: bool = False
-    default_admin_email: str = "admin@example.com"
+    default_admin_email: str = "admin@jqsoft.net"
     default_admin_password: str = "admin@123456"
     access_token_lifetime_in_minutes: Optional[int] = None
     refresh_token_lifetime_in_days: Optional[int] = None

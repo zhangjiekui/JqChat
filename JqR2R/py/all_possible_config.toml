@@ -74,8 +74,8 @@ require_authentication = false
 # Whether email verification is required
 require_email_verification = false
 # Default admin credentials
-default_admin_email = "admin@example.com"
-default_admin_password = "change_me_immediately"
+default_admin_email = "admin@jqsoft.net"
+default_admin_password = "admin@123456"
 
 ################################################################################
 # Completion / LLM Generation Settings (CompletionConfig and nested GenerationConfig)

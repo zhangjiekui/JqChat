@@ -65,7 +65,7 @@ import psycopg
 index_name = "postgres"
 database_name = 'postgres'
 host = '10.1.150.105'
-port = '6000'
+port = '7000'
 user= "langchain"
 password= "langchain"
 connection = f"postgresql+psycopg://{user}:{password}@{host}:{port}/{database_name}"  # Uses psycopg3!
