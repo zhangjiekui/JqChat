@@ -1400,6 +1400,7 @@ class GraphAgent:
             except Exception as e:
                 err_message = f'！！！大语言模型[{model_name=},{api_base=}]执行失败，！！！错误消息为:{e}'
                 logger.error(err_message)
+                logger.error(f"{self.model=}")
                 message=AIMessage(content=err_message)
                 # logger.error('请检查大语言模型接口服务状态,并查看传入的消息列表，如下：')            
                 # for m in messages:
