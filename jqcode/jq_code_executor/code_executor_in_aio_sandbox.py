@@ -5,11 +5,14 @@ import base64
 import PIL.Image
 from agent_sandbox import Sandbox
 from jqcode.jq_utils.jq_watermark_func_and_result.crypto_watermark_image import ImageWatermark
+# from jqcode.jq_agent.c0_init_env_models import env_models_instance
 from jqcode.jq_utils.logger import jqkj_logger
 logger = jqkj_logger(__file__).get_logger()
 
+_code_sandbox_url = os.environ.get('code_sandbox_url')
+code_sandbox_url = os.environ.get('code_sandbox_url',"http://10.1.150.105:9191")
 class AioSandbox:
-    def __init__(self, base_url="http://10.1.150.105:7080",user_request_url:str=None):
+    def __init__(self, base_url=code_sandbox_url,user_request_url:str=None):
         self.client = Sandbox(base_url=base_url)
         self.home_dir = self.client.sandbox.get_sandbox_context().home_dir
         self.wm = ImageWatermark("strong_password_123")
@@ -124,8 +127,13 @@ class AioSandbox:
             needed_result = [error_traceback_msg,status]
             return needed_result
 
+_code_executor_in_sandbox = None
+try:
+ _code_executor_in_sandbox = AioSandbox()
+except Exception as e:
+    logger.warning(f"AioSandbox初始化失败：{e}")
+code_executor_in_sandbox = _code_executor_in_sandbox
 
-code_executor_in_sandbox = AioSandbox()
 if __name__ == "__main__":
     sandbox = AioSandbox()
     print(sandbox.exec_python_or_js_code())

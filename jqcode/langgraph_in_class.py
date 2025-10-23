@@ -1852,7 +1852,7 @@ class GraphAgent:
                 break
             
         tool_name = 'code_execution'
-        if code_executor_in_sandbox.check_status():
+        if code_executor_in_sandbox and code_executor_in_sandbox.check_status():
             code_executor_in_sandbox.set_user_request_url(self.user_request_url)
             code_executor = code_executor_in_sandbox
         else:
@@ -2206,7 +2206,7 @@ if __name__ == "__main__":
     # print(response)
     # pass
 
-    # user_questions=['请直接执行代码：print("Hello World")']
+    user_questions=['请绘制sin(x)曲线']
     for user_question in user_questions:
         if user_question == '请绘制sin(x)曲线':
             pass
