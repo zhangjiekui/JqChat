@@ -43,8 +43,9 @@ import asyncio
 from jqcode.jq_utils.logger import jqkj_logger
 logger = jqkj_logger(__file__).get_logger()
 temp_lock = Lock()
-
-file_type_processed_by_jqreader = [".pdf",".doc",".docx",".md",".html",".htm"]
+# 先转换，转换不成功仍然使用原默认reader，只有成功转换成".docx"的才确定使用jqreader
+# file_type_processed_by_jqreader = [".pdf",".doc",".docx",".md",".html",".htm"]
+file_type_processed_by_jqreader = [".docx"]
 
 
 # KeyError: "There is no item named 'word/NULL' in the archive"
@@ -594,10 +595,15 @@ class JqkjSimpleDirectoryReader(SimpleDirectoryReader):
                 input_filepaths_exist,input_filepaths_exist_and_replaced_by_docx_if_converted = convert_file_to_docx(self.input_files,overwrite=overwrite_existing_converted_files,destination_dir=output_dir_for_converted_files)
             
                 converted_files_metadata = {}
-                for i,file in enumerate(input_filepaths_exist_and_replaced_by_docx_if_converted):                     
-                    file = str(file)
-                    original_file = str(input_filepaths_exist[i])
-                    converted_files_metadata[file] = {'original_source_jq':original_file,'source':original_file,'original_source_converted_jq':file} #'source'键是为了与chatchat中的reader保持一致的                        
+                for i,file in enumerate(input_filepaths_exist_and_replaced_by_docx_if_converted):
+                    original_file = input_filepaths_exist[i]
+                    original_file_str = str(original_file)
+                    file_str = str(file)
+                    if not file.exists():
+                        input_filepaths_exist_and_replaced_by_docx_if_converted[i]=original_file                     
+                        converted_files_metadata[original_file_str] = {'source':original_file_str}
+                    else:
+                        converted_files_metadata[file_str] = {'source':file_str,'original_source_converted_jq':original_file_str} #'source'键是为了与chatchat中的reader保持一致的                        
                         
                 self.input_files = input_filepaths_exist_and_replaced_by_docx_if_converted
                 self.input_files_original_metadata=converted_files_metadata
@@ -669,29 +675,41 @@ def _test_JqkjSimpleDirectoryReader():
                         fr'/data/projects/JqChatV2/JqChat/jqcode/jq_readers/.test_files/.testinputdocs/AAMIS_项目总体计划_120925.doc',
                         fr"/media/temp/发票识别接口文档.md"
                         ]
+    file_paths = [fr"/data/projects/file_reader/test_docs/发票.jpg"]
+    file_paths += [fr"/data/projects/file_reader/test_docs/ocr测试2.jpg"]
+    file_paths += [fr"/data/projects/file_reader/test_docs/zjk.doc"]
+    file_paths += [fr"/data/projects/file_reader/test_docs/揭榜挂帅PPT汇报-基于DX的肺炎AI影像智能诊断.pptx"]
+    file_paths += [fr"/data/projects/file_reader/test_docs/训练服务器-0729.xlsx"]
+    file_paths += [fr"/data/projects/file_reader/test_docs/download.xlsx"]
+    file_paths += [fr"/data/projects/file_reader/test_docs/pdf.pdf"]
+    convert_file_paths = file_paths
     
     
     start_time = time.time()
     simple_reader = JqkjSimpleDirectoryReader(input_files = convert_file_paths,output_dir_for_converted_files=fr"/data/projects/JqChatV2/JqChat/jqcode/jq_readers/.test_files/.outputdocs")
-    documents1 = simple_reader.load_data()
-    print(f"{len(documents1)=}")
-    end_time = time.time()
-    logger.warning(f"Total time load_data: {end_time - start_time} seconds")
-    pass 
+    # documents1 = simple_reader.load_data()
+    # print(f"{len(documents1)=}")
+    # end_time = time.time()
+    # logger.warning(f"Total time load_data: {end_time - start_time} seconds")
+    # pass 
     start_time = time.time()
     documents1a = asyncio.run(simple_reader.aload_data())
     print(f"{len(documents1a)}")
     end_time = time.time()
     logger.warning(f"Total time aload_data: {end_time - start_time} seconds")
+    for document in documents1a:
+        print(document.metadata.get("source"))
+        print(document.text)
+
     pass
 
-    input_file_dir = fr'/data/projects/JqChatV2/JqChat/jqcode/jq_readers/.test_files/.testinputdocs'
-    simple_reader2 = JqkjSimpleDirectoryReader(input_file_dir,exclude_hidden = False)
-    documents2 = simple_reader2.load_data()
-    print(len(documents2))
+    # input_file_dir = fr'/data/projects/JqChatV2/JqChat/jqcode/jq_readers/.test_files/.testinputdocs'
+    # simple_reader2 = JqkjSimpleDirectoryReader(input_file_dir,exclude_hidden = False)
+    # documents2 = simple_reader2.load_data()
+    # print(len(documents2))
 
-    documents2a = asyncio.run(simple_reader2.aload_data())
-    print(len(documents2a))
+    # documents2a = asyncio.run(simple_reader2.aload_data())
+    # print(len(documents2a))
 
 
 
@@ -709,7 +727,7 @@ if __name__ == "__main__":
     # documents,trees,df_tables = _test_JqkjDocxReader()
     _test_JqkjSimpleDirectoryReader()
     # _test_get_retriever()
-    _test_error_files_JqkjSimpleDirectoryReader()
+    # _test_error_files_JqkjSimpleDirectoryReader()
     
     # 
 

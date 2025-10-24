@@ -357,6 +357,7 @@ def download_converted_files(file_paths: List[str], output_dir: Path, api_url = 
     try:
         # 确保输出目录存在
         Path(output_dir).mkdir(parents=True, exist_ok=True)
+        # file_paths = [str(file_path).replace(api_url,"") for file_path in file_paths]
         
         # 调用下载API
         response = requests.post(
@@ -410,7 +411,50 @@ def download_converted_files(file_paths: List[str], output_dir: Path, api_url = 
             "message": f"处理过程中发生错误: {str(e)}"
         }
 
+def api_docpdf_to_docx(doc_file_path: str, output_dir: Path, CONVERT_URL = "http://192.168.44.180:8000/convert") -> str:
+    try:
+        output_dir = Path(output_dir)
+        if output_dir.suffix:
+            Path(output_dir).parent.mkdir(parents=True, exist_ok=True)
+            docx_file = output_dir
+        else:
+            Path(output_dir).mkdir(parents=True, exist_ok=True)
+            docx_file_name = file_path.with_suffix(".docx").name
+            docx_file = os.path.join(output_dir, docx_file_name)
+        # 检查文件是否存在
+        file_path = Path(doc_file_path)
+        if not file_path.exists():
+            raise FileNotFoundError(f"未找到文件: {file_path}")
+        with open(file_path, 'rb') as f:
+            files = {
+                'file': (file_path._str, f, 'application/msword')
+            }
+            response = requests.post(CONVERT_URL, files=files)
 
+        # 检查响应状态
+        if response.status_code != 200:
+            raise Exception(f"转换失败，HTTP {response.status_code}: {response.text}")
+
+        # 2. 解析返回的 JSON    
+        result = response.json()
+        converted_url = result.get("converted", None)
+        if not converted_url:
+            raise Exception("转换结果中未包含 .docx 下载链接")
+
+        docx_response = requests.get(converted_url, stream=True)
+        if docx_response.status_code != 200:
+            raise Exception(f"下载失败，HTTP {docx_response.status_code}")
+
+        # 保存到本地
+        with open(docx_file, 'wb') as f:
+            for chunk in docx_response.iter_content(chunk_size=8192):
+                f.write(chunk)
+
+        logger.warning(f"✅ 转换完成！文件已保存为: {docx_file}") 
+        return docx_file 
+    except Exception as e:
+        logger.warning(f"❌ {doc_file_path}文件转换失败，返回原始文件: {e}")
+        return doc_file_path
 def convert_doc_pdf2docx_on_win_and_linux(input_filepaths:Union[str,list],overwrite=True,destination_dir=None,api_url=winserver_convert_url): 
     not_exist_filepaths = []
     passed_makeup_filepaths = []
@@ -474,23 +518,20 @@ def convert_doc_pdf2docx_on_win_and_linux(input_filepaths:Union[str,list],overwr
                 docx_filepath = destination_dir / docx_filepath.name
             # Convert file using API
             try:
-                with open(pdf_doc_filepath, 'rb') as f:
-                    files = {'files': (pdf_doc_filepath.name, f)}
-                    response = requests.post(api_url, files=files)
-                    response.raise_for_status()  # 检查状态
-                    if response.status_code == 200:
-                        result = response.json()
-                        if result['success_count'] > 0:
-                            # Save the converted file
-                            docx_path = result['results'][0].get('docx_path', '')  # Assuming API returns base64 or binary content
-                            if docx_path:
-                                download_converted_files([docx_path], docx_filepath.parent)
-
-        
-                        else:
-                            logger.warning(f"转换失败: {result.get('message', '未知错误')}")
-                    else:
-                        logger.warning(f"API调用失败，状态码: {response.status_code=},{response.text=}")
+                file_name = api_docpdf_to_docx(pdf_doc_filepath, docx_filepath)
+                # with open(pdf_doc_filepath, 'rb') as f:
+                #     files = {'files': (pdf_doc_filepath.name, f)}
+                #     response = requests.post(api_url, files=files)
+                #     response.raise_for_status()  # 检查状态
+                #     if response.status_code == 200:
+                #         result = response.json()
+                #         docx_path = result[0].get("converted",None)  # Assuming API returns base64 or binary content
+                #         if docx_path:
+                #             download_converted_files([docx_path], docx_filepath.parent)
+                #         else:
+                #             logger.warning(f"转换失败: {result.get('message', '未知错误')}")
+                #     else:
+                #         logger.warning(f"API调用失败，状态码: {response.status_code=},{response.text=}")
                         
             except Exception as e:
                 logger.warning(f"转换失败，详细错误信息为: {str(e)}")
