@@ -673,9 +673,10 @@ workon vllm
 CUDA_VISIBLE_DEVICES=2,3 VLLM_USE_V1=1 nohup vllm serve /data/models/Qwen/Qwen2___5-VL-32B-Instruct-AWQ --served-model-name qwenvl --enable-auto-tool-choice --tool-call-parser hermes --gpu-memory-utilization 0.85 --port 9996 --host 0.0.0.0 --limit-mm-per-prompt image=5,video=5 --max-model-len 32768  --tensor-parallel-size 2 --max-num-seqs 16 --enable-prefix-caching --enable-chunked-prefill >> /root/JqLogs/vllmvl.log 2>&1 &
 tail -f /root/JqLogs/vllmvl.log 
 ```
-#### Qwen3-VL-8B-Instruct-FP8 gpu0
+#### Qwen3-VL-8B-Instruct-FP8 gpu0,1
 workon vllm
-CUDA_VISIBLE_DEVICES=1 nohup vllm serve /data/models/Qwen/Qwen3-VL-8B-Instruct-FP8 \
+CUDA_VISIBLE_DEVICES=0,1 nohup vllm serve /data/models/Qwen/Qwen3-VL-8B-Instruct-FP8 \
+  --tensor-parallel-size 2 \
   --max-model-len 20000 \
   --host 0.0.0.0 \
   --port 8000 \

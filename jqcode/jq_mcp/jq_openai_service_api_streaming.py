@@ -1,7 +1,6 @@
 import os
 import json
 import time
-import logging
 from typing import List
 from jqcode.langgraph_in_class import GraphAgent
 from jqcode.jq_docstores.backend_docstore_utils.jq_es_metastores import JqElasticsearchUniMetaStore
@@ -14,16 +13,15 @@ from jqcode.jq_mcp.utils import ThreadWithResult, get_process_text,chat
 from jqcode.r2r_client_functions import r2r_authed_client
 # from fastapi_bgtasks_dashboard import mount_bg_tasks_dashboard
 
-
-
-
-
-# 配置日志记录
-logging.basicConfig(
-    level=logging.WARNING,
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
-)
-logger = logging.getLogger(__name__)
+from jqcode.jq_utils.logger import jqkj_logger
+logger = jqkj_logger(__file__).get_logger()
+# import logging
+# # 配置日志记录
+# logging.basicConfig(
+#     level=logging.WARNING,
+#     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+# )
+# logger = logging.getLogger(__name__)
 
 # 有效API Key集合
 VALID_API_KEYS = {"","abc123","sk-0S7bV3oaznhuevN899Db0cDa20Ae4c5485Ce5862A86063C8"}  # 替换为实际密钥
@@ -214,6 +212,7 @@ async def chat_completions(request: Request,  background_tasks: BackgroundTasks)
         api_deployment_url = os.getenv("api_deployment_url")
 
         metadata = data.get("metadata",None)
+        logger.warning(f"metadata: {metadata}")
         user_name_id = ''
         if metadata:
             try:
@@ -351,7 +350,7 @@ if __name__ == "__main__":
     uvicorn.run(
         app,
         host="0.0.0.0",
-        port=8600,
+        port=8601,
         log_level="debug",
         timeout_keep_alive=60
     )
