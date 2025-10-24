@@ -1,8 +1,32 @@
 <script setup lang="ts">
-import { computed, ref, unref } from 'vue'
+import { computed, ref, unref, onMounted, nextTick } from 'vue'
 import 'deep-chat'
+import 'katex/dist/katex.min.css'
+declare global {
+  interface Window {
+    katex: typeof import('katex').default
+  }
+}
+// 声明 DeepChat 实例类型（可选但推荐）
+interface DeepChatInstance {
+  refreshMessages(): void
+}
+const chatRef = ref<DeepChatInstance | null>(null)
+onMounted(async () => {
+  try {
+    const { default: katex } = await import('katex')
+    window.katex = katex
+    // 等待下一次 tick 确保 DOM 稳定
+    await nextTick()
+    chatRef.value?.refreshMessages()
+  } catch (error) {
+    console.warn('KaTeX load failed', error)
+  } finally {
+    loading.value = false // KaTeX 加载完再显示 chat
+  }
+})
 
-const modes = ref(['qwen3', 'qwenvl', 'omni', 'jqagent', 'default'])
+const models = ref(['qwen3', 'qwenvl', 'omni', 'jqagent', 'default'])
 const model = ref('default')
 
 const realUrl = ref({
@@ -14,7 +38,7 @@ const realUrl = ref({
   // default: 'http://10.1.150.105:8601/v1/chat/completions',
 })
 
-const loading = ref(false)
+const loading = ref(true) // 初始为 true，隐藏 chat
 
 const connect = computed(() => {
   return {
@@ -34,6 +58,7 @@ const connect = computed(() => {
 const remarkable = {
   html: true,
   typographer: true,
+  math: true,
 }
 
 const history = ref([])
@@ -63,10 +88,24 @@ const requestInterceptor = (req) => {
 
   console.log('req 2 => ', req)
 }
+
+// 微积分的原理、数学公式及解释【凡涉及数学公式，必须使用Markdown语法,且支持 KaTeX 渲染】
+// 正态分布的原理、数学公式及解释【凡涉及数学公式，必须使用Markdown语法,且支持 KaTeX 渲染】
+
 const responseInterceptor = (res) => {
-  // return res?.choices?.map((r) => {
-  //   return { html: r.delta?.content } as Response;
-  // });
+  if (res?.choices?.[0]?.delta?.content) {
+    let content = res.choices[0].delta.content
+    // --- 核心转换逻辑 ---
+    // 将模型输出的块级 LaTeX 公式 \[ ... \] 转换为 Deep Chat 识别的 $$ ... $$
+    // 使用 g (global) 和 s (dotall) 标志确保匹配跨行的内容
+    content = content.replace(/\\\[(.*?)\\\]/gs, (_, math) => `$$${math.trim()}$$`)
+    // 将模型可能误用的行内 LaTeX 公式 ( ... ) 转换为 Deep Chat 识别的 $ ... $
+    // 注意：这会将所有独立的 ( ... ) 对转换为数学公式，如果这不是你想要的，需要更复杂的正则
+    // 但根据你的例子，这似乎就是模型的意图
+    content = content.replace(/\((.*?)\)/gs, (_, math) => `$${math.trim()}$`)
+    // --- 更新响应内容 ---
+    res.choices[0].delta.content = content
+  }
   return res
 }
 
@@ -88,7 +127,7 @@ const messageStyles = {
     "Url:"{{ realUrl[model] }} "Model": {{ model }}
     <div class="!space-x-4 px-4 py-2">
       <button
-        v-for="item in modes"
+        v-for="item in models"
         :key="item"
         class="m-2 rounded-full border px-4 py-2 font-bold"
         :class="model === item ? 'bg-blue-500 text-white' : ''"
@@ -97,16 +136,16 @@ const messageStyles = {
         {{ item }}
       </button>
     </div>
-    <h1 class="!mt-4 py-4">Deep Chat</h1>
+    <!-- <h1 class="!mt-4 py-4">Deep Chat v2.3.0 updated!</h1> -->
+    <h1>Deep Chat v2.3.0 updated!</h1>
 
     <deep-chat
       v-if="!loading"
+      ref="chatRef"
       images="true"
       camera="true"
-      :mixedFiles="{
-        maxNumberOfFiles: 3,
-        files: { acceptedFormats: '.txt, .pdf,.doc,.docx' },
-      }"
+      focusMode="true"
+      speechToText='{"audio": {"autoPlay": true}}'
       :audio="{
         format: 'wav',
         files: { acceptedFormats: '.wav' },
@@ -115,6 +154,10 @@ const messageStyles = {
         format: 'wav',
         files: { acceptedFormats: '.wav' },
         button: { position: 'inside-left' },
+      }"
+      :mixedFiles="{
+        maxNumberOfFiles: 3,
+        files: { acceptedFormats: '.txt, .pdf,.doc,.docx' },
       }"
       :remarkable="remarkable"
       :directconnection="{
