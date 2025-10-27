@@ -675,7 +675,7 @@ tail -f /root/JqLogs/vllmvl.log
 ```
 #### Qwen3-VL-8B-Instruct-FP8 gpu1
 workon vllm
-CUDA_VISIBLE_DEVICES=1 nohup vllm serve /data/models/Qwen/Qwen3-VL-8B-Instruct-FP8 \
+CUDA_VISIBLE_DEVICES=1 VLLM_ATTENTION_BACKEND=FLASHINFER nohup vllm serve /data/models/Qwen/Qwen3-VL-8B-Instruct-FP8 \
   --max-model-len 20000 \
   --host 0.0.0.0 \
   --port 8000 \
@@ -697,8 +697,7 @@ vllmv0.9.1
 flash_attn 2.8.0.post2
 flashinfer-python 0.2.3         /root/flashinfer
 
-workon sl
-workon vllmb
+workon vllm2
 CUDA_VISIBLE_DEVICES=1 VLLM_ALLOW_ENGINE_USE_RAY=1 nohup vllm serve /data/models/Qwen/Qwen2___5-VL-7B-Instruct-AWQ --served-model-name qwenvl --enable-auto-tool-choice --tool-call-parser hermes --gpu-memory-utilization 0.98 --port 8000 --host 0.0.0.0 --limit-mm-per-prompt image=5,video=5 --max-model-len 32768  --max-num-seqs 32 --enable-prefix-caching --enable-chunked-prefill >> /root/JqLogs/vllmvl.log 2>&1 &
 tail -f /root/JqLogs/vllmvl.log 
 ```

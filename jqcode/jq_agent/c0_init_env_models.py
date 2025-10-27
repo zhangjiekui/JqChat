@@ -85,12 +85,12 @@ class Vlm_API:
         self.api_key = api_key
         self.model=model
         self.client = OpenAI(api_key=api_key,base_url=api_base)
-        self.default_prompt = "首先识别出有意义的区块，然后逐个区块完整识别并仅输出图中的文字（相当于ocr，去掉不必要的换行符，但保留必要的空格，使用‘||’分割文本块）。最后仅输出完整的文本，不要有任何额外的内容和解释。"
+        self.default_ocr_prompt = "首先识别出有意义的区块，然后逐个区块完整识别并仅输出图中的文字（相当于ocr，去掉不必要的换行符，但保留必要的空格，使用‘||’分割文本块，如果基本不存在文本，则请输出图片描述）。最后仅输出完整的文本，不要有任何额外的内容和解释。"
         # 请识别出发票中的购买方 名称（keyname:gmf）、销售方 名称（keyname:xsf）、销售项目名称 （keyname:item）、发票类型（keyname:type，取值为普通发票或专用发票）。以Json形式返回，使用括号中的keyname代替中文名称，不要有多余内容
     def __call__(self,image_path_or_base64:str,is_decoded_image_text:bool=False,query:str=None,only_return_text=True):
         ## 如果是图片地址，读取图片并转换为base64
         if not query:
-            query = self.default_prompt
+            query = self.default_ocr_prompt
         if is_decoded_image_text:
             encoded_image_text = image_path_or_base64
         else:
@@ -730,7 +730,8 @@ class InitEnvModels:
         self.ocr_pool = _Executor(_pool_size)
         self.gpu_idxs = [0,1,2,3]
 
-        self.vlm = Vlm_API()  
+        self.ocr = Ocr_API()  
+        self.vlm = self.ocr.vlm
 
         self.chat_model = None
         self.openai_chat_model=None

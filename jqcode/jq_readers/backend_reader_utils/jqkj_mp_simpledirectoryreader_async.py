@@ -541,10 +541,11 @@ class SimpleDirectoryReader(BaseReader, ResourcesReaderMixin, FileSystemReaderMi
                 if fs and not is_default_fs(fs):
                     kwargs["fs"] = fs                
                 docs = reader.load_data(input_file, **kwargs)
-                if len(docs) > 0:
+                if isinstance(docs,list) and len(docs) > 1:
                     all_text = "\n\n".join([doc.text for doc in docs])
-                    docs[-1].text = all_text
-                    docs = docs[-1]
+                    # docs[-1].text = all_text
+                    docs[-1].set_content(all_text)  
+                    docs = [docs[-1]]
             except ImportError as e:
                 # ensure that ImportError is raised so user knows
                 # about missing dependencies
@@ -564,7 +565,7 @@ class SimpleDirectoryReader(BaseReader, ResourcesReaderMixin, FileSystemReaderMi
                 for i, doc in enumerate(docs):
                     doc.id_ = f"{input_file!s}_part_{i}"
 
-            documents.append(docs)
+            documents.extend(docs)
         else:
             # do standard read
             fs = fs or get_default_fs()
@@ -608,10 +609,11 @@ class SimpleDirectoryReader(BaseReader, ResourcesReaderMixin, FileSystemReaderMi
                 if self.fs and not is_default_fs(self.fs):
                     kwargs["fs"] = self.fs                
                 docs = await reader.aload_data(input_file, **kwargs)
-                if len(docs) > 0:
+                if isinstance(docs,list) and len(docs) > 1:
                     all_text = "\n\n".join([doc.text for doc in docs])
-                    docs[-1].text = all_text
-                    docs = docs[-1]
+                    # docs[-1].text = all_text
+                    docs[-1].set_content(all_text)
+                    docs = [docs[-1]]
 
 
             except ImportError as e:
@@ -633,7 +635,7 @@ class SimpleDirectoryReader(BaseReader, ResourcesReaderMixin, FileSystemReaderMi
                 for i, doc in enumerate(docs):
                     doc.id_ = f"{input_file!s}_part_{i}"
 
-            documents.append(docs)
+            documents.extend(docs)
         else:
             # do standard read
             fs = self.fs or get_default_fs()

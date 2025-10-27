@@ -25,6 +25,7 @@ from threading import Lock
 from docx.document import Document as DocxDocument
 from llama_index.core.readers.base import BaseReader
 from llama_index.core import Document as LmDocument
+from llama_index.core.schema import Document, ImageDocument
 
 import fsspec
 from fsspec.implementations.local import AbstractFileSystem
@@ -45,8 +46,13 @@ logger = jqkj_logger(__file__).get_logger()
 temp_lock = Lock()
 # 先转换，转换不成功仍然使用原默认reader，只有成功转换成".docx"的才确定使用jqreader
 # file_type_processed_by_jqreader = [".pdf",".doc",".docx",".md",".html",".htm"]
-file_type_processed_by_jqreader = [".docx"]
-
+file_type_processed_by_jqdocxreader = [".docx"]
+file_type_processed_by_jqimagereader = [".jpg",".png",".jpeg",".bmp",".tiff",".gif",".webp"]
+        # ".gif": ImageReader,
+        # ".jpg": ImageReader,
+        # ".png": ImageReader,
+        # ".jpeg": ImageReader,
+        # ".webp": ImageReader,
 
 # KeyError: "There is no item named 'word/NULL' in the archive"
 # 原因：有两张引用的图像不存在！在 Word 里直接把这两个坏引用删除掉，保存后再用脚本解析就没问题了！
@@ -66,6 +72,33 @@ def load_from_xml_v2(baseURI, rels_item_xml):
             srels._srels.append(_SerializedRelationship(baseURI, rel_elm))
     return srels
 _SerializedRelationships.load_from_xml = load_from_xml_v2
+class JqkjImageReader(BaseReader):
+    """Image reader."""
+    def __init__(self, keep_image: bool = False):
+        from jqcode.jq_agent.c0_init_env_models import Ocr_API
+        self.image_text_parser = Ocr_API()
+    def load_data(
+        self,
+        file: Path,
+        extra_info: Optional[Dict] = None,
+        fs: Optional[AbstractFileSystem] = None,
+    ) -> List[Document]:
+        """Parse file."""
+        # Parse image into text
+        text_str: str = ""
+        try:
+            text_str = self.image_text_parser(file)
+        except Exception as e:
+            logger.error(f"JqkjImageReader获取图片文本失败：{e}")
+
+        return [
+            ImageDocument(
+                text=text_str,
+                image_path=str(file),
+                metadata=extra_info or {},
+            )
+        ]
+
 
 class JqkjDocxReader(BaseReader):
     """Docx parser."""
@@ -116,7 +149,7 @@ class JqkjDocxReader(BaseReader):
                     self.orginal_filepath_extra_info = {'original_source_jq':doc_original,'source':doc_original,'original_source_converted_jq':doc_original}
                     # 元数据中增加了文件扩展名
                     self.orginal_filepath_extra_info.update({"file_extention":ext})
-                elif ext in file_type_processed_by_jqreader:
+                elif ext in file_type_processed_by_jqdocxreader:
                     input_filepaths_exist,input_filepaths_exist_and_replaced_by_docx_if_converted = convert_file_to_docx(file_path,overwrite=False)                
                     # self.file_path此时为转换后的docx文件路径
                     if input_filepaths_exist_and_replaced_by_docx_if_converted:
@@ -128,7 +161,7 @@ class JqkjDocxReader(BaseReader):
                     else:
                         logger.error(f"{file_path}转换成docx失败！")
                 else:
-                    logger.error(f"JqkjDocxReader暂只支持{file_type_processed_by_jqreader},无法读取[{ext}]文件")           
+                    logger.error(f"JqkjDocxReader暂只支持{file_type_processed_by_jqdocxreader},无法读取[{ext}]文件")           
 
             else:
                 logger.error(f"文件不存在:{file_path}")
@@ -515,7 +548,9 @@ class JqkjDocxReader(BaseReader):
 
 # 为JqkjSimpleDirectoryReader做的变量准备
 filetype_jqreader_dict = {}
-[filetype_jqreader_dict.update({filetype:JqkjDocxReader}) for filetype in file_type_processed_by_jqreader]
+[filetype_jqreader_dict.update({filetype:JqkjDocxReader}) for filetype in file_type_processed_by_jqdocxreader]
+[filetype_jqreader_dict.update({filetype:JqkjImageReader}) for filetype in file_type_processed_by_jqimagereader]
+
 file_type_processed_by_other_readers = {".py":UnstructuredReader,".txt":FlatReader}
 filetype_reader_dict = {**filetype_jqreader_dict, **file_type_processed_by_other_readers}
 
@@ -682,21 +717,20 @@ def _test_JqkjSimpleDirectoryReader():
     file_paths += [fr"/data/projects/file_reader/test_docs/训练服务器-0729.xlsx"]
     file_paths += [fr"/data/projects/file_reader/test_docs/download.xlsx"]
     file_paths += [fr"/data/projects/file_reader/test_docs/pdf.pdf"]
+    # file_paths = [fr"/data/projects/file_reader/test_docs/pdf.pdf"]
     convert_file_paths = file_paths
     
     
-    start_time = time.time()
     simple_reader = JqkjSimpleDirectoryReader(input_files = convert_file_paths,output_dir_for_converted_files=fr"/data/projects/JqChatV2/JqChat/jqcode/jq_readers/.test_files/.outputdocs")
-    # documents1 = simple_reader.load_data()
-    # print(f"{len(documents1)=}")
-    # end_time = time.time()
-    # logger.warning(f"Total time load_data: {end_time - start_time} seconds")
-    # pass 
+    start_time = time.time()
+    documents1 = simple_reader.load_data()
+    end_time = time.time()
+    logger.warning(f"{len(documents1)=},Total time load_data_sync: {end_time - start_time} seconds")
+    pass 
     start_time = time.time()
     documents1a = asyncio.run(simple_reader.aload_data())
-    print(f"{len(documents1a)}")
     end_time = time.time()
-    logger.warning(f"Total time aload_data: {end_time - start_time} seconds")
+    logger.warning(f"{len(documents1a)=},Total time load_data_aync: {end_time - start_time} seconds")
     for document in documents1a:
         print(document.metadata.get("source"))
         print(document.text)
@@ -712,7 +746,14 @@ def _test_JqkjSimpleDirectoryReader():
     # print(len(documents2a))
 
 
-
+    # file_paths = [fr"/data/projects/file_reader/test_docs/发票.jpg"]
+    # file_paths += [fr"/data/projects/file_reader/test_docs/ocr测试2.jpg"]
+    # /data/projects/JqChatV2/JqChat/jqcode/jq_utils/jq_watermark_func_and_result/图片/test.png
+def _test_JqkjImageReader(file_path = fr'/data/projects/JqChatV2/JqChat/jqcode/jq_utils/jq_watermark_func_and_result/图片/test.png'):
+    image_reader = JqkjImageReader()
+    documents = image_reader.load_data(file_path)
+    print(documents[0].text)
+    return documents
 
 def _test_get_retriever():
     from jqcode.jq_agent.tools.jq_retriever import get_retriever
@@ -723,7 +764,7 @@ def _test_get_retriever():
     compression_retriever = get_retriever(index_name=index_name,chat_on_docs_list=input_files,add_docs_list_to_kb=False)     
     print(type(compression_retriever))
 if __name__ == "__main__":
-
+    image_documents = _test_JqkjImageReader()
     # documents,trees,df_tables = _test_JqkjDocxReader()
     _test_JqkjSimpleDirectoryReader()
     # _test_get_retriever()

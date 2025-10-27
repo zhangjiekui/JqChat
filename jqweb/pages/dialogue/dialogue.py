@@ -258,7 +258,8 @@ def dialogue_page(
             img_files = ctx.get("files", None)
             if img_files:
                 if prompt.lower() == "ocr":
-                    prompt = "首先识别出有意义的区块，然后逐个区块完整识别并仅输出图中的文字（相当于ocr，去掉不必要的换行符，但保留必要的空格，使用‘||’分割文本块）。最后仅输出完整的文本，不要有任何额外的内容和解释。"
+                    prompt = env_models_instance.vlm.default_ocr_prompt
+                    # prompt = "首先识别出有意义的区块，然后逐个区块完整识别并仅输出图中的文字（相当于ocr，去掉不必要的换行符，但保留必要的空格，使用‘||’分割文本块）。最后仅输出完整的文本，不要有任何额外的内容和解释。"
 
                 chat_box.user_say(prompt)
 
