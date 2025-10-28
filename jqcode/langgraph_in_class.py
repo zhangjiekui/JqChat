@@ -494,7 +494,7 @@ index_name ='zjk_jqesclient_reader_test_768im'
 class GraphAgent:
     def __init__(self,executable_tools:list=executable_tools, routing_tools_wrapped_in_class:list=route_tools, 
                  llm_model:ChatOpenAI=None,chat_on_docs_list:List[str]=None,add_docs_list_to_kb:bool=True, 
-                 allow_conversation_memory=True,allow_question_rewrite = True,
+                 allow_conversation_memory=False,allow_question_rewrite = False,
                  kb_base_dict:dict={"index_name": index_name, "description":default_index_description}, 
                  recursion_limit:int=25, memory_thread_id:str=f"admin({shortuuid.uuid()})",user_request_url:str=env_models_instance.deployment_url) -> None:
         
@@ -2152,7 +2152,7 @@ if __name__ == "__main__":
     # user_questions += ['请检索知识库，然后回答晶奇公司质量保证过程中的角色及角色的职责或含义解释，对应的人员（姓名）有哪些?其中的批准人是谁？']
     # user_questions += ["请检索知识库：信息"]
     # user_questions = ['ICD-10是什么？']
-    my_main_bot = GraphAgent(executable_tools=executable_tools,routing_tools_wrapped_in_class=route_tools,allow_conversation_memory=True)
+    my_main_bot = GraphAgent(executable_tools=executable_tools,routing_tools_wrapped_in_class=route_tools,allow_conversation_memory=False)
 
     # from fastapi import FastAPI
     # import threading
@@ -2207,7 +2207,7 @@ if __name__ == "__main__":
     # print(response)
     # pass
 
-    user_questions=['请绘制sin(x)曲线']
+    # user_questions=['请绘制sin(x)曲线']
     for user_question in user_questions:
         if user_question == '请绘制sin(x)曲线':
             pass
