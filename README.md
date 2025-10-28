@@ -687,6 +687,7 @@ CUDA_VISIBLE_DEVICES=0  vllm serve /data/models/Qwen/Qwen3-VL-8B-Instruct-FP8 \
   --mm-processor-cache-gb 0 \
   --max-num-seqs 8
 
+docker run --name xinference -v /data/models:/data/models -v /data/xinference/:/data/xinference/ -e XINFERENCE_HOME=/data/xinference/ -e XINFERENCE_MODEL_SRC=modelscope -e HF_ENDPOINT=https://hf-mirror.com -p 9997:9997 --gpus all xprobe/xinference:latest-cu128 xinference-local -H 0.0.0.0 
 
 workon vllm
 CUDA_VISIBLE_DEVICES=0  nohup vllm serve /data/models/Qwen/Qwen3-VL-8B-Instruct-FP8 \
@@ -702,7 +703,9 @@ CUDA_VISIBLE_DEVICES=0  nohup vllm serve /data/models/Qwen/Qwen3-VL-8B-Instruct-
 tail -f /root/JqLogs/vllmvl.log
 
 <!--   --async-scheduling \ -->
-
+workon vllm
+CUDA_VISIBLE_DEVICES=1 VLLM_ALLOW_ENGINE_USE_RAY=1 nohup vllm serve /data/models/Qwen/Qwen2___5-VL-7B-Instruct-AWQ --served-model-name qwenvl --enable-auto-tool-choice --tool-call-parser hermes --gpu-memory-utilization 0.95 --port 8000 --host 0.0.0.0 --limit-mm-per-prompt.image 5 --limit-mm-per-prompt.video 1 --mm-processor-cache-gb 0 --max-model-len 32768  --max-num-seqs 16 --enable-prefix-caching --enable-chunked-prefill >> /root/JqLogs/vllmvl.log 2>&1 &
+tail -f /root/JqLogs/vllmvl.log 
 
 
 
@@ -712,8 +715,8 @@ vllmv0.9.1
 flash_attn 2.8.0.post2
 flashinfer-python 0.2.3         /root/flashinfer
 
-workon vllm2
-CUDA_VISIBLE_DEVICES=0 VLLM_ALLOW_ENGINE_USE_RAY=1 nohup vllm serve /data/models/Qwen/Qwen2___5-VL-7B-Instruct-AWQ --served-model-name qwenvl --enable-auto-tool-choice --tool-call-parser hermes --gpu-memory-utilization 0.98 --port 8000 --host 0.0.0.0 --limit-mm-per-prompt image=5,video=5 --max-model-len 32768  --max-num-seqs 32 --enable-prefix-caching --enable-chunked-prefill >> /root/JqLogs/vllmvl.log 2>&1 &
+workon vllm
+CUDA_VISIBLE_DEVICES=0 VLLM_ALLOW_ENGINE_USE_RAY=1 nohup vllm serve /data/models/Qwen/Qwen2___5-VL-7B-Instruct-AWQ --served-model-name qwenvl --enable-auto-tool-choice --tool-call-parser hermes --gpu-memory-utilization 0.98 --port 8000 --host 0.0.0.0 --limit-mm-per-prompt image=5,video=5 --max-model-len 32768  --max-num-seqs 16 --enable-prefix-caching --enable-chunked-prefill >> /root/JqLogs/vllmvl.log 2>&1 &
 tail -f /root/JqLogs/vllmvl.log 
 ```
 

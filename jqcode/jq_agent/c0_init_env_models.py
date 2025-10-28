@@ -95,7 +95,7 @@ class Vlm_API:
     https://github.com/QwenLM/Qwen2.5-VL
     "Qwen/Qwen2.5-VL-7B-Instruct"
     '''
-    def __init__(self,api_base:str = "http://10.1.150.105:8001/v1",api_key:str='abc123',model:str="qwenvl"):
+    def __init__(self,api_base:str = "http://10.1.150.105:8000/v1",api_key:str='abc123',model:str="qwenvl"):
         self.api_base = api_base
         self.api_key = api_key
         self.model = model
