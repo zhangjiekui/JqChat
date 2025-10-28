@@ -95,7 +95,7 @@ class Vlm_API:
     https://github.com/QwenLM/Qwen2.5-VL
     "Qwen/Qwen2.5-VL-7B-Instruct"
     '''
-    def __init__(self,api_base:str = "http://10.1.150.105:8000/v1",api_key:str='abc123',model:str="qwenvl"):
+    def __init__(self,api_base:str = "http://10.1.150.105:8001/v1",api_key:str='abc123',model:str="qwenvl"):
         self.api_base = api_base
         self.api_key = api_key
         self.model = model
@@ -155,17 +155,26 @@ class Vlm_API:
             logger.error(f"请求错误: {str(e)}")
             return ''
 
+paddleocr_vl = None
+try:
+    if paddleocr_vl is None:
+        paddleocr_vl = PaddleOCR_VL_API()
+except Exception as e:
+    logger.error(f"初始化PaddleOCR_VL_API失败: {str(e)}")
+
 class Ocr_API:
     def __init__(self,server_url:str = "http://10.1.150.106:5566/api/ocr"):
         self.server_url = server_url
         self.vlm = Vlm_API()
-        self.paddleocr_vl = None
-        try:
-            self.paddleocr_vl = PaddleOCR_VL_API()
-        except Exception as e:
-            logger.error(f"初始化PaddleOCR_VL_API失败: {str(e)}")       
+        self.paddleocr_vl = paddleocr_vl
+        # self.paddleocr_vl = None
+        # try:
+        #     self.paddleocr_vl = PaddleOCR_VL_API()
+        # except Exception as e:
+        #     logger.error(f"初始化PaddleOCR_VL_API失败: {str(e)}")       
     
     def __call__(self,image_file_path):
+        result = ""
         ## 如果是图片地址，读取图片并转换为base64
         try:
             image_path_or_base64 = image_file_path
@@ -190,7 +199,7 @@ class Ocr_API:
             logger.warning(f"优先调用VLM模型来做图片OCR识别...")
             result = self.vlm(encoded_data_str,is_decoded_image_text=True)
             logger.warning("VLM识别结果:"+result)
-            raise Exception("故意抛出错误，以跳转测试OCR接口......")
+            # raise Exception("故意抛出错误，以跳转测试OCR接口......")
 
         except Exception as e:
             try:
@@ -200,25 +209,28 @@ class Ocr_API:
                 else:
                     raise Exception("PaddleOCRVL没有正确初始化")
             except Exception as e:
-                logger.error(f"PaddleOCRVL接口请求错误: {str(e)}。下面尝试请求OCR接口......")            
-                payload = {
-                    "imgString": encoded_data_str,
-                    "bStore": False
-                }            
-                # 发送POST请求
-                headers = {'Content-Type': 'application/json'}
-                response = requests.post(
-                    self.server_url,
-                    data=json.dumps(payload),
-                    headers=headers,
-                    timeout=60  # 设置超时时间
-                )            
-                # 检查响应状态
-                response.raise_for_status()            
-                result_json = response.json()
-                result = result_json.get('data')[0].get('text','')        
-                # 返回结果
-                # logger.warning("OCR识别结果:"+result)            
+                try:
+                    logger.error(f"PaddleOCRVL接口请求错误: {str(e)}。下面尝试请求OCR接口......")            
+                    payload = {
+                        "imgString": encoded_data_str,
+                        "bStore": False
+                    }            
+                    # 发送POST请求
+                    headers = {'Content-Type': 'application/json'}
+                    response = requests.post(
+                        self.server_url,
+                        data=json.dumps(payload),
+                        headers=headers,
+                        timeout=60  # 设置超时时间
+                    )            
+                    # 检查响应状态
+                    response.raise_for_status()            
+                    result_json = response.json()
+                    result = result_json.get('data')[0].get('text','')        
+                    # 返回结果
+                    # logger.warning("OCR识别结果:"+result)
+                except Exception as e:
+                    logger.error(f"所有OCR接口请求都发生错误: {str(e)}")            
         return result
 
 

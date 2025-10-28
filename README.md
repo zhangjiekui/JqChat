@@ -674,15 +674,26 @@ CUDA_VISIBLE_DEVICES=2,3 VLLM_USE_V1=1 nohup vllm serve /data/models/Qwen/Qwen2_
 tail -f /root/JqLogs/vllmvl.log 
 ```
 #### Qwen3-VL-8B-Instruct-FP8 gpu1
-docker run --gpus all --ipc=host --network=host --rm --name qwen3vl -v /data/models/Qwen/Qwen3-VL-8B-Instruct-FP8:/data/models/Qwen/Qwen3-VL-8B-Instruct-FP8 -it qwenllm/qwenvl:qwen3vl-cu128 bash
+docker run --gpus all --ipc=host --network=host --rm --name qwen3vl -v /data/models:/data/models -it qwenllm/qwenvl:qwen3vl-cu128 bash
+
+CUDA_VISIBLE_DEVICES=0  vllm serve /data/models/Qwen/Qwen3-VL-8B-Instruct-FP8 \
+  --max-model-len 20000 \
+  --host 0.0.0.0 \
+  --port 8001 \
+  --gpu-memory-utilization 0.85 \
+  --served-model-name qwenvl \
+  --limit-mm-per-prompt.video 1 \
+  --limit-mm-per-prompt.image 5 \
+  --mm-processor-cache-gb 0 \
+  --max-num-seqs 8
 
 
 workon vllm
-CUDA_VISIBLE_DEVICES=1 VLLM_ATTENTION_BACKEND=FLASHINFER nohup vllm serve /data/models/Qwen/Qwen3-VL-8B-Instruct-FP8 \
+CUDA_VISIBLE_DEVICES=0  nohup vllm serve /data/models/Qwen/Qwen3-VL-8B-Instruct-FP8 \
   --max-model-len 20000 \
   --host 0.0.0.0 \
   --port 8000 \
-  --gpu-memory-utilization 0.95 \
+  --gpu-memory-utilization 0.85 \
   --served-model-name qwenvl \
   --limit-mm-per-prompt.video 1 \
   --limit-mm-per-prompt.image 5 \
@@ -702,7 +713,7 @@ flash_attn 2.8.0.post2
 flashinfer-python 0.2.3         /root/flashinfer
 
 workon vllm2
-CUDA_VISIBLE_DEVICES=1 VLLM_ALLOW_ENGINE_USE_RAY=1 nohup vllm serve /data/models/Qwen/Qwen2___5-VL-7B-Instruct-AWQ --served-model-name qwenvl --enable-auto-tool-choice --tool-call-parser hermes --gpu-memory-utilization 0.98 --port 8000 --host 0.0.0.0 --limit-mm-per-prompt image=5,video=5 --max-model-len 32768  --max-num-seqs 32 --enable-prefix-caching --enable-chunked-prefill >> /root/JqLogs/vllmvl.log 2>&1 &
+CUDA_VISIBLE_DEVICES=0 VLLM_ALLOW_ENGINE_USE_RAY=1 nohup vllm serve /data/models/Qwen/Qwen2___5-VL-7B-Instruct-AWQ --served-model-name qwenvl --enable-auto-tool-choice --tool-call-parser hermes --gpu-memory-utilization 0.98 --port 8000 --host 0.0.0.0 --limit-mm-per-prompt image=5,video=5 --max-model-len 32768  --max-num-seqs 32 --enable-prefix-caching --enable-chunked-prefill >> /root/JqLogs/vllmvl.log 2>&1 &
 tail -f /root/JqLogs/vllmvl.log 
 ```
 

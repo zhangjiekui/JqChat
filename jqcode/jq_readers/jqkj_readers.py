@@ -710,6 +710,8 @@ def _test_JqkjSimpleDirectoryReader():
                         fr'/data/projects/JqChatV2/JqChat/jqcode/jq_readers/.test_files/.testinputdocs/AAMIS_项目总体计划_120925.doc',
                         fr"/media/temp/发票识别接口文档.md"
                         ]
+    
+    # convert_file_paths = []
     file_paths = [fr"/data/projects/file_reader/test_docs/发票.jpg"]
     file_paths += [fr"/data/projects/file_reader/test_docs/ocr测试2.jpg"]
     file_paths += [fr'/data/projects/JqChatV2/JqChat/jqcode/jq_utils/jq_watermark_func_and_result/图片/test.png']    
