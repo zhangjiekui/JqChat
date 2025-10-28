@@ -712,21 +712,22 @@ def _test_JqkjSimpleDirectoryReader():
                         ]
     file_paths = [fr"/data/projects/file_reader/test_docs/发票.jpg"]
     file_paths += [fr"/data/projects/file_reader/test_docs/ocr测试2.jpg"]
+    file_paths += [fr'/data/projects/JqChatV2/JqChat/jqcode/jq_utils/jq_watermark_func_and_result/图片/test.png']    
     file_paths += [fr"/data/projects/file_reader/test_docs/zjk.doc"]
     file_paths += [fr"/data/projects/file_reader/test_docs/揭榜挂帅PPT汇报-基于DX的肺炎AI影像智能诊断.pptx"]
     file_paths += [fr"/data/projects/file_reader/test_docs/训练服务器-0729.xlsx"]
     file_paths += [fr"/data/projects/file_reader/test_docs/download.xlsx"]
     file_paths += [fr"/data/projects/file_reader/test_docs/pdf.pdf"]
     # file_paths = [fr"/data/projects/file_reader/test_docs/pdf.pdf"]
-    convert_file_paths = file_paths
-    
+    convert_file_paths += file_paths
     
     simple_reader = JqkjSimpleDirectoryReader(input_files = convert_file_paths,output_dir_for_converted_files=fr"/data/projects/JqChatV2/JqChat/jqcode/jq_readers/.test_files/.outputdocs")
-    start_time = time.time()
-    documents1 = simple_reader.load_data()
-    end_time = time.time()
-    logger.warning(f"{len(documents1)=},Total time load_data_sync: {end_time - start_time} seconds")
-    pass 
+    
+    # start_time = time.time()
+    # documents1 = simple_reader.load_data()
+    # end_time = time.time()
+    # logger.warning(f"{len(documents1)=},Total time load_data_sync: {end_time - start_time} seconds")
+    # pass 
     start_time = time.time()
     documents1a = asyncio.run(simple_reader.aload_data())
     end_time = time.time()
@@ -764,7 +765,7 @@ def _test_get_retriever():
     compression_retriever = get_retriever(index_name=index_name,chat_on_docs_list=input_files,add_docs_list_to_kb=False)     
     print(type(compression_retriever))
 if __name__ == "__main__":
-    image_documents = _test_JqkjImageReader()
+    # image_documents = _test_JqkjImageReader()
     # documents,trees,df_tables = _test_JqkjDocxReader()
     _test_JqkjSimpleDirectoryReader()
     # _test_get_retriever()

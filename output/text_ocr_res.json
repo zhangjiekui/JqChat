@@ -1,0 +1,64 @@
+{
+    "input_path": "/data/projects/JqChatV2/JqChat/text_ocr.png",
+    "page_index": null,
+    "model_settings": {
+        "use_doc_preprocessor": false,
+        "use_layout_detection": true,
+        "use_chart_recognition": false,
+        "format_block_content": false
+    },
+    "parsing_res_list": [
+        {
+            "block_label": "algorithm",
+            "block_content": "{\n    \"guided_whitespace_pattern\": \"string\",\n    \"priority\": 0,\n    \"request_id\": \"string\",\n    \"logits_processors\": [\n        {\n            \"string\",\n            {\n                \"qualname\": \"string\",\n                \"args\": [\n                    {\n                        \"string\"\n                    },\n                        \"kwargs\": {\n                            \"additionalProp1\": {}\n                        }\n                    }\n                ],\n                \"return_tokens_as_token_ids\": true,\n                \"return_token_ids\": true,\n                \"cache_salt\": \"string\",\n                \"kv_transfer_params\": {\n                    \"additionalProp1\": {}\n                },\n                \"vllm_xargs\": {\n                    \"additionalProp1\": \"string\",\n                    \"additionalProp2\": \"string\",\n                    \"additionalProp3\": \"string\"\n                },\n                \"additionalProp1\": {}\n            }\n        }\n    }\n}",
+            "block_bbox": [
+                13,
+                0,
+                268,
+                391
+            ],
+            "block_id": 0,
+            "block_order": 1
+        },
+        {
+            "block_label": "number",
+            "block_content": "}",
+            "block_bbox": [
+                2,
+                377,
+                10,
+                391
+            ],
+            "block_id": 1,
+            "block_order": null
+        }
+    ],
+    "layout_det_res": {
+        "input_path": null,
+        "page_index": null,
+        "boxes": [
+            {
+                "cls_id": 1,
+                "label": "algorithm",
+                "score": 0.9437983632087708,
+                "coordinate": [
+                    13.631004333496094,
+                    0,
+                    268.9667053222656,
+                    391.80596923828125
+                ]
+            },
+            {
+                "cls_id": 16,
+                "label": "number",
+                "score": 0.6584025025367737,
+                "coordinate": [
+                    2.688992977142334,
+                    377.1308288574219,
+                    10.923568725585938,
+                    391.5932312011719
+                ]
+            }
+        ]
+    }
+}

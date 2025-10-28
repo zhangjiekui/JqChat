@@ -674,6 +674,9 @@ CUDA_VISIBLE_DEVICES=2,3 VLLM_USE_V1=1 nohup vllm serve /data/models/Qwen/Qwen2_
 tail -f /root/JqLogs/vllmvl.log 
 ```
 #### Qwen3-VL-8B-Instruct-FP8 gpu1
+docker run --gpus all --ipc=host --network=host --rm --name qwen3vl -v /data/models/Qwen/Qwen3-VL-8B-Instruct-FP8:/data/models/Qwen/Qwen3-VL-8B-Instruct-FP8 -it qwenllm/qwenvl:qwen3vl-cu128 bash
+
+
 workon vllm
 CUDA_VISIBLE_DEVICES=1 VLLM_ATTENTION_BACKEND=FLASHINFER nohup vllm serve /data/models/Qwen/Qwen3-VL-8B-Instruct-FP8 \
   --max-model-len 20000 \
@@ -683,7 +686,8 @@ CUDA_VISIBLE_DEVICES=1 VLLM_ATTENTION_BACKEND=FLASHINFER nohup vllm serve /data/
   --served-model-name qwenvl \
   --limit-mm-per-prompt.video 1 \
   --limit-mm-per-prompt.image 5 \
-  --max-num-seqs 32 >> /root/JqLogs/vllmvl.log 2>&1 &
+  --mm-processor-cache-gb 0 \
+  --max-num-seqs 16 >> /root/JqLogs/vllmvl.log 2>&1 &
 tail -f /root/JqLogs/vllmvl.log
 
 <!--   --async-scheduling \ -->

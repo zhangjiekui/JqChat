@@ -1,0 +1,340 @@
+{
+    "input_path": "/data/projects/file_reader/test_docs/发票.jpg",
+    "page_index": null,
+    "model_settings": {
+        "use_doc_preprocessor": false,
+        "use_layout_detection": true,
+        "use_chart_recognition": false,
+        "format_block_content": false
+    },
+    "parsing_res_list": [
+        {
+            "block_label": "image",
+            "block_content": "",
+            "block_bbox": [
+                164,
+                31,
+                371,
+                243
+            ],
+            "block_id": 0,
+            "block_order": null
+        },
+        {
+            "block_label": "text",
+            "block_content": "机器编号：661616252116",
+            "block_bbox": [
+                123,
+                262,
+                536,
+                313
+            ],
+            "block_id": 1,
+            "block_order": 1
+        },
+        {
+            "block_label": "paragraph_title",
+            "block_content": "北京增值税电子普通发票",
+            "block_bbox": [
+                817,
+                90,
+                1739,
+                185
+            ],
+            "block_id": 2,
+            "block_order": 2
+        },
+        {
+            "block_label": "seal",
+            "block_content": "",
+            "block_bbox": [
+                1089,
+                90,
+                1471,
+                337
+            ],
+            "block_id": 3,
+            "block_order": null
+        },
+        {
+            "block_label": "text",
+            "block_content": "发票代码:011002200611",
+            "block_bbox": [
+                1803,
+                44,
+                2203,
+                96
+            ],
+            "block_id": 4,
+            "block_order": 3
+        },
+        {
+            "block_label": "text",
+            "block_content": "发票号码:60742331",
+            "block_bbox": [
+                1803,
+                117,
+                2135,
+                171
+            ],
+            "block_id": 5,
+            "block_order": 4
+        },
+        {
+            "block_label": "text",
+            "block_content": "开票日期:2023年01月30日",
+            "block_bbox": [
+                1801,
+                188,
+                2301,
+                244
+            ],
+            "block_id": 6,
+            "block_order": 5
+        },
+        {
+            "block_label": "text",
+            "block_content": "校验码:47770 53294 17520 39168",
+            "block_bbox": [
+                1802,
+                262,
+                2389,
+                316
+            ],
+            "block_id": 7,
+            "block_order": 6
+        },
+        {
+            "block_label": "table",
+            "block_content": "<table><tr><td>购买方</td><td colspan=\"5\">名称:北京晶奇和一信息科技有限公司纳税人识别号:91110101069561148B地址、电话:北京市东城区王府井大街99号A723-11室 18256953496开户行及账号:</td><td>密码区</td><td colspan=\"4\">*7*14254&gt;1008594116814-987&lt;1&gt;&lt;37239578/72*9&lt;6&lt;4060&gt;+70+6*/36&gt;53+8170/8592116814&lt;88&gt;22/*33+3046*913*8&lt;+62982</td></tr><tr><td colspan=\"2\">货物或应税劳务、服务名称餐饮服务餐饮服务</td><td>规格型号</td><td>单位</td><td>数量</td><td>单价</td><td>75.28</td><td>金额</td><td>税率</td><td>税额</td><td>4.52</td></tr><tr><td colspan=\"2\">合  计</td><td></td><td></td><td></td><td></td><td></td><td>¥75.28</td><td></td><td>¥4.52</td><td></td></tr><tr><td colspan=\"2\">价税合计(大写)</td><td colspan=\"9\">柒拾玖圆捌角(小写)¥79.80</td></tr><tr><td>销售方</td><td colspan=\"5\">名称:北京麦当劳食品有限公司纳税人识别号:911100006000045237地址、电话:北京市东城区王府井大街200号工美大厦七层71室 010-65281188开户行及账号:中国工商银行股份有限公司北京和平里支行 0200004209014442920</td><td>备注</td><td colspan=\"4\"></td></tr></table>",
+            "block_bbox": [
+                88,
+                345,
+                2470,
+                1454
+            ],
+            "block_id": 8,
+            "block_order": null
+        },
+        {
+            "block_label": "vision_footnote",
+            "block_content": "收款人：梁志贤",
+            "block_bbox": [
+                129,
+                1477,
+                388,
+                1527
+            ],
+            "block_id": 9,
+            "block_order": null
+        },
+        {
+            "block_label": "text",
+            "block_content": "复核 : 香婉君",
+            "block_bbox": [
+                793,
+                1478,
+                1012,
+                1529
+            ],
+            "block_id": 10,
+            "block_order": 7
+        },
+        {
+            "block_label": "vision_footnote",
+            "block_content": "开票人:李秀玲",
+            "block_bbox": [
+                1299,
+                1477,
+                1563,
+                1528
+            ],
+            "block_id": 11,
+            "block_order": null
+        },
+        {
+            "block_label": "text",
+            "block_content": "销售方：章",
+            "block_bbox": [
+                1809,
+                1478,
+                2019,
+                1527
+            ],
+            "block_id": 12,
+            "block_order": 8
+        },
+        {
+            "block_label": "seal",
+            "block_content": "",
+            "block_bbox": [
+                2002,
+                1254,
+                2445,
+                1595
+            ],
+            "block_id": 13,
+            "block_order": null
+        }
+    ],
+    "layout_det_res": {
+        "input_path": null,
+        "page_index": null,
+        "boxes": [
+            {
+                "cls_id": 14,
+                "label": "image",
+                "score": 0.9785476922988892,
+                "coordinate": [
+                    164.77528381347656,
+                    31.021087646484375,
+                    371.908935546875,
+                    243.247314453125
+                ]
+            },
+            {
+                "cls_id": 22,
+                "label": "text",
+                "score": 0.9609512686729431,
+                "coordinate": [
+                    123.05888366699219,
+                    262.91961669921875,
+                    536.4002685546875,
+                    313.32525634765625
+                ]
+            },
+            {
+                "cls_id": 17,
+                "label": "paragraph_title",
+                "score": 0.6536828279495239,
+                "coordinate": [
+                    817.9310302734375,
+                    90.49879455566406,
+                    1739.9261474609375,
+                    185.9593963623047
+                ]
+            },
+            {
+                "cls_id": 20,
+                "label": "seal",
+                "score": 0.9683535099029541,
+                "coordinate": [
+                    1089.5626220703125,
+                    90.75267791748047,
+                    1471.5042724609375,
+                    337.31298828125
+                ]
+            },
+            {
+                "cls_id": 22,
+                "label": "text",
+                "score": 0.9540658593177795,
+                "coordinate": [
+                    1803.26611328125,
+                    44.66377258300781,
+                    2203.951171875,
+                    96.6302490234375
+                ]
+            },
+            {
+                "cls_id": 22,
+                "label": "text",
+                "score": 0.9609618782997131,
+                "coordinate": [
+                    1803.25537109375,
+                    117.00332641601562,
+                    2135.562744140625,
+                    171.18075561523438
+                ]
+            },
+            {
+                "cls_id": 22,
+                "label": "text",
+                "score": 0.9651685357093811,
+                "coordinate": [
+                    1801.833740234375,
+                    188.50128173828125,
+                    2301.971435546875,
+                    244.2767333984375
+                ]
+            },
+            {
+                "cls_id": 22,
+                "label": "text",
+                "score": 0.9650161862373352,
+                "coordinate": [
+                    1802.1513671875,
+                    262.8144226074219,
+                    2389.34033203125,
+                    316.2031555175781
+                ]
+            },
+            {
+                "cls_id": 21,
+                "label": "table",
+                "score": 0.9877768754959106,
+                "coordinate": [
+                    88.432373046875,
+                    345.862060546875,
+                    2470.432861328125,
+                    1454.96630859375
+                ]
+            },
+            {
+                "cls_id": 24,
+                "label": "vision_footnote",
+                "score": 0.8452056050300598,
+                "coordinate": [
+                    129.40679931640625,
+                    1477.16796875,
+                    388.31561279296875,
+                    1527.50830078125
+                ]
+            },
+            {
+                "cls_id": 22,
+                "label": "text",
+                "score": 0.6751750707626343,
+                "coordinate": [
+                    793.5999755859375,
+                    1478.54150390625,
+                    1012.0782470703125,
+                    1529.041015625
+                ]
+            },
+            {
+                "cls_id": 24,
+                "label": "vision_footnote",
+                "score": 0.664649486541748,
+                "coordinate": [
+                    1299.16357421875,
+                    1477.5400390625,
+                    1563.6123046875,
+                    1528.535400390625
+                ]
+            },
+            {
+                "cls_id": 22,
+                "label": "text",
+                "score": 0.7927893400192261,
+                "coordinate": [
+                    1809.929443359375,
+                    1478.0318603515625,
+                    2019.287841796875,
+                    1527.9586181640625
+                ]
+            },
+            {
+                "cls_id": 20,
+                "label": "seal",
+                "score": 0.9661687016487122,
+                "coordinate": [
+                    2002.51904296875,
+                    1254.830322265625,
+                    2445.42138671875,
+                    1595.923583984375
+                ]
+            }
+        ]
+    }
+}

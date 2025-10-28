@@ -233,10 +233,10 @@ async def chat_completions(request: Request,  background_tasks: BackgroundTasks)
                     kb_base_dict = {"index_name": kb_info.name or default_kb_name, "description":kb_info.description or default_kb_description}
                 else:                    
                     kb_base_dict = get_kb_dict(kb_name)
-                use_memory_str = metadata.get("memory","True")
+                use_memory_str = str(metadata.get("memory","True"))
                 if use_memory_str.lower() == "false":
                     use_memory = False
-                rewrite_question_str = metadata.get("rewrite","False")
+                rewrite_question_str = str(metadata.get("rewrite","False"))
                 if rewrite_question_str.lower() == "true":
                     rewrite_question = True  
             except:

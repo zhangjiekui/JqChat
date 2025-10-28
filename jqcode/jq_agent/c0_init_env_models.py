@@ -75,6 +75,21 @@ os.environ['LANGCHAIN_PROJECT']= 'JqChat'
 def _add_scores_before_page_content(d:Document):
     d.page_content = f'[relevance_score_retriever={d.metadata.get("relevance_score_retriever",0)},relevance_score_reranker={d.metadata.get("relevance_score_reranker",0)}]{d.page_content}'
 
+class PaddleOCR_VL_API:
+    def __init__(self,vl_rec_server_url="http://192.168.44.222:8118/v1"):
+        self.vl_rec_server_url = vl_rec_server_url
+        from paddleocr import PaddleOCRVL
+        self.paddelvl_pipeline = PaddleOCRVL(vl_rec_backend="vllm-server", vl_rec_server_url=vl_rec_server_url)
+    def __call__(self,image_path_or_base64:str,only_return_text=True):
+        output = self.paddelvl_pipeline.predict(image_path_or_base64)
+        if only_return_text:
+            text = ""
+            for res in output:
+                text += res.markdown.get("markdown_texts","")
+            return text
+        else:
+            return output
+
 class Vlm_API:
     '''
     https://github.com/QwenLM/Qwen2.5-VL
@@ -83,10 +98,11 @@ class Vlm_API:
     def __init__(self,api_base:str = "http://10.1.150.105:8000/v1",api_key:str='abc123',model:str="qwenvl"):
         self.api_base = api_base
         self.api_key = api_key
-        self.model=model
+        self.model = model
         self.client = OpenAI(api_key=api_key,base_url=api_base)
         self.default_ocr_prompt = "首先识别出有意义的区块，然后逐个区块完整识别并仅输出图中的文字（相当于ocr，去掉不必要的换行符，但保留必要的空格，使用‘||’分割文本块，如果基本不存在文本，则请输出图片描述）。最后仅输出完整的文本，不要有任何额外的内容和解释。"
         # 请识别出发票中的购买方 名称（keyname:gmf）、销售方 名称（keyname:xsf）、销售项目名称 （keyname:item）、发票类型（keyname:type，取值为普通发票或专用发票）。以Json形式返回，使用括号中的keyname代替中文名称，不要有多余内容
+
     def __call__(self,image_path_or_base64:str,is_decoded_image_text:bool=False,query:str=None,only_return_text=True):
         ## 如果是图片地址，读取图片并转换为base64
         if not query:
@@ -139,28 +155,20 @@ class Vlm_API:
             logger.error(f"请求错误: {str(e)}")
             return ''
 
-# vlm= Vlm_API()
-# r1=vlm(image_path_or_base64="/data/projects/JqChatV2/JqChat/graph.jpg",
-#        query='首先识别出有意义的区块，然后逐个区块完整识别并仅输出图中的文字（相当于ocr，但去掉不必要的换行符），不能遗漏，同一区块的文字内容放在一起。最后仅输出完整的纯文本内容，不要有任何额外的解释、格式等。',
-#        only_return_text=False)     
-# print(r1)
-# print(r1.choices[0].message.content)
-
-
-# r2 = vlm(image_path_or_base64='/data/projects/JqChatV2/JqChat/ocr.png')
-# print(r2)
-
-
-
-
 class Ocr_API:
     def __init__(self,server_url:str = "http://10.1.150.106:5566/api/ocr"):
         self.server_url = server_url
-        self.vlm = Vlm_API()       
+        self.vlm = Vlm_API()
+        self.paddleocr_vl = None
+        try:
+            self.paddleocr_vl = PaddleOCR_VL_API()
+        except Exception as e:
+            logger.error(f"初始化PaddleOCR_VL_API失败: {str(e)}")       
     
-    def __call__(self,image_path_or_base64):
+    def __call__(self,image_file_path):
         ## 如果是图片地址，读取图片并转换为base64
         try:
+            image_path_or_base64 = image_file_path
             if isinstance(image_path_or_base64,Path):
                 image_path_or_base64 = str(image_path_or_base64)
             if isinstance(image_path_or_base64,str): 
@@ -182,28 +190,35 @@ class Ocr_API:
             logger.warning(f"优先调用VLM模型来做图片OCR识别...")
             result = self.vlm(encoded_data_str,is_decoded_image_text=True)
             logger.warning("VLM识别结果:"+result)
-            # raise Exception("故意抛出错误，以跳转测试OCR接口......")
+            raise Exception("故意抛出错误，以跳转测试OCR接口......")
 
         except Exception as e:
-            logger.error(f"VLM接口请求错误: {str(e)}。下面尝试请求OCR接口......")            
-            payload = {
-                "imgString": encoded_data_str,
-                "bStore": False
-            }            
-            # 发送POST请求
-            headers = {'Content-Type': 'application/json'}
-            response = requests.post(
-                self.server_url,
-                data=json.dumps(payload),
-                headers=headers,
-                timeout=60  # 设置超时时间
-            )            
-            # 检查响应状态
-            response.raise_for_status()            
-            result_json = response.json()
-            result = result_json.get('data')[0].get('text','')        
-            # 返回结果
-            # logger.warning("OCR识别结果:"+result)            
+            try:
+                logger.error(f"VLM接口请求错误: {str(e)}。下面尝试请求PaddleOCRVL接口......")
+                if self.paddleocr_vl: 
+                    result = self.paddleocr_vl(str(image_file_path),only_return_text=True)
+                else:
+                    raise Exception("PaddleOCRVL没有正确初始化")
+            except Exception as e:
+                logger.error(f"PaddleOCRVL接口请求错误: {str(e)}。下面尝试请求OCR接口......")            
+                payload = {
+                    "imgString": encoded_data_str,
+                    "bStore": False
+                }            
+                # 发送POST请求
+                headers = {'Content-Type': 'application/json'}
+                response = requests.post(
+                    self.server_url,
+                    data=json.dumps(payload),
+                    headers=headers,
+                    timeout=60  # 设置超时时间
+                )            
+                # 检查响应状态
+                response.raise_for_status()            
+                result_json = response.json()
+                result = result_json.get('data')[0].get('text','')        
+                # 返回结果
+                # logger.warning("OCR识别结果:"+result)            
         return result
 
 
@@ -1443,6 +1458,23 @@ env_models_instance = get_env_models_instance()
 
 
 if __name__ == '__main__':
+    
+    vlm= Vlm_API()
+    paddleocr_vl = PaddleOCR_VL_API()
+
+    used_vlm = paddleocr_vl
+    img1 = fr"/data/projects/JqChatV2/JqChat/text_ocr.png"
+    img2 = fr"/data/projects/file_reader/test_docs/发票.jpg"
+    img3 = fr"/data/projects/JqChatV2/JqChat/文档转换和下载.png"
+
+    # for img in [img1,img2,img3]:
+    #     r = used_vlm(image_path_or_base64=img)
+    #     print(r)
+
+
+
+    r2 = vlm(image_path_or_base64='/data/projects/JqChatV2/JqChat/ocr.png')
+    print(r2)
     # qwen:110b-chat-v1.5-q4_K_M
     # litellm --model ollama_chat/llama3:70b-instruct
     # litellm --model ollama_chat/yi:34b-chat-v1.5-q8_0
