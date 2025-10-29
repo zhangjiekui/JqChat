@@ -128,7 +128,7 @@ def set_multiprocessing_context(mp:multiprocessing=multiprocessing ,context:str=
         mp.set_start_method(context)
         current_method = mp.get_start_method()
         assert current_method==context, f'设置multiprocessing.set_start_method("{context}")，multiprocessing当前{current_method=}'
-        logger.warning(f'  已成功设置multiprocessing.set_start_method("{current_method}")')
+        logger.warning(f'已成功设置multiprocessing.set_start_method("{current_method}")')
     except Exception as e:
         pass
 

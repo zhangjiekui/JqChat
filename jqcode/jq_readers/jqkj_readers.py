@@ -75,8 +75,8 @@ _SerializedRelationships.load_from_xml = load_from_xml_v2
 class JqkjImageReader(BaseReader):
     """Image reader."""
     def __init__(self, keep_image: bool = False):
-        from jqcode.jq_agent.c0_init_env_models import Ocr_API
-        self.image_text_parser = Ocr_API()
+        from jqcode.jq_agent import c0_init_env_models
+        self.image_text_parser = c0_init_env_models.ocr
     def load_data(
         self,
         file: Path,
@@ -725,18 +725,23 @@ def _test_JqkjSimpleDirectoryReader():
     
     simple_reader = JqkjSimpleDirectoryReader(input_files = convert_file_paths,output_dir_for_converted_files=fr"/data/projects/JqChatV2/JqChat/jqcode/jq_readers/.test_files/.outputdocs")
     
-    # start_time = time.time()
-    # documents1 = simple_reader.load_data()
-    # end_time = time.time()
-    # logger.warning(f"{len(documents1)=},Total time load_data_sync: {end_time - start_time} seconds")
-    # pass 
     start_time = time.time()
-    documents1a = asyncio.run(simple_reader.aload_data())
+    documents1 = simple_reader.load_data()
     end_time = time.time()
-    logger.warning(f"{len(documents1a)=},Total time load_data_aync: {end_time - start_time} seconds")
-    for document in documents1a:
+    logger.warning(f"{len(documents1)=},Total time load_data_sync: {end_time - start_time} seconds")
+    for document in documents1:
         print(document.metadata.get("source"))
         print(document.text)
+    pass
+
+
+    # start_time = time.time()
+    # documents1a = asyncio.run(simple_reader.aload_data())
+    # end_time = time.time()
+    # logger.warning(f"{len(documents1a)=},Total time load_data_aync: {end_time - start_time} seconds")
+    # for document in documents1a:
+    #     print(document.metadata.get("source"))
+    #     print(document.text)
 
     pass
 

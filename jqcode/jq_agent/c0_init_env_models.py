@@ -33,21 +33,23 @@ from langchain_elasticsearch import ElasticsearchStore
     # """SparseVectorStrategy：using the `text_expansion` processor."""
     # """DenseVectorStrategy： using K-nearest-neighbors retrieval."""
     # """DenseVectorScriptScoreStrategy：Exact nearest neighbors retrieval using the `script_score` query."""
-from elasticsearch.helpers.vectorstore import BM25Strategy,SparseVectorStrategy,DenseVectorStrategy,DenseVectorScriptScoreStrategy
+from elasticsearch.helpers.vectorstore import DenseVectorStrategy,BM25Strategy,SparseVectorStrategy,DenseVectorScriptScoreStrategy
 from elasticsearch.helpers.vectorstore._utils import DistanceMetric
 from langchain.indexes import SQLRecordManager, index
 from langchain.retrievers.document_compressors.base import BaseDocumentCompressor
 from langchain_core.messages import BaseMessage
 from langchain_core.vectorstores import VectorStoreRetriever
 from langchain.callbacks.manager import AsyncCallbackManagerForRetrieverRun,CallbackManagerForRetrieverRun
-from langchain_community.vectorstores import FAISS
+# from langchain_community.vectorstores import FAISS
 from langchain_community.vectorstores.utils import DistanceStrategy
 from langchain.retrievers import ContextualCompressionRetriever
 from langchain_core.messages import BaseMessage, HumanMessage,SystemMessage,ToolMessage,AIMessage
 from langchain.callbacks.base import BaseCallbackHandler
 from langchain_core.callbacks import StdOutCallbackHandler,FileCallbackHandler
-from jqcode.jq_splitters.backend_splitter_utils.jq_chinese_recursive_text_splitter import JqChineseRecursiveTextSplitter
+from jqcode.jq_vlm_ocr.jq_vlm_orc import OcrInOneInstance,VlmInstance
 from jqcode.jq_readers.jqkj_readers import JqkjDocxReader
+from jqcode.jq_splitters.backend_splitter_utils.jq_chinese_recursive_text_splitter import JqChineseRecursiveTextSplitter
+from jqcode.jq_config.general_config import llm_handler_file_path,if_log_verbose,logfile_path
 from jqcode.jq_splitters.jq_docx_tree_text_splitter import JqkjDocTreeTokenTextSplitter,load_project_env,JQ_TOKENIZER,JQ_TEXT_SPLITTER,JQ_DocTreeTokenTextSplitter
 from transformers import AutoTokenizer
 from pydantic import PrivateAttr
@@ -55,7 +57,6 @@ import json_repair
 from langchain_core.utils.input import print_text
 import multiprocessing
 from concurrent.futures import ProcessPoolExecutor,ThreadPoolExecutor
-from jqcode.jq_config.general_config import llm_handler_file_path,if_log_verbose,logfile_path
 from jqcode.jq_utils.logger import jqkj_logger,set_multiprocessing_context,is_main_process
 from langchain.globals import set_llm_cache
 logger = jqkj_logger(__file__).get_logger()
@@ -74,211 +75,6 @@ os.environ['LANGCHAIN_PROJECT']= 'JqChat'
 
 def _add_scores_before_page_content(d:Document):
     d.page_content = f'[relevance_score_retriever={d.metadata.get("relevance_score_retriever",0)},relevance_score_reranker={d.metadata.get("relevance_score_reranker",0)}]{d.page_content}'
-
-class PaddleOCR_VL_API:
-    def __init__(self,vl_rec_server_url="http://192.168.44.222:8118/v1"):
-        self.vl_rec_server_url = vl_rec_server_url
-        from paddleocr import PaddleOCRVL
-        self.paddelvl_pipeline = PaddleOCRVL(vl_rec_backend="vllm-server", vl_rec_server_url=vl_rec_server_url)
-    def __call__(self,image_path_or_base64:str,only_return_text=True):
-        output = self.paddelvl_pipeline.predict(image_path_or_base64)
-        if only_return_text:
-            text = ""
-            for res in output:
-                text += res.markdown.get("markdown_texts","")
-            return text
-        else:
-            return output
-
-class Vlm_API:
-    '''
-    https://github.com/QwenLM/Qwen2.5-VL
-    "Qwen/Qwen2.5-VL-7B-Instruct"
-    '''
-    def __init__(self,api_base:str = "http://10.1.150.105:8000/v1",api_key:str='abc123',model:str="qwenvl"):
-        self.api_base = api_base
-        self.api_key = api_key
-        self.model = model
-        self.client = OpenAI(api_key=api_key,base_url=api_base)
-        self.default_ocr_prompt = "首先识别出有意义的区块，然后逐个区块完整识别并仅输出图中的文字（相当于ocr，去掉不必要的换行符，但保留必要的空格，使用‘||’分割文本块，如果基本不存在文本，则请输出图片描述）。最后仅输出完整的文本，不要有任何额外的内容和解释。"
-        # 请识别出发票中的购买方 名称（keyname:gmf）、销售方 名称（keyname:xsf）、销售项目名称 （keyname:item）、发票类型（keyname:type，取值为普通发票或专用发票）。以Json形式返回，使用括号中的keyname代替中文名称，不要有多余内容
-
-    def __call__(self,image_path_or_base64:str,is_decoded_image_text:bool=False,query:str=None,only_return_text=True):
-        ## 如果是图片地址，读取图片并转换为base64
-        if not query:
-            query = self.default_ocr_prompt
-        if is_decoded_image_text:
-            encoded_image_text = image_path_or_base64
-        else:
-            if isinstance(image_path_or_base64,str): 
-                if os.path.isfile(image_path_or_base64):
-                    with open(image_path_or_base64, 'rb') as f:
-                        image_path_or_base64 = f.read()
-                else:
-                    raise Exception(f"{image_path_or_base64}文件不存在！")
-            elif isinstance(image_path_or_base64, bytes):
-                pass
-            else:
-                raise Exception(f"目前只接受str或bytes类型的参数，不支持：{type(image_path_or_base64)=}")               
-            encoded_data = base64.b64encode(image_path_or_base64)
-            encoded_image_text = encoded_data.decode('utf-8')
-        base64_qwen = f"data:image;base64,{encoded_image_text}"
-
-        try:
-            chat_response = self.client.chat.completions.create(
-                model=self.model,
-                messages=[
-                            {"role": "system", "content": "You are a helpful assistant."},
-                            {
-                                "role": "user",
-                                "content": [
-                                    {
-                                        "type": "image_url",
-                                        "image_url": {
-                                            "url": base64_qwen
-                                        },
-                                    },
-                                    {"type": "text", "text": query},
-                                ],
-                            },
-                            ],
-                        )  
-            logger.info(f"Chat response:\n{chat_response}")
-            if only_return_text:
-                text = chat_response.choices[0].message.content
-                text = text.replace('\n', ' ')
-                return text
-            else:
-                return chat_response
-             
-        except Exception as e:
-            logger.error(f"请求错误: {str(e)}")
-            return ''
-
-paddleocr_vl = None
-try:
-    if paddleocr_vl is None:
-        paddleocr_vl = PaddleOCR_VL_API()
-except Exception as e:
-    logger.error(f"初始化PaddleOCR_VL_API失败: {str(e)}")
-
-class Ocr_API:
-    def __init__(self,server_url:str = "http://10.1.150.106:5566/api/ocr"):
-        self.server_url = server_url
-        self.vlm = Vlm_API()
-        self.paddleocr_vl = paddleocr_vl
-        # self.paddleocr_vl = None
-        # try:
-        #     self.paddleocr_vl = PaddleOCR_VL_API()
-        # except Exception as e:
-        #     logger.error(f"初始化PaddleOCR_VL_API失败: {str(e)}")       
-    
-    def __call__(self,image_file_path):
-        result = ""
-        ## 如果是图片地址，读取图片并转换为base64
-        try:
-            image_path_or_base64 = image_file_path
-            if isinstance(image_path_or_base64,Path):
-                image_path_or_base64 = str(image_path_or_base64)
-            if isinstance(image_path_or_base64,str): 
-                if os.path.isfile(image_path_or_base64):
-                    with open(image_path_or_base64, 'rb') as f:
-                        image_path_or_base64 = f.read()
-                else:
-                    raise Exception(f"{image_path_or_base64}文件不存在！")
-            elif isinstance(image_path_or_base64, bytes):
-                pass
-            else:
-                raise Exception(f"目前只接受str、path或bytes类型的参数，不支持：{type(image_path_or_base64)=}")               
-            encoded_data = base64.b64encode(image_path_or_base64)
-            encoded_data_str = encoded_data.decode('utf-8')
-        except Exception as e:
-            logger.warning(f"{e}")
-            return ""
-        try:
-            logger.warning(f"优先调用VLM模型来做图片OCR识别...")
-            result = self.vlm(encoded_data_str,is_decoded_image_text=True)
-            logger.warning("VLM识别结果:"+result)
-            # raise Exception("故意抛出错误，以跳转测试OCR接口......")
-
-        except Exception as e:
-            try:
-                logger.error(f"VLM接口请求错误: {str(e)}。下面尝试请求PaddleOCRVL接口......")
-                if self.paddleocr_vl: 
-                    result = self.paddleocr_vl(str(image_file_path),only_return_text=True)
-                else:
-                    raise Exception("PaddleOCRVL没有正确初始化")
-            except Exception as e:
-                try:
-                    logger.error(f"PaddleOCRVL接口请求错误: {str(e)}。下面尝试请求OCR接口......")            
-                    payload = {
-                        "imgString": encoded_data_str,
-                        "bStore": False
-                    }            
-                    # 发送POST请求
-                    headers = {'Content-Type': 'application/json'}
-                    response = requests.post(
-                        self.server_url,
-                        data=json.dumps(payload),
-                        headers=headers,
-                        timeout=60  # 设置超时时间
-                    )            
-                    # 检查响应状态
-                    response.raise_for_status()            
-                    result_json = response.json()
-                    result = result_json.get('data')[0].get('text','')        
-                    # 返回结果
-                    # logger.warning("OCR识别结果:"+result)
-                except Exception as e:
-                    logger.error(f"所有OCR接口请求都发生错误: {str(e)}")            
-        return result
-
-
-if VERBOSE:
-    ocr_api= Ocr_API()
-    image_path_or_base64="/data/projects/JqChatV2/JqChat/graph.jpg"
-    r1=ocr_api(image_path_or_base64=image_path_or_base64) 
-    print(r1)  
-
-
-class Ocr_GOT_API:    
-    def __init__(self,model_uid='GOT-OCR2_0',base_url:str = "http://10.1.150.106:9997",auth_headers={}):
-        from xinference.client.restful.restful_client import RESTfulImageModelHandle
-        self.ocr_got = RESTfulImageModelHandle(model_uid=model_uid,base_url=base_url,auth_headers=auth_headers)      
-    
-    def __call__(self,image_path_or_base64):
-        ## 如果是图片地址，读取图片并转换为base64
-        from diffusers.utils import load_image
-        import io
-        image = load_image(image_path_or_base64)
-        bio = io.BytesIO()
-        image.save(bio, format="JPEG")
-
-        try:    
-            result = self.ocr_got.ocr(bio.getvalue())       
-            # 返回结果
-            logger.debug("识别结果:"+result)
-            return result
-        except requests.exceptions.RequestException as e:
-            logger.error(f"请求错误: {str(e)}")
-            return ''
-        except Exception as e:
-            logger.error(f"其他错误: {str(e)}")
-            return ''
-def test_orc_got(Ocr_GOT_API):
-    ocr_got = Ocr_GOT_API()
-    img1='/data/projects/JqChatV2/JqChat/image.png'  
-    img2="/data/projects/JqChatV2/JqChat/jqcode/jq_knowledge_manegement/data/knowledge_base/samples/content/llm/img/大模型推理优化策略-幕布图片-923924-83386.jpg"
-    img3="/data/projects/JqChatV2/JqChat/ocr.png"
-    img4='/data/projects/JqChatV2/JqChat/ocr2.jpg'
-    results = []
-    for img in [img1,img2,img3,img4]:
-        res = ocr_got(img)
-        results.append(res)
-    print(results)
-
-# test_orc_got(Ocr_GOT_API)
-# pass
 
 class JqVectorStoreRetrieverWithScore(VectorStoreRetriever):
     # See https://github.com/langchain-ai/langchain/blob/61dd92f8215daef3d9cf1734b0d1f8c70c1571c3/libs/langchain/langchain/vectorstores/base.py#L500
@@ -752,13 +548,14 @@ class InitEnvModels:
         self.api_deployment_url = self.get_api_deployment_url()
 
         self.ocr_mode = 'API'
+        # self.ocr_mode = 'rapidocr'
         _pool_size = 32 if  self.ocr_mode == 'API' else 8
         _Executor = ThreadPoolExecutor if  self.ocr_mode == 'API' else ProcessPoolExecutor     
         self.ocr_pool = _Executor(_pool_size)
         self.gpu_idxs = [0,1,2,3]
 
-        self.ocr = Ocr_API()  
-        self.vlm = self.ocr.vlm
+        self.ocr = OcrInOneInstance         
+        self.vlm = VlmInstance
 
         self.chat_model = None
         self.openai_chat_model=None
@@ -1117,41 +914,9 @@ class InitEnvModels:
         if exclude_system_indices:
             self.all_indices = [index_name for index_name in self.all_indices if not index_name.startswith('.')]
         return self.all_indices
-        
-    def _init_ocr_instances(self,mode="API"):
-        ocr = None
-        mode = mode or self.ocr_mode
-        if mode == "API":
-            ocr = Ocr_API()
-            logger.debug(f"将使用多线程GPU Paddle Ocr_API")
-        
-        elif mode == "rapidocr":
-            try:
-                # raise Exception("调试，不使用多线程GPU RapidOCR的情况")
-                from rapidocr_paddle import RapidOCR # For GPU 
-                gpu_id = random.choice(self.gpu_idxs)
-                # 为使用gpu_id参数
-                # 需修改/root/.virtualenvs/test/lib/python3.10/site-packages/rapidocr_paddle/main.py
-                # updater = UpdateParameters()
-                # if 'gpu_id' in kwargs:
-                #     gpu_id = kwargs.pop('gpu_id')
-                #     config = updater(config, **kwargs)
-                #     config["Det"].update({"gpu_id":gpu_id})
-                #     config["Cls"].update({"gpu_id":gpu_id})
-                #     config["Rec"].update({"gpu_id":gpu_id})          
-                ocr = RapidOCR(det_use_cuda=True, cls_use_cuda=True, rec_use_cuda=True,gpu_id=gpu_id)
-                logger.debug(f"将使用多进程GPU RapidOCR (rapidocr_paddle)")
-            except Exception as e:            
-                logger.debug(f"初始化GPU RapidOCR (rapidocr_paddle)失败:{e}")
-                logger.debug(f"将使用多进程CPU RapidOCR (rapidocr_onnxruntime)")
-                from rapidocr_onnxruntime import RapidOCR
-                ocr = RapidOCR()
-        return ocr
     
     def get_ocr(self):
-        ocr = self._init_ocr_instances(mode=self.ocr_mode)
-        return ocr
-
+        return self.ocr
     #################################################################################
     def get_ocr_pool(self):
         return self.ocr_pool
@@ -1470,22 +1235,14 @@ env_models_instance = get_env_models_instance()
 
 
 if __name__ == '__main__':
-    
-    vlm= Vlm_API()
-    paddleocr_vl = PaddleOCR_VL_API()
+    pass
+    image_path_or_base64='/data/projects/JqChatV2/JqChat/ocr.png'
+    ocr = env_models_instance.get_ocr()
+    r = ocr(image_path_or_base64)
+    print(r)
 
-    used_vlm = paddleocr_vl
-    img1 = fr"/data/projects/JqChatV2/JqChat/text_ocr.png"
-    img2 = fr"/data/projects/file_reader/test_docs/发票.jpg"
-    img3 = fr"/data/projects/JqChatV2/JqChat/文档转换和下载.png"
-
-    # for img in [img1,img2,img3]:
-    #     r = used_vlm(image_path_or_base64=img)
-    #     print(r)
-
-
-
-    r2 = vlm(image_path_or_base64='/data/projects/JqChatV2/JqChat/ocr.png')
+'''
+    r2 = vlm()
     print(r2)
     # qwen:110b-chat-v1.5-q4_K_M
     # litellm --model ollama_chat/llama3:70b-instruct
@@ -1623,13 +1380,13 @@ if __name__ == '__main__':
     #     # Add to vectorstore
     #     vectorstore = env_models_instance.get_es_searchstore_index_documents(documents=doc_splits, es_connection=es_connection,embedding=embed_model,index_name=index_name)
     #     print(f"插入{index_name}后的{knowledge_base_list=}")
+'''
 
-
-    '''
+'''
 docker run --shm-size=64g --name xinference103 -d -p 9997:9997 -e XINFERENCE_MODEL_SRC=modelscope -v /home/jqsoft/.xinference:/root/.xinference -v /home/jqsoft/.cache/huggingface:/root/.cache/huggingface -v /home/jqsoft/.cache/modelscope:/root/.cache/modelscope --gpus all xprobe/xinference:latest xinference-local -H 0.0.0.0 --log-level debug
 
 docker run --shm-size=64g --name xinferencenightly -d -p 9997:9997 -e XINFERENCE_MODEL_SRC=modelscope -v /home/jqsoft/.xinference:/root/.xinference -v /home/jqsoft/.cache/huggingface:/root/.cache/huggingface -v /home/jqsoft/.cache/modelscope:/root/.cache/modelscope --gpus all xprobe/xinference:nightly-main xinference-local -H 0.0.0.0 --log-level debug
 
 
-    '''
+'''
 

@@ -3,7 +3,7 @@ from BCEmbedding.tools.langchain import BCERerank
 
 from langchain.text_splitter import RecursiveCharacterTextSplitter
 from langchain_community.document_loaders import PyPDFLoader
-from langchain_community.vectorstores import FAISS
+
 
 # from langchain_community.embeddings import HuggingFaceEmbeddings
 from langchain_huggingface import HuggingFaceEmbeddings
@@ -24,18 +24,19 @@ embed_model = HuggingFaceEmbeddings(
 
 reranker_args = {'model': '/data/models/bce-reranker-base_v1', 'top_n': 5, 'device': 'cuda:1'}
 reranker = BCERerank(**reranker_args)
+if __name__ == '__main__':
+  from langchain_community.vectorstores import FAISS
+  # init documents
+  documents = PyPDFLoader("/data/projects/JqChat/test_zh.pdf").load()
+  text_splitter = RecursiveCharacterTextSplitter(chunk_size=1500, chunk_overlap=200)
+  texts = text_splitter.split_documents(documents)
 
-# init documents
-documents = PyPDFLoader("/data/projects/JqChat/test_zh.pdf").load()
-text_splitter = RecursiveCharacterTextSplitter(chunk_size=1500, chunk_overlap=200)
-texts = text_splitter.split_documents(documents)
+  # example 1. retrieval with embedding and reranker
+  retriever = FAISS.from_documents(texts, embed_model, distance_strategy=DistanceStrategy.MAX_INNER_PRODUCT).as_retriever(search_type="similarity", search_kwargs={"score_threshold": 0.3, "k": 10})
 
-# example 1. retrieval with embedding and reranker
-retriever = FAISS.from_documents(texts, embed_model, distance_strategy=DistanceStrategy.MAX_INNER_PRODUCT).as_retriever(search_type="similarity", search_kwargs={"score_threshold": 0.3, "k": 10})
+  compression_retriever = ContextualCompressionRetriever(
+      base_compressor=reranker, base_retriever=retriever
+  )
 
-compression_retriever = ContextualCompressionRetriever(
-    base_compressor=reranker, base_retriever=retriever
-)
-
-response = compression_retriever.get_relevant_documents("医疗机构的难题?")
-print(response)
+  response = compression_retriever.get_relevant_documents("医疗机构的难题?")
+  print(response)
