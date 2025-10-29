@@ -73,26 +73,132 @@ class Vlm_API:
             return ''
         
 class PaddleOCR_VL_API:
-    def __init__(self,vl_rec_server_url="http://192.168.44.222:8118/v1"):
-        self.vl_rec_server_url = vl_rec_server_url
+    def __init__(self,vllm_rec_server_url="http://192.168.44.222:8118/v1",paddelocrvl_rec_server_url="http://192.168.44.222:8000/v2",paddelocr_vl_rec_server_pipeline="/models/layout-parsing/infer",bool_test_both_server=True):
         self.exclude_img_keywords = ["<img src", "alt"]
-        from paddleocr import PaddleOCRVL
-        self.paddelvl_pipeline = PaddleOCRVL(vl_rec_backend="vllm-server", vl_rec_server_url=vl_rec_server_url)
-    def __call__(self,image_path_or_base64:str,only_return_text=True):
-        output = self.paddelvl_pipeline.predict_iter(image_path_or_base64)
+        self.vllm_rec_server_url = vllm_rec_server_url
+        self.paddelocrvl_rec_server_url = paddelocrvl_rec_server_url
+
+        self.paddelvllm_pipeline = None
+        self.paddelocrvl_server_string = None
+
+        health_check_url = vllm_rec_server_url.replace("v1", "health")
+        if requests.get(health_check_url).status_code == 200:
+            from paddleocr import PaddleOCRVL
+            self.paddelvllm_pipeline = PaddleOCRVL(vl_rec_backend="vllm-server", vl_rec_server_url=vllm_rec_server_url,
+                                                   layout_threshold=0.05,layout_nms=True,layout_merge_bboxes_mode="large")
+        else:
+            logger.warning(f"{vllm_rec_server_url}服务未在运行！")        
+        # if bool_test_both_server:
+            if requests.get(paddelocrvl_rec_server_url).status_code == 200:
+                self.paddelocrvl_server_string = paddelocrvl_rec_server_url + paddelocr_vl_rec_server_pipeline
+            else:
+                logger.warning(f"{paddelocrvl_rec_server_url}服务未在运行！")
+        
+
+
+    def call_vllm_pipeline(self,image_path_or_url:str,only_return_text=True):
+        output = self.paddelvllm_pipeline.predict(image_path_or_url)
         if only_return_text:
             result_text_list = []
             all_texts = ""
             for res in output:
                 text = res.markdown.get("markdown_texts","")
                 lines = [line.strip("\n") for line in text.split("\n\n") if line.strip() and not all(keyword in line for keyword in self.exclude_img_keywords)]
-                # lines2 = [line for line in text.split("\n\n") if line.strip() and not all(keyword in line for keyword in self.exclude_img_keywords)]
                 joined_lines = "\n".join(lines)
                 result_text_list.append(joined_lines)
             all_texts = "\n".join(result_text_list)
             return all_texts
         else:
             return output
+    def call_ocrvl_server(self,image_path_or_base64:str,only_return_text=True,bool_save_files = False,bool_visualize = False):
+        if self.paddelocrvl_server_string:
+            file_type = 1
+            if isinstance(image_path_or_base64,str):
+                file_type = 0 if image_path_or_base64.endswith("pdf") else 1            
+                if not image_path_or_base64.startswith("http"):
+                    if os.path.isfile(image_path_or_base64):                        
+                        with open(image_path_or_base64, 'rb') as f:
+                            image_bytes = f.read()
+                            image_path_or_base64 = base64.b64encode(image_bytes).decode("utf-8")
+                    # else: #可能是base64字符串
+                    #     raise Exception(f"{image_path_or_base64}文件不存在！")
+            if isinstance(image_path_or_base64, bytes):
+                image_path_or_base64 = base64.b64encode(image_path_or_base64).decode("utf-8")
+
+            # 构造payload
+            payload_file_content = {
+                "file": image_path_or_base64, # Base64编码的文件内容或者文件URL
+                "fileType": file_type, # 文件类型，1表示图像文件
+                "visualize":bool_visualize
+            }
+            file_str = json.dumps(payload_file_content)
+
+            payload_final = {
+            "inputs": [
+                {
+                "name": "input",
+                "shape": [1, 1],
+                "datatype": "BYTES",
+                "data": [
+                    file_str
+                ]
+                }
+            ],
+            "outputs": [
+                {
+                "name": "output"
+                }
+            ]
+            }
+
+            # 调用API
+            response = requests.post(self.paddelocrvl_server_string, json=payload_final)
+            if response.status_code == 200:
+                result_json = response.json()
+                results = result_json["outputs"]
+                if not only_return_text:
+                    return results
+                else:
+                    result_text_list = []
+                    for i, result_data in enumerate(results):
+                        data = result_data["data"]
+                        for d in data:
+                            result = json.loads(d)["result"]
+                            for i, res in enumerate(result["layoutParsingResults"]):
+                                text = res["markdown"]["text"]
+                                lines = [line.strip("\n") for line in text.split("\n\n") if line.strip() and not all(keyword in line for keyword in self.exclude_img_keywords)]
+                                joined_lines = "\n".join(lines)
+                                result_text_list.append(joined_lines)
+                                if bool_save_files:
+                                    md_dir = Path(f"markdown_{i}")
+                                    md_dir.mkdir(exist_ok=True)
+                                    (md_dir / "doc.md").write_text(res["markdown"]["text"])
+                                    for img_path, img in res["markdown"]["images"].items():
+                                        img_path = md_dir / img_path
+                                        img_path.parent.mkdir(parents=True, exist_ok=True)
+                                        img_path.write_bytes(base64.b64decode(img))
+                                    print(f"Markdown document saved at {md_dir / 'doc.md'}")
+                                    if bool_visualize:
+                                        for img_name, img in res["outputImages"].items():
+                                            img_path = f"{img_name}_{i}.jpg"
+                                            Path(img_path).parent.mkdir(exist_ok=True)
+                                            with open(img_path, "wb") as f:
+                                                f.write(base64.b64decode(img))
+                                            print(f"Output image saved at {img_path}")
+
+                    result_texts = "\n".join(result_text_list)
+                    return result_texts
+            else:
+                raise Exception(f"{self.paddelocrvl_server_string}服务未返回正常结果:{response.status_code=}")
+
+    
+    def __call__(self,image_path_or_url:str,image_base64_decoded:str,only_return_text=True):
+        if self.paddelvllm_pipeline:
+            return self.call_vllm_pipeline(image_path_or_url,only_return_text=only_return_text)
+        elif self.paddelocrvl_server_string:
+            return self.call_ocrvl_server(image_base64_decoded,only_return_text=only_return_text)
+        else:
+            raise Exception(f"PaddleOcrVl两种服务均不正常，请检查:vllm_pipeline({self.vllm_rec_server_url})和ocrvl_server({self.paddelocrvl_rec_server_url})！")
 
 class JqRapidOCR:
     def __init__(self,gpu_id = 0):
@@ -167,7 +273,7 @@ class OcrInOneAPI:
         try:
             logger.warning(f"优先调用VLM模型来做图片OCR识别...")
             result = self.vlm(decoded_data,is_decoded_image_text=True)
-            # logger.warning("VLM识别结果:"+result)
+            logger.warning("VLM识别结果:"+result)
             # raise Exception("故意抛出VLM错误，以跳转测试OCR接口......") ## todo: 测试用，请删除
 
         except Exception as e:
@@ -176,9 +282,11 @@ class OcrInOneAPI:
                 if self.paddleocr_vl:
                     try:
                         try:
-                            result = self.paddleocr_vl(image_file_path,only_return_text=True)
+                            # image_path_or_url:str,image_base64_decoded:str
+                            result = self.paddleocr_vl(image_path_or_url=image_file_path,image_base64_decoded=decoded_data,only_return_text=True)
+                            # result = self.paddleocr_vl(image_path_or_base64,only_return_text=True)
                         except:
-                            result = self.paddleocr_vl(image_path_or_base64,only_return_text=True)
+                            result = self.paddleocr_vl(image_path_or_url=image_file_path,image_base64_decoded=image_file_path,only_return_text=True)
                         # raise Exception("故意抛出PaddleOcrVL接口错误，以跳转测试OCR接口......")  ## todo: 测试用，请删除
                     except Exception as e:
                         raise Exception(f"PaddleOcrVL识别过程中出现错误: {str(e)}。下面尝试请求RapidOcr接口......")
@@ -239,8 +347,9 @@ if __name__ == "__main__":
     img2 = fr"/data/projects/file_reader/test_docs/发票.jpg"
     img3 = fr"/data/projects/JqChatV2/JqChat/文档转换和下载.png"
     img4="/data/projects/JqChatV2/JqChat/graph.jpg"
-    imgs = [img0,img1,img2,img3,img4]
+    imgs = [img1,img0,img2,img3,img4]
     OcrInstance = OcrInOneInstance
     for img in imgs:
+        print(img)
         r1=OcrInstance(img) 
         print(r1)
