@@ -350,7 +350,7 @@ if __name__ == "__main__":
     uvicorn.run(
         app,
         host="0.0.0.0",
-        port=8600,
+        port=8601,
         log_level="debug",
         timeout_keep_alive=60
     )

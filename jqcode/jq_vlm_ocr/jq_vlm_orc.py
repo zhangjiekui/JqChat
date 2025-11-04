@@ -273,7 +273,7 @@ class OcrInOneAPI:
         try:
             logger.warning(f"优先调用VLM模型来做图片OCR识别...")
             result = self.vlm(decoded_data,is_decoded_image_text=True)
-            logger.warning("VLM识别结果:"+result)
+            logger.warning("VLM识别结果:\n"+result)
             # raise Exception("故意抛出VLM错误，以跳转测试OCR接口......") ## todo: 测试用，请删除
 
         except Exception as e:
@@ -287,6 +287,7 @@ class OcrInOneAPI:
                             # result = self.paddleocr_vl(image_path_or_base64,only_return_text=True)
                         except:
                             result = self.paddleocr_vl(image_path_or_url=image_file_path,image_base64_decoded=image_file_path,only_return_text=True)
+                        logger.warning("PaddleOcrVL识别结果:\n"+result)
                         # raise Exception("故意抛出PaddleOcrVL接口错误，以跳转测试OCR接口......")  ## todo: 测试用，请删除
                     except Exception as e:
                         raise Exception(f"PaddleOcrVL识别过程中出现错误: {str(e)}。下面尝试请求RapidOcr接口......")
@@ -307,6 +308,7 @@ class OcrInOneAPI:
                                 result = self.rapidocr(image_file_path)
                             except:
                                 result = self.rapidocr(image_path_or_base64)
+                            logger.warning("RapidOcr:\n"+result)
 
                             # raise Exception("故意抛出RapidOcr接口错误，以跳转测试OCR接口......")  ## todo: 测试用，请删除
                         except Exception as e:
