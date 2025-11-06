@@ -45,6 +45,8 @@ logger = jqkj_logger(__file__).get_logger()
 # python_repl = eval  
 # llm_model = env_models_instance.openai_chat_model or env_models_instance.chat_model
 llm_model = env_models_instance.chat_model
+code_model = env_models_instance.code_model
+
 # DEBUG_LLM_USING_CUSTOM_HANDLER
 invoke_llm_config = env_models_instance.invoke_llm_config 
 
@@ -848,9 +850,16 @@ class GraphAgent:
             documents = state["documents"]
             documents_contents = [d.page_content for d in documents]
             documents_contents_str = "\n".join(documents_contents)
-            score = answer_is_supported_by_documents_grader.invoke({"documents": documents_contents_str, "generation": generation},config=invoke_llm_config)
-            grade = score.k
-            # grade = "yes" # 跳过上面的检查
+            try:
+                score = answer_is_supported_by_documents_grader.invoke({"documents": documents_contents_str, "generation": generation},config=invoke_llm_config)
+                grade = score.k
+            except Exception as e:
+                try:
+                    llm_output = e.llm_output
+                    score = json_repair.loads(llm_output)
+                    grade = score.get("k")
+                except Exception as e:
+                    raise e
         except Exception as e:
             grade = "yes" # 继续按正常往下执行！
             print(f"---ERROR: 无法获取'answer_is_supported_by_documents_grader'的判别结果，详细错误信息如下:---")
@@ -1359,13 +1368,13 @@ class GraphAgent:
                         message.additional_kwargs["reasoning_content"] = message.content
                         message.content = ""
                     else:
-                        mix_content = message.content
-                        huyuan_split_string = '\n</think>\n<answer>\n'
+                        mix_content = message.content                        
+                        huyuan_split_string = '\n</think>\n\n' # 改为测试MiniMax-M2  原：huyuan_split_string = '\n</think>\n<answer>\n'
                         if huyuan_split_string in mix_content:
                             contents = mix_content.split(huyuan_split_string)
                             if len(contents) == 2:
                                 reasoning_content = contents[0]+"</think>\n"
-                                answer_content = "\n<answer>" + contents[1]
+                                answer_content = contents[1] # 改为测试MiniMax-M2  原：answer_content = "\n<answer>" + contents[1]
                                 message.content = answer_content
                                 message.additional_kwargs["reasoning_content"] = reasoning_content
                             else:
@@ -1684,126 +1693,76 @@ class GraphAgent:
     def code_generation(self,state:GraphAgentState):
         user_question = state["question"]
         last_message = state["messages"][-1]
-        question_related_messages = state["question_related_messages"]
-        for m in question_related_messages:
-            if m.content == user_question:
-                question_related_messages.remove(m)
-                            
-        context = "\n".join([m.content for m in question_related_messages if m.content and m.name!='history_ai'])
-
-        logger.warning(f"[Code Executor:system_code_prompt] {self.user_request_url=}")
-        _system_code_prompt=f"""请尽量使用简体中文来解答用户问题。
-            Act as an EXPERT with ten years of experience in the domain of data anylasis, your role is to help inexperienced people explore/analyse data. 
-            Be sure to help the user understand what to focus on and give suggestions on where it would make sense to dig deeper.
-            If you need to use/generate Python code, follow the instructions under [GENERATE_PYTHON_INSTRUCTIONS].
-            GENERATE_PYTHON_INSTRUCTIONS:
-                First, think step by step what you want to do and write it down in Simplified Chinese.
-                Then generate valid Python code all in a code block 
-                Make sure all code is valid - it will be run in a Jupyter Python 3 kernel environment. 
-                MUST CHECK:
-                    Define every variable before you use it.
-                    Import every module/package before you use it.such as:
-                        import numpy as np
-                        import pandas as pd
-                        import seaborn as sns
-                        import matplotlib.pyplot as plt
-                        import plotly.express as px
-                        import plotly.graph_objects as go                
-                Following modules/packages are available:
-                    For data wrangling/munging, you can use 
-                        'numpy',
-                        'dateparser',
-                        'pandas',
-                    For data visualization, you can use
-                        'matplotlib',
-                        'seaborn',
-                        'plotly',
-                Be sure to generate charts with plotly/matplotlib/seaborn, matplotlib.pyplot is preferred. When pyplot is used, please add the following codes to properly display:\n
-                # 设置中文字体和负号显示
-                plt.rcParams['font.sans-serif'] = ['WenQuanYi Zen Hei', 'SimHei', 'Microsoft YaHei', 'DejaVu Sans']  # 使用黑体显示中文
-                plt.rcParams['axes.unicode_minus'] = False    # 显示负号
-                # 设置中文字体和负号显示
-                
-                But if you need geographical charts, use geopandas with the geopandas.datasets module.
-                If the user has just uploaded a file, focus on the file that was most recently uploaded (and optionally all previously uploaded files)
-
-                If the code modifies or produces a file/image, you must save the file/image to location '{env_models_instance.abs_workspace}/code', and add a print statement at the end of the code block that prints a link to it as HTML string: <a href='{self.user_request_url}/download?file=INSERT_FILENAME_HERE'>下载文件</a>. Replace INSERT_FILENAME_HERE with the actual filename(only filename itself,no path prefix needed).
-                并且最后的回答要优先直接展示图片，如果没有展示图片，就必须提供下载链接
-            EndOf_GENERATE_PYTHON_INSTRUCTIONS
-            """
-        system_code_prompt=f"""请尽量使用简体中文来解答用户问题。
-            Act as an EXPERT with ten years of experience in the domain of data anylasis, your role is to help inexperienced people explore/analyse data. 
-            Be sure to help the user understand what to focus on and give suggestions on where it would make sense to dig deeper.
-            If you need to use/generate Python code, follow the instructions under [GENERATE_PYTHON_INSTRUCTIONS].
-            GENERATE_PYTHON_INSTRUCTIONS:
-                First, think step by step what you want to do and write it down in Simplified Chinese.
-                Then generate valid Python code all in a code block 
-                Make sure all code is valid - it will be run in a Jupyter Python 3 kernel environment. 
-                MUST CHECK:
-                    Define every variable before you use it.
-                    Import every module/package before you use it.such as:
-                        import numpy as np
-                        import pandas as pd
-                        import seaborn as sns
-                        import matplotlib.pyplot as plt
-                        import plotly.express as px
-                        import plotly.graph_objects as go                
-                Following modules/packages are available:
-                    For data wrangling/munging, you can use 
-                        'numpy',
-                        'dateparser',
-                        'pandas',
-                    For data visualization, you can use
-                        'matplotlib',
-                        'seaborn',
-                        'plotly',
-                Be sure to generate charts with plotly/matplotlib/seaborn, matplotlib.pyplot is preferred. When pyplot is used, please add the following codes to properly display:\n
-                # 设置中文字体和负号显示
-                plt.rcParams['font.sans-serif'] = ['WenQuanYi Zen Hei', 'SimHei', 'Microsoft YaHei', 'DejaVu Sans']  # 使用黑体显示中文
-                plt.rcParams['axes.unicode_minus'] = False    # 显示负号
-                # 设置中文字体和负号显示
-                
-                But if you need geographical charts, use geopandas with the geopandas.datasets module.
-                如有图片，请直接展示图片(如plt.show())，无论如何都不要使用plt.savefig()等类似函数保存图片文件(如.png, .jpg, .jpeg, .gif, .bmp, .svg, .tiff, .tif),
-                If the code need to produces a file(But not image mentioned above), you must write the file in UTF-8 encoding and save to location '{env_models_instance.abs_workspace}/code', and add a print statement at the end of the code block that prints a link to it as HTML string: <a href='{self.user_request_url}/download?file=INSERT_FILENAME_HERE'>下载文件</a>. Replace INSERT_FILENAME_HERE with the actual filename(only filename itself,no path prefix needed).
-
-                Never use the following:
-                1. 'plt.savefig' function
-                2. 'input' function
-                3. 'open' function
-                4. 'os' module
-                5. 'sys' module
-                6. 'subprocess' module
-                7. 'os.system' function
-                8. 'os.popen' function
-                9. 'os.exec' function
-                10. 'os.execl' function
-                
-
-
-            EndOf_GENERATE_PYTHON_INSTRUCTIONS
-            """
-                # http://10.1.150.105:7861/download?file=
-                # /data/projects/JqChatV2/workspace/generated_files/
-
-        user_code_prompt = f"""First, here is a history of what I asked you to do earlier. 
-        {context}        
-        Aiming to help the user in the best possible way with the below [USER_QUESTION] do one of the following:
-        1. Write Python code, in a triple backtick Markdown code block, that supports what the user is trying to achieve. Follows the system instructions between [GENERATE_PYTHON_INSTRUCTIONS] and [EndOf_GENERATE_PYTHON_INSTRUCTIONS]
-        2. Answer the question the user asks.
-        3. 如果代码中生成了图片或文件，请务必在最后的回答中包括图片或文件，并给出图片或文件的下载链接. 
+        epocs_num = self.message_idx_in_a_question_epoch
+        last_messages = state["messages"][-epocs_num:-1] #只使用本次对话的内容来构建上下文，以生成代码
         
-        [USER_QUESTION]
-        {user_question}
-        仅仅需要可直接运行的Python代码，不需要输出任何其他内容。
+        system_code_prompt=f"""你是一个编程专家，你的唯一任务是通过生成代码来解决用户问题。
+            If you need to use/generate Python code, follow the instructions under [GENERATE_PYTHON_INSTRUCTIONS].
+            GENERATE_PYTHON_INSTRUCTIONS:
+                First, think step by step what you want to do and write it down in Simplified Chinese.
+                Then generate valid Python code all in a code block 
+                Make sure all code is valid - it will be run in a Jupyter Python 3 kernel environment. 
+                MUST CHECK:
+                    Define every variable before you use it.
+                    Import every module/package before you use it.such as:
+                        import numpy as np
+                        import pandas as pd
+                        import seaborn as sns
+                        import matplotlib.pyplot as plt
+                        import plotly.express as px
+                        import plotly.graph_objects as go                
+                Following modules/packages are available:
+                    For data wrangling/munging, you can use 
+                        'numpy',
+                        'dateparser',
+                        'pandas',
+                    For data visualization, you can use
+                        'matplotlib',
+                        'seaborn',
+                        'plotly',
+                Be sure to generate charts with plotly/matplotlib/seaborn, matplotlib.pyplot is preferred. When pyplot is used, please add the following codes to properly display:\n
+                # 设置中文字体和负号显示
+                plt.rcParams['font.sans-serif'] = ['WenQuanYi Zen Hei', 'SimHei', 'Microsoft YaHei', 'DejaVu Sans']  # 使用黑体显示中文
+                plt.rcParams['axes.unicode_minus'] = False    # 显示负号
+                # 设置中文字体和负号显示
+            EndOf_GENERATE_PYTHON_INSTRUCTIONS
+            """
+        # http://10.1.150.105:7861/download?file=
+        # /data/projects/JqChatV2/workspace/generated_files/
+
+        user_code_prompt = f"""
+        1. Writing code to solve the user question.仅仅需要生成可直接运行的代码，不需要输出任何其他内容。
+        2. if python code, must place in a triple backtick Markdown code block, that supports what the user is trying to achieve. Follows the system instructions between 
+            [GENERATE_PYTHON_INSTRUCTIONS] and [EndOf_GENERATE_PYTHON_INSTRUCTIONS]
+        3. 如果代码中生成了图片或文件，人类专家已经开发好了相应的服务，可以在真实环境中使用，你不用担心。  
+        4. 但为了图片或文件能正常展示或下载，在生成的代码时必须保证：Save the file/image to location '{env_models_instance.abs_workspace}/code', and add a print statement at the end of the code block that prints a link to it as HTML string: <a href='{self.user_request_url}/download?file=INSERT_FILENAME_HERE'>下载文件</a>. Replace INSERT_FILENAME_HERE with the actual filename(only filename itself,no path prefix needed).
+
 
         """
+        logger.warning(f"[Code Executor:code_prompt]: URL={self.user_request_url} FILE_PATH={env_models_instance.abs_workspace}/code")
+        code_prompt = system_code_prompt + user_code_prompt
+        # code_prompt = user_code_prompt
+        sys_message = SystemMessage(content=code_prompt)
+        question_message = HumanMessage(content=user_question)
 
-        sys_message = SystemMessage(content=system_code_prompt)
-        human_message = HumanMessage(content=user_code_prompt)
+        # all_messages = [question_message] + last_messages + [sys_message]
+        all_messages = [sys_message] + [question_message] + last_messages 
         code,code_text = "",""
         try:
-            code_generated = llm_model.invoke([sys_message,human_message],config=invoke_llm_config)
+            if code_model:
+                try:
+                    code_generated = code_model.invoke(all_messages,config=invoke_llm_config)
+                    logger.warning(f"使用代码模型{code_model.model_name}生成代码成功！")
+                except Exception as e:
+                    logger.warning(f"使用代码模型{code_model.model_name}生成代码失败:{e}")
+                    logger.warning(f"......使用通用模型生成代码")
+                    code_generated = llm_model.invoke(all_messages,config=invoke_llm_config)
+                    logger.warning(f"......使用通用模型{llm_model.model_name}生成代码成功！")
+            else:
+                logger.warning(f"未配置使用代码模型，使用通用模型生成代码！")
+                code_generated = llm_model.invoke(all_messages,config=invoke_llm_config)
+                logger.warning(f"......使用通用模型{llm_model.model_name}生成代码成功！")
+
             code_text = code_generated.content.strip()        
             code = extract_code(code_text)
         except Exception as e:
@@ -1907,6 +1866,13 @@ class GraphAgent:
                 # 返回值为{"text"="",image=""}
                 success = False
                 retry_times = 1
+                user_code_prompt = f"""
+                                        1. Writing code to solve the user question.仅仅需要生成可直接运行的代码，不需要输出任何其他内容。
+                                        2. if python code, must place in a triple backtick Markdown code block, that supports what the user is trying to achieve. Follows the system instructions between 
+                                            [GENERATE_PYTHON_INSTRUCTIONS] and [EndOf_GENERATE_PYTHON_INSTRUCTIONS]
+                                        3. 如果代码中生成了图片或文件，人类专家已经开发好了相应的服务，可以在真实环境中使用，你不用担心。  
+                                        4. 但为了图片或文件能正常展示或下载，在生成的代码时必须保证：Save the file/image to location '{env_models_instance.abs_workspace}/code', and add a print statement at the end of the code block that prints a link to it as HTML string: <a href='{self.user_request_url}/download?file=INSERT_FILENAME_HERE'>下载文件</a>. Replace INSERT_FILENAME_HERE with the actual filename(only filename itself,no path prefix needed).
+                                    """
                 while not success and retry_times <= 3:
                     result,success=code_executor.call(code=code)
                     # self.jq_queque.enqueue(code)
@@ -1921,12 +1887,26 @@ class GraphAgent:
                         self.jq_queque.enqueue("代码执行成功")
                         self.code_text = code_text + "\n\n"
                         self.img_url = result.get("image")
-                    else:                                      
-                        message_content = f'用户问题为:{question}\n生成代码为：{code}\n但该代码运行失败，返回结果为：{result}。\n请根据返回结果中的错误信息，修正代码，并重新提交执行。\n' 
+                    else: 
+                        self.jq_queque.enqueue(f"代码执行失败，第{retry_times}次重试中......")                                     
+                        message_content = f'用户问题为:{question}\n生成代码为：{code}\n但该代码运行失败，返回结果为：{result}。\n请根据返回结果中的错误信息，修正代码，并满足要求:{user_code_prompt}。\n' 
                         logger.warning(f"......第{retry_times}次代码执行失败, {message_content=}......") 
                         try:
                             human_message = HumanMessage(content=message_content)
-                            code_generated = llm_model.invoke([human_message],config=invoke_llm_config)
+                            # code_generated = llm_model.invoke([human_message],config=invoke_llm_config)
+                            if code_model:
+                                try:
+                                    code_generated = code_model.invoke([human_message],config=invoke_llm_config)
+                                    logger.warning(f"使用代码模型{code_model.model_name}生成代码成功！")
+                                except Exception as e:
+                                    logger.warning(f"使用代码模型{code_model.model_name}生成代码失败:{e}")
+                                    logger.warning(f"......使用通用模型生成代码")
+                                    code_generated = llm_model.invoke([human_message],config=invoke_llm_config)
+                                    logger.warning(f"......使用通用模型{llm_model.model_name}生成代码成功！")
+                            else:
+                                logger.warning(f"未配置使用代码模型，使用通用模型生成代码！")
+                                code_generated = llm_model.invoke([human_message],config=invoke_llm_config)
+                                logger.warning(f"......使用通用模型{llm_model.model_name}生成代码成功！")
                             code_text = code_generated.content.strip()        
                             code = extract_code(code_text)
                             code = merge_code_with_usual_imports(code) # 加入常用的imports，防止代码生成中出现的遗漏错误
@@ -1954,7 +1934,7 @@ class GraphAgent:
             error_prompt = f'执行工具调用出现错误:\n  工具名称：tool_name\n  调用参数：{code}\n  错误信息：{str(e)}\n'
             makeup_tool_message = ToolMessage(tool_call_id=tool_call_id, name=tool_name, content=error_prompt,additional_kwargs ={"status":False})
             makeup_tool_message = self.makeup_message_with_question_id_idx(makeup_tool_message)
-            makeup_human_message = HumanMessage(content=f"对于用户问题:{question},上次的工具调用出现了错误，请仔细规划和思考，重新生成正确的工具名称和调用参数，避免出现同样的错误！")
+            makeup_human_message = HumanMessage(content=f"对于用户问题:{question},本次工具调用（code_execution）出现了错误，请放弃再次调用该工具！直接回答用户问题或尝试其他工具。")
             makeup_human_message = self.makeup_message_with_question_id_idx(makeup_human_message)
             # 下面的error_message仅仅是为了方便做code_execution的下一个节点导航使用
             # error_message = ToolMessage(content="",name =tool_name,tool_call_id =f'call_{str(uuid.uuid4())}',additional_kwargs ={"status":False})
@@ -2112,7 +2092,7 @@ if __name__ == "__main__":
         "你是谁？请详细介绍一下你自己"
         "你装备了哪些工具？",
         "我现在的位置是在安徽晶奇网络科技股份有限公司附近，请查询15公里范围内的养老机构",
-        "我现在的位置是在安徽晶奇网络科技股份有限公司附近，请查询15公里范围内的养老机构。并将查询到的养老机构名称（仅仅需要名称，不需要计算任何距离）通过python转换成excel文件，提供http的网络下载地址"
+        "我现在的位置是在安徽晶奇网络科技股份有限公司附近，请查询15公里范围内的养老机构。并将查询到的养老机构名称（仅仅需要名称，不需要计算任何距离）通过python转换成excel文件，提供http的网络下载地址",
         "晶奇公司质量保证过程中的角色及角色的职责或含义解释，对应的人员（姓名）有哪些?其中的批准人是谁？",
         '你好，我的名字是张结魁，我是安徽晶奇网络科技股份有限公司的，请记住我的信息',
         '请搜索我与晶奇公司的相关网页，说明我与晶奇公司的关系',
@@ -2207,7 +2187,8 @@ if __name__ == "__main__":
     # print(response)
     # pass
 
-    # user_questions=['请绘制sin(x)曲线']
+    user_questions=["晶奇公司质量保证过程中的角色及角色的职责或含义解释，对应的人员（姓名）有哪些?其中的批准人是谁？"]
+    user_questions=['我现在的位置是在安徽晶奇网络科技股份有限公司附近，请查询15公里范围内的养老机构。并将养老机构名称通过python转换成excel文件，提供http的网络下载地址']
     for user_question in user_questions:
         if user_question == '请绘制sin(x)曲线':
             pass

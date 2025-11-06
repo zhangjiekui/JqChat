@@ -381,6 +381,11 @@ class InitEnvModels:
         LLM_MODEL_CARD = os.getenv("LLM_MODEL_CARD",'')
         LLM_MODEL_CARD = json_repair.loads(LLM_MODEL_CARD)
         LLM_MODEL_CARD = LLM_MODEL_CARD if LLM_MODEL_CARD else _LLM_MODEL_CARD
+
+        CODE_MODEL_CARD = os.getenv("CODE_MODEL_CARD",'')
+        CODE_MODEL_CARD = json_repair.loads(CODE_MODEL_CARD)
+        CODE_MODEL_CARD = CODE_MODEL_CARD if CODE_MODEL_CARD else None
+
         
         EMBEDDING_MODEL_CARD = os.getenv("EMBEDDING_MODEL_CARD",'')
         EMBEDDING_MODEL_CARD = json_repair.loads(EMBEDDING_MODEL_CARD)
@@ -395,6 +400,7 @@ class InitEnvModels:
         RERANK_MODEL_CARD = RERANK_MODEL_CARD if RERANK_MODEL_CARD else _RERANK_MODEL_CARD
 
         self.llm_model_card = LLM_MODEL_CARD
+        self.code_model_card = CODE_MODEL_CARD
         self.embedding_model_card = EMBEDDING_MODEL_CARD
         self.embedding_model_8k_card = EMBEDDING_MODEL_8k_CARD
         self.rerank_model_card = RERANK_MODEL_CARD
@@ -411,6 +417,14 @@ class InitEnvModels:
         self.llm_tokenize_api_key = self.llm_model_card.get('tokenize_api_key',_default_api_key)
         self.need_custom_tool_call_parse = self.llm_model_card.get('need_custom_tool_call_parse',True)
         self.need_json_mode = self.llm_model_card.get('need_json_mode',False)
+
+        if self.code_model_card:
+            self.code_model_api_key = self.code_model_card.get('api_key',_default_api_key)
+            self.code_model_base_url = self.code_model_card.get('base_url',None) 
+            self.code_model_name = self.code_model_card['name']
+            self.code_model_max_tokens = self.code_model_card['max_tokens']
+
+
         
         handlers = get_custom_handlers()
         invoke_llm_config = {'callbacks' : handlers}
@@ -559,6 +573,7 @@ class InitEnvModels:
 
         self.chat_model = None
         self.openai_chat_model=None
+        self.code_model = None
         self.get_langchain_chat_model()
 
         self.embed_model,self.embedding_model_8k,self.reranker = None, None, None
@@ -619,8 +634,22 @@ class InitEnvModels:
                         # https://huggingface.co/Qwen/QwQ-32B#usage-guidelines              
                         extra_body={"repetition_penalty": repetition_penalty,"min_p": min_p,"top_k": top_k},        
                     )
+                if self.code_model_card:
+                    self.code_model = ChatDeepSeek(
+                            cache=True,
+                            model_name=self.code_model_name,
+                            api_base=self.code_model_base_url,    
+                            api_key= self.code_model_api_key,
+                            streaming=False,
+                            max_tokens=self.code_model_max_tokens,
+                    )
+
                 if is_main_process():
                     logger.warning(f'当前使用ChatDeepSeek接口,LLM模型为:model_name = {self.chat_model.model_name}, api_base = {self.chat_model.api_base}')
+                    if self.code_model:
+                        logger.warning(f'当前使用ChatDeepSeek接口,Code模型为:model_name = {self.code_model.model_name}, api_base = {self.code_model.api_base}')
+                    else:
+                        logger.warning(f'未设置Code代码模型')
             except ImportError as e:
                 logger.error(f"ChatDeepSeek模块未安装，请安装'from langchain_deepseek import ChatDeepSeek'：{str(e)}")
             except Exception as e:

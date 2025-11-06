@@ -1,4 +1,15 @@
+两台服务器间拷贝数据：命令及密码：
+scp -r /data/ root@192.168.44.200:/data/
+rsync -avz --partial --progress /data/models/Qwen/Qwen3-30B-A3B-Instruct-2507-FP8/ root@192.168.44.200:/data/models/Qwen/Qwen3-30B-A3B-Instruct-2507-FP8/
+jqkj5350880
+
+rsync: [Receiver] mkdir "/data/models/Qwen/Qwen3-30B-A3B-Instruct-2507-FP8" failed: No such file or directory (2)
+rsync error: error in file IO (code 11) at main.c(791) [Receiver=3.2.7]
+rsync 默认不会自动创建多级父目录（尤其是当路径较深时）
+root@jqkj:~# ssh root@192.168.44.200 "mkdir -p /data/models/Qwen"
+
 **du -h --max-depth=1 / | sort -rh**
+
 
 ## bytedance/SandboxFusion 支持多种语言
 https://github.com/bytedance/SandboxFusion
@@ -973,7 +984,11 @@ workon vllm
 CUDA_VISIBLE_DEVICES=2,3 vllm serve /data/models/deepseek-r1-distill-qwen-32b-awq/ --tensor-parallel-size 2 --max-model-len 10000 --served-model-name DeepSeekR1 --enable-auto-tool-choice --tool-call-parser hermes --host 0.0.0.0 --port 8000
 
 ## olmocr [https://github.com/allenai/olmocr/tree/main]
-### python 3.11
+### sudo add-apt-repository ppa:deadsnakes/ppa
+sudo apt-get update
+sudo apt upgrade
+sudo apt install python3.11 python3.12 python3.13 
+sudo apt-get install python3.11-dev 3.11
 sudo add-apt-repository ppa:deadsnakes/ppa
 sudo apt-get update
 sudo apt upgrade
@@ -1119,8 +1134,23 @@ Total                   472328.98       433344.67       905673.64 -->
 
 
 ```
+错误填坑：
+try:
+    from enum import StrEnum
+except ImportError:
+    print("StrEnum was introduced in the standard library enum module with Python 3.11")
+    print("With Python<3.11")
+    print("pip install backports.strenum")
+    print("from backports.strenum import StrEnum......開始")
+    from backports.strenum import StrEnum
+    print("from backports.strenum import StrEnum......成功")
+
+升级transformers版本
+
+
+
 workon torch26cu126
-TORCH_CUDA_ARCH_LIST="8.9" CUDA_VISIBLE_DEVICES=0 python ktransformers/server/main.py \
+TORCH_CUDA_ARCH_LIST="8.9" CUDA_VISIBLE_DEVICES=0 python /root/ktransformers/ktransformers/server/main.py \
 --port 8082 \
 --architectures Qwen3MoeForCausalLM \
 --model_name qwen3kt  \
@@ -1133,7 +1163,7 @@ TORCH_CUDA_ARCH_LIST="8.9" CUDA_VISIBLE_DEVICES=0 python ktransformers/server/ma
 --top_k 20  \
 --repetition_penalty 1.05  \
 --max_new_tokens $((128*1024/4))  \
---cache_lens $((128*1024/4))  \
+--cache_lens $((128*1024/4+2048))  \
 --chunk_size 256  \
 --max_batch_size 4  \
 --backend_type balance_serve

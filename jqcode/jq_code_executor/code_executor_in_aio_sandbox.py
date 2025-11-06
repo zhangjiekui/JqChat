@@ -185,13 +185,14 @@ if __name__ == "__main__":
         print(error_traceback_msg)
     # docker run -it -p 8080:8080 --name aiosandbox enterprise-public-cn-beijing.cr.volces.com/vefaas-public/all-in-one-sandbox:1.0.0.125
 
+# 详细说明参照：jqcode/jq_code_executor/aio_sandbox镜像配置.md
 
 # 修改镜像，安装Python包
     # docker run -it --name jqsandbox --rm --entrypoint /bin/bash enterprise-public-cn-beijing.cr.volces.com/vefaas-public/all-in-one-sandbox:1.0.0.125
     # pip config set global.index-url https://mirrors.aliyun.com/pypi/simple/  #https://pypi.tuna.tsinghua.edu.cn/simple
     # /opt/python3.12/bin/pip config set global.index-url https://pypi.tuna.tsinghua.edu.cn/simple
     # /opt/python3.12/bin/pip list
-    # /opt/python3.12/bin/pip install plotly seaborn scipy -i https://pypi.tuna.tsinghua.edu.cn/simple
+    # /opt/python3.12/bin/pip install plotly seaborn scipy geopy -i https://pypi.tuna.tsinghua.edu.cn/simple
     # mv /etc/apt/sources.list  /etc/apt/sources.list.bak
     # nano /etc/apt/sources.list
 """
