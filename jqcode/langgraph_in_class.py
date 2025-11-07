@@ -1384,7 +1384,7 @@ class GraphAgent:
                 
                 
 
-                reasoning_content=reasoning_content if reasoning_content.replace("\n","") else "未使用推理模型或未选择输出模型推理过程内容\n<br>"
+                reasoning_content=reasoning_content if reasoning_content.replace("\n","") else "未使用推理模型或未选择输出模型推理过程内容\n"
                     # logger.warning(f"推理内容：<think>\n{reasoning_content}\n</think>")
                 reasoning_content_formatted = state["user_variables"].get(self.user_id,{}).get("reasoning_content",[])
                 reasoning_content_formatted.append(reasoning_content)
@@ -2052,7 +2052,7 @@ class GraphAgent:
                 title_formatted = title[start:start+4]
                 _referens_str = referens_str.replace(title, '')
             # referens_str_formated = f'<details>\n<summary>点击查看"{title_formatted}"</summary>\n<font color="grey" size=16px>\n{_referens_str}\n</font></details>'
-            referens_str_formated = f'<details>\n<summary>点击查看"{title_formatted}"</summary>\n<font color="grey">\n{_referens_str}\n</font></details>'
+            referens_str_formated = f'<details>\n<summary>点击查看"{title_formatted}"</summary>\n\n{_referens_str}\n</details>'
             answer = f'\n{referens_str_formated}\n' + answer
 
         reasoning_content = user_variables_statedict[self.user_id]['reasoning_content']        
@@ -2064,10 +2064,11 @@ class GraphAgent:
                 for i, content in enumerate(reasoning_content):
                     reasoning_content_str += f'\n**推理步骤{i+1}** ： {content}'
                 reasoning_content_str = f"{reasoning_content_str}"
-            reasoning_content_formatted = f'<details>\n<summary>点击查看"模型思考过程" </summary>\n<font color="grey">\n{reasoning_content_str}\n</font></details>'
+            reasoning_content_formatted = f'<details>\n<summary>点击查看"模型思考过程" </summary>\n\n{reasoning_content_str}\n</details>'
             answer = f'{reasoning_content_formatted}\n\n------\n' + answer + '\n\n------\n'
-        
-        ai_alert_text = '<font color="red">内容由AI生成</font>' + '\n\n------\n'
+        # 公司的前端会显示为红色，open-webui不支持html标签
+        # ai_alert_text = '\n\n<span style="color: red">**```内容由AI生成```**</span>\n\n' 
+        ai_alert_text = "**```内容由AI生成```**"  # open-webui会显示红色，但公司的前端会显示为黑色
               
         answer = f"{answer}{ai_alert_text}"
 
@@ -2092,7 +2093,7 @@ if __name__ == "__main__":
         "你是谁？请详细介绍一下你自己"
         "你装备了哪些工具？",
         "我现在的位置是在安徽晶奇网络科技股份有限公司附近，请查询15公里范围内的养老机构",
-        "我现在的位置是在安徽晶奇网络科技股份有限公司附近，请查询15公里范围内的养老机构。并将查询到的养老机构名称（仅仅需要名称，不需要计算任何距离）通过python转换成excel文件，提供http的网络下载地址",
+        "我现在的位置是在安徽晶奇网络科技股份有限公司附近，请查询15公里范围内的养老机构。并将查询到的养老机构名称（仅仅需要名称，不需要计算任何距离）通过python转换成excel文件",
         "晶奇公司质量保证过程中的角色及角色的职责或含义解释，对应的人员（姓名）有哪些?其中的批准人是谁？",
         '你好，我的名字是张结魁，我是安徽晶奇网络科技股份有限公司的，请记住我的信息',
         '请搜索我与晶奇公司的相关网页，说明我与晶奇公司的关系',

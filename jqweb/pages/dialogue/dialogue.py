@@ -288,7 +288,7 @@ def dialogue_page(
                     for i,base64_image in enumerate(base64_images):
                         answer_text = vlm(image_path_or_base64=base64_image,is_decoded_image_text=True,query=prompt)
                         answer_texts += f"\n {i+1}. "+ answer_text
-                ai_alert_text = '\n\n------\n' + '<font color="red">内容由AI生成</font>' + '\n\n------\n'
+                ai_alert_text = '\n\n------\n' + '\n\n<span style="color: red;">内容由AI生成</span>\n\n' + '\n\n------\n'
                 answer_texts = f"{answer_texts}{ai_alert_text}"
                 chat_box.update_msg(answer_texts,streaming=False)
             else:
@@ -335,7 +335,7 @@ def dialogue_page(
             log_result=t2.get_result()
             
             # reasoning_content_str = f"{reasoning_content_str}\n------\n"
-            log_text = f'<details open>\n<summary>点击查看"整体执行过程"</summary>\n<font color="grey">\n{log_result}\n------\n</font></details>'
+            log_text = f'<details open>\n<summary>点击查看"整体执行过程"</summary>\n\n{log_result}\n------\n</details>'
             chat_text = chat_result["text"]
             answer_text = f"{log_text}\n{chat_text}"
 
