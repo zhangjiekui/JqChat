@@ -366,8 +366,9 @@ def main(local_debug: bool = False):
     mp.freeze_support()    
     try:
         args,_ = parse_args()
+        args.production = not local_debug
         print(f"  服务端运行模式({args.production=})")
-        local_debug = not args.production
+        # local_debug = not args.production
     except Exception as e:
         logger.error(f"  获取服务端运行模式args.production 失败：{e})")
     print("\n>>>*=*=*=*=*=*=*=*=*开始启动服务=*=*=*=*=*=*=*=*=*=*=*")
@@ -379,5 +380,5 @@ def main(local_debug: bool = False):
 
 
 if __name__ == "__main__":
-    main(local_debug=True)
+    main(local_debug=False)
     # 端口配置文件/root/.chatchat/workspace/workspace_config.json

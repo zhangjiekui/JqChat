@@ -13,7 +13,11 @@ class ThreadWithResult(threading.Thread):
         try:  
             self.result = self.func(*self.args)  # 在执行函数的同时，把结果赋值给result,  
         except:
-            self.result = self.func(self.args)
+            try:
+                self.result = self.func(self.args)
+            except Exception as e:
+                self.result = ""
+                logger.error(f"运行出现错误:{e}")
         finally:
             if self.result:
                 logger.debug(self.result)

@@ -642,6 +642,8 @@ class InitEnvModels:
                             api_key= self.code_model_api_key,
                             streaming=False,
                             max_tokens=self.code_model_max_tokens,
+                            temperature=0.3,
+                            extra_body={"min_p": 0.01},
                     )
 
                 if is_main_process():

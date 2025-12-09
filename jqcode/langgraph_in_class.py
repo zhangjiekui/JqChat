@@ -597,11 +597,6 @@ class GraphAgent:
         self.model = llm_model.bind_tools(self.all_tools)
 
         self.system_message = [SystemMessage(content=_system_message_content)]
-        
-
-
-            
-            
         self.jq_queque = JqFileSystemQueue(id=self.queque_id)
 
         self.code_text = ""
@@ -800,14 +795,14 @@ class GraphAgent:
                     r2r_search_context = r2r_search(self.r2r_client,query=question) #,chat_on_docs_list = self.chat_on_docs_list
 
                     if r2r_search_context:
-                        n = 20000
+                        n = 2000
                         text = r2r_search_context[0:n]
                         text = text.replace("\n","..")
-                        logger.warning(f'GraphRag Result String={text} ...共{len(r2r_search_context)}字，仅显示前{n}字...')
                         logger.warning("========GraphRag Result String========")
+                        logger.warning(f'GraphRag Result String={text} ...共{len(r2r_search_context)}字，仅显示前{n}字...')
                         # print(text)
                         # self.jq_queque.enqueue(f"图知识库检索结果（共{len(text)}字，仅显示前{n}字）：\n<br>{text}......")
-                        self.jq_queque.enqueue(f"图知识库{self.index_name}综合性检索结果（共{len(text)}字，合并成1个文档）")
+                        self.jq_queque.enqueue(f"图知识库({self.index_name})综合性检索结果（共{len(text)}字，合并成1个文档）")
                         logger.warning("========GraphRag Result String========")
                         graph_documents = [Document(page_content=r2r_search_context,metadata={'source':"GraphRag"})] 
                         documents.extend(graph_documents)
@@ -2187,9 +2182,10 @@ if __name__ == "__main__":
     # response = test_jqchat_service()
     # print(response)
     # pass
-
+    # user_questions=["Write a Python program that shows a ball bouncing inside a spinning hexagon. The ball should be affected by gravity and friction, and it must bounce off the rotating walls realistically,并将运行结果保存为gif动画"] 
+    # # user_questions=['我现在的位置是在安徽晶奇网络科技股份有限公司附近，请查询15公里范围内的养老机构。并将养老机构名称通过python转换成excel文件，提供http的网络下载地址']
+    # user_questions=['请绘制sin(x)曲线']
     user_questions=["晶奇公司质量保证过程中的角色及角色的职责或含义解释，对应的人员（姓名）有哪些?其中的批准人是谁？"]
-    user_questions=['我现在的位置是在安徽晶奇网络科技股份有限公司附近，请查询15公里范围内的养老机构。并将养老机构名称通过python转换成excel文件，提供http的网络下载地址']
     for user_question in user_questions:
         if user_question == '请绘制sin(x)曲线':
             pass
