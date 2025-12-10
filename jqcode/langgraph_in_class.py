@@ -480,6 +480,7 @@ answer_addresses_question_grader = answer_prompt | structured_llm_answer_grader
     
     
 executable_tools = [get_flight_number,python_repl_tool,get_elderly_organization_list]
+executable_tools = [get_flight_number,get_elderly_organization_list]
 # executable_tools = [get_flight_number]
 route_tools = [WEB_SEARCH,CODE_GENERATION,CODE_EXECUTION]
 default_index_description = "向量库/知识库工具(vectorstore/knowledge base)：关于安徽晶奇网络科技股份有限公司（简称晶奇公司）、医疗卫生、医疗健康、医疗服务、医疗政策、信息化产品方案、技术文档等等方面的文档知识库. 如果用户问题与此相关，都必须优先使用该vectorstore工具。"
@@ -584,7 +585,7 @@ class GraphAgent:
             }
             ```
         '''
-        _system_message_content = f"现在是{_current_date_time}. 你的名字叫做 ‘晶灵’,是安徽晶奇公司网络科技公司研发的一款高级智能体专家应用。请尽量使用简体中文（不要有繁体！）来与用户沟通互动。 And you are equipped with some powerful tools:{_tool_names_str}, Please strictly following OpenAI 'tool calling' interface specification if you need to call a tool or multiple tools in sequence, with No preamble or explaination. Tool Choice Guidelines:First,'CODE_GENERATION' and 'CODE_EXECUTION' MUST NOT be called at the same time(Actualy, in our APPLICATION  'CODE_GENERATION' will call 'CODE_EXECUTION' automatically), 'CODE_GENERATION' is used when user want you write code to solve their problem, while 'CODE_EXECUTION' is only used when user have provided the code, and just want you just to run the code and report the results. Second, 'CODE_GENERATION' is preferred rather than 'python_repl_tool' for drawing images, plotting graphs/charts, data file processing/analyzing/saving, Otherwise, please use 'python_repl_tool'.如果用户提及检索知识库，应优先考虑调用'VECTORSTORE'工具;如果需要调用'WEB_SEARCH'工具，谨记只能生成一次工具调用，并直接将用户问题直接作为工具参数。If you need to call tools, you must response following the format:\n {_tool_response_format},and no need any more explanation"
+        _system_message_content = f"现在是{_current_date_time}. 你的名字叫做 ‘晶灵’,是安徽晶奇公司网络科技公司研发的一款高级智能体专家应用。请尽量使用简体中文（不要有繁体！）来与用户沟通互动。 And you are equipped with some powerful tools:{_tool_names_str}, Please strictly following OpenAI 'tool calling' interface specification if you need to call a tool or multiple tools in sequence, with No preamble or explaination. Tool Choice Guidelines:First,'CODE_GENERATION' and 'CODE_EXECUTION' MUST NOT be called at the same time(Actualy, in our APPLICATION  'CODE_GENERATION' will call 'CODE_EXECUTION' automatically), 'CODE_GENERATION' is used when user want you write code to solve their problem, while 'CODE_EXECUTION' is only used when user have provided the code, and just want you just to run the code and report the results. Second, 如果用户提及检索知识库，应优先考虑调用'VECTORSTORE'工具;如果需要调用'WEB_SEARCH'工具，谨记只能生成一次工具调用，并直接将用户问题直接作为工具参数。If you need to call tools, you must response following the format:\n {_tool_response_format},and no need any more explanation"
         
         self.all_tools = executable_tools + routing_tools_wrapped_in_class
         self.all_tools_names = _tool_names
@@ -795,12 +796,13 @@ class GraphAgent:
                     r2r_search_context = r2r_search(self.r2r_client,query=question) #,chat_on_docs_list = self.chat_on_docs_list
 
                     if r2r_search_context:
+                        self.jq_queque.enqueue(f"图知识库({self.index_name})综合性检索结果（共{len(r2r_search_context)}字，合并成1个文档）")
+                        
                         n = 2000
                         text = r2r_search_context[0:n]
                         text = text.replace("\n","..")
                         logger.warning("========GraphRag Result String========")
                         logger.warning(f'GraphRag Result String={text} \n...共{len(r2r_search_context)}字，仅显示前{n}字...')
-                        self.jq_queque.enqueue(f"图知识库({self.index_name})综合性检索结果（共{len(r2r_search_context)}字，合并成1个文档）")
                         logger.warning("========GraphRag Result String========")
                         graph_documents = [Document(page_content=r2r_search_context,metadata={'source':"GraphRag"})] 
                         documents.extend(graph_documents)
@@ -2098,8 +2100,8 @@ if __name__ == "__main__":
         '请使用Python来绘制sin(x)的曲线图',        
         '合肥大蜀山',          
         '请查询明天从合肥到上海的航班',
-        '请使用python_repl_tool来计算1到100的和',
-        '请调用python_repl_tool工具，一个计算1到100的和,另一个计算10的阶乘，并实际执行工具获取计算结果',
+        '请使用python工具来计算1到100的和',
+        '请调用python工具，一个计算1到100的和,另一个计算10的阶乘，并实际执行工具获取计算结果',
         "请搜索网络然后回答问题：What is the weather in SF and LA? ",
         "Who won the super bowl in 2024? In what state is the winning team headquarters located?What is the GDP of that state? 最后请使用中文回答",
         "还记得我的名字吗？",
