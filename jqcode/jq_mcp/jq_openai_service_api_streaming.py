@@ -270,6 +270,12 @@ async def chat_completions(request: Request,  background_tasks: BackgroundTasks)
         else:
             message = messages[0]
             query = message.get("content", "") or message.get("text", "")
+
+        # # 测试使用
+        # streaming = False #须在cherry studio助手设置中将流式输出关闭（streaming参数强制设为False），才能正确显示完整回答内容
+        # raise Exception("警告！未获取到有效的提问内容，请检查！")
+        # # 测试使用    
+
         if not query:
             raise Exception("警告！未获取到有效的提问内容，请检查！")
         logger.warning(f"提取到的最后一条用户消息内容为: {query}")
@@ -352,7 +358,7 @@ async def chat_completions(request: Request,  background_tasks: BackgroundTasks)
         
         
     except Exception as e:
-        error_msg = f"智能体API出现错误: {str(e)}"
+        error_msg = f"调用智能体API出现错误: {str(e)}"
         logger.error(error_msg)
         if streaming:
             async def event_stream():
