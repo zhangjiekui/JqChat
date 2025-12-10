@@ -259,7 +259,20 @@ async def chat_completions(request: Request,  background_tasks: BackgroundTasks)
             chat_bot = GraphAgent(kb_base_dict=kb_base_dict,user_request_url=api_deployment_url,memory_thread_id=memory_thread_id,allow_conversation_memory=use_memory,allow_question_rewrite=rewrite_question)
         else:
             chat_bot = GraphAgent(kb_base_dict=kb_base_dict,user_request_url=api_deployment_url,allow_question_rewrite=rewrite_question)
-        query = data["messages"][-1].get("content", "") or data["messages"][-1].get("text", "")
+        messages = data["messages"]
+        query = ""
+        if len(messages) > 1:
+            logger.warning(f"初始消息列表 messages 长度为 {len(messages)}，仅使用最后一条用户消息作为用户提问内容！")
+            for message in messages:
+                if message.get("role","") == "user":
+                    logger.warning(f"用户消息内容: {message.get('content','')}")
+                    query = message.get("content", "") or message.get("text", "")
+        else:
+            message = messages[0]
+            query = message.get("content", "") or message.get("text", "")
+        if not query:
+            raise Exception("警告！未获取到有效的提问内容，请检查！")
+        logger.warning(f"提取到的最后一条用户消息内容为: {query}")
         while not isinstance(query, str):
             if isinstance(query, dict) and "text" in query:
                 query = query["text"]
@@ -267,7 +280,7 @@ async def chat_completions(request: Request,  background_tasks: BackgroundTasks)
                 query = query[-1].get("text")
             else:
                 logger.warning(f"Invalid query type {type(query)=} or content: {query=}")
-                query = "警告！为获取到有效的提问内容，请检查！"
+                query = "警告！未获取到有效的提问内容，请检查！"
                 pass
 
         t1 = ThreadWithResult(target=chat, args=(chat_bot,query,False))
@@ -339,11 +352,65 @@ async def chat_completions(request: Request,  background_tasks: BackgroundTasks)
         
         
     except Exception as e:
-        logger.error(f"OpenAI API error: {str(e)}")
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Error processing request: {str(e)}"
-        )
+        error_msg = f"智能体API出现错误: {str(e)}"
+        logger.error(error_msg)
+        if streaming:
+            async def event_stream():
+                chunk = {
+                    "id": f"chatcmpl-{int(time.time()*1000)}",
+                    "object": "chat.completion.chunk",
+                    "created": int(time.time()),
+                    "model": "default",
+                    "choices": [{
+                        "index": 0,
+                        "delta": {"content": error_msg},
+                        "finish_reason": None
+                    }]
+                }
+                yield json.dumps(chunk)
+                        # await asyncio.sleep(0.001)  # 控制输出速度
+                
+                
+                # 发送结束标记
+                yield json.dumps({
+                    "choices": [{"finish_reason": "stop"}]
+                })
+            
+            return EventSourceResponse(event_stream())
+        # 非流式响应：完全兼容OpenAI格式
+        else:
+            text = error_msg
+            response_data = {
+                "id": f"chatcmpl-{int(time.time()*1000)}",
+                "object": "chat.completion",
+                "created": int(time.time()),
+                "model": kb_name,
+                "system_fingerprint": "fp_" + str(hash(kb_name))[:8],  # 必需字段:cite[1]
+                "choices": [{
+                    "index": 0,
+                    "message": {  # 必须是字典而非对象
+                        "role": "assistant",
+                        "content": text  # 确保是纯字符串，我故意简化了，防止干扰显示
+                    },
+                    "logprobs": None,  # 必需字段:cite[5]
+                    "finish_reason": "stop"
+                }],
+                "usage": {
+                    "prompt_tokens": len(query.split()),  # 示例计算
+                    "completion_tokens": len(text.split()),
+                    "total_tokens": len(query.split()) + len(text.split()),
+                    "completion_tokens_details": {  # 必需子字段:cite[1]
+                        "reasoning_tokens": 0,
+                        "accepted_prediction_tokens": 0,
+                        "rejected_prediction_tokens": 0
+                    }
+                }
+            }
+            result = JSONResponse(content=response_data,status_code=status.HTTP_200_OK,headers={"Content-Type": "application/json"})  # 明确使用JSON响应
+            return result  # 明确使用JSON响应
+
+
+
 
 if __name__ == "__main__":
     import uvicorn

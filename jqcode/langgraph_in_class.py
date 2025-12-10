@@ -799,10 +799,8 @@ class GraphAgent:
                         text = r2r_search_context[0:n]
                         text = text.replace("\n","..")
                         logger.warning("========GraphRag Result String========")
-                        logger.warning(f'GraphRag Result String={text} ...共{len(r2r_search_context)}字，仅显示前{n}字...')
-                        # print(text)
-                        # self.jq_queque.enqueue(f"图知识库检索结果（共{len(text)}字，仅显示前{n}字）：\n<br>{text}......")
-                        self.jq_queque.enqueue(f"图知识库({self.index_name})综合性检索结果（共{len(text)}字，合并成1个文档）")
+                        logger.warning(f'GraphRag Result String={text} \n...共{len(r2r_search_context)}字，仅显示前{n}字...')
+                        self.jq_queque.enqueue(f"图知识库({self.index_name})综合性检索结果（共{len(r2r_search_context)}字，合并成1个文档）")
                         logger.warning("========GraphRag Result String========")
                         graph_documents = [Document(page_content=r2r_search_context,metadata={'source':"GraphRag"})] 
                         documents.extend(graph_documents)
@@ -876,7 +874,9 @@ class GraphAgent:
                 #     _llm_res = llm_model.invoke(_prompt)
                 #     _dict = json_repair.loads(_llm_res.content)
                 #     grade = _dict.get("k","no") # 默认是"yes"
-                _prompt=answer_prompt.invoke({"question": question,"generation": generation},config=invoke_llm_config)
+
+                prompt = f"请严格按照要求输出JSON字符串：{{'k':'yes'}}或{{'k':'no'}}，'yes'表示回答解决了问题，'no'表示没有解决问题。不要有任何多余的解释说明。\n用户问题是：{question}\n参考材料是：{documents_contents_str}\n"
+                _prompt=answer_prompt.invoke({"question": prompt,"generation": generation},config=invoke_llm_config)
                 _llm_res = llm_model.invoke(_prompt)
                 _dict = json_repair.loads(_llm_res.content)
                 grade = _dict.get("k","yes") # 默认是"yes"
@@ -885,6 +885,7 @@ class GraphAgent:
                 print(f"---ERROR: 无法获取'answer_grader'的判别结果，详细错误信息如下:---")
                 print(e)
                 print("---正常往下执行---") 
+                self.answer_is_qualified = True
 
             if grade == "yes":
                 print("---DECISION: GENERATION ADDRESSES QUESTION---")
@@ -910,7 +911,6 @@ class GraphAgent:
                     self.jq_queque.enqueue("生成的答案经评估检查，并没有解决用户问题，自动补充网络搜索")
                     return "not useful"
         else:
-
             self.answer_is_qualified = False
             print("---DECISION: GENERATION IS NOT GROUNDED IN DOCUMENTS---")               
             try:
@@ -931,10 +931,10 @@ class GraphAgent:
 
             # pprint.pprint("---DECISION: GENERATION IS NOT GROUNDED IN DOCUMENTS, RE-TRY---")
             # return "not supported"
-            print("---DECISION: GENERATION IS NOT GROUNDED IN DOCUMENTS, BUT WE DO NOT RE-TRY (RE-GENERATION), JUST DIRECTLY TO 'END' NODE---")
-            self.jq_queque.enqueue("现有文档不足以支持生成合适的答案，将自动补充网络搜索！")
-            print(f"not supported: {generation=}")
-            return "not supported" # todo
+            # print("---DECISION: GENERATION IS NOT GROUNDED IN DOCUMENTS, BUT WE DO NOT RE-TRY (RE-GENERATION), JUST DIRECTLY TO 'END' NODE---")
+            # self.jq_queque.enqueue("现有文档不足以支持生成合适的答案，将自动补充网络搜索！")
+            # print(f"not supported: {generation=}")
+            # return "not supported" # todo
 
     # async def jq_search_agent(self,query:str):
     def jq_search_agent(self,query:str):
@@ -960,7 +960,7 @@ class GraphAgent:
 
         # tools = [tool1,tool2]
         tools = [tool1]
-        system_message = "你是一个搜索专家，请根据用户问题自行决定如何进行必要的分解，并持续搜索直到获得满意的答案。使用的语言与用户提问的语言保持一致，默认使用中文"
+        system_message = "你是一个搜索专家，请根据用户问题自行决定如何进行必要的分解（但最多不宜超过3个），并持续搜索直到获得满意的答案。使用的语言与用户提问的语言保持一致，默认使用中文"
         agent = create_react_agent(model=env_models_instance.chat_model,tools=tools, state_modifier=system_message, debug=False)
         messages_dict = agent.invoke({"messages": [("user", query)]})
         # messages_dict = await agent.ainvoke({"messages": [("user", query)]})
@@ -1359,25 +1359,20 @@ class GraphAgent:
                 if reasoning_content is None:
                     reasoning_content = ""
                 if reasoning_content=="": 
-                    if message.tool_calls:
-                        message.additional_kwargs["reasoning_content"] = message.content
-                        message.content = ""
-                    else:
-                        mix_content = message.content                        
-                        huyuan_split_string = '\n</think>\n\n' # 改为测试MiniMax-M2  原：huyuan_split_string = '\n</think>\n<answer>\n'
-                        if huyuan_split_string in mix_content:
-                            contents = mix_content.split(huyuan_split_string)
-                            if len(contents) == 2:
-                                reasoning_content = contents[0]+"</think>\n"
-                                answer_content = contents[1] # 改为测试MiniMax-M2  原：answer_content = "\n<answer>" + contents[1]
-                                message.content = answer_content
-                                message.additional_kwargs["reasoning_content"] = reasoning_content
-                            else:
-                                pass
+                    mix_content = message.content 
+                    huyuan_split_string = '\n</think>\n\n' # 改为测试MiniMax-M2  原：huyuan_split_string = '\n</think>\n<answer>\n'
+                    if huyuan_split_string in mix_content:
+                        contents = mix_content.split(huyuan_split_string)
+                        if len(contents) == 2:
+                            reasoning_content = contents[0]+"</think>\n"
+                            answer_content = contents[1] # 改为测试MiniMax-M2  原：answer_content = "\n<answer>" + contents[1]
+                            message.content = answer_content
+                            message.additional_kwargs["reasoning_content"] = reasoning_content
                         else:
                             pass
-                
-                
+                    else:
+                        if message.tool_calls:
+                            message.additional_kwargs["reasoning_content"] = message.content 
 
                 reasoning_content=reasoning_content if reasoning_content.replace("\n","") else "未使用推理模型或未选择输出模型推理过程内容\n"
                     # logger.warning(f"推理内容：<think>\n{reasoning_content}\n</think>")

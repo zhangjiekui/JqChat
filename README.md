@@ -26,41 +26,46 @@ TORCH_CUDA_ARCH_LIST="8.9+PTX" CUDA_VISIBLE_DEVICES=2,3 FLASHINFER_DISABLE_VERSI
   --disable-custom-all-reduce >> /root/JqLogs/qwq.log 2>&1 &
 tail -f /root/JqLogs/qwq.log
 
-新服务器部署模型:双卡运行Kimi-K2-Thinking-Native模型、六卡tp/dp运行MiniMax-M2模型
+# 新服务器部署模型:双卡运行Kimi-K2-Thinking-Native模型、六卡tp/dp运行MiniMax-M2模型
 
 
 ## 双卡运行Kimi-K2-Thinking-Native模型
-mpstat -P ALL 1 查看cpu负荷情况，尽量让所有192行的 %usr 都达到一个较高且均匀的值。
+mpstat -P ALL 1 查看cpu负荷情况，尽量让所有192行的 %usr 都达到一个较高且均匀的值。 # --context-length 65536 \
 sudo lsof -i :9000
+
+<!-- 1. 先查找查看有哪些共享内存文件 -->
+ls -l /dev/shm | grep kt_buf
+<!-- 2. 确认后删除 -->
+sudo find /dev/shm -name "*kt_buf*" -delete
+<!-- 3.确认已经删除干净 -->
+ls -l /dev/shm | grep kt_buf
 
 workon ktsglang
 CUDA_VISIBLE_DEVICES=0,1 PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True nohup python -m sglang.launch_server \
   --host 0.0.0.0 \
   --port 9000 \
   --served-model-name kimi \
+  --trust-remote-code \
   --model /data/models/moonshotai/Kimi-K2-Thinking \
   --kt-weight-path /data/models/moonshotai/Kimi-K2-Thinking \
   --kt-cpuinfer 96 \
   --kt-threadpool-count 2 \
-  --kt-num-gpu-experts 8 \
   --kt-method RAWINT4 \
-  --tokenizer-worker-num 4 \
-  --context-length 65536 \
   --max-running-requests 4 \
   --max-queued-requests 2 \
   --kt-gpu-prefill-token-threshold 400 \
-  --kt-max-deferred-experts-per-token 2 \
-  --trust-remote-code \
   --mem-fraction-static 0.95 \
   --enable-mixed-chunk \
-  --tensor-parallel-size 2 \
   --enable-p2p-check \
   --disable-shared-experts-fusion \
-  --chunked-prefill-size 65536 \
-  --max-total-tokens 65536 \
   --attention-backend flashinfer \
   --tool-call-parser kimi_k2 \
-  --reasoning-parser kimi_k2 >> /root/JqLogs/kimi.log 2>&1 &
+  --reasoning-parser kimi_k2 \
+  --tensor-parallel-size 2 \
+  --kt-num-gpu-experts 20 \
+  --kt-max-deferred-experts-per-token 2 \
+  --chunked-prefill-size 65536 \
+  --max-total-tokens 100000 >> /root/JqLogs/kimi.log 2>&1 &
 tail -f /root/JqLogs/kimi.log
 
 ## 六卡tp/dp运行MiniMax-M2模型[**200上的新版本vllm已可正常运行**] 
@@ -80,10 +85,12 @@ CUDA_VISIBLE_DEVICES=2,3,4,5,6,7 SAFETENSORS_FAST_GPU=1 nohup vllm serve /data/m
     --data-parallel-size 3 \
     --enable_expert_parallel \
     --enable-auto-tool-choice --tool-call-parser minimax_m2 \
-    --reasoning-parser minimax_m2_append_think \
+    --reasoning-parser minimax_m2 \
     --host 0.0.0.0 --port 8000 \
     --compilation-config "{\"cudagraph_mode\": \"PIECEWISE\"}"  >> /root/JqLogs/coder.log 2>&1 &
 tail -f /root/JqLogs/coder.log
+
+    <!-- --reasoning-parser minimax_m2_append_think \ -->
 
 ## 新8卡服务器运行MiniMax-M2模型[**200上的新版本vllm已可正常运行**]
 sudo lsof -i :8000
