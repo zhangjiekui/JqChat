@@ -706,7 +706,7 @@ docker run --name jqai -p 4090:4090 -d jqai:v1.0.0
 cd /data/projects/ai-ui/
 构建 make 或 make build
 运行 make run
-账号密码：admin	FastbuildAI&123456
+账号密码：admin	FastbuildAI&123456 或 BuildingAI&123456
 
 ### 模型部署
 #### jqagent

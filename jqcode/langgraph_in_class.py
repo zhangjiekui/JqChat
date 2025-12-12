@@ -848,7 +848,7 @@ class GraphAgent:
             documents_contents_str = "\n".join(documents_contents)
             
             try:
-                score = answer_is_supported_by_documents_grader.invoke({"question":question,"documents": documents_contents_str, "generation": generation},config=invoke_llm_config)
+                score = answer_is_supported_by_documents_grader.invoke({"question":question,"documents": documents_contents_str, "generation": documents_contents},config=invoke_llm_config)
                 grade = score.k
             except Exception as e:
                 try:

@@ -4,15 +4,20 @@ import base64
 import requests
 from pathlib import Path
 from openai import OpenAI
+import json_repair
+from jqcode.jq_splitters.jq_docx_tree_text_splitter import load_project_env
 from jqcode.jq_utils.logger import jqkj_logger
 logger = jqkj_logger(__file__).get_logger()
 
 class Vlm_API:
-    '''
-    https://github.com/QwenLM/Qwen2.5-VL
-    "Qwen/Qwen2.5-VL-7B-Instruct"
-    '''
-    def __init__(self,api_base:str = "http://10.1.150.105:8000/v1",api_key:str='abc123',model:str="qwenvl"):
+    def __init__(self,api_base:str = "http://10.1.150.105:3000/v1",api_key:str='0S7bV3oaznhuevN899Db0cDa20Ae4c5485Ce5862A86063C8',model:str="qwenvl"):
+        self.env_loaded = load_project_env()
+        if self.env_loaded:
+            VLM_MODEL_CARD = os.getenv("VLM_MODEL_CARD", "") 
+            VLM_MODEL_CARD = json_repair.loads(VLM_MODEL_CARD)
+            api_base = VLM_MODEL_CARD.get("base_url",api_base)
+            api_key = VLM_MODEL_CARD.get("api_key",api_key)
+            model = VLM_MODEL_CARD.get("name",model)
         self.api_base = api_base
         self.api_key = api_key
         self.model = model
