@@ -1,15 +1,21 @@
-两台服务器间拷贝数据：命令及密码：
+# 105与200两台服务器间拷贝数据：
+命令及密码：
+```
 scp -r /data/models/Qwen/qwen235q8/ root@192.168.44.200:/data/models/Qwen/qwen235q8/
-rsync -avz --partial --progress /data/models/Qwen/Qwen3-30B-A3B-Instruct-2507-FP8/ root@192.168.44.200:/data/models/Qwen/Qwen3-30B-A3B-Instruct-2507-FP8/
+rsync -avz --partial --progress /data/models/Qwen/Qwen3-30B-A3B-Instruct-2507-FP8/ root@192.168.44.200:/data/models/Qwen/Qwen3-30B-A3B-Instruct-2507-FP8/  
+```
 jqkj5350880
 
-rsync: [Receiver] mkdir "/data/models/Qwen/Qwen3-30B-A3B-Instruct-2507-FP8" failed: No such file or directory (2)
+rsync: [Receiver] mkdir "/data/models/Qwen/Qwen3-30B-A3B-Instruct-2507-FP8" failed: No such file or directory   
 rsync error: error in file IO (code 11) at main.c(791) [Receiver=3.2.7]
-rsync 默认不会自动创建多级父目录（尤其是当路径较深时）
+rsync 默认不会自动创建多级父目录（尤其是当路径较深时）  
 root@jqkj:~# ssh root@192.168.44.200 "mkdir -p /data/models/Qwen"
 
 **du -h --max-depth=1 / | sort -rh**
-## sglang运行Qwen3-VL-30B-A3B-Instruct-FP8
+
+
+# 105服务器上sglang运行Qwen3-VL-30B-A3B-Instruct-FP8
+```
 cd ~
 source usglang/bin/activate
 TORCH_CUDA_ARCH_LIST="8.9+PTX" CUDA_VISIBLE_DEVICES=2,3 FLASHINFER_DISABLE_VERSION_CHECK=1 nohup python -m sglang.launch_server \
@@ -25,58 +31,18 @@ TORCH_CUDA_ARCH_LIST="8.9+PTX" CUDA_VISIBLE_DEVICES=2,3 FLASHINFER_DISABLE_VERSI
   --tool-call-parser qwen \
   --disable-custom-all-reduce >> /root/JqLogs/qwq.log 2>&1 &
 tail -f /root/JqLogs/qwq.log
+```
 
-# 新服务器部署模型:双卡运行Kimi-K2-Thinking-Native模型、六卡tp/dp运行MiniMax-M2模型
-
-
-## 双卡运行Kimi-K2-Thinking-Native模型
-mpstat -P ALL 1 查看cpu负荷情况，尽量让所有192行的 %usr 都达到一个较高且均匀的值。 # --context-length 65536 \
-sudo lsof -i :9000
-
-<!-- 1. 先查找查看有哪些共享内存文件 -->
-ls -l /dev/shm | grep kt_buf
-<!-- 2. 确认后删除 -->
-sudo find /dev/shm -name "*kt_buf*" -delete
-<!-- 3.确认已经删除干净 -->
-ls -l /dev/shm | grep kt_buf
-
-workon ktsglang
-CUDA_VISIBLE_DEVICES=0,1 PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True nohup python -m sglang.launch_server \
-  --host 0.0.0.0 \
-  --port 9000 \
-  --served-model-name kimi \
-  --trust-remote-code \
-  --model /data/models/moonshotai/Kimi-K2-Thinking \
-  --kt-weight-path /data/models/moonshotai/Kimi-K2-Thinking \
-  --kt-cpuinfer 96 \
-  --kt-threadpool-count 2 \
-  --kt-method RAWINT4 \
-  --max-running-requests 4 \
-  --max-queued-requests 2 \
-  --kt-gpu-prefill-token-threshold 400 \
-  --mem-fraction-static 0.95 \
-  --enable-mixed-chunk \
-  --enable-p2p-check \
-  --disable-shared-experts-fusion \
-  --attention-backend flashinfer \
-  --tool-call-parser kimi_k2 \
-  --reasoning-parser kimi_k2 \
-  --tensor-parallel-size 2 \
-  --kt-num-gpu-experts 20 \
-  --kt-max-deferred-experts-per-token 2 \
-  --chunked-prefill-size 65536 \
-  --max-total-tokens 100000 >> /root/JqLogs/kimi.log 2>&1 &
-tail -f /root/JqLogs/kimi.log
-
+# 200新服务器部署Kimi-K2-Thinking-Native和MiniMax-M2
 ## 六卡tp/dp运行MiniMax-M2模型[**200上的新版本vllm已可正常运行**] 
 sudo lsof -i :8000
-
+```
 unset CC CXX
 workon vllm
-CUDA_VISIBLE_DEVICES=2,3,4,5,6,7 SAFETENSORS_FAST_GPU=1 nohup vllm serve /data/models/MiniMax/MiniMax-M2/ \
+CUDA_VISIBLE_DEVICES=2,3,4,5,6,7 SAFETENSORS_FAST_GPU=1 PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True nohup vllm serve /data/models/MiniMax/MiniMax-M2/ \
     --trust-remote-code \
     --gpu_memory_utilization 0.96 \
-    --max_model_len 65536 \
+    --max_model_len 100000 \
     --max_num_seqs 16 \
     --kv_cache_dtype fp8 \
     --served-model-name coder \
@@ -86,53 +52,45 @@ CUDA_VISIBLE_DEVICES=2,3,4,5,6,7 SAFETENSORS_FAST_GPU=1 nohup vllm serve /data/m
     --enable_expert_parallel \
     --enable-auto-tool-choice --tool-call-parser minimax_m2 \
     --reasoning-parser minimax_m2 \
-    --host 0.0.0.0 --port 8000 \
-    --compilation-config "{\"cudagraph_mode\": \"PIECEWISE\"}"  >> /root/JqLogs/coder.log 2>&1 &
+    --host 0.0.0.0 --port 8000 >> /root/JqLogs/coder.log 2>&1 &
 tail -f /root/JqLogs/coder.log
+```
+## 双卡运行Kimi-K2-Thinking-Native模型
+mpstat -P ALL 1 查看cpu负荷情况，尽量让所有192行的 %usr 都达到一个较高且均匀的值。  
+sudo lsof -i :9000
 
-    <!-- --reasoning-parser minimax_m2_append_think \ -->
-
-## 新8卡服务器运行MiniMax-M2模型[**200上的新版本vllm已可正常运行**]
-sudo lsof -i :8000
-
-unset CC CXX
-workon vllm
-SAFETENSORS_FAST_GPU=1 nohup vllm serve /data/models/MiniMax/MiniMax-M2/ \
-    --trust-remote-code \
-    --served-model-name coder \
-    --chat-template /data/models/MiniMax/MiniMax-M2/chat_template.jinja \
-    --enable_expert_parallel --tensor-parallel-size 8 \
-    --enable-auto-tool-choice --tool-call-parser minimax_m2 \
-    --reasoning-parser minimax_m2_append_think \
-    --host 0.0.0.0 --port 8000 \
-    --compilation-config "{\"cudagraph_mode\": \"PIECEWISE\"}"  >> /root/JqLogs/coder.log 2>&1 &
-tail -f /root/JqLogs/coder.log
-
-## 新8卡服务器运行Kimi-K2-Thinking-Native模型
-workon ktsglang
-python -m sglang.launch_server \
-  --host 0.0.0.0 \
-  --port 8000 \
-  --served-model-name coder \
-  --model /data/models/moonshotai/Kimi-K2-Thinking \
-  --kt-weight-path /data/models/moonshotai/Kimi-K2-Thinking \
-  --kt-cpuinfer 96 \
-  --kt-threadpool-count 2 \
-  --kt-num-gpu-experts 100 \
-  --kt-method RAWINT4 \
-  --kt-gpu-prefill-token-threshold 4000 \
-  --kt-max-deferred-experts-per-token 4 \
-  --trust-remote-code \
-  --mem-fraction-static 0.98 \
-  --enable-mixed-chunk \
-  --tensor-parallel-size 8 \
-  --enable-p2p-check \
-  --disable-shared-experts-fusion \
-  --chunked-prefill-size 65536 \
-  --max-total-tokens 65536 \
-  --attention-backend flashinfer \
-  --tool-call-parser kimi_k2 \
-  --reasoning-parser kimi_k2
+ls -l /dev/shm | grep kt_buf  
+sudo find /dev/shm -name "kt_buf" -delete  
+ls -l /dev/shm | grep kt_buf
+```
+workon ktsglang 
+CUDA_VISIBLE_DEVICES=0,1 SAFETENSORS_FAST_GPU=1 PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True nohup python -m sglang.launch_server \
+--host 0.0.0.0 \
+--port 9000 \
+--served-model-name kimi \
+--trust-remote-code \
+--model /data/models/moonshotai/Kimi-K2-Thinking \
+--kt-weight-path /data/models/moonshotai/Kimi-K2-Thinking \
+--kt-cpuinfer 96 \
+--kt-threadpool-count 2 \
+--kt-method RAWINT4 \
+--max-running-requests 4 \
+--max-queued-requests 2 \
+--kt-gpu-prefill-token-threshold 400 \
+--mem-fraction-static 0.96 \
+--enable-mixed-chunk \
+--enable-p2p-check \
+--disable-shared-experts-fusion \
+--attention-backend flashinfer \
+--tool-call-parser kimi_k2 \
+--reasoning-parser kimi_k2 \
+--tensor-parallel-size 2 \
+--kt-num-gpu-experts 24 \
+--kt-max-deferred-experts-per-token 4 \
+--chunked-prefill-size 65536 \
+--max-total-tokens 100000 >> /root/JqLogs/kimi.log 2>&1 & 
+tail -f /root/JqLogs/kimi.log
+```
 
 ## 新8卡服务器运行cerebras/GLM-4.6-REAP-268B-A32B-FP8模型 \
 unset CC CXX

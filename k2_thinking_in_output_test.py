@@ -154,6 +154,7 @@ def tool_call_with_client(client: OpenAI, model_name: str):
         {"role": "user", "content": "What's the weather like in Beijing today? Use the tool to check."}
     ]
     finish_reason = None
+    print("=====tool_call_with_client======")
     while finish_reason is None or finish_reason == "tool_calls":
         completion = client.chat.completions.create(
             model=model_name,
@@ -164,7 +165,6 @@ def tool_call_with_client(client: OpenAI, model_name: str):
             max_tokens=max_tokens
         )
         choice = completion.choices[0]
-        print("=====tool_call_with_client======")
         print(f"k2 answer: {choice.message.content}")
         print("=====below is reasoning content======")
         print(f"reasoning content: {choice.message.reasoning_content}")

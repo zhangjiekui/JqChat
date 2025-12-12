@@ -445,7 +445,7 @@ else:
 answer_is_supported_by_documents_prompt = ChatPromptTemplate.from_messages(
     [
         ("system", prompt_answer_is_supported_by_documents_grader),
-        ("human", "Here are the set of facts: {documents} \n\n Here is the answer: {generation}"),
+        ("human", "User question is {question} \n\n Here are the set of facts: {documents} \n\n Here is the answer: {generation}"),
     ]
 )
 answer_is_supported_by_documents_grader = answer_is_supported_by_documents_prompt | structured_llm_answer_is_supported_by_documents_grader
@@ -468,7 +468,7 @@ else:
 answer_prompt = ChatPromptTemplate.from_messages(
     [
         ("system",prompt_answer_grader),
-        ("human", "question: {question} \n\nanswer: {generation}"),
+        ("human", "用户问题为: {question} \n\n 参考材料为:{documents_contents_str} \n\n 生成的答案为: {generation}"),
     ]
 )
 answer_addresses_question_grader = answer_prompt | structured_llm_answer_grader
@@ -842,11 +842,13 @@ class GraphAgent:
         
         # Check hallucination / answer_is_supported_by_documents    
         try:
+            question = state["question"]
             documents = state["documents"]
             documents_contents = [d.page_content for d in documents]
             documents_contents_str = "\n".join(documents_contents)
+            
             try:
-                score = answer_is_supported_by_documents_grader.invoke({"documents": documents_contents_str, "generation": generation},config=invoke_llm_config)
+                score = answer_is_supported_by_documents_grader.invoke({"question":question,"documents": documents_contents_str, "generation": generation},config=invoke_llm_config)
                 grade = score.k
             except Exception as e:
                 try:
@@ -868,20 +870,16 @@ class GraphAgent:
             print("---GRADE GENERATION vs QUESTION---")       
             
             try:
-                # try:
-                #     score = answer_addresses_question_grader.invoke({"question": question,"generation": generation},config=invoke_llm_config)                
-                #     grade = score.k
-                # except Exception as e:
-                #     _prompt=answer_prompt.invoke({"question": question,"generation": generation},config=invoke_llm_config)
-                #     _llm_res = llm_model.invoke(_prompt)
-                #     _dict = json_repair.loads(_llm_res.content)
-                #     grade = _dict.get("k","no") # 默认是"yes"
+                invoke_dict = {"question": question,"documents_contents_str":documents_contents_str,"generation": generation}
+                try:
+                    score = answer_addresses_question_grader.invoke(invoke_dict,config=invoke_llm_config)                
+                    grade = score.k
+                except Exception as e:
+                    _prompt=answer_prompt.invoke(invoke_dict,config=invoke_llm_config)
+                    _llm_res = llm_model.invoke(_prompt)
+                    _dict = json_repair.loads(_llm_res.content)
+                    grade = _dict.get("k","yes") # 默认是"yes"
 
-                prompt = f"请严格按照要求输出JSON字符串：{{'k':'yes'}}或{{'k':'no'}}，'yes'表示回答解决了问题，'no'表示没有解决问题。不要有任何多余的解释说明。\n用户问题是：{question}\n参考材料是：{documents_contents_str}\n"
-                _prompt=answer_prompt.invoke({"question": prompt,"generation": generation},config=invoke_llm_config)
-                _llm_res = llm_model.invoke(_prompt)
-                _dict = json_repair.loads(_llm_res.content)
-                grade = _dict.get("k","yes") # 默认是"yes"
             except Exception as e:
                 grade = "unknown" # 继续按正常往下执行！
                 print(f"---ERROR: 无法获取'answer_grader'的判别结果，详细错误信息如下:---")
@@ -2179,7 +2177,7 @@ if __name__ == "__main__":
     # response = test_jqchat_service()
     # print(response)
     # pass
-    # user_questions=["Write a Python program that shows a ball bouncing inside a spinning hexagon. The ball should be affected by gravity and friction, and it must bounce off the rotating walls realistically,并将运行结果保存为gif动画"] 
+    # user_questions=["Write a Python program that shows a ball bouncing inside a spinning hexagon. The ball should be affected by gravity and friction, and it must bounce off the rotating walls realistically,使用中文回答问题，并将运行结果保存为gif动画"] 
     # # user_questions=['我现在的位置是在安徽晶奇网络科技股份有限公司附近，请查询15公里范围内的养老机构。并将养老机构名称通过python转换成excel文件，提供http的网络下载地址']
     # user_questions=['请绘制sin(x)曲线']
     user_questions=["晶奇公司质量保证过程中的角色及角色的职责或含义解释，对应的人员（姓名）有哪些?其中的批准人是谁？"]
