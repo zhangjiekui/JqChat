@@ -90,7 +90,40 @@ CUDA_VISIBLE_DEVICES=0,1 SAFETENSORS_FAST_GPU=1 PYTORCH_CUDA_ALLOC_CONF=expandab
 --chunked-prefill-size 65536 \
 --max-total-tokens 100000 >> /root/JqLogs/kimi.log 2>&1 & 
 tail -f /root/JqLogs/kimi.log
+
 ```
+## 双卡运行Kimi-K2-Thinking-cpu模型
+### cpu模型的速度更快，来自对比测试结果： https://github.com/kvcache-ai/ktransformers/issues/1598#issuecomment-3556413400
+sudo lsof -i :9000
+
+workon ktsglang 
+CUDA_VISIBLE_DEVICES=0,1 SAFETENSORS_FAST_GPU=1 PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True nohup python -m sglang.launch_server \
+--host 0.0.0.0 \
+--port 9000 \
+--served-model-name kimi \
+--trust-remote-code \
+--model /data/models/moonshotai/Kimi-K2-Thinking \
+--kt-weight-path /data/models/Kimi-K2-Thinking-CPU-weight \
+--kt-cpuinfer 96 \
+--kt-threadpool-count 2 \
+--kt-method AMXINT4 \
+--max-running-requests 4 \
+--max-queued-requests 2 \
+--kt-gpu-prefill-token-threshold 400 \
+--mem-fraction-static 0.96 \
+--enable-mixed-chunk \
+--enable-p2p-check \
+--disable-shared-experts-fusion \
+--attention-backend flashinfer \
+--tool-call-parser kimi_k2 \
+--reasoning-parser kimi_k2 \
+--tensor-parallel-size 2 \
+--kt-num-gpu-experts 40 \
+--kt-max-deferred-experts-per-token 4 \
+--chunked-prefill-size 8192 \
+--max-total-tokens 100000 >> /root/JqLogs/kimi.log 2>&1 & 
+tail -f /root/JqLogs/kimi.log
+
 
 ## 新8卡服务器运行cerebras/GLM-4.6-REAP-268B-A32B-FP8模型 \
 unset CC CXX

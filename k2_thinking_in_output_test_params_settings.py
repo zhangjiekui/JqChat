@@ -29,8 +29,8 @@ def simple_chat(query: str,client: openai.OpenAI=client, model_name: str=model_n
         extra_body={"min_p": 0.01},
     )
     print("-----------------------------")
-    # print(f"reasoning content: {response.choices[0].message.reasoning_content}")
     print(f"answer: {response.choices[0].message.content}")
+    print(f"reasoning content: {response.choices[0].message.reasoning_content}")
     print("========================================================")
 
 
