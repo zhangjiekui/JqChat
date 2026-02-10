@@ -4,10 +4,10 @@ from openai import OpenAI
 import requests
 from transformers import AutoTokenizer
 
-# model_name='coder'
-# endpoint = f"http://192.168.44.200:8000/v1"
-model_name='kimi'
-endpoint = f"http://192.168.44.200:9000/v1"
+model_name='coder'
+endpoint = f"http://192.168.44.200:8000/v1"
+# model_name='kimi'
+# endpoint = f"http://192.168.44.200:9000/v1"
 model_repo = 'moonshotai/Kimi-K2-Thinking'
 temperature = 0.3
 max_tokens = 4096

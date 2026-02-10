@@ -818,7 +818,7 @@ async def get_search_result_documents(urls,query,document_loader_class=AsyncHtml
     return docs
 
 @func_set_timeout(timeout_value)
-def get_tavily_search_result_documents(query,max_doc_nums=6):
+def get_tavily_search_result_documents(query,max_doc_nums=4):
     documents = []
     tavily_search = TavilySearchResults(max_results=max_doc_nums)
     docs = tavily_search.invoke({"query": query})
@@ -861,7 +861,7 @@ async def get_web_search_documents(query,max_doc_nums=6):
         return []
 
 @func_set_timeout(timeout_value)
-async def _get_web_search_documents(query,max_doc_nums=6):
+async def _get_web_search_documents(query,max_doc_nums=4):
     docs = []
     if not query:
         print(f"提交到Web_Search的query为空！直接返回空列表。")

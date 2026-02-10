@@ -886,7 +886,7 @@ class GraphAgent:
                 print(e)
                 print("---正常往下执行---") 
                 self.answer_is_qualified = True
-
+            # grade = "no" #测试
             if grade == "yes":
                 print("---DECISION: GENERATION ADDRESSES QUESTION---")
                 self.jq_queque.enqueue("生成的答案经评估检查，很好的回答了用户问题，作为最终答案")
@@ -960,8 +960,9 @@ class GraphAgent:
 
         # tools = [tool1,tool2]
         tools = [tool1]
-        system_message = "你是一个搜索专家，请根据用户问题自行决定如何进行必要的分解（但最多不宜超过3个），并持续搜索直到获得满意的答案。使用的语言与用户提问的语言保持一致，默认使用中文"
-        agent = create_react_agent(model=env_models_instance.chat_model,tools=tools, state_modifier=system_message, debug=False)
+        system_message = "你是一个搜索专家，请根据用户问题自行决定如何进行必要的分解（但最多不宜超过4个），并持续搜索直到获得满意的答案。使用的语言与用户提问的语言保持一致，默认使用中文"
+        # agent = create_react_agent(model=env_models_instance.chat_model,tools=tools, state_modifier=system_message, debug=False)
+        agent = create_react_agent(model=env_models_instance.chat_model,tools=tools, prompt=system_message, debug=True)
         messages_dict = agent.invoke({"messages": [("user", query)]})
         # messages_dict = await agent.ainvoke({"messages": [("user", query)]})
         messages=messages_dict.get('messages',[])
@@ -979,7 +980,9 @@ class GraphAgent:
         """
         print("---WEB SEARCH---")
         query_generated = ''
+        prompt = "你是一个搜索专家，请根据用户问题自行决定如何进行必要的分解（但最多不宜超过4个）,用户问题为："
         question = state["question"]
+        question = prompt + question
         user_variables_statedict = state["user_variables"]
         maybe_existed_docs = state.get("documents",[])        
         maybe_existed_referens_str = user_variables_statedict[self.user_id]['reference']
@@ -1010,8 +1013,8 @@ class GraphAgent:
 
 
             # Web search
-            max_doc_nums=8
-            docs = asyncio.run(async_search(question,query_generated,max_doc_nums=max_doc_nums))
+            # max_doc_nums=8
+            docs = asyncio.run(async_search(question,query_generated)) #,max_doc_nums=max_doc_nums
             self.jq_queque.enqueue(f"调用晶奇网页搜索工具，返回{len(docs)}个结果")
 
 

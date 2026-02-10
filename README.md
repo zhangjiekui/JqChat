@@ -2,9 +2,13 @@
 命令及密码：
 ```
 scp -r /data/models/Qwen/qwen235q8/ root@192.168.44.200:/data/models/Qwen/qwen235q8/
-rsync -avz --partial --progress /data/models/Qwen/Qwen3-30B-A3B-Instruct-2507-FP8/ root@192.168.44.200:/data/models/Qwen/Qwen3-30B-A3B-Instruct-2507-FP8/  
+rsync -avz --partial --progress /data/models/Qwen/Qwen3-30B-A3B-Instruct-2507-FP8/ root@192.168.44.200:/data/models/Qwen/Qwen3-30B-A3B-Instruct-2507-FP8/ 
+
+rsync -avz --partial --progress /data/models/moonshotai/Kimi-K25/ root@10.1.150.105:/data/models/moonshotai/Kimi-K25/
+
 ```
-jqkj5350880
+200服務器密码：jqkj5350880
+105服務器密码：Password@123
 
 rsync: [Receiver] mkdir "/data/models/Qwen/Qwen3-30B-A3B-Instruct-2507-FP8" failed: No such file or directory   
 rsync error: error in file IO (code 11) at main.c(791) [Receiver=3.2.7]
@@ -33,20 +37,44 @@ TORCH_CUDA_ARCH_LIST="8.9+PTX" CUDA_VISIBLE_DEVICES=2,3 FLASHINFER_DISABLE_VERSI
 tail -f /root/JqLogs/qwq.log
 ```
 
-# 200新服务器部署Kimi-K2-Thinking-Native和MiniMax-M2
+# 200新服务器部署Kimi-K2-Thinking-Native和MiniMax-M2 M2.1
 ## 六卡tp/dp运行MiniMax-M2模型[**200上的新版本vllm已可正常运行**] 
 sudo lsof -i :8000
+
+### /data/models/MiniMax/MiniMax-M2___1
 ```
+workon newvllm
+unset CC CXX
+CUDA_VISIBLE_DEVICES=2,3,4,5,6,7 SAFETENSORS_FAST_GPU=1 PYTORCH_ALLOC_CONF=expandable_segments:True nohup vllm serve /data/models/MiniMax/MiniMax-M2___1 \
+    --trust-remote-code \
+    --gpu_memory_utilization 0.98 \
+    --max_model_len -1 \
+    --kv-cache-memory-bytes 4M \
+    --no-async-scheduling \
+    --cpu-offload-gb 0 \
+    --max_num_seqs 16 \
+    --kv_cache_dtype fp8 \
+    --served-model-name coder \
+    --chat-template /data/models/MiniMax/MiniMax-M2___1/chat_template.jinja \
+    --tensor-parallel-size 2 \
+    --data-parallel-size 3 \
+    --enable_expert_parallel \
+    --enable-auto-tool-choice --tool-call-parser minimax_m2 \
+    --reasoning-parser minimax_m2 \
+    --host 0.0.0.0 --port 8000 >> /root/JqLogs/coder.log 2>&1 &
+tail -f /root/JqLogs/coder.log
+
+
 unset CC CXX
 workon vllm
-CUDA_VISIBLE_DEVICES=2,3,4,5,6,7 SAFETENSORS_FAST_GPU=1 PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True nohup vllm serve /data/models/MiniMax/MiniMax-M2/ \
+CUDA_VISIBLE_DEVICES=2,3,4,5,6,7 SAFETENSORS_FAST_GPU=1 PYTORCH_ALLOC_CONF=expandable_segments:True nohup vllm serve /data/models/MiniMax/MiniMax-M2___1 \
     --trust-remote-code \
     --gpu_memory_utilization 0.96 \
     --max_model_len 100000 \
     --max_num_seqs 16 \
     --kv_cache_dtype fp8 \
     --served-model-name coder \
-    --chat-template /data/models/MiniMax/MiniMax-M2/chat_template.jinja \
+    --chat-template /data/models/MiniMax/MiniMax-M2___1/chat_template.jinja \
     --tensor-parallel-size 2 \
     --data-parallel-size 3 \
     --enable_expert_parallel \
@@ -55,28 +83,29 @@ CUDA_VISIBLE_DEVICES=2,3,4,5,6,7 SAFETENSORS_FAST_GPU=1 PYTORCH_CUDA_ALLOC_CONF=
     --host 0.0.0.0 --port 8000 >> /root/JqLogs/coder.log 2>&1 &
 tail -f /root/JqLogs/coder.log
 ```
-## 双卡运行Kimi-K2-Thinking-Native模型
-mpstat -P ALL 1 查看cpu负荷情况，尽量让所有192行的 %usr 都达到一个较高且均匀的值。  
+
+
+
+## 双卡运行Kimi-K2.5模型
+
 sudo lsof -i :9000
 
-ls -l /dev/shm | grep kt_buf  
-sudo find /dev/shm -name "kt_buf" -delete  
-ls -l /dev/shm | grep kt_buf
-```
-workon ktsglang 
-CUDA_VISIBLE_DEVICES=0,1 SAFETENSORS_FAST_GPU=1 PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True nohup python -m sglang.launch_server \
+workon ktsglang
+workon ktsglangv051
+
+CUDA_VISIBLE_DEVICES=0,1 SAFETENSORS_FAST_GPU=1 PYTORCH_ALLOC_CONF=expandable_segments:True nohup python -m sglang.launch_server \
 --host 0.0.0.0 \
 --port 9000 \
 --served-model-name kimi \
 --trust-remote-code \
---model /data/models/moonshotai/Kimi-K2-Thinking \
---kt-weight-path /data/models/moonshotai/Kimi-K2-Thinking \
+--model /data/models/moonshotai/Kimi-K25 \
+--kt-weight-path /data/models/moonshotai/Kimi-K25 \
 --kt-cpuinfer 96 \
 --kt-threadpool-count 2 \
 --kt-method RAWINT4 \
 --max-running-requests 4 \
 --max-queued-requests 2 \
---kt-gpu-prefill-token-threshold 400 \
+--kt-gpu-prefill-token-threshold 512 \
 --mem-fraction-static 0.96 \
 --enable-mixed-chunk \
 --enable-p2p-check \
@@ -88,16 +117,22 @@ CUDA_VISIBLE_DEVICES=0,1 SAFETENSORS_FAST_GPU=1 PYTORCH_CUDA_ALLOC_CONF=expandab
 --kt-num-gpu-experts 24 \
 --kt-max-deferred-experts-per-token 4 \
 --chunked-prefill-size 65536 \
---max-total-tokens 100000 >> /root/JqLogs/kimi.log 2>&1 & 
+--max-total-tokens 65536 >> /root/JqLogs/kimi.log 2>&1 & 
 tail -f /root/JqLogs/kimi.log
 
-```
+workon lvllm
+unset CC CXX
+LVLLM_GPU_RESIDENT_MOE_LAYERS=0-30 LVLLM_GPU_PREFETCH_WINDOW=1 LVLLM_GPU_PREFILL_MIN_BATCH_SIZE=0 LVLLM_MOE_NUMA_ENABLED=1 LK_THREADS="11" OMP_NUM_THREADS="11" vllm serve --config /data/cppsrc/Lvllm/config_k25.yaml
+
+vllm serve /data/models/moonshotai/Kimi-K25 -tp 8 --trust-remote-code --tool-call-parser kimi_k2 --reasoning-parser kimi_k2
+
 ## 双卡运行Kimi-K2-Thinking-cpu模型
 ### cpu模型的速度更快，来自对比测试结果： https://github.com/kvcache-ai/ktransformers/issues/1598#issuecomment-3556413400
+### 本机部署实测：请求并发1：26t/s,并发2：35t/s,并发3：30t/s,并发4：40t/s
 sudo lsof -i :9000
-
-workon ktsglang 
-CUDA_VISIBLE_DEVICES=0,1 SAFETENSORS_FAST_GPU=1 PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True nohup python -m sglang.launch_server \
+```
+workon ktsglangv051 
+CUDA_VISIBLE_DEVICES=0,1 SAFETENSORS_FAST_GPU=1 PYTORCH_ALLOC_CONF=expandable_segments:True nohup python -m sglang.launch_server \
 --host 0.0.0.0 \
 --port 9000 \
 --served-model-name kimi \
@@ -118,12 +153,110 @@ CUDA_VISIBLE_DEVICES=0,1 SAFETENSORS_FAST_GPU=1 PYTORCH_CUDA_ALLOC_CONF=expandab
 --tool-call-parser kimi_k2 \
 --reasoning-parser kimi_k2 \
 --tensor-parallel-size 2 \
+--kt-num-gpu-experts 32 \
+--kt-max-deferred-experts-per-token 4 \
+--chunked-prefill-size 4096 \
+--max-total-tokens 65536 >> /root/JqLogs/kimi.log 2>&1 & 
+tail -f /root/JqLogs/kimi.log
+```
+
+sudo lsof -i :9000  
+flashinfer triton
+```
+sglang官方环境
+
+workon sglang 
+CUDA_VISIBLE_DEVICES=0,1 SAFETENSORS_FAST_GPU=1 PYTORCH_ALLOC_CONF=expandable_segments:True nohup python -m sglang.launch_server \
+--host 0.0.0.0 \
+--port 9000 \
+--served-model-name kimi \
+--trust-remote-code \
+--model /data/models/moonshotai/Kimi-K2-Thinking \
+--kt-weight-path /data/models/Kimi-K2-Thinking-CPU-weight \
+--kt-cpuinfer 96 \
+--kt-threadpool-count 2 \
+--kt-method AMXINT4 \
+--max-running-requests 4 \
+--max-queued-requests 2 \
+--mem-fraction-static 0.96 \
+--enable-mixed-chunk \
+--enable-p2p-check \
+--disable-shared-experts-fusion \
+--attention-backend flashinfer \
+--tool-call-parser kimi_k2 \
+--reasoning-parser kimi_k2 \
+--tensor-parallel-size 2 \
 --kt-num-gpu-experts 40 \
 --kt-max-deferred-experts-per-token 4 \
---chunked-prefill-size 8192 \
---max-total-tokens 100000 >> /root/JqLogs/kimi.log 2>&1 & 
+--chunked-prefill-size 4096 \
+--max-total-tokens 65536 >> /root/JqLogs/kimi.log 2>&1 & 
+tail -f /root/JqLogs/kimi.log
+```
+```
+try modifying python/sglang/srt/layers/quantization/compressed_tensors/compressed_tensors_moe.py:
+
+output = fused_marlin_moe(
+...,
+            # expert_map=expert_map,
+            expert_map=torch.empty(1, device=x.device), # replace this line
+)
+
+```
+
+## 双卡运行Kimi-K2-Thinking-Native模型
+### 本机部署实测：
+cpu权重方式 请求并发1：26t/s,并发2：35t/s,并发3：30t/s,并发4：40t/s
+gpu权重方式 请求并发1：22t/s,并发2：22t/s,并发3：20t/s,并发4：25t/s
+
+mpstat -P ALL 1 查看cpu负荷情况，尽量让所有192行的 %usr 都达到一个较高且均匀的值。  
+sudo lsof -i :9000
+
+ls -l /dev/shm | grep kt_buf  
+sudo find /dev/shm -name "kt_buf" -delete  
+ls -l /dev/shm | grep kt_buf
+
+ktranformers0.4.4版本能正常运行
+git checkout v0.4.4
+```
+workon ktsglang 
+
+workon ktsglangv051
+CUDA_VISIBLE_DEVICES=0,1 SAFETENSORS_FAST_GPU=1 PYTORCH_ALLOC_CONF=expandable_segments:True nohup python -m sglang.launch_server \
+--host 0.0.0.0 \
+--port 9000 \
+--served-model-name kimi \
+--trust-remote-code \
+--model /data/models/moonshotai/Kimi-K2-Thinking \
+--kt-weight-path /data/models/moonshotai/Kimi-K2-Thinking \
+--kt-cpuinfer 96 \
+--kt-threadpool-count 2 \
+--kt-method RAWINT4 \
+--max-running-requests 4 \
+--max-queued-requests 2 \
+--kt-gpu-prefill-token-threshold 512 \
+--mem-fraction-static 0.96 \
+--enable-mixed-chunk \
+--enable-p2p-check \
+--disable-shared-experts-fusion \
+--attention-backend flashinfer \
+--tool-call-parser kimi_k2 \
+--reasoning-parser kimi_k2 \
+--tensor-parallel-size 2 \
+--kt-num-gpu-experts 24 \
+--kt-max-deferred-experts-per-token 4 \
+--chunked-prefill-size 65536 \
+--kt-expert-placement-strategy frequency \
+--kt-enable-dynamic-expert-update \
+--max-total-tokens 65536 >> /root/JqLogs/kimi.log 2>&1 & 
 tail -f /root/JqLogs/kimi.log
 
+--init-expert-location /data/cppsrc/sglang-ktransformers/ktransformers051/activation_stats.pt \
+```
+v0.4.4
+--mem-fraction-static 0.96 \
+
+v0.5.0
+--mem-fraction-static 0.85 \
 
 ## 新8卡服务器运行cerebras/GLM-4.6-REAP-268B-A32B-FP8模型 \
 unset CC CXX
@@ -781,19 +914,19 @@ tail -f /root/JqLogs/omni.log
 #### Qwen3-VL-30B-A3B-Instruct-FP8 gpu2_3
 ```
 workon vllm
-CUDA_VISIBLE_DEVICES=2,3 nohup vllm serve /data/models/Qwen/Qwen3-VL-30B-A3B-Instruct-FP8/ \
+CUDA_P2P_ENABLED=1 VLLM_SKIP_P2P_CHECK=0 CUDA_VISIBLE_DEVICES=2,3 nohup vllm serve /data/models/Qwen/Qwen3-VL-30B-A3B-Instruct-FP8/ \
 --served-model-name qwen3 \
 --tensor-parallel-size 2 \
 --enable-chunked-prefill \
 --enable-auto-tool-choice \
 --tool-call-parser hermes \
---max-model-len 65536 \
+--max-model-len -1 \
 --gpu-memory-utilization 0.96 \
 --enable-expert-parallel \
 --max-num-seqs 32 \
 --host 0.0.0.0 --port 9998 \
 --limit-mm-per-prompt.video 0 \
---enable-expert-parallel \
+--mm-encoder-tp-mode data \
 --enable-prefix-caching >> /root/JqLogs/qwq.log 2>&1 &
 tail -f /root/JqLogs/qwq.log
 
@@ -1179,7 +1312,7 @@ TORCH_CUDA_ARCH_LIST="7.5 8.0 8.9 9.0 9.0a" FLASHINFER_ENABLE_AOT=1 pip install 
 ### 启动Qwen32 AWQ （on GPU 2,3）:
 ```
 workon vllm
-VLLM_ATTENTION_BACKEND=FLASH_ATTN_VLLM_V1 FLASH_ATTN_VLLM_V1=1 PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True RAY_CGRAPH_get_timeout=60 TORCH_CUDA_ARCH_LIST="8.9+PTX" VLLM_USE_V1=1 VLLM_USE_MODELSCOPE=True CUDA_VISIBLE_DEVICES=2,3 VLLM_ALLOW_ENGINE_USE_RAY=1 nohup vllm serve /data/xinference/modelscope/hub/qwen/Qwen2.5-32B-Instruct-AWQ --served-model-name qwen25b70 --enable-auto-tool-choice --tool-call-parser hermes --host 0.0.0.0 --port 9997 --max-model-len 32768 --tensor-parallel-size 2 --distributed-executor-backend ray --use_v2_block_manager --gpu-memory-utilization 0.8 --max-num-seqs 16 --enable-prefix-caching --enable-chunked-prefill >> /root/JqLogs/vllm.log 2>&1 &
+VLLM_ATTENTION_BACKEND=FLASH_ATTN_VLLM_V1 FLASH_ATTN_VLLM_V1=1 PYTORCH_ALLOC_CONF=expandable_segments:True RAY_CGRAPH_get_timeout=60 TORCH_CUDA_ARCH_LIST="8.9+PTX" VLLM_USE_V1=1 VLLM_USE_MODELSCOPE=True CUDA_VISIBLE_DEVICES=2,3 VLLM_ALLOW_ENGINE_USE_RAY=1 nohup vllm serve /data/xinference/modelscope/hub/qwen/Qwen2.5-32B-Instruct-AWQ --served-model-name qwen25b70 --enable-auto-tool-choice --tool-call-parser hermes --host 0.0.0.0 --port 9997 --max-model-len 32768 --tensor-parallel-size 2 --distributed-executor-backend ray --use_v2_block_manager --gpu-memory-utilization 0.8 --max-num-seqs 16 --enable-prefix-caching --enable-chunked-prefill >> /root/JqLogs/vllm.log 2>&1 &
 tail -f /root/JqLogs/vllm.log
 ```
 ```
@@ -1199,12 +1332,12 @@ tail -f /root/JqLogs/vllm.log
 ### 启动Qwen2.5-VL-7B-Instruct （on GPU 1）:
 ####  /data/models/Qwen/Qwen2___5-VL-7B-Instruct
 workon vllm
-PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True RAY_CGRAPH_get_timeout=60 TORCH_CUDA_ARCH_LIST="8.9+PTX" VLLM_USE_V1=1 VLLM_USE_MODELSCOPE=True CUDA_VISIBLE_DEVICES=1 VLLM_ALLOW_ENGINE_USE_RAY=1 nohup vllm serve /data/models/Qwen/Qwen2___5-VL-7B-Instruct --served-model-name qwenvl --gpu-memory-utilization 0.90 --port 8000 --host 0.0.0.0 --limit-mm-per-prompt image=5,video=5 --max-model-len 8000 --distributed-executor-backend ray --use_v2_block_manager --max-num-seqs 16 --enable-prefix-caching --enable-chunked-prefill >> /root/JqLogs/vllmvl.log 2>&1 &
+PYTORCH_ALLOC_CONF=expandable_segments:True RAY_CGRAPH_get_timeout=60 TORCH_CUDA_ARCH_LIST="8.9+PTX" VLLM_USE_V1=1 VLLM_USE_MODELSCOPE=True CUDA_VISIBLE_DEVICES=1 VLLM_ALLOW_ENGINE_USE_RAY=1 nohup vllm serve /data/models/Qwen/Qwen2___5-VL-7B-Instruct --served-model-name qwenvl --gpu-memory-utilization 0.90 --port 8000 --host 0.0.0.0 --limit-mm-per-prompt image=5,video=5 --max-model-len 8000 --distributed-executor-backend ray --use_v2_block_manager --max-num-seqs 16 --enable-prefix-caching --enable-chunked-prefill >> /root/JqLogs/vllmvl.log 2>&1 &
 tail -f /root/JqLogs/vllmvl.log 
 
 #### /data/models/allenai/olmOCR-7B-0225-preview
 workon vllm
-VLLM_ATTENTION_BACKEND=FLASH_ATTN_VLLM_V1 PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True RAY_CGRAPH_get_timeout=60 TORCH_CUDA_ARCH_LIST="8.9+PTX" VLLM_USE_V1=1 VLLM_USE_MODELSCOPE=True CUDA_VISIBLE_DEVICES=1 VLLM_ALLOW_ENGINE_USE_RAY=1 nohup vllm serve /data/models/allenai/olmOCR-7B-0225-preview --served-model-name qwenvl --gpu-memory-utilization 0.90 --port 8000 --host 0.0.0.0 --limit-mm-per-prompt image=5,video=5 --max-model-len 8000 --distributed-executor-backend ray --use_v2_block_manager --max-num-seqs 16 --enable-prefix-caching --enable-chunked-prefill >> /root/JqLogs/vllmvl.log 2>&1 &
+VLLM_ATTENTION_BACKEND=FLASH_ATTN_VLLM_V1 PYTORCH_ALLOC_CONF=expandable_segments:True RAY_CGRAPH_get_timeout=60 TORCH_CUDA_ARCH_LIST="8.9+PTX" VLLM_USE_V1=1 VLLM_USE_MODELSCOPE=True CUDA_VISIBLE_DEVICES=1 VLLM_ALLOW_ENGINE_USE_RAY=1 nohup vllm serve /data/models/allenai/olmOCR-7B-0225-preview --served-model-name qwenvl --gpu-memory-utilization 0.90 --port 8000 --host 0.0.0.0 --limit-mm-per-prompt image=5,video=5 --max-model-len 8000 --distributed-executor-backend ray --use_v2_block_manager --max-num-seqs 16 --enable-prefix-caching --enable-chunked-prefill >> /root/JqLogs/vllmvl.log 2>&1 &
 tail -f /root/JqLogs/vllmvl.log 
 
 
@@ -1424,7 +1557,7 @@ TORCH_CUDA_ARCH_LIST="8.9+PTX" python -m ktransformers.local_chat --gguf_path /d
 #### server api mode [cpu_infer参数值25，还没记录。 设置为33时cpu负荷在80%上下，5+ tokens/s]
  workon torch26cu126
 
- USE_NUMA=1 TORCH_CUDA_ARCH_LIST="8.9+PTX" PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True nohup ktransformers --gguf_path /data/models/DeepSeek-R1-Q4_K_M_ollama_gguf/ --model_path deepseek-ai/DeepSeek-R1 --model_name DeepSeekR1 --cpu_infer 33 --max_new_tokens 8192 --cache_lens 32768 --total_context 32768 --cache_q4 true --temperature 0.6 --top_p 0.95 --force_think --host 0.0.0.0 --port 9999 --optimize_config_path /root/KT0.2.2rc2/ktransformers/ktransformers/optimize/optimize_rules/DeepSeek-V3-Chat.yaml >> /root/JqLogs/kt.log 2>&1 &
+ USE_NUMA=1 TORCH_CUDA_ARCH_LIST="8.9+PTX" PYTORCH_ALLOC_CONF=expandable_segments:True nohup ktransformers --gguf_path /data/models/DeepSeek-R1-Q4_K_M_ollama_gguf/ --model_path deepseek-ai/DeepSeek-R1 --model_name DeepSeekR1 --cpu_infer 33 --max_new_tokens 8192 --cache_lens 32768 --total_context 32768 --cache_q4 true --temperature 0.6 --top_p 0.95 --force_think --host 0.0.0.0 --port 9999 --optimize_config_path /root/KT0.2.2rc2/ktransformers/ktransformers/optimize/optimize_rules/DeepSeek-V3-Chat.yaml >> /root/JqLogs/kt.log 2>&1 &
  tail -f /root/JqLogs/kt.log
 
 
@@ -1443,7 +1576,7 @@ CUDA_VISIBLE_DEVICES=3 python ktransformers/local_chat.py \
 
 workon torch26cu126
 
-CUDA_VISIBLE_DEVICES=3 USE_NUMA=1 TORCH_CUDA_ARCH_LIST="8.9+PTX" PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True nohup ktransformers \
+CUDA_VISIBLE_DEVICES=3 USE_NUMA=1 TORCH_CUDA_ARCH_LIST="8.9+PTX" PYTORCH_ALLOC_CONF=expandable_segments:True nohup ktransformers \
 --model_path deepseek-ai/DeepSeek-V3 \
 --gguf_path /data/models/DeepSeek-V3-q4km-fp8/ \
 --optimize_config_path /root/KT0.2.2rc2/ktransformers/ktransformers/optimize/optimize_rules/DeepSeek-V3-Chat-fp8-linear-ggml-experts.yaml \
@@ -2428,7 +2561,7 @@ https://github.com/MeetKai/functionary
 ```
 ### need vllm 6.0
 workon xinfernew 
-CUDA_VISIBLE_DEVICES=0,1,2,3 VLLM_ALLOW_ENGINE_USE_RAY=1 PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True python -m vllm.entrypoints.openai.api_server --served-model-name hermes --model /data/models/Hermes-3-Llama-3.1-70B.Q4_K_M.gguf --host 0.0.0.0 --port 9997 --tensor-parallel-size 4 --gpu-memory-utilization 0.98 --max_model_len 32768 --dtype auto  --distributed-executor-backend=ray --enforce_eager --use_v2_block_manager --chat-template /data/models/tool_chat_template_hermes.jinja --enable-auto-tool-choice --tool-call-parser hermes
+CUDA_VISIBLE_DEVICES=0,1,2,3 VLLM_ALLOW_ENGINE_USE_RAY=1 PYTORCH_ALLOC_CONF=expandable_segments:True python -m vllm.entrypoints.openai.api_server --served-model-name hermes --model /data/models/Hermes-3-Llama-3.1-70B.Q4_K_M.gguf --host 0.0.0.0 --port 9997 --tensor-parallel-size 4 --gpu-memory-utilization 0.98 --max_model_len 32768 --dtype auto  --distributed-executor-backend=ray --enforce_eager --use_v2_block_manager --chat-template /data/models/tool_chat_template_hermes.jinja --enable-auto-tool-choice --tool-call-parser hermes
 
 
 python -m vllm.entrypoints.openai.api_server --served-model-name qwen2-instruct --model /data/xinference/modelscope/hub/qwen/Qwen2-72B-Instruct-GPTQ-Int4 --host 0.0.0.0 --port 9997 --max-model-len 32768 --tensor-parallel-size 4 --num-scheduler-steps 8 --enable-auto-tool-choice --tool-call-parser hermes

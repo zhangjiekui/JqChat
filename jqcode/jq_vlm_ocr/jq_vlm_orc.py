@@ -89,8 +89,8 @@ class PaddleOCR_VL_API:
         health_check_url = vllm_rec_server_url.replace("v1", "health")
         if requests.get(health_check_url).status_code == 200:
             from paddleocr import PaddleOCRVL
-            self.paddelvllm_pipeline = PaddleOCRVL(vl_rec_backend="vllm-server", vl_rec_server_url=vllm_rec_server_url,
-                                                   layout_threshold=0.05,layout_nms=True,layout_merge_bboxes_mode="large")
+            self.paddelvllm_pipeline = PaddleOCRVL(vl_rec_backend="vllm-server", vl_rec_server_url=vllm_rec_server_url,use_layout_detection=False,
+                                                   layout_nms=True,layout_merge_bboxes_mode="large",use_doc_unwarping=True,use_doc_orientation_classify=True)
         else:
             logger.warning(f"{vllm_rec_server_url}服务未在运行！")        
         # if bool_test_both_server:
@@ -351,6 +351,11 @@ OcrInOneInstance= OcrInOneAPI()
 if __name__ == "__main__":
     img0 = fr"/data/projects/JqChatV2/JqChat/ocr2.jpg"
     img1 = fr"/data/projects/JqChatV2/JqChat/text_ocr.png"
+    # if paddleocr_vl:
+    #     r0 = paddleocr_vl(img0,img0,only_return_text=True)
+    #     print(r0)
+    #     r1 = paddleocr_vl(img1,img1,only_return_text=True)
+    #     print(r1)
     img2 = fr"/data/projects/file_reader/test_docs/发票.jpg"
     img3 = fr"/data/projects/JqChatV2/JqChat/文档转换和下载.png"
     img4="/data/projects/JqChatV2/JqChat/graph.jpg"
@@ -358,5 +363,15 @@ if __name__ == "__main__":
     OcrInstance = OcrInOneInstance
     for img in imgs:
         print(img)
-        r1=OcrInstance(img) 
+        # r1=OcrInstance(img) 
+        if paddleocr_vl:
+            r1=paddleocr_vl(img,img,only_return_text=True)
+        else:
+            r1=OcrInstance(img)
         print(r1)
+# 服务部署：
+# 服务器：192.168.44.222
+# 密码：jqkj5350**)
+# 命令:
+# 1、cd /root/paddleocr
+# 2、docker compose up
