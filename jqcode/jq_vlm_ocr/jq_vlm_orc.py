@@ -90,7 +90,7 @@ class PaddleOCR_VL_API:
         if requests.get(health_check_url).status_code == 200:
             from paddleocr import PaddleOCRVL
             self.paddelvllm_pipeline = PaddleOCRVL(vl_rec_backend="vllm-server", vl_rec_server_url=vllm_rec_server_url,use_layout_detection=False,
-                                                   layout_nms=True,layout_merge_bboxes_mode="large",use_doc_unwarping=True,use_doc_orientation_classify=True)
+                                                   layout_threshold=0.02,layout_nms=True,layout_merge_bboxes_mode="large",use_doc_unwarping=True,use_doc_orientation_classify=True)
         else:
             logger.warning(f"{vllm_rec_server_url}服务未在运行！")        
         # if bool_test_both_server:

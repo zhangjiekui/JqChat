@@ -1,3 +1,12 @@
+powershell
+$env:ANTHROPIC_BASE_URL="http://10.1.150.105:3000"
+$env:ANTHROPIC_AUTH_TOKEN="sk-0S7bV3oaznhuevN899Db0cDa20Ae4c5485Ce5862A86063C8"
+
+claude --model qwen3
+claude --model coder
+
+
+
 # 105与200两台服务器间拷贝数据：
 命令及密码：
 ```
@@ -41,15 +50,66 @@ tail -f /root/JqLogs/qwq.log
 ## 六卡tp/dp运行MiniMax-M2模型[**200上的新版本vllm已可正常运行**] 
 sudo lsof -i :8000
 
+### /data/models/MiniMax/MiniMax-M2___5
+```
+workon newvllm [8卡并行可以，但dp=3 tp=2不行]
+unset CC CXX
+
+[ok]
+workon vllm 
+CUDA_VISIBLE_DEVICES=2,3,4,5,6,7 PYTORCH_ALLOC_CONF=expandable_segments:True NCCL_DEBUG=WARN nohup vllm serve /data/models/MiniMax/MiniMax-M2___5 \
+    --trust-remote-code \
+    --gpu_memory_utilization 0.95 \
+    --max_model_len 62000 \
+    --compilation-config "{\"cudagraph_mode\": \"PIECEWISE\"}" \
+    --no-async-scheduling \
+    --cpu-offload-gb 0 \
+    --max_num_seqs 8 \
+    --kv_cache_dtype fp8 \
+    --served-model-name coder \
+    --tensor-parallel-size 2 \
+    --data-parallel-size 3 \
+    --enable_expert_parallel \
+    --enable-auto-tool-choice \
+    --tool-call-parser minimax_m2 \
+    --reasoning-parser minimax_m2 \
+    --host 0.0.0.0 --port 8000 >> /root/JqLogs/coder.log 2>&1 &
+tail -f /root/JqLogs/coder.log
+
+
+--reasoning-parser minimax_m2_append_think \
+
+
+
+workon vllm
+unset CC CXX
+CUDA_VISIBLE_DEVICES=2,3,4,5,6,7 PYTORCH_ALLOC_CONF=expandable_segments:True NCCL_DEBUG=WARN nohup vllm serve /data/models/MiniMax/MiniMax-M2___5 \
+    --trust-remote-code \
+    --gpu_memory_utilization 0.95 \
+    --max_model_len -1 \
+    --compilation-config "{\"cudagraph_mode\": \"PIECEWISE\"}" \
+    --max_num_seqs 16 \
+    --kv_cache_dtype fp8 \
+    --served-model-name coder \
+    --tensor-parallel-size 2 \
+    --data-parallel-size 3 \
+    --enable_expert_parallel \
+    --enable-auto-tool-choice \
+    --tool-call-parser minimax_m2 \
+    --reasoning-parser minimax_m2_append_think \
+    --host 0.0.0.0 --port 8000 >> /root/JqLogs/coder.log 2>&1 &
+tail -f /root/JqLogs/coder.log
+```
+
+    --no-async-scheduling \
 ### /data/models/MiniMax/MiniMax-M2___1
 ```
 workon newvllm
 unset CC CXX
-CUDA_VISIBLE_DEVICES=2,3,4,5,6,7 SAFETENSORS_FAST_GPU=1 PYTORCH_ALLOC_CONF=expandable_segments:True nohup vllm serve /data/models/MiniMax/MiniMax-M2___1 \
+CUDA_VISIBLE_DEVICES=2,3,4,5,6,7 SAFETENSORS_FAST_GPU=1 PYTORCH_ALLOC_CONF=expandable_segments:True nohup vllm serve /data/models/MiniMax/MiniMax-M2___5 \
     --trust-remote-code \
-    --gpu_memory_utilization 0.98 \
-    --max_model_len -1 \
-    --kv-cache-memory-bytes 4M \
+    --gpu_memory_utilization 0.95 \
+    --max_model_len 32000 \
     --no-async-scheduling \
     --cpu-offload-gb 0 \
     --max_num_seqs 16 \
@@ -89,10 +149,19 @@ tail -f /root/JqLogs/coder.log
 ## 双卡运行Kimi-K2.5模型
 
 sudo lsof -i :9000
+<!-- unset CC CXX -->
 
-workon ktsglang
+<!-- workon ktsglang
 workon ktsglangv051
 
+export CC=/usr/bin/gcc
+export CXX=/usr/bin/g++ -->
+
+
+rm -rf /root/.cache/flashinfer/0.6.2/89/
+<!-- 下面运行ok,4并发总生成速度超过30token/s -->
+export CCACHE_DISABLE=1
+workon ktglm5
 CUDA_VISIBLE_DEVICES=0,1 SAFETENSORS_FAST_GPU=1 PYTORCH_ALLOC_CONF=expandable_segments:True nohup python -m sglang.launch_server \
 --host 0.0.0.0 \
 --port 9000 \
@@ -911,6 +980,30 @@ tail -f /root/JqLogs/omni.log
 
 
 
+#### Qwen3-VL-30B-A3B-Instruct-FP8 gpu4
+```
+workon vllm
+CUDA_P2P_ENABLED=1 VLLM_SKIP_P2P_CHECK=0 nohup vllm serve /data/models/Qwen/Qwen3-VL-30B-A3B-Instruct-FP8/ \
+--served-model-name qwen3 \
+--tensor-parallel-size 4 \
+--enable-chunked-prefill \
+--enable-auto-tool-choice \
+--tool-call-parser hermes \
+--max-model-len -1 \
+--gpu-memory-utilization 0.85 \
+--enable-expert-parallel \
+--max-num-seqs 32 \
+--host 0.0.0.0 --port 9998 \
+--limit-mm-per-prompt.video 0 \
+--mm-encoder-tp-mode data \
+--enable-prefix-caching >> /root/JqLogs/qwq.log 2>&1 &
+tail -f /root/JqLogs/qwq.log
+
+
+--async-scheduling \
+--mm-encoder-tp-mode data \
+```
+
 #### Qwen3-VL-30B-A3B-Instruct-FP8 gpu2_3
 ```
 workon vllm
@@ -934,6 +1027,18 @@ tail -f /root/JqLogs/qwq.log
 --async-scheduling \
 --mm-encoder-tp-mode data \
 ```
+
+#### Qwen3.5-35B-A3B-FP8 [262144上下文长度]
+sudo lsof -i :9998
+```
+workon sglang35
+CUDA_VISIBLE_DEVICES=0,1,2,3 PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True SGLANG_USE_MODELSCOPE=true nohup python -m sglang.launch_server --model-path /data/models/Qwen/Qwen3___5-35B-A3B-FP8 --host 0.0.0.0 --port 9998 --tp-size 4 --mem-fraction-static 0.7 --context-length 262144 --reasoning-parser qwen3 --tool-call-parser qwen3_coder --speculative-algo NEXTN --speculative-num-steps 3 --speculative-eagle-topk 1 --speculative-num-draft-tokens 4 >> /root/JqLogs/qwq.log 2>&1 &
+tail -f /root/JqLogs/qwq.log
+```
+
+
+
+
 #### Qwen3-30B-A3B-Instruct-2507-FP8 gpu2_3 [128000上下文长度]
 ```
 workon vllm

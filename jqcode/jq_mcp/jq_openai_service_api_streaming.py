@@ -26,6 +26,7 @@ logger = jqkj_logger(__file__).get_logger()
 # 有效API Key集合
 VALID_API_KEYS = {"","abc123","sk-0S7bV3oaznhuevN899Db0cDa20Ae4c5485Ce5862A86063C8"}  # 替换为实际密钥
 BY_PASS_VALIDATING = False
+streaming = True
 default_kb_name = "zjk_jqesclient_reader_test_768im"
 default_kb_name = "default"
 default_kb_description = "关于安徽晶奇网络科技股份有限公司（简称晶奇公司），以及医疗卫生、医疗健康、医疗服务、医疗政策、民政养老、社会救助、低保、低收入人口认定、退伍军人、优待抚恤等领域的政策文件、信息化产品、建设方案、技术文档等等方面的文档知识库。 \n凡是涉及安徽晶奇网络科技股份有限公司及以上领域相关的问题，或者是用户提及检索知识库或vectorstore时，都必须使用vectorstore工具。"
@@ -261,6 +262,7 @@ async def chat_completions(request: Request,  background_tasks: BackgroundTasks)
             chat_bot = GraphAgent(kb_base_dict=kb_base_dict,user_request_url=api_deployment_url,allow_question_rewrite=rewrite_question)
         messages = data["messages"]
         query = ""
+        query_text = ""
         if len(messages) > 1:
             logger.warning(f"初始消息列表 messages 长度为 {len(messages)}，仅使用最后一条用户消息作为用户提问内容！")
             for message in messages:
@@ -281,9 +283,13 @@ async def chat_completions(request: Request,  background_tasks: BackgroundTasks)
         logger.warning(f"提取到的最后一条用户消息内容为: {query}")
         while not isinstance(query, str):
             if isinstance(query, dict) and "text" in query:
-                query = query["text"]
+                query_text = query["text"]
+                query=query_text
             if isinstance(query, list) and len(query) > 0:
-                query = query[-1].get("text")
+                for q in query:
+                    if isinstance(q, dict) and "text" in q:                        
+                        query_text += q.get("text")
+                query=query_text
             else:
                 logger.warning(f"Invalid query type {type(query)=} or content: {query=}")
                 query = "警告！未获取到有效的提问内容，请检查！"

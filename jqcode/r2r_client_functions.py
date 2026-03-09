@@ -301,14 +301,14 @@ if __name__ == "__main__":
 
 
 
-    # for query in query_list:
-    #     search_result= r2r_search(r2r_client,query=query)
-    #     print(f"{search_result=}")
+    for query in query_list:
+        search_result= r2r_search(r2r_client,query=query)
+        print(f"{search_result=}")
 
-    #     from jqcode.langgraph_in_class import llm_chain        
-    #     answer = llm_chain.invoke({"question":query,"context":search_result})
-    #     print(f"{answer=}")
-    #     pass
+        from jqcode.langgraph_in_class import llm_chain        
+        answer = llm_chain.invoke({"question":query,"context":search_result})
+        print(f"{answer=}")
+        pass
 
 
     # r2r_create_documents(r2r_client,file_paths_or_lm_documents=

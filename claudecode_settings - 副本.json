@@ -1,0 +1,13 @@
+{
+  "env": {
+    "ANTHROPIC_BASE_URL": "http://10.1.150.105:9998",
+    "ANTHROPIC_AUTH_TOKEN": "dummy",
+    "ANTHROPIC_API_KEY": "dummy",
+    "ANTHROPIC_DEFAULT_HAIKU_MODEL": "qwen3",
+    "ANTHROPIC_DEFAULT_OPUS_MODEL": "qwen3",
+    "ANTHROPIC_DEFAULT_SONNET_MODEL": "qwen3",
+    "ANTHROPIC_MODEL": "qwen3",
+    "ANTHROPIC_REASONING_MODEL": "qwen3"
+  },
+  "includeCoAuthoredBy": false
+}

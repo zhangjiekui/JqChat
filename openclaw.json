@@ -1,0 +1,339 @@
+{
+  "meta": {
+    "lastTouchedVersion": "2026.3.2",
+    "lastTouchedAt": "2026-03-06T05:53:24.344Z"
+  },
+  "wizard": {
+    "lastRunAt": "2026-03-05T01:32:19.312Z",
+    "lastRunVersion": "2026.3.2",
+    "lastRunCommand": "doctor",
+    "lastRunMode": "local"
+  },
+  "auth": {
+    "profiles": {
+      "minimax:default": {
+        "provider": "minimax",
+        "mode": "api_key"
+      }
+    }
+  },
+  "models": {
+    "mode": "merge",
+    "providers": {
+      "jqsoft": {
+        "baseUrl": "http://10.1.150.105:3000/v1",
+        "apiKey": "sk-0S7bV3oaznhuevN899Db0cDa20Ae4c5485Ce5862A86063C8",
+        "api": "openai-completions",
+        "models": [
+          {
+            "id": "qwen3",
+            "name": "qwen3 (Custom Provider)",
+            "reasoning": false,
+            "input": [
+              "text","image"
+            ],
+            "cost": {
+              "input": 0,
+              "output": 0,
+              "cacheRead": 0,
+              "cacheWrite": 0
+            },
+            "contextWindow": 16000,
+            "maxTokens": 4096
+          },
+          {
+            "id": "coder",
+            "name": "coder",
+            "reasoning": true,
+            "input": [
+              "text"
+            ],
+            "cost": {
+              "input": 0,
+              "output": 0,
+              "cacheRead": 0,
+              "cacheWrite": 0
+            },
+            "contextWindow": 128000,
+            "maxTokens": 8192
+          }
+        ]
+      },
+      "local": {
+        "baseUrl": "http://10.1.150.106:9997/v1",
+        "apiKey": "abc123",
+        "api": "openai-completions",
+        "models": [
+          {
+            "id": "bce-embedding-base_v1",
+            "name": "bce-embedding-base_v1 (Custom Provider)",
+            "reasoning": false,
+            "input": [
+              "text"
+            ],
+            "cost": {
+              "input": 0,
+              "output": 0,
+              "cacheRead": 0,
+              "cacheWrite": 0
+            },
+            "contextWindow": 16000,
+            "maxTokens": 4096
+          },
+          {
+            "id": "jina-reranker-v2",
+            "name": "jina-reranker-v2 (Custom Provider)",
+            "reasoning": true,
+            "input": [
+              "text"
+            ],
+            "cost": {
+              "input": 0,
+              "output": 0,
+              "cacheRead": 0,
+              "cacheWrite": 0
+            },
+            "contextWindow": 128000,
+            "maxTokens": 8192
+          }
+        ]
+      }
+    }
+  },
+  "agents": {
+    "defaults": {
+      "model": {
+        "primary": "jqsoft/coder",
+        "fallbacks": [
+          "jqsoft/qwen3"
+        ]
+      },
+      "models": {
+        "jqsoft/qwen3": {}
+      },
+      "imageModel": {
+        "primary": "jqsoft/qwen3"
+      },
+      "pdfModel": {
+        "primary": "jqsoft/qwen3"
+      },
+      "pdfMaxBytesMb": 10,
+      "pdfMaxPages": 20,
+      "workspace": "/root/.openclaw/workspace",
+      "memorySearch": {
+        "provider": "openai",
+        "remote": {
+          "baseUrl": "http://10.1.150.106:9997/v1",
+          "apiKey": "abc123"
+        },
+        "model": "bce-embedding-base_v1"
+      },
+      "compaction": {
+        "mode": "safeguard"
+      },
+      "maxConcurrent": 4,
+      "subagents": {
+        "maxConcurrent": 8
+      }
+    },
+    "list": [
+      {
+        "id": "main",
+        "default": true
+      },
+      {
+        "id": "employee",
+        "name": "employee",
+        "workspace": "/root/.openclaw/workspace-employee",
+        "agentDir": "/root/.openclaw/agents/employee/agent",
+        "model": "jqsoft/qwen3"
+      }
+    ]
+  },
+  "tools": {
+    "sessions": {
+      "visibility": "all"
+    },
+    "agentToAgent": {
+      "enabled": true,
+      "allow": [
+        "main",
+        "employee"
+      ]
+    }
+  },
+  "bindings": [
+    {
+      "agentId": "main",
+      "match": {
+        "channel": "feishu",
+        "peer": {
+          "kind": "group",
+          "id": "oc_7b2012f19ea362febed2e39260b07af9"
+        }
+      }
+    },
+    {
+      "agentId": "employee",
+      "match": {
+        "channel": "feishu",
+        "peer": {
+          "kind": "group",
+          "id": "oc_a3042092c35f115d79290a3a2e474337"
+        }
+      }
+    }
+  ],
+  "messages": {
+    "ackReactionScope": "group-mentions"
+  },
+  "commands": {
+    "native": "auto",
+    "nativeSkills": "auto",
+    "restart": true,
+    "ownerDisplay": "raw"
+  },
+  "session": {
+    "dmScope": "per-channel-peer"
+  },
+  "hooks": {
+    "internal": {
+      "enabled": true,
+      "entries": {
+        "session-memory": {
+          "enabled": true
+        }
+      }
+    }
+  },
+  "channels": {
+    "dingtalk": {
+      "enabled": true,
+      "clientId": "dinguvp3mbkjt6lghubs",
+      "clientSecret": "KdWdrKxNMItShgiwtGlu06ixXT_S-GMuSdroIaE6_Hn_nDJmg5Me0UlCqlSz5fa0",
+      "robotCode": "dinguvp3mbkjt6lghubs",
+      "corpId": "dingd8b32bfb2b9da7b2",
+      "agentId": "4265674907",
+      "dmPolicy": "open",
+      "groupPolicy": "open",
+      "messageType": "card",
+      "cardTemplateId": "0cfdd014-edb9-44dd-88e2-543a6ec163b8.schema",
+      "cardTemplateKey": "content",
+      "debug": false,
+      "allowFrom": [
+        "*"
+      ]
+    },
+    "feishu": {
+      "enabled": true,
+      "appId": "cli_a92d7b7790b99bd2",
+      "appSecret": "AMewRAkcrUDWZiukyfhZ6bMlxZOkl6V7",
+      "connectionMode": "websocket",
+      "domain": "feishu",
+      "groupPolicy": "open",
+      "groups": {
+        "oc_7b2012f19ea362febed2e39260b07af9": {
+          "requireMention": false
+        },
+        "oc_a3042092c35f115d79290a3a2e474337": {
+          "requireMention": false
+        }
+      }
+    }
+  },
+  "gateway": {
+    "port": 6190,
+    "mode": "local",
+    "bind": "custom",
+    "customBindHost": "0.0.0.0",
+    "controlUi": {
+      "allowedOrigins": [
+        "http://localhost:6190",
+        "http://127.0.0.1:6190",
+        "https://jqkj.tailb97968.ts.net"
+      ],
+      "dangerouslyAllowHostHeaderOriginFallback": true,
+      "allowInsecureAuth": true,
+      "dangerouslyDisableDeviceAuth": true
+    },
+    "auth": {
+      "mode": "token",
+      "token": "3701ec102f394668505e82ac077c980ce67541964b34d4e0"
+    },
+    "tailscale": {
+      "mode": "off",
+      "resetOnExit": false
+    },
+    "remote": {
+      "url": "ws://127.0.0.1:6190"
+    },
+    "nodes": {
+      "denyCommands": [
+        "camera.snap",
+        "camera.clip",
+        "screen.record",
+        "calendar.add",
+        "contacts.add",
+        "reminders.add"
+      ]
+    }
+  },
+  "skills": {
+    "install": {
+      "nodeManager": "npm"
+    },
+    "entries": {
+      "tavily-search": {
+        "apiKey": "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"
+      }
+    }
+  },
+  "plugins": {
+    "entries": {
+      "dingtalk": {
+        "enabled": true
+      },
+      "openclaw-tavily": {
+        "enabled": true
+      },
+      "feishu": {
+        "enabled": true
+      }
+    },
+    "installs": {
+      "dingtalk": {
+        "source": "npm",
+        "spec": "https://github.com/soimy/clawdbot-channel-dingtalk.git",
+        "installPath": "/root/.openclaw/extensions/dingtalk",
+        "version": "3.1.4",
+        "installedAt": "2026-03-02T04:06:49.818Z"
+      },
+      "openclaw-tavily": {
+        "source": "npm",
+        "spec": "openclaw-tavily",
+        "installPath": "/root/.openclaw/extensions/openclaw-tavily",
+        "version": "0.2.1",
+        "resolvedName": "openclaw-tavily",
+        "resolvedVersion": "0.2.1",
+        "resolvedSpec": "openclaw-tavily@0.2.1",
+        "integrity": "sha512-Y/cYTiKWGjWm8TF0/0DGyB80Kuke1oJKEPcFvjmHutXSZSx42RmMqZ3I6kMz12hw1eoxJwQ8a0EJQAvq45KciQ==",
+        "shasum": "544d324879914108c50cfd801d7cff704069970d",
+        "resolvedAt": "2026-03-04T04:06:19.415Z",
+        "installedAt": "2026-03-04T04:06:20.395Z"
+      },
+      "feishu": {
+        "source": "npm",
+        "spec": "@openclaw/feishu",
+        "installPath": "/root/.openclaw/extensions/feishu",
+        "version": "2026.3.2",
+        "resolvedName": "@openclaw/feishu",
+        "resolvedVersion": "2026.3.2",
+        "resolvedSpec": "@openclaw/feishu@2026.3.2",
+        "integrity": "sha512-CpwjmLCS8gpZ5fFCRiEA+1i/L+E73Vhz5//TiwQjWJOtVPZEu44db294g3HUR6nB5L0IEpZgKU/JU69HgYl77w==",
+        "shasum": "ad77e27633b480f5c815e1922252a2f07c1765bd",
+        "resolvedAt": "2026-03-04T06:47:13.088Z",
+        "installedAt": "2026-03-04T06:47:14.977Z"
+      }
+    }
+  }
+}
