@@ -26,7 +26,6 @@ logger = jqkj_logger(__file__).get_logger()
 # 有效API Key集合
 VALID_API_KEYS = {"","abc123","sk-0S7bV3oaznhuevN899Db0cDa20Ae4c5485Ce5862A86063C8"}  # 替换为实际密钥
 BY_PASS_VALIDATING = False
-streaming = True
 default_kb_name = "zjk_jqesclient_reader_test_768im"
 default_kb_name = "default"
 default_kb_description = "关于安徽晶奇网络科技股份有限公司（简称晶奇公司），以及医疗卫生、医疗健康、医疗服务、医疗政策、民政养老、社会救助、低保、低收入人口认定、退伍军人、优待抚恤等领域的政策文件、信息化产品、建设方案、技术文档等等方面的文档知识库。 \n凡是涉及安徽晶奇网络科技股份有限公司及以上领域相关的问题，或者是用户提及检索知识库或vectorstore时，都必须使用vectorstore工具。"
@@ -192,16 +191,18 @@ def simple_bg_task(name: str):
 # @optional_limiter("1/hour")  # 每小时1次，测试用
 @optional_limiter("3/second") # ← 限流装饰器在内层
 async def chat_completions(request: Request,  background_tasks: BackgroundTasks) -> str | dict | ChatCompletion:
-    logger.warning(f"✅ limiter active: {limiter is not None}, app.state.limiter: {hasattr(app.state, 'limiter')}")   
+    logger.warning(f"✅ limiter active: {limiter is not None}, app.state.limiter: {hasattr(app.state, 'limiter')}")
+    streaming = False   
     try:
         data = await request.json()
-        streaming = data.get("stream", True)
+        streaming = data.get("stream", False)
         if isinstance(streaming, str):
             streaming =False if streaming.lower() == "false" else True
         use_memory = True
         rewrite_question = False
     
-        logger.info(f"Request data: {streaming=}")        
+        logger.warning(f"generator test: Received request original data: {data}")
+        logger.warning(f"generator test: get {streaming=} from request data")        
         # 验证必要字段
         if "messages" not in data:
             raise HTTPException(
@@ -300,8 +301,9 @@ async def chat_completions(request: Request,  background_tasks: BackgroundTasks)
       
         # 流式输出（替换为你的 chat_bot 生成逻辑）
         if streaming:
+            logger.warning(f"\n>>> 流式响应模式，streaming={streaming}, type={type(streaming)}")
             async def event_stream():
-                for result in get_process_text(chat_bot.jq_queque,t1,streaming=streaming):
+                for result in get_process_text(chat_bot.jq_queque,t1):
                     if result:
                         chunk = {
                             "id": f"chatcmpl-{int(time.time()*1000)}",
@@ -326,13 +328,28 @@ async def chat_completions(request: Request,  background_tasks: BackgroundTasks)
             return EventSourceResponse(event_stream())
 
         # 非流式响应：完全兼容OpenAI格式
+        # streaming = False cherry studio须在助手设置中将流式输出关闭（streaming参数强制设为False），才能正确显示完整回答内容
         else:
-            # text = "暂时模拟的文本"
-            result_generators = get_process_text(chat_bot.jq_queque,t1,streaming=streaming)
-            text = "".join(result_generators)
-            # print(">>>>>>>"*10)
-            # print(text)
-            # print(">>>>>>>"*10)
+            try:
+                # 添加调试日志
+                logger.warning(f"\n>>> 非流式响应模式，streaming={streaming}, type={type(streaming)}")
+                text = ""
+                # i = 0
+                for value in get_process_text(chat_bot.jq_queque,t1):
+                    # i += 1                   
+                    # logger.warning(f"generator test: result_list or generator value {i}: {value}")  # 调试输出每个值及其类型
+                    if value.strip():
+                        text += value
+                    # logger.warning(f"generator test:final text {i}: {text}")
+
+                if not text.strip():
+                    text = "未获取到有效的回答内容，请检查智能体处理流程！"
+                logger.warning(f"generator test 非流式模式下的最终结果: {text}")
+            except Exception as e:
+                logger.error(f"处理结果时发生错误: {e}")
+                text = f"处理结果时发生错误: {str(e)}"
+
+
             response_data = {
                 "id": f"chatcmpl-{int(time.time()*1000)}",
                 "object": "chat.completion",
@@ -364,7 +381,8 @@ async def chat_completions(request: Request,  background_tasks: BackgroundTasks)
         
         
     except Exception as e:
-        error_msg = f"调用智能体API出现错误: {str(e)}"
+        _error_str =str(e) or e.__str__
+        error_msg = f"调用智能体API出现错误: {_error_str}"
         logger.error(error_msg)
         if streaming:
             async def event_stream():
@@ -429,7 +447,7 @@ if __name__ == "__main__":
     uvicorn.run(
         app,
         host="0.0.0.0",
-        port=8600,
+        port=8601,
         log_level="debug",
         timeout_keep_alive=60
     )

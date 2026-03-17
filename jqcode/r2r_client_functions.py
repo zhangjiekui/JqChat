@@ -3,8 +3,8 @@ import uuid
 from uuid import UUID
 from pathlib import Path
 from func_timeout import func_set_timeout, FunctionTimedOut
-from r2r import R2RClient,R2RConfig,LiteLLMEmbeddingProvider,ChunkSearchResult,SearchSettings # type: ignore
 from jqcode.jq_utils.logger import jqkj_logger
+from r2r import R2RClient,R2RConfig,LiteLLMEmbeddingProvider,ChunkSearchResult,SearchSettings # type: ignore
 logger = jqkj_logger(__file__).get_logger()
 
 # 暂时不使用
@@ -147,6 +147,7 @@ def r2r_search(r2r_client,query:str,chat_on_docs_list:list=None, limit: int = 10
     # search_settings: https://github.com/SciPhi-AI/R2R/blob/main/py/shared/abstractions/search.py#L406
     # https://github.com/SciPhi-AI/R2R/blob/bdc76755880c9c6422bd5ee0d433762841185805/py/core/main/services/retrieval_service.py
     search_settings = SearchSettings(use_semantic_search=True,use_fulltext_search=True,use_hybrid_search=True,search_strategy="rag_fusion",limit=limit)
+    search_settings.num_sub_queries = 1
     search_response = r2r_client.retrieval.search(query=query, search_settings=search_settings)
 # region 【详细定义search_settings字典参数】   
     # search_response = client.retrieval.search(query=query,search_mode="advanced",

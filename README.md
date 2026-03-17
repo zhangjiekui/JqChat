@@ -6,6 +6,24 @@ claude --model qwen3
 claude --model coder
 
 
+curl -X POST http://localhost:5000/v1/chat/completions -H "Authorization: Bearer sk-uNa9rajgfrh6oETT42JFfHAmwn9UbnrAsCmY" -H "Content-Type: application/json" -d "{"model": "coder", "messages": [{"role": "user", "content": "你好，请详细介绍你自己"}]}
+
+
+# Openai和Anthropic兼容API的解决方案：Oneapi【https://github.com/songquanpeng/one-api】 + Chats【https://github.com/sdcb/chats】
+## Oneapi 【http://10.1.150.105:3000/ root 12345678 sk-0S7bV3oaznhuevN899Db0cDa20Ae4c5485Ce5862A86063C8】
+docker run --name one-api-latest -d --restart always -p 3000:3000 -e TZ=Asia/Shanghai -v /home/OneApi:/data justsong/one-api:latest
+## Chats 【http://10.1.150.105:4000/  chats RESET!!!  sk-pijlU6bUBeap0RMwLNFC3BOdAhSqISYP1Myd】
+mkdir -p ./AppData
+chmod 755 ./AppData
+docker run --restart unless-stopped --name sdcb-chats -e DBType=sqlite -e ConnectionStrings__ChatsDB="Data Source=./AppData/chats.db" -v ./AppData:/app/AppData -v /var/run/docker.sock:/var/run/docker.sock --user 0:0 -p 4000:8080 sdcb/chats:latest
+
+## 公司GitLab http://10.1.150.190/users/sign_in
+账户：zhangjiekui
+密码：zhangjiekui1234
+
+企业微信:
+Bot ID: aibsvw4Th_MfdwmrtYN8Hf-C9x6zB9tcVIX
+Secret: CkRzYnUVXq9lsPRiDjG7f0VfZnGZnvQEFMpQiqX15Me
 
 # 105与200两台服务器间拷贝数据：
 命令及密码：
@@ -52,10 +70,29 @@ sudo lsof -i :8000
 
 ### /data/models/MiniMax/MiniMax-M2___5
 ```
-workon newvllm [8卡并行可以，但dp=3 tp=2不行]
-unset CC CXX
+#### TP8
+workon newvllm 
+PYTORCH_ALLOC_CONF=expandable_segments:True NCCL_DEBUG=WARN nohup vllm serve /data/models/MiniMax/MiniMax-M2___5 \
+    --trust-remote-code \
+    --gpu_memory_utilization 0.95 \
+    --max_model_len -1 \
+    --compilation-config "{\"cudagraph_mode\": \"PIECEWISE\"}" \
+    --no-async-scheduling \
+    --cpu-offload-gb 0 \
+    --max_num_seqs 8 \
+    --kv_cache_dtype fp8 \
+    --served-model-name coder \
+    --tensor-parallel-size 8 \
+    --enable-expert-parallel \
+    --enable-auto-tool-choice \
+    --tool-call-parser minimax_m2 \
+    --reasoning-parser minimax_m2 \
+    --host 0.0.0.0 --port 8000 >> /root/JqLogs/coder.log 2>&1 &
+tail -f /root/JqLogs/coder.log
 
 [ok]
+
+#### TP2&DP3
 workon vllm 
 CUDA_VISIBLE_DEVICES=2,3,4,5,6,7 PYTORCH_ALLOC_CONF=expandable_segments:True NCCL_DEBUG=WARN nohup vllm serve /data/models/MiniMax/MiniMax-M2___5 \
     --trust-remote-code \
@@ -69,7 +106,7 @@ CUDA_VISIBLE_DEVICES=2,3,4,5,6,7 PYTORCH_ALLOC_CONF=expandable_segments:True NCC
     --served-model-name coder \
     --tensor-parallel-size 2 \
     --data-parallel-size 3 \
-    --enable_expert_parallel \
+    --enable-expert-parallel \
     --enable-auto-tool-choice \
     --tool-call-parser minimax_m2 \
     --reasoning-parser minimax_m2 \
@@ -93,7 +130,7 @@ CUDA_VISIBLE_DEVICES=2,3,4,5,6,7 PYTORCH_ALLOC_CONF=expandable_segments:True NCC
     --served-model-name coder \
     --tensor-parallel-size 2 \
     --data-parallel-size 3 \
-    --enable_expert_parallel \
+    --enable-expert-parallel \
     --enable-auto-tool-choice \
     --tool-call-parser minimax_m2 \
     --reasoning-parser minimax_m2_append_think \
@@ -118,7 +155,7 @@ CUDA_VISIBLE_DEVICES=2,3,4,5,6,7 SAFETENSORS_FAST_GPU=1 PYTORCH_ALLOC_CONF=expan
     --chat-template /data/models/MiniMax/MiniMax-M2___1/chat_template.jinja \
     --tensor-parallel-size 2 \
     --data-parallel-size 3 \
-    --enable_expert_parallel \
+    --enable-expert-parallel \
     --enable-auto-tool-choice --tool-call-parser minimax_m2 \
     --reasoning-parser minimax_m2 \
     --host 0.0.0.0 --port 8000 >> /root/JqLogs/coder.log 2>&1 &
@@ -137,7 +174,7 @@ CUDA_VISIBLE_DEVICES=2,3,4,5,6,7 SAFETENSORS_FAST_GPU=1 PYTORCH_ALLOC_CONF=expan
     --chat-template /data/models/MiniMax/MiniMax-M2___1/chat_template.jinja \
     --tensor-parallel-size 2 \
     --data-parallel-size 3 \
-    --enable_expert_parallel \
+    --enable-expert-parallel \
     --enable-auto-tool-choice --tool-call-parser minimax_m2 \
     --reasoning-parser minimax_m2 \
     --host 0.0.0.0 --port 8000 >> /root/JqLogs/coder.log 2>&1 &
@@ -150,6 +187,7 @@ tail -f /root/JqLogs/coder.log
 
 sudo lsof -i :9000
 <!-- unset CC CXX -->
+<!-- CCACHE_DISABLE=1  -->
 
 <!-- workon ktsglang
 workon ktsglangv051
@@ -160,7 +198,7 @@ export CXX=/usr/bin/g++ -->
 
 rm -rf /root/.cache/flashinfer/0.6.2/89/
 <!-- 下面运行ok,4并发总生成速度超过30token/s -->
-export CCACHE_DISABLE=1
+
 workon ktglm5
 CUDA_VISIBLE_DEVICES=0,1 SAFETENSORS_FAST_GPU=1 PYTORCH_ALLOC_CONF=expandable_segments:True nohup python -m sglang.launch_server \
 --host 0.0.0.0 \
@@ -1032,7 +1070,7 @@ tail -f /root/JqLogs/qwq.log
 sudo lsof -i :9998
 ```
 workon sglang35
-CUDA_VISIBLE_DEVICES=0,1,2,3 PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True SGLANG_USE_MODELSCOPE=true nohup python -m sglang.launch_server --model-path /data/models/Qwen/Qwen3___5-35B-A3B-FP8 --host 0.0.0.0 --port 9998 --tp-size 4 --mem-fraction-static 0.7 --context-length 262144 --reasoning-parser qwen3 --tool-call-parser qwen3_coder --speculative-algo NEXTN --speculative-num-steps 3 --speculative-eagle-topk 1 --speculative-num-draft-tokens 4 >> /root/JqLogs/qwq.log 2>&1 &
+CUDA_VISIBLE_DEVICES=0,1,2,3 PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True SGLANG_USE_MODELSCOPE=true nohup python -m sglang.launch_server --model-path /data/models/Qwen/Qwen3___5-35B-A3B-FP8 --host 0.0.0.0 --port 9998 --tp-size 4 --mem-fraction-static 0.7 --context-length 262144 --reasoning-parser qwen3 --max-running-requests 8 --tool-call-parser qwen3_coder --speculative-algo NEXTN --speculative-num-steps 3 --speculative-eagle-topk 1 --speculative-num-draft-tokens 4 >> /root/JqLogs/qwq.log 2>&1 &
 tail -f /root/JqLogs/qwq.log
 ```
 
@@ -2784,3 +2822,5 @@ GGML_CUDA_ENABLE_UNIFIED_MEMORY=1 cmake -B build -DGGML_CUDA=ON -DGGML_SCHED_MAX
 cmake --build build --config Release
 #### 【参数说明 https://github.com/ggml-org/llama.cpp/blob/master/examples/server/README.md】单请求在4tokens/s
 CUDA_VISIBLE_DEVICES=0,1 /root/llama.cpp/build/bin/llama-server --model /data/models/DeepSeek-R1-Q4_K_M_ollama_gguf/ollama_Q4KM.gguf --alias DeepSeekR1 --flash-attn --threads 40 --temp 0.6 --min-p 0.05 --ctx-size 4096 --host 0.0.0.0 --port 9999 -np 2 --no-mmap -ngl 99 -ot exps=CPU --numa distribute --verbose-prompt --no-context-shift
+
+
