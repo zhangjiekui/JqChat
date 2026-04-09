@@ -3,7 +3,7 @@ import uuid
 from uuid import UUID
 from pathlib import Path
 from func_timeout import func_set_timeout, FunctionTimedOut
-from jqcode.jq_utils.logger import jqkj_logger
+from jqcode.utils.logger import jqkj_logger
 from r2r import R2RClient,R2RConfig,LiteLLMEmbeddingProvider,ChunkSearchResult,SearchSettings # type: ignore
 logger = jqkj_logger(__file__).get_logger()
 
@@ -187,10 +187,12 @@ def r2r_search(r2r_client,query:str,chat_on_docs_list:list=None, limit: int = 10
     search_results = r2r_format_search_results_for_llm(query,search_response.results,limit=limit,min_score_threshold=min_score_threshold)
     return search_results
 @func_set_timeout(30)
-def r2r_authed_client(user_id,user_email='',password='',server_url='http://10.1.150.105:7272'):
+def r2r_authed_client(user_id,user_email='',password='',server_url='http://10.1.150.105:7001'):
     r2r_client = R2RClient(base_url=server_url)
     if not user_id:
         user_id = 'admin'
+        user_id = 'user@example.com'
+        password='change_me_immediately'
     if not is_valid_email(user_email):
         if not is_valid_email(user_id):
             user_email = f"{user_id}@jqsoft.net"
@@ -288,7 +290,7 @@ def r2r_create_documents(r2r_client,file_paths_or_lm_documents:list):
 
 
 if __name__ == "__main__":
-    r2r_client = r2r_authed_client("admin")
+    r2r_client = r2r_authed_client(user_id="user",user_email="user@example.com",password="change_me_immediately")
 
     # result_collections = r2r_client.collections.list(
     #                                                 offset=0,

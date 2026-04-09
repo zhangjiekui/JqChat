@@ -1,3 +1,33 @@
+## GPU服务器信息
+```
+EG820G-G10
+ip地址：192.168.44.222
+cpu: 32核
+内存：64G
+GPU：4 张 NVIDIA GeForce RTX 2080 Ti 显卡,单张显存 11 GB，总显存 44 GB
+
+H3C UniServer R4900 G5
+ip地址：10.1.150.105
+CPU：48核
+内存：1024G
+GPU：4块NVIDIA GeForce RTX 4090显卡，单张显存 24 GB，总显存为 96 GB
+
+H3C UniServer R5300 G6
+ip地址：192.168.44.200
+cpu：192核
+内存：1024G
+GPU：8张 NVIDIA GeForce RTX 4090 显卡,单张显存 48 GB，总显存 384 GB
+```
+ai-ui/r2r用户名密码
+   - 用户名: admin 
+   - 邮箱:admin@jjqsoft.net                                                                                                                                                        
+   - 密码: admin@123456
+  ----
+  - 用户名:zjktest
+  - 邮箱:zjktest@jqsoft.net
+  - 密码: zjktest123456
+
+
 powershell
 $env:ANTHROPIC_BASE_URL="http://10.1.150.105:3000"
 $env:ANTHROPIC_AUTH_TOKEN="sk-0S7bV3oaznhuevN899Db0cDa20Ae4c5485Ce5862A86063C8"
@@ -18,8 +48,10 @@ chmod 755 ./AppData
 docker run --restart unless-stopped --name sdcb-chats -e DBType=sqlite -e ConnectionStrings__ChatsDB="Data Source=./AppData/chats.db" -v ./AppData:/app/AppData -v /var/run/docker.sock:/var/run/docker.sock --user 0:0 -p 4000:8080 sdcb/chats:latest
 
 ## 公司GitLab http://10.1.150.190/users/sign_in
-账户：zhangjiekui
-密码：zhangjiekui1234
+账户：
+zhangjiekui
+密码：
+zhangjiekui1234
 
 企业微信:
 Bot ID: aibsvw4Th_MfdwmrtYN8Hf-C9x6zB9tcVIX
@@ -44,6 +76,138 @@ root@jqkj:~# ssh root@192.168.44.200 "mkdir -p /data/models/Qwen"
 
 **du -h --max-depth=1 / | sort -rh**
 
+## 200服务器运行/data/models/MiniMax/MiniMax-M25
+
+sudo lsof -i :8000
+### [当前的工作环境，正常！]/data/models/MiniMax/MiniMax-M2___5
+workon sglang
+TORCH_CUDA_ARCH_LIST="8.9" NCCL_P2P_DISABLE=1 PYTORCH_ALLOC_CONF=expandable_segments:True NCCL_DEBUG=INFO nohup sglang serve \
+    --model-path /data/models/MiniMax/MiniMax-M2___5 \
+    --trust-remote-code \
+    --tp-size 8 \
+    --ep-size 8 \
+    --host 0.0.0.0 \
+    --port 8000 \
+    --served-model-name coder \
+    --tool-call-parser minimax-m2 \
+    --reasoning-parser minimax \
+    --mem-fraction-static 0.85 \
+    --dtype bfloat16 \
+    --kv-cache-dtype fp8_e4m3 \
+    --page-size 16 \
+    --max-running-requests 32 \
+    --schedule-policy lpm \
+    --schedule-conservativeness 0.6 \
+    --chunked-prefill-size 4096 \
+    --enable-mixed-chunk \
+    --speculative-algorithm EAGLE3 \
+    --speculative-num-steps 4 \
+    --speculative-draft-model-path /data/models/minimax-m2.5-pruned-eagle3 \
+    --speculative-eagle-topk 1 \
+    --speculative-num-draft-tokens 5 \
+    >> /root/JqLogs/coder.log 2>&1 &
+tail -f /root/JqLogs/coder.log
+### 两个可选的EAGLE3草稿模型
+--speculative-draft-model-path /data/models/minimax-m2.5-pruned-eagle3 \ 【模型更小，效果更好，首选】
+（https://modelscope.cn/models/eigen-ai-labs/minimax-m2.5-pruned-eagle3）
+
+--speculative-draft-model-path /data/models/Aurora-Spec-Minimax-M2.5 \
+（https://huggingface.co/togethercomputer/Aurora-Spec-Minimax-M2.5）
+ HF_DEBUG=1 hf download togethercomputer/Aurora-Spec-Minimax-M2.5 --local-dir /data/models/Aurora-Spec-Minimax-M2.5 --max-workers 20
+
+ https://huggingface.co/modularai/kimi-k2.5-eagle3
+ HF_DEBUG=1 hf download modularai/kimi-k2.5-eagle3 --local-dir /data/models/modularai/kimi-k2.5-eagle3 --max-workers 20
+
+## 200服务器运行性能速度测试/data/models/MiniMax/MiniMax-M25
+
+【在另一个终端（或容器内）运行测试脚本。该脚本会向服务发送并发请求。】
+    --host 192.168.44.200 【其他机器上运行请替换为，另外还需已安装sglang】
+
+random(快速基准测试、压力测试) sharegpt(模拟真实聊天场景) longbench_v2(长文本推理性能测试)
+
+workon sglang 
+cd /root/sglang_m25_speed_test
+HF_ENDPOINT=https://hf-mirror.com python -m sglang.bench_serving \
+    --backend sglang \
+    --host 127.0.0.1 \
+    --port 8000 \
+    --seed 42 \
+    --model /data/models/MiniMax/MiniMax-M2___5 \
+    --served-model-name coder \
+    --dataset-name sharegpt \
+    --num-prompts 1200 \
+    --max-concurrency  48 \
+    --request-rate 32 \
+    --output-file result.json
+
+
+# 105服务器上vllm0.18.1 运行 /data/models/Qwen3.5-27B-Claude-4.6-Opus-Reasoning-Distilled-v2-FP8-Dynamic
+/data/models/Jackrong/Qwen3___5-27B-Claude-4___6-Opus-Reasoning-Distilled-v2
+sudo lsof -i :9998
+
+环境准备
+```
+workon vllmb
+pip install -U vllm==0.18.1 
+pip install -U transformers==5.3.0
+pip uninstall -y flash-attn (如果出现flash-attn报错，如mportError: /root/.virtualenvs/vllmb/lib/python3.11/site-packages/flash_attn_2_cuda.cpython-311-x86_64-linux-gnu.so: undefined symbol: _ZN3c104cuda29c10_cuda_check_implementationEiPKcS2_ib)
+```
+
+
+workon vllmb
+NCCL_DEBUG=INFO \
+NCCL_ALGO=Ring \
+fix_mistral_regex=True \
+PYTORCH_ALLOC_CONF=expandable_segments:True \
+nohup vllm serve /data/models/Qwen/Qwen3___5-27B-FP8 \
+    --trust-remote-code \
+    --gpu-memory-utilization 0.85 \
+    --max-model-len -1 \
+    --cpu-offload-gb 0 \
+    --max-num-seqs 8 \
+    --kv-cache-dtype fp8_e4m3 \
+    --served-model-name qwen3 \
+    --tensor-parallel-size 4 \
+    --enable-chunked-prefill \
+    --async-scheduling \
+    --host 0.0.0.0 \
+    --port 9998 \
+    --performance-mode throughput \
+    --speculative-config '{"method":"mtp","num_speculative_tokens":2}' \
+    --skip-mm-profiling \
+    --enable-auto-tool-choice \
+    --tool-call-parser qwen3_coder \
+    --reasoning-parser qwen3 \
+    >> /root/JqLogs/qwen3.log 2>&1 &
+tail -f /root/JqLogs/qwen3.log
+
+# 会生成不完整，截断
+    --speculative-config '{"method": "ngram_gpu", "num_speculative_tokens": 5, "prompt_lookup_max": 6, "prompt_lookup_min": 3}' \
+# qwen3_next_mtp来自官方，但vllm已弃用，直接使用 mtp，似乎可以，不会截断
+    --speculative-config '{"method":"qwen3_next_mtp","num_speculative_tokens":2}' \ 
+
+    --speculative-config '{"method":"mtp","num_speculative_tokens":2}' \
+
+workon vllmb
+pip install -U vllm==0.18.1 
+pip install -U transformers==5.3.0
+pip uninstall -y flash-attn (如果出现flash-attn报错，如mportError: /root/.virtualenvs/vllmb/lib/python3.11/site-packages/flash_attn_2_cuda.cpython-311-x86_64-linux-gnu.so: undefined symbol: _ZN3c104cuda29c10_cuda_check_implementationEiPKcS2_ib)
+
+
+workon vllmb
+vllm serve /data/models/Qwen3.5-27B-Claude-4.6-Opus-Reasoning-Distilled-v2-FP8-Dynamic \
+  --trust-remote-code \
+  --host 0.0.0.0 \
+  --port 9998 \
+  --served-model-name qwen3 \
+  --tensor-parallel-size 4 \
+  --max-model-len 262144 \
+  --gpu-memory-utilization 0.85 \
+  --kv-cache-dtype fp8_e4m3 \
+  --max-num-seqs 1 \
+  --skip-mm-profiling \
+  --reasoning-parser qwen3
+
 
 # 105服务器上sglang运行Qwen3-VL-30B-A3B-Instruct-FP8
 ```
@@ -64,20 +228,102 @@ TORCH_CUDA_ARCH_LIST="8.9+PTX" CUDA_VISIBLE_DEVICES=2,3 FLASHINFER_DISABLE_VERSI
 tail -f /root/JqLogs/qwq.log
 ```
 
+
+
 # 200新服务器部署Kimi-K2-Thinking-Native和MiniMax-M2 M2.1
 ## 六卡tp/dp运行MiniMax-M2模型[**200上的新版本vllm已可正常运行**] 
 sudo lsof -i :8000
 
 ### /data/models/MiniMax/MiniMax-M2___5
+
 ```
 #### TP8
-workon newvllm 
-PYTORCH_ALLOC_CONF=expandable_segments:True NCCL_DEBUG=WARN nohup vllm serve /data/models/MiniMax/MiniMax-M2___5 \
+#### newvllm vllm0.18
+workon newvllm
+
+NCCL_DEBUG=INFO \
+NCCL_ALGO=Ring \
+NCCL_DEBUG_SUBSYS=INIT,ENV \
+PYTORCH_ALLOC_CONF=expandable_segments:True \
+nohup vllm serve /data/models/MiniMax/MiniMax-M2___5 \
     --trust-remote-code \
-    --gpu_memory_utilization 0.95 \
-    --max_model_len -1 \
+    --gpu-memory-utilization 0.92 \
+    --max-model-len -1 \
+    --cpu-offload-gb 0 \
+    --max-num-seqs 8 \
+    --kv-cache-dtype fp8_e4m3 \
+    --served-model-name coder \
+    --tensor-parallel-size 8 \
+    --enable-expert-parallel \
+    --enable-ep-weight-filter \
+    --enable-auto-tool-choice \
+    --tool-call-parser minimax_m2 \
+    --reasoning-parser minimax_m2 \
+    --host 0.0.0.0 \
+    --port 8000 \
+    --performance-mode throughput \
+    --enable-chunked-prefill \
+    --speculative-config '{"method": "ngram_gpu", "num_speculative_tokens": 6, "prompt_lookup_max": 8, "prompt_lookup_min": 3}' >> /root/JqLogs/coder.log 2>&1 &
+tail -f /root/JqLogs/coder.log
+
     --compilation-config "{\"cudagraph_mode\": \"PIECEWISE\"}" \
-    --no-async-scheduling \
+[ok]
+#### TP2&DP3 vllm0.18
+sudo nvidia-smi -pm ENABLED
+sudo lsof -i :8000
+    --enable-expert-parallel \
+    --data-parallel-size 2 \
+
+待测试方案1
+workon newvllm 
+TORCH_CUDA_ARCH_LIST="8.9" NCCL_P2P_DISABLE=1 PYTORCH_ALLOC_CONF=expandable_segments:True NCCL_DEBUG=INFO nohup vllm serve /data/models/MiniMax/MiniMax-M2___5 \
+    --trust-remote-code \
+    --gpu_memory_utilization 0.92 \
+    --max_model_len -1 \
+    --cpu-offload-gb 0 \
+    --max_num_seqs 32 \
+    --kv_cache_dtype fp8 \
+    --served-model-name coder \
+    --tensor-parallel-size 4 \
+    --pipeline_parallel_size 2 \ 
+    --enable-auto-tool-choice \
+    --tool-call-parser minimax_m2 \
+    --reasoning-parser minimax_m2 \
+    --performance-mode throughput \
+    --enable-chunked-prefill \
+    --speculative-config '{"method": "ngram_gpu", "num_speculative_tokens": 6, "prompt_lookup_max": 8, "prompt_lookup_min": 3}' \
+    --host 0.0.0.0 --port 8000 >> /root/JqLogs/coder.log 2>&1 &
+tail -f /root/JqLogs/coder.log
+
+待测试方案2
+workon newvllm 
+NCCL_P2P_DISABLE=1 VLLM_USE_DEEP_GEMM=0 OMP_NUM_THREADS=4 TORCH_CUDA_ARCH_LIST="8.9" NCCL_P2P_DISABLE=1 PYTORCH_ALLOC_CONF=expandable_segments:True NCCL_DEBUG=INFO nohup vllm serve /data/models/MiniMax/MiniMax-M2___5 \
+    --trust-remote-code \
+    --gpu_memory_utilization 0.92 \
+    --max_model_len -1 \
+    --cpu-offload-gb 0 \
+    --max_num_seqs 8 \
+    --kv_cache_dtype fp8 \
+    --served-model-name coder \
+    --tensor-parallel-size 2 \
+    --data-parallel-size 4 \ 
+    --enable-expert-parallel \
+    --enable-auto-tool-choice \
+    --tool-call-parser minimax_m2 \
+    --reasoning-parser minimax_m2 \
+    --performance-mode throughput \
+    --enable-chunked-prefill \
+    --speculative-config '{"method": "ngram_gpu", "num_speculative_tokens": 6, "prompt_lookup_max": 8, "prompt_lookup_min": 3}' \
+    --host 0.0.0.0 --port 8000 >> /root/JqLogs/coder.log 2>&1 &
+tail -f /root/JqLogs/coder.log
+
+
+待测试方案3
+workon newvllm 
+NCCL_P2P_DISABLE=1 VLLM_USE_DEEP_GEMM=0 OMP_NUM_THREADS=4 TORCH_CUDA_ARCH_LIST="8.9" NCCL_P2P_DISABLE=1 PYTORCH_ALLOC_CONF=expandable_segments:True NCCL_DEBUG=INFO nohup vllm serve /data/models/MiniMax/MiniMax-M2___5 \
+    --trust-remote-code \
+    --gpu_memory_utilization 0.92 \
+    --max_model_len -1 \
     --cpu-offload-gb 0 \
     --max_num_seqs 8 \
     --kv_cache_dtype fp8 \
@@ -87,40 +333,25 @@ PYTORCH_ALLOC_CONF=expandable_segments:True NCCL_DEBUG=WARN nohup vllm serve /da
     --enable-auto-tool-choice \
     --tool-call-parser minimax_m2 \
     --reasoning-parser minimax_m2 \
+    --performance-mode throughput \
+    --enable-chunked-prefill \
+    --speculative-config '{"method": "ngram_gpu", "num_speculative_tokens": 6, "prompt_lookup_max": 8, "prompt_lookup_min": 3}' \
     --host 0.0.0.0 --port 8000 >> /root/JqLogs/coder.log 2>&1 &
 tail -f /root/JqLogs/coder.log
 
-[ok]
-
-#### TP2&DP3
-workon vllm 
-CUDA_VISIBLE_DEVICES=2,3,4,5,6,7 PYTORCH_ALLOC_CONF=expandable_segments:True NCCL_DEBUG=WARN nohup vllm serve /data/models/MiniMax/MiniMax-M2___5 \
-    --trust-remote-code \
-    --gpu_memory_utilization 0.95 \
-    --max_model_len 62000 \
-    --compilation-config "{\"cudagraph_mode\": \"PIECEWISE\"}" \
-    --no-async-scheduling \
-    --cpu-offload-gb 0 \
-    --max_num_seqs 8 \
-    --kv_cache_dtype fp8 \
-    --served-model-name coder \
-    --tensor-parallel-size 2 \
-    --data-parallel-size 3 \
-    --enable-expert-parallel \
-    --enable-auto-tool-choice \
-    --tool-call-parser minimax_m2 \
-    --reasoning-parser minimax_m2 \
-    --host 0.0.0.0 --port 8000 >> /root/JqLogs/coder.log 2>&1 &
-tail -f /root/JqLogs/coder.log
+    --moe-runner-backend flashinfer_cutlass \
 
 
---reasoning-parser minimax_m2_append_think \
+
+
+
+
 
 
 
 workon vllm
 unset CC CXX
-CUDA_VISIBLE_DEVICES=2,3,4,5,6,7 PYTORCH_ALLOC_CONF=expandable_segments:True NCCL_DEBUG=WARN nohup vllm serve /data/models/MiniMax/MiniMax-M2___5 \
+CUDA_VISIBLE_DEVICES=2,3,4,5,6,7 PYTORCH_ALLOC_CONF=expandable_segments:True NCCL_DEBUG=INFO nohup vllm serve /data/models/MiniMax/MiniMax-M2___5 \
     --trust-remote-code \
     --gpu_memory_utilization 0.95 \
     --max_model_len -1 \
@@ -1068,13 +1299,36 @@ tail -f /root/JqLogs/qwq.log
 
 #### Qwen3.5-35B-A3B-FP8 [262144上下文长度]
 sudo lsof -i :9998
+
 ```
 workon sglang35
-CUDA_VISIBLE_DEVICES=0,1,2,3 PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True SGLANG_USE_MODELSCOPE=true nohup python -m sglang.launch_server --model-path /data/models/Qwen/Qwen3___5-35B-A3B-FP8 --host 0.0.0.0 --port 9998 --tp-size 4 --mem-fraction-static 0.7 --context-length 262144 --reasoning-parser qwen3 --max-running-requests 8 --tool-call-parser qwen3_coder --speculative-algo NEXTN --speculative-num-steps 3 --speculative-eagle-topk 1 --speculative-num-draft-tokens 4 >> /root/JqLogs/qwq.log 2>&1 &
-tail -f /root/JqLogs/qwq.log
+CUDA_VISIBLE_DEVICES=0,1,2,3 PYTORCH_ALLOC_CONF=expandable_segments:True SGLANG_USE_MODELSCOPE=true nohup python -m sglang.launch_server --model-path /data/models/Qwen/Qwen3___5-35B-A3B-FP8 --host 0.0.0.0 --port 9998 --tp-size 4 --mem-fraction-static 0.7 --context-length 262144 --reasoning-parser qwen3 --max-running-requests 8 --tool-call-parser qwen3_coder --kv-cache-dtype auto --speculative-algo NEXTN --speculative-num-steps 3 --speculative-eagle-topk 1 --speculative-num-draft-tokens 4 >> /root/JqLogs/qwen3.log 2>&1 &
+tail -f /root/JqLogs/qwen3.log
 ```
 
+```
+workon sglang35
+CUDA_VISIBLE_DEVICES=0,1,2,3 PYTORCH_ALLOC_CONF=expandable_segments:True SGLANG_USE_MODELSCOPE=true nohup python -m sglang.launch_server --model-path /data/models/Qwen/Qwen3___5-27B-FP8 --host 0.0.0.0 --port 9998 --tp-size 4 --mem-fraction-static 0.7 --context-length 262144 --reasoning-parser qwen3 --max-running-requests 8 --tool-call-parser qwen3_coder --kv-cache-dtype auto --speculative-algo NEXTN --speculative-num-steps 3 --speculative-eagle-topk 1 --speculative-num-draft-tokens 4 >> /root/JqLogs/qwen3.log 2>&1 &
+tail -f /root/JqLogs/qwen3.log
+```
 
+vllm --default-chat-template-kwargs '{"enable_thinking": false}'
+
+
+### gemma-4
+
+workon vllmb
+vllm serve /data/models/google/gemma-4-31B-it \
+--served-model-name qwen3 \
+--host 0.0.0.0 --port 9998 \
+--tensor-parallel-size 4 \
+--max-model-len -1 \
+--max-num-seqs 8 \
+--gpu-memory-utilization 0.92 \
+--enable-chunked-prefill \
+--enable-auto-tool-choice \
+--tool-call-parser gemma4 \
+--reasoning-parser gemma4
 
 
 #### Qwen3-30B-A3B-Instruct-2507-FP8 gpu2_3 [128000上下文长度]
