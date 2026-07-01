@@ -24,3 +24,6 @@ INFO:     Application shutdown complete.
 当前使用的Elasticsearch URL为:| https://10.1.150.105:9200 |
 -------可以通过Kibana URL查看:| http://127.0.0.1:5601 | http://10.1.150.105:5601 |-------
 
+usage: vllm [-h] [-v]
+            {chat,complete,serve,launch,bench,collect-env,run-batch} ...
+vllm: error: unrecognized arguments:  

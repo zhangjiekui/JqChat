@@ -1,3 +1,122 @@
+curl -H "Authorization: Bearer dev123" http://192.168.44.200:8080/status
+
+# 默认: 本地 MiniMax-M3 FP4量化版本 (推荐)
+## Nvidia NVFP4版本
+```
+bash /data/models/MiniMax-M3-NVFP4/start_auto.sh
+===========================================================================
+用法: /data/models/MiniMax-M3-NVFP4/start_auto.sh [命令]
+-----------------
+命令:
+  start    启动服务 (默认; 占用资源时自动清理)
+  stop     停止所有相关服务 (释放端口 + 清理 GPU 进程)
+  restart  重启服务
+  status   查看服务状态 (端口 + GPU 推理进程)
+  clean    强制清理资源 (不启动)
+  -h, --help  显示帮助
+-----------------
+示例:
+  /data/models/MiniMax-M3-NVFP4/start_auto.sh              # 启动服务
+  /data/models/MiniMax-M3-NVFP4/start_auto.sh stop         # 停止服务
+  /data/models/MiniMax-M3-NVFP4/start_auto.sh status       # 查看状态
+  /data/models/MiniMax-M3-NVFP4/start_auto.sh restart      # 重启
+===========================================================================
+bash /data/models/MiniMax-M3-NVFP4/start.sh  
+```
+
+### [Github](https://github.com/zhangjiekui/JQ4090-Vllm-Nvidia-MiniMax-M3-NVFP4)
+https://github.com/zhangjiekui/JQ4090-Vllm-Nvidia-MiniMax-M3-NVFP4
+
+### [HF](https://huggingface.co/nwzjk/MiniMax-M3-NVFP4-Duplicated) 
+https://huggingface.co/nwzjk/MiniMax-M3-NVFP4-Duplicated
+
+## 社区 MXFP4版本
+bash /data/models/MiniMax-M3-MXFP4/vllm_patch/start_minimax_m3.sh
+
+
+docker run --privileged --user root --net=host --ipc=host --name stepfun37-custom \
+    -v /data/models/:/data/models/ \
+    -v /root/JqLogs/:/root/JqLogs/ \
+    --runtime=nvidia \
+    --gpus=all \
+    -e VLLM_USE_MODELSCOPE=true \
+    stepfun37-custom \
+    --model /data/models/stepfun-ai/Step-3___7-Flash-FP8 \
+    --served-model-name coder \
+    --tensor-parallel-size 8 \
+    --enable-expert-parallel \
+    --disable-cascade-attn \
+    --reasoning-parser step3p5 \
+    --enable-auto-tool-choice \
+    --tool-call-parser step3p5 \
+    --speculative-config "{\"method\": \"mtp\", \"num_speculative_tokens\": 3}" \
+    --trust-remote-code \
+    --host 0.0.0.0 \
+    --max-num-seqs 6 \
+    --port 8000
+ 
+
+
+
+[这个lsglang运行kimi eagele是可以的]
+有两个不同的Kimi-K26-eagle3模型
+/data/models/Kimi-K26-eagle3
+--speculative-draft-model-path /data/models/moonshotai/kimi-k2.6-eagle3 \
+
+sudo lsof -i :9000
+
+
+workon lvllm 
+SGLANG_ENABLE_SPEC_V2=1 \
+CUDA_VISIBLE_DEVICES=0,1 TORCH_CUDA_ARCH_LIST="8.9" 
+PYTORCH_ALLOC_CONF=expandable_segments:True \
+SGLANG_FORCE_FP8_MARLIN=1 \
+SGLANG_ENABLE_JIT_DEEPGEMM=0 \
+NCCL_SOCKET_IFNAME=lo \
+NCCL_IB_DISABLE=1 \
+GLOO_SOCKET_IFNAME=lo \
+NCCL_SOCKET_TIMEOUT=600000 \
+LVLLM_MOE_NUMA_ENABLED=1 \
+LK_THREAD_BINDING=CPU_CORE \
+LK_THREADS=44 \
+OMP_NUM_THREADS=44 \
+LVLLM_MOE_USE_WEIGHT=KEEP \
+LVLLM_ENABLE_NUMA_INTERLEAVE=0 \
+LVLLM_MOE_QUANT_ON_GPU=1 \
+LVLLM_GPU_PREFETCH_WINDOW=1 \
+LVLLM_GPU_PREFILL_MIN_BATCH_SIZE=2048 \
+LVLLM_GPU_RESIDENT_MOE_LAYERS=0-2 \
+CUDA_VISIBLE_DEVICES=0,1 \
+nohup sglang serve --model-path /data/models/moonshotai/Kimi-K2.6 \
+    --served-model-name "kimi" \
+    --host "0.0.0.0" \
+    --port "9000" \
+    --context-length 202752 \
+    --trust-remote-code \
+    --tensor-parallel-size 2 \
+    --enable-p2p-check \
+    --max-total-tokens 210000 \
+    --max-running-requests 2 \
+    --disable-piecewise-cuda-graph \
+    --tool-call-parser kimi_k2 \
+    --reasoning-parser kimi_k2 \
+    --chunked-prefill-size 32000 \
+    --mem-fraction-static 0.80 \
+    --attention-backend triton \
+    --fp8-gemm-backend triton \
+    --kv-cache-dtype fp8_e4m3 \
+    --disable-custom-all-reduce \
+    --speculative-algorithm EAGLE3 \
+    --speculative-draft-model-path /data/models/Kimi-K26-eagle3 \
+    --speculative-num-steps 3 \
+    --speculative-eagle-topk 1 \
+    --speculative-num-draft-tokens 4 \
+    --disable-shared-experts-fusion \
+    --watchdog-timeout 500000 \
+    >> /root/JqLogs/kimi.log 2>&1 & 
+tail -f /root/JqLogs/kimi.log
+
+    --cuda-graph-max-bs 16 \
 ## GPU服务器信息
 ```
 EG820G-G10
@@ -47,6 +166,13 @@ mkdir -p ./AppData
 chmod 755 ./AppData
 docker run --restart unless-stopped --name sdcb-chats -e DBType=sqlite -e ConnectionStrings__ChatsDB="Data Source=./AppData/chats.db" -v ./AppData:/app/AppData -v /var/run/docker.sock:/var/run/docker.sock --user 0:0 -p 4000:8080 sdcb/chats:latest
 
+## claude团队模式
+### 测试的提示词
+详情见项目：/root/model-proxy
+请为这个项目创建一个 Agent Team，包括 "前端工程师"、"后端工程师"、"QA" 三个角色，并分配任务分别审查(review)这个项目
+
+
+
 ## 公司GitLab http://10.1.150.190/users/sign_in
 账户：
 zhangjiekui
@@ -63,7 +189,7 @@ Secret: CkRzYnUVXq9lsPRiDjG7f0VfZnGZnvQEFMpQiqX15Me
 scp -r /data/models/Qwen/qwen235q8/ root@192.168.44.200:/data/models/Qwen/qwen235q8/
 rsync -avz --partial --progress /data/models/Qwen/Qwen3-30B-A3B-Instruct-2507-FP8/ root@192.168.44.200:/data/models/Qwen/Qwen3-30B-A3B-Instruct-2507-FP8/ 
 
-rsync -avz --partial --progress /data/models/moonshotai/Kimi-K25/ root@10.1.150.105:/data/models/moonshotai/Kimi-K25/
+rsync -avz --partial --progress /data/models/Qwopus3.6-27B-v2-FP8 root@10.1.150.105:/data/models/Qwopus3.6-27B-v2-FP8
 
 ```
 200服務器密码：jqkj5350880
@@ -75,38 +201,318 @@ rsync 默认不会自动创建多级父目录（尤其是当路径较深时）
 root@jqkj:~# ssh root@192.168.44.200 "mkdir -p /data/models/Qwen"
 
 **du -h --max-depth=1 / | sort -rh**
-
-## 200服务器运行/data/models/MiniMax/MiniMax-M25
+## 11 200服务器运行/data/models/NVIDIA-Nemotron-3-Ultra-550B-A55B-BF16-W4A16-G128
 
 sudo lsof -i :8000
-### [当前的工作环境，正常！]/data/models/MiniMax/MiniMax-M2___5
+"/root/cpu-offload.yaml"
+
+
+
+prefix cache hit
+
+
+
+##方法2：Avg generation throughput: 221.5 tokens/s, Running: 4 reqs
+workon newvllm 
+VLLM_MARLIN_USE_ATOMIC_ADD=1 nohup vllm serve /data/models/NVIDIA-Nemotron-3-Ultra-550B-A55B-BF16-W4A16-G128 \
+--host 0.0.0.0 --port 8000 \
+--served-model-name coder \
+--tensor-parallel-size 8 \
+--enable-expert-parallel \
+--max-model-len 204096 \
+--gpu-memory-utilization 0.95 \
+--max-num-seqs 4 \
+--max-num-batched-tokens 4096 \
+--enable-chunked-prefill \
+--reasoning-parser nemotron_v3 \
+--enable-auto-tool-choice \
+--tool-call-parser qwen3_coder \
+--mamba-ssm-cache-dtype float16 \
+--mamba-cache-dtype float16 \
+--mamba-backend flashinfer \
+--enable-mamba-cache-stochastic-rounding \
+--mamba-cache-philox-rounds 5 \
+--dtype float16 \
+--kv-cache-dtype fp8 \
+--kv-offloading-size 64 \
+--enable-prefix-caching \
+--model-loader-extra-config '{"enable_multithread_load": true, "num_threads": 48}' \
+--trust-remote-code \
+>> /root/JqLogs/coder.log 2>&1 & tail -f /root/JqLogs/coder.log
+
+--speculative-config '{"method": "mtp", "num_speculative_tokens": 5}' \
+
+
+## 存在问题
+  workon vllm
+  LMCACHE_CONFIG_FILE="/root/cpu-offload.yaml"  VLLM_MARLIN_USE_ATOMIC_ADD=1 nohup vllm serve /data/models/NVIDIA-Nemotron-3-Ultra-550B-A55B-BF16-W4A16-G128 \
+    --host 0.0.0.0 --port 8000 \
+    --served-model-name coder \
+    --tensor-parallel-size 8 \
+    --enable-expert-parallel \
+    --max-model-len 204096 \
+    --gpu-memory-utilization 0.95 \
+    --max-num-seqs 8 \
+    --max-num-batched-tokens 4096 \
+    --enable-chunked-prefill \
+    --enable-prefix-caching \
+    --reasoning-parser nemotron_v3 \
+    --enable-auto-tool-choice \
+    --tool-call-parser qwen3_coder \
+    --mamba-ssm-cache-dtype float16 \
+    --mamba-cache-dtype float16 \
+    --mamba-backend flashinfer \
+    --enable-mamba-cache-stochastic-rounding \
+    --mamba-cache-philox-rounds 5 \
+    --dtype float16 \
+    --kv-cache-dtype fp8 \
+    --kv-offloading-backend lmcache \
+    --model-loader-extra-config '{"enable_multithread_load": true, "num_threads": 48}' \
+    --speculative-config '{"method": "mtp", "num_speculative_tokens": 5}' \
+    --trust-remote-code \
+    --no-async-scheduling \
+    --disable-log-stats \
+    >> /root/JqLogs/coder.log 2>&1 &
+    tail -f /root/JqLogs/coder.log
+## 11 200服务器运行/data/models/MiniMax-M2.7
+sudo lsof -i :8000
+
+<!-- ### [tp2 dp3 ok]
+workon vllm
+CUDA_VISIBLE_DEVICES=2,3,4,5,6,7 \ -->
+
+workon newvllm
+PYTORCH_ALLOC_CONF=expandable_segments:True \
+TORCH_CUDA_ARCH_LIST="8.9" SAFETENSORS_FAST_GPU=1 \
+nohup vllm serve /data/models/MiniMax-M2.7 \
+  --trust-remote-code \
+  --tensor-parallel-size 2 \
+  --pipeline_parallel_size 4 \
+  --enable-flashinfer-autotune \
+  --tool-call-parser minimax_m2 \
+  --reasoning-parser minimax_m2  \
+  --enable-auto-tool-choice \
+  --host 0.0.0.0 \
+  --port 8000 \
+  --served-model-name coder \
+  --max-model-len auto \
+  --max-num-seqs 8 \
+  --gpu-memory-utilization 0.92 \
+  --model-loader-extra-config '{"enable_multithread_load": true, "num_threads": 48}' \
+  --kv-cache-dtype fp8 \
+  >> /root/JqLogs/coder.log 2>&1 &
+  tail -f /root/JqLogs/coder.log
+
+  --kv-cache-dtype turboquant_k8v4 \
+### [tp8 ok]
+  --decode-context-parallel-size 2 \
+workon newvllm
+PYTORCH_ALLOC_CONF=expandable_segments:True \
+TORCH_CUDA_ARCH_LIST="8.9" SAFETENSORS_FAST_GPU=1 \
+nohup vllm serve /data/models/MiniMax-M2.7 \
+  --trust-remote-code \
+  --tensor-parallel-size 8 \
+  --enable-expert-parallel \
+  --tool-call-parser minimax_m2 \
+  --reasoning-parser minimax_m2  \
+  --enable-auto-tool-choice \
+  --host 0.0.0.0 \
+  --port 8000 \
+  --served-model-name coder \
+  --max-model-len auto \
+  --max-num-seqs 4 \
+  --gpu-memory-utilization 0.90 \
+  --kv-cache-dtype turboquant_k8v4 \
+  >> /root/JqLogs/coder.log 2>&1 &
+  tail -f /root/JqLogs/coder.log
+
+
+
+max_total_num_tokens=861440, chunked_prefill_size=8192, max_prefill_tokens=16384, max_running_requests=12, context_len=196608, available_gpu_mem=3.06 GB
+
+sudo lsof -i :8000
+## XiaomiMiMo/MiMo-V2.5
+  docker run -d \
+    --name mimo-server \
+    --gpus all \
+    -p 8000:8000 \
+    -v /data/models/MiMo-V2.5-AWQ-int4/vllm-patches:/vllm-patches:ro \
+    -v /data/models/XiaomiMiMo/MiMo-V2.5:/data/models/XiaomiMiMo/MiMo-V2.5
+    vllm/vllm-openai:minimax-m3 \
+    bash -c "
+      cp /vllm-patches/mimo_v2.py /usr/local/lib/python3.12/dist-packages/vllm/model_executor/models/mimo_v2.py
+      cp /vllm-patches/mimo_v2_omni.py /usr/local/lib/python3.12/dist-packages/vllm/model_executor/models/mimo_v2_omni.py
+      vllm serve /data/models/XiaomiMiMo/MiMo-V2.5 \
+        --tensor-parallel-size 8 \
+        --host 0.0.0.0 \
+        --port 8000 \
+        --served-model-name coder \
+        --enable-expert-parallel \
+        --enable-prefix-caching \
+        --dtype half \
+        --kv-cache-dtype fp8_e4m3 \
+        --kv-offloading-size 64 \
+        --max-num-seqs 8 \
+        --gpu-memory-utilization 0.90 \
+        --max-model-len 262144 \
+        --reasoning-parser mimo \
+        --enable-auto-tool-choice \
+        --tool-call-parser mimo \
+        --trust-remote-code
+
+compilation-config
+
+workon newvllm
+PYTORCH_ALLOC_CONF=expandable_segments:True \
+TORCH_CUDA_ARCH_LIST="8.9" SAFETENSORS_FAST_GPU=1 \
+vllm serve /data/models/XiaomiMiMo/MiMo-V2___5 \
+  --tensor-parallel-size 8 \
+  --host 0.0.0.0 \
+  --port 8000 \
+  --served-model-name coder \
+  --max-model-len auto \
+  --max-num-seqs 4 \
+  --trust-remote-code \
+  --gpu-memory-utilization 0.95 \
+  --cpu-offload-gb 10 \
+  --reasoning-parser mimo \
+  --enable-auto-tool-choice \
+  --tool-call-parser mimo \
+  --attention-backend TRITON_ATTN \
+  --kv-cache-dtype turboquant_k8v4 \
+  --enforce-eager
+
+
+## https://github.com/sgl-project/sglang/pull/24706/changes
+  --mm-attention-backend triton_attn \
+  --kv-cache-dtype fp8_e4m3 \  FlashAttention on Ampere/Ada cards only supports fp16 and bf16 data type
+  --attention-backend fa3 \ RuntimeError: Only Hopper supports different V headdim
+max_total_num_tokens
+sudo lsof -i :8000
+
+max_total_num_tokens=861440, chunked_prefill_size=4096, max_prefill_tokens=16384, max_running_requests=12, context_len=196608, available_gpu_mem=2.50 GB
+
+workon sglang
+TORCH_CUDA_ARCH_LIST="8.9" NCCL_P2P_DISABLE=1 \
+PYTORCH_ALLOC_CONF=expandable_segments:True \
+SGLANG_VIT_ENABLE_CUDA_GRAPH=0 \
+SGLANG_ENABLE_SPEC_V2=1 nohup sglang serve \
+  --trust-remote-code \
+  --model-path /data/models/XiaomiMiMo/MiMo-V2___5 \
+  --served-model-name coder \
+  --tp 8 \
+  --dp 2 \
+  --enable-multimodal \
+  --enable-dp-attention \
+  --enable-dp-lm-head \
+  --mm-enable-dp-encoder \
+  --mm-attention-backend triton_attn \
+  --mem-fraction-static 0.92 \
+  --context-length 120000 \
+  --chunked-prefill-size 2048 \
+  --reasoning-parser mimo \
+  --tool-call-parser mimo \
+  --host 0.0.0.0 \
+  --port 8000 \
+  --disable-custom-all-reduce \
+  --max-running-requests 8 \
+  --dtype auto \
+  --kv-cache-dtype fp8_e4m3 \
+  >> /root/JqLogs/coder.log 2>&1 &
+tail -f /root/JqLogs/coder.log
+  
+  --enable-hierarchical-cache \
+  --hicache-ratio 2.0 \
+  --cpu-offload-gb 10 \
+  \
+  --speculative-algorithm EAGLE \
+  --speculative-num-steps 3 \
+  --speculative-eagle-topk 1 \
+  --speculative-num-draft-tokens 4 \
+  --enable-multi-layer-eagle \
+
+
+
+
+
+
 workon sglang
 TORCH_CUDA_ARCH_LIST="8.9" NCCL_P2P_DISABLE=1 PYTORCH_ALLOC_CONF=expandable_segments:True NCCL_DEBUG=INFO nohup sglang serve \
-    --model-path /data/models/MiniMax/MiniMax-M2___5 \
+    --model-path /data/models/MiniMax-M2.7 \
     --trust-remote-code \
     --tp-size 8 \
     --ep-size 8 \
     --host 0.0.0.0 \
     --port 8000 \
     --served-model-name coder \
+    --context-length 196608 \
+    --disable-custom-all-reduce \
+    --enable-tokenizer-batch-encode \
     --tool-call-parser minimax-m2 \
     --reasoning-parser minimax \
     --mem-fraction-static 0.85 \
     --dtype bfloat16 \
     --kv-cache-dtype fp8_e4m3 \
     --page-size 16 \
-    --max-running-requests 32 \
+    --max-running-requests 12 \
     --schedule-policy lpm \
     --schedule-conservativeness 0.6 \
     --chunked-prefill-size 4096 \
     --enable-mixed-chunk \
     --speculative-algorithm EAGLE3 \
-    --speculative-num-steps 4 \
     --speculative-draft-model-path /data/models/minimax-m2.5-pruned-eagle3 \
+    --speculative-num-steps 4 \
     --speculative-eagle-topk 1 \
     --speculative-num-draft-tokens 5 \
     >> /root/JqLogs/coder.log 2>&1 &
 tail -f /root/JqLogs/coder.log
+
+sudo lsof -i :8000
+启动时注意在日志中查看：max_total_num_tokens的实际值
+测试--max-running-requests 16时
+max_total_num_tokens=20064 [-mem-fraction-static 0.85]
+max_total_num_tokens=99216 [-mem-fraction-static 0.92]
+max_total_num_tokens=122976[--mem-fraction-static 0.95] 
+
+    --max-total-tokens 128000 \ 不建议设置 The maximum number of tokens in the memory pool. If not specified, it will be automatically calculated based on the memory usage fraction. This option is typically used for development and debugging purposes.
+### [当前的工作环境，正常！tp=2 pp=3]/data/models/MiniMax-M2.7
+pip install lmcache
+
+workon sglang
+CUDA_VISIBLE_DEVICES=2,3,4,5,6,7 \
+TORCH_CUDA_ARCH_LIST="8.9" NCCL_P2P_DISABLE=1 \
+PYTORCH_ALLOC_CONF=expandable_segments:True \
+LMCACHE_USE_EXPERIMENTAL=True \
+LMCACHE_CONFIG_FILE=/data/models/MiniMax-M2.7/lmcache_config.yaml \
+nohup sglang serve \
+    --model-path /data/models/MiniMax-M2.7 \
+    --trust-remote-code \
+    --tp-size 2 \
+    --pp-size 3 \
+    --host 0.0.0.0 \
+    --port 8000 \
+    --served-model-name coder \
+    --max-total-tokens 200000 \
+    --context-length 196608 \
+    --enable-tokenizer-batch-encode \
+    --enable-dynamic-chunking \
+    --disable-custom-all-reduce \
+    --tool-call-parser minimax-m2 \
+    --reasoning-parser minimax \
+    --mem-fraction-static 0.95 \
+    --dtype auto \
+    --quantization awq_marlin \
+    --kv-cache-dtype fp8_e4m3 \
+    --enable-hierarchical-cache \
+    --enable-lmcache \
+    --page-size 16 \
+    --max-running-requests 4 \
+    --chunked-prefill-size 4096 \
+    --max-prefill-tokens 8192 \
+    >> /root/JqLogs/coder.log 2>&1 &
+tail -f /root/JqLogs/coder.log
+
+
 ### 两个可选的EAGLE3草稿模型
 --speculative-draft-model-path /data/models/minimax-m2.5-pruned-eagle3 \ 【模型更小，效果更好，首选】
 （https://modelscope.cn/models/eigen-ai-labs/minimax-m2.5-pruned-eagle3）
@@ -118,12 +524,17 @@ tail -f /root/JqLogs/coder.log
  https://huggingface.co/modularai/kimi-k2.5-eagle3
  HF_DEBUG=1 hf download modularai/kimi-k2.5-eagle3 --local-dir /data/models/modularai/kimi-k2.5-eagle3 --max-workers 20
 
-## 200服务器运行性能速度测试/data/models/MiniMax/MiniMax-M25
+ https://huggingface.co/thoughtworks/MiniMax-M2.5-Eagle3
+ 另一个新出的
+
+### 200服务器运行性能速度测试/data/models/MiniMax-M2.7
 
 【在另一个终端（或容器内）运行测试脚本。该脚本会向服务发送并发请求。】
     --host 192.168.44.200 【其他机器上运行请替换为，另外还需已安装sglang】
 
 random(快速基准测试、压力测试) sharegpt(模拟真实聊天场景) longbench_v2(长文本推理性能测试)
+
+
 
 workon sglang 
 cd /root/sglang_m25_speed_test
@@ -132,7 +543,7 @@ HF_ENDPOINT=https://hf-mirror.com python -m sglang.bench_serving \
     --host 127.0.0.1 \
     --port 8000 \
     --seed 42 \
-    --model /data/models/MiniMax/MiniMax-M2___5 \
+    --model /data/models/MiniMax-M2.7 \
     --served-model-name coder \
     --dataset-name sharegpt \
     --num-prompts 1200 \
@@ -140,291 +551,269 @@ HF_ENDPOINT=https://hf-mirror.com python -m sglang.bench_serving \
     --request-rate 32 \
     --output-file result.json
 
+## Ktransformers运行GLM-5.1
+--kv-cache-dtype bf16 \ 否则乱码
+max_total_num_tokens
 
-# 105服务器上vllm0.18.1 运行 /data/models/Qwen3.5-27B-Claude-4.6-Opus-Reasoning-Distilled-v2-FP8-Dynamic
-/data/models/Jackrong/Qwen3___5-27B-Claude-4___6-Opus-Reasoning-Distilled-v2
+
+## 11  Lsglang运行GLM-5.1 
+
+【https://github.com/guqiong96/Lsglang/blob/main/README_cn.md#%E5%A6%82%E4%BD%95%E8%BF%90%E8%A1%8Cglm-51-fp8】
+
+sudo lsof -i :8000
+sudo lsof -i :9000
+
+sync && echo 3 | sudo tee /proc/sys/vm/drop_caches
+free -h
+LVLLM_MOE_QUANT_ON_GPU
+
+### （20+ t/s --nsa-prefill-backend tilelang/fa3 但长上下文速度衰减更慢）
+sudo lsof -i :9000
+
+workon lvllm
+PYTORCH_ALLOC_CONF=expandable_segments:True \
+SGLANG_FORCE_FP8_MARLIN=1 \
+SGLANG_ENABLE_JIT_DEEPGEMM=0 \
+NCCL_SOCKET_IFNAME=lo \
+NCCL_IB_DISABLE=1 \
+GLOO_SOCKET_IFNAME=lo \
+NCCL_SOCKET_TIMEOUT=600000 \
+LVLLM_MOE_NUMA_ENABLED=1 \
+LK_THREAD_BINDING=CPU_CORE \
+LK_THREADS=44 \
+OMP_NUM_THREADS=44 \
+LVLLM_MOE_USE_WEIGHT=INT4 \
+LVLLM_ENABLE_NUMA_INTERLEAVE=0 \
+LVLLM_MOE_QUANT_ON_GPU=1 \
+LVLLM_GPU_PREFETCH_WINDOW=1 \
+LVLLM_GPU_PREFILL_MIN_BATCH_SIZE=2048 \
+LVLLM_GPU_RESIDENT_MOE_LAYERS=0-20 \
+nohup sglang serve --model-path "/data/models/GLM-5.1-FP8" \
+    --served-model-name "kimi" \
+    --host "0.0.0.0" \
+    --port "9000" \
+    --trust-remote-code \
+    --tensor-parallel-size 8 \
+    --enable-p2p-check \
+    --max-running-requests 4 \
+    --tool-call-parser glm47 \
+    --reasoning-parser glm45 \
+    --chunked-prefill-size 32000 \
+    --mem-fraction-static 0.96 \
+    --attention-backend flashinfer \
+    --fp8-gemm-backend triton \
+    --nsa-prefill-backend fa3 \
+    --nsa-decode-backend fa3 \
+    --kv-cache-dtype bf16 \
+    --disable-shared-experts-fusion \
+    --disable-custom-all-reduce \
+    >> /root/JqLogs/kimi.log 2>&1 & 
+tail -f /root/JqLogs/kimi.log
+
+    --nsa-prefill-backend tilelang \ fa3
+    --nsa-decode-backend tilelang \ 
+
+    --speculative-algorithm EAGLE \
+    --speculative-num-steps 3 \
+    --speculative-eagle-topk 1 \
+    --speculative-num-draft-tokens 4 \
+
+  --fp8-gemm-backend flashinfer \
+  --kv-cache-dtype fp8_e4m3 \
+
+  --fp8-gemm-backend cutlass \
+  --kv-cache-dtype bf16 \
+    --max-total-tokens 300000 \
+    --context-length 202752 \
+    --context-length 196608 \
+
+<!-- GLM-5.1 模型的总层数是 78 层：模型的前 3 层为标准的稠密（Dense）结构，之后的层则采用稀疏的混合专家（MoE）模块 -->
+  --fp8-gemm-backend: invalid choice: 'flashinfer_cutlass' (choose from 'auto', '', 'flashinfer_trtllm', 'flashinfer_deepgemm', 'cutlass', 'triton', 'aiter')    
+--fp8-gemm-backend=cutlass, but hardware does not support it. CUTLASS block FP8 requires Hopper (SM90+) GPUs with CUDA 12.0+.
+
+
+
+
+sudo lsof -i :9000
+启动时注意在日志中查看：max_total_num_tokens的实际值
+
+workon ktglm5
+TRANSFORMERS_VERBOSITY=info 
+
+CUDA_VISIBLE_DEVICES=0,1 SGLANG_ENABLE_JIT_DEEPGEMM=0 TORCH_CUDA_ARCH_LIST="8.9" NCCL_P2P_DISABLE=1 PYTORCH_ALLOC_CONF=expandable_segments:True FLASHINFER_ENABLE_JIT=1 python -m sglang.launch_server \
+  --host 0.0.0.0 \
+  --port 9000 \
+  --context-length 208000 \
+  --tensor-parallel-size 2 \
+  --kt-threadpool-count 2 \
+  --served-model-name kimi \
+  --model-path /data/models/GLM-5.1-FP8 \
+  --kt-weight-path /data/models/GLM-5.1-FP8 \
+  --kt-cpuinfer 96 \
+  --kt-num-gpu-experts 6 \
+  --kt-method FP8 \
+  --kt-gpu-prefill-token-threshold 1024 \
+  --kt-enable-dynamic-expert-update \
+  --kt-expert-placement-strategy frequency \
+  --trust-remote-code \
+  --mem-fraction-static 0.82 \
+  --enable-mixed-chunk \
+  --disable-shared-experts-fusion \
+  --chunked-prefill-size 16384 \
+  --max-running-requests 4 \
+  --attention-backend flashinfer \
+  --fp8-gemm-backend triton \
+  --tool-call-parser glm47 \
+  --reasoning-parser glm45 \
+  --kt-max-deferred-experts-per-token 2 \
+  --disable-custom-all-reduce \
+  --speculative-algorithm EAGLE \
+  --speculative-num-steps 3 \
+  --speculative-eagle-topk 1 \
+  --speculative-num-draft-tokens 4 \
+  --kv-cache-dtype fp8_e4m3 \
+  --watchdog-timeout 3000
+
+
+python -m sglang.launch_server \
+  --host 0.0.0.0 \
+  --port 31245 \
+  --model /path/to/kimi-k2.5 \
+  --kt-weight-path /path/to/kimi-k2.5 \
+  --kt-cpuinfer 96 \
+  --kt-threadpool-count 2 \
+  --kt-num-gpu-experts 30 \
+  --kt-method RAWINT4 \
+  --kt-gpu-prefill-token-threshold 400 \
+  --trust-remote-code \
+  --mem-fraction-static 0.94 \
+  --served-model-name Kimi-K2.5 \
+  --enable-mixed-chunk \
+  --tensor-parallel-size 4 \
+  --enable-p2p-check \
+  --disable-shared-experts-fusion \
+  --chunked-prefill-size 32658 \
+  --max-total-tokens 50000 \
+  --attention-backend flashinfer
+
+  --disable-p2p-check \
+  --tensor-parallel-size 8 \ 要根据情况修改
+  --kt-max-deferred-experts-per-token 2 \ 官方文档没有
+  --enable-p2p-check \ 官方文档有,我在前面增加了NCCL_P2P_DISABLE=1 然后换成
+
+  --attention-backend: 【triton会报错】triton, torch_native, flex_attention, nsa, cutlass_mla, fa3, fa4, flashinfer, flashmla, trtllm_mla, trtllm_mha, dual_chunk_flash_attn, aiter, wave, intel_amx, ascend
+  --fp8-gemm-backend: invalid choice: 'flashinfer_cutlass' (choose from 'auto', 'deep_gemm', 'flashinfer_trtllm', 'flashinfer_deepgemm', 'cutlass', 'triton', 'aiter')
+  --kv-cache-dtype bf16 \   换成了fp8_e4m3，会生成垃圾
+  GLM-5.1 原生支持MTP，会加速Decode
+  --speculative-algorithm EAGLE \
+  --speculative-num-steps 3 \
+  --speculative-eagle-topk 1 \
+  --speculative-num-draft-tokens 4 \
+
+
+# 105服务器上vllm0.19.1 运行 Qwen/Qwen3.6-27B-FP8
 sudo lsof -i :9998
 
 环境准备
 ```
-workon vllmb
-pip install -U vllm==0.18.1 
-pip install -U transformers==5.3.0
+workon vllm
+pip install -U vllm==0.20.0
+pip install -U transformers==5.5.3
 pip uninstall -y flash-attn (如果出现flash-attn报错，如mportError: /root/.virtualenvs/vllmb/lib/python3.11/site-packages/flash_attn_2_cuda.cpython-311-x86_64-linux-gnu.so: undefined symbol: _ZN3c104cuda29c10_cuda_check_implementationEiPKcS2_ib)
-```
 
+--quantization fp8_per_tensor 【https://docs.vllm.ai/en/stable/features/quantization/online/#separate-schemes-for-dense-and-moe-layers】
+--kv-cache-dtype turboquant_k8v4 【https://github.com/vllm-project/vllm/pull/38479】
+
+
+Flash-Attention Prebuild Wheels [[text](https://mjunya.com/flash-attention-prebuild-wheels/?python=3.10&torch=2.11&cuda=13.0&platform=Linux+x86_64)]
+选择正确的版本 如105 vllm虚拟环境对应下载了https://github.com/mjun0812/flash-attention-prebuild-wheels/releases/download/v0.9.4/flash_attn-2.8.3+cu130torch2.11-cp310-cp310-linux_x86_64.whl 保存在/root目录下
+安装：
+
+pip install /root/flash_attn-2.8.3+cu130torch2.11-cp310-cp310-linux_x86_64.whl
+测试是否成功：python
+from flash_attn import flash_attn_qkvpacked_func, flash_attn_func
+
+```
+/data/models/kai-os/Carnice-V2-27b [https://huggingface.co/kai-os/Carnice-V2-27b/discussions/3]
+sudo lsof -i :9998
+
+/data/models/Qwen/Qwen3___6-27B-FP8
+/data/models/GRM-2.6-Plus
+/data/models/GRM-2.6-Opus
+/data/models/Qwopucode-full-v14-27B-FP8-Block
 
 workon vllmb
 NCCL_DEBUG=INFO \
-NCCL_ALGO=Ring \
 fix_mistral_regex=True \
-PYTORCH_ALLOC_CONF=expandable_segments:True \
-nohup vllm serve /data/models/Qwen/Qwen3___5-27B-FP8 \
+VLLM_USE_DEEP_GEMM=0 \
+TORCH_CUDA_ARCH_LIST="8.9" CUDA_VISIBLE_DEVICES=0,1,2,3 PYTORCH_ALLOC_CONF=expandable_segments:True \
+nohup vllm serve /data/models/Qwopucode-full-v14-27B-FP8-Block/ \
     --trust-remote-code \
     --gpu-memory-utilization 0.85 \
+    --kv-cache-dtype bfloat16 \
     --max-model-len -1 \
-    --cpu-offload-gb 0 \
     --max-num-seqs 8 \
-    --kv-cache-dtype fp8_e4m3 \
     --served-model-name qwen3 \
     --tensor-parallel-size 4 \
     --enable-chunked-prefill \
+    --enable-prefix-caching \
     --async-scheduling \
     --host 0.0.0.0 \
     --port 9998 \
     --performance-mode throughput \
-    --speculative-config '{"method":"mtp","num_speculative_tokens":2}' \
     --skip-mm-profiling \
     --enable-auto-tool-choice \
     --tool-call-parser qwen3_coder \
     --reasoning-parser qwen3 \
+    --speculative-config '{"method":"mtp","num_speculative_tokens":3}' \
     >> /root/JqLogs/qwen3.log 2>&1 &
 tail -f /root/JqLogs/qwen3.log
 
-# 会生成不完整，截断
-    --speculative-config '{"method": "ngram_gpu", "num_speculative_tokens": 5, "prompt_lookup_max": 6, "prompt_lookup_min": 3}' \
+
+## /data/models/deepreinforce-ai/Ornith-1.0-35B-FP8
+workon vllmb
+NCCL_DEBUG=INFO \
+fix_mistral_regex=True \
+VLLM_USE_DEEP_GEMM=0 \
+TORCH_CUDA_ARCH_LIST="8.9" CUDA_VISIBLE_DEVICES=0,1,2,3 PYTORCH_ALLOC_CONF=expandable_segments:True \
+nohup vllm serve /data/models/deepreinforce-ai/Ornith-1.0-35B-FP8 \
+    --trust-remote-code \
+    --gpu-memory-utilization 0.85 \
+    --kv-cache-dtype bfloat16 \
+    --max-model-len -1 \
+    --max-num-seqs 8 \
+    --served-model-name qwen3 \
+    --tensor-parallel-size 4 \
+    --enable-chunked-prefill \
+    --enable-prefix-caching \
+    --async-scheduling \
+    --host 0.0.0.0 \
+    --port 9998 \
+    --performance-mode throughput \
+    --skip-mm-profiling \
+    --enable-auto-tool-choice \
+    --tool-call-parser qwen3_xml \
+    --reasoning-parser qwen3 \
+    >> /root/JqLogs/qwen3.log 2>&1 &
+tail -f /root/JqLogs/qwen3.log
+
+    --speculative-config '{"method":"mtp","num_speculative_tokens":3}' \
+
+
+
+    --disable-custom-all-reduce \
+    --dtype bfloat16 \
+    --attention-backend FLASHINFER \
+    --speculative-config '{"method": "dflash", "model": "/data/models/Qwen3.6-27B-DFlash", "num_speculative_tokens": 10}' \
+
+
+
 # qwen3_next_mtp来自官方，但vllm已弃用，直接使用 mtp，似乎可以，不会截断
     --speculative-config '{"method":"qwen3_next_mtp","num_speculative_tokens":2}' \ 
 
     --speculative-config '{"method":"mtp","num_speculative_tokens":2}' \
 
-workon vllmb
-pip install -U vllm==0.18.1 
-pip install -U transformers==5.3.0
-pip uninstall -y flash-attn (如果出现flash-attn报错，如mportError: /root/.virtualenvs/vllmb/lib/python3.11/site-packages/flash_attn_2_cuda.cpython-311-x86_64-linux-gnu.so: undefined symbol: _ZN3c104cuda29c10_cuda_check_implementationEiPKcS2_ib)
 
-
-workon vllmb
-vllm serve /data/models/Qwen3.5-27B-Claude-4.6-Opus-Reasoning-Distilled-v2-FP8-Dynamic \
-  --trust-remote-code \
-  --host 0.0.0.0 \
-  --port 9998 \
-  --served-model-name qwen3 \
-  --tensor-parallel-size 4 \
-  --max-model-len 262144 \
-  --gpu-memory-utilization 0.85 \
-  --kv-cache-dtype fp8_e4m3 \
-  --max-num-seqs 1 \
-  --skip-mm-profiling \
-  --reasoning-parser qwen3
-
-
-# 105服务器上sglang运行Qwen3-VL-30B-A3B-Instruct-FP8
-```
-cd ~
-source usglang/bin/activate
-TORCH_CUDA_ARCH_LIST="8.9+PTX" CUDA_VISIBLE_DEVICES=2,3 FLASHINFER_DISABLE_VERSION_CHECK=1 nohup python -m sglang.launch_server \
-  --model-path /data/models/Qwen/Qwen3-VL-30B-A3B-Instruct-FP8/ \
-  --served-model-name qwen3 \
-  --tp 2 \
-  --ep 2 \
-  --host 0.0.0.0 \
-  --port 9998 \
-  --keep-mm-feature-on-device \
-  --context-length 128000 \
-  --max-running-requests 32 \
-  --tool-call-parser qwen \
-  --disable-custom-all-reduce >> /root/JqLogs/qwq.log 2>&1 &
-tail -f /root/JqLogs/qwq.log
-```
-
-
-
-# 200新服务器部署Kimi-K2-Thinking-Native和MiniMax-M2 M2.1
-## 六卡tp/dp运行MiniMax-M2模型[**200上的新版本vllm已可正常运行**] 
-sudo lsof -i :8000
-
-### /data/models/MiniMax/MiniMax-M2___5
-
-```
-#### TP8
-#### newvllm vllm0.18
-workon newvllm
-
-NCCL_DEBUG=INFO \
-NCCL_ALGO=Ring \
-NCCL_DEBUG_SUBSYS=INIT,ENV \
-PYTORCH_ALLOC_CONF=expandable_segments:True \
-nohup vllm serve /data/models/MiniMax/MiniMax-M2___5 \
-    --trust-remote-code \
-    --gpu-memory-utilization 0.92 \
-    --max-model-len -1 \
-    --cpu-offload-gb 0 \
-    --max-num-seqs 8 \
-    --kv-cache-dtype fp8_e4m3 \
-    --served-model-name coder \
-    --tensor-parallel-size 8 \
-    --enable-expert-parallel \
-    --enable-ep-weight-filter \
-    --enable-auto-tool-choice \
-    --tool-call-parser minimax_m2 \
-    --reasoning-parser minimax_m2 \
-    --host 0.0.0.0 \
-    --port 8000 \
-    --performance-mode throughput \
-    --enable-chunked-prefill \
-    --speculative-config '{"method": "ngram_gpu", "num_speculative_tokens": 6, "prompt_lookup_max": 8, "prompt_lookup_min": 3}' >> /root/JqLogs/coder.log 2>&1 &
-tail -f /root/JqLogs/coder.log
-
-    --compilation-config "{\"cudagraph_mode\": \"PIECEWISE\"}" \
-[ok]
-#### TP2&DP3 vllm0.18
-sudo nvidia-smi -pm ENABLED
-sudo lsof -i :8000
-    --enable-expert-parallel \
-    --data-parallel-size 2 \
-
-待测试方案1
-workon newvllm 
-TORCH_CUDA_ARCH_LIST="8.9" NCCL_P2P_DISABLE=1 PYTORCH_ALLOC_CONF=expandable_segments:True NCCL_DEBUG=INFO nohup vllm serve /data/models/MiniMax/MiniMax-M2___5 \
-    --trust-remote-code \
-    --gpu_memory_utilization 0.92 \
-    --max_model_len -1 \
-    --cpu-offload-gb 0 \
-    --max_num_seqs 32 \
-    --kv_cache_dtype fp8 \
-    --served-model-name coder \
-    --tensor-parallel-size 4 \
-    --pipeline_parallel_size 2 \ 
-    --enable-auto-tool-choice \
-    --tool-call-parser minimax_m2 \
-    --reasoning-parser minimax_m2 \
-    --performance-mode throughput \
-    --enable-chunked-prefill \
-    --speculative-config '{"method": "ngram_gpu", "num_speculative_tokens": 6, "prompt_lookup_max": 8, "prompt_lookup_min": 3}' \
-    --host 0.0.0.0 --port 8000 >> /root/JqLogs/coder.log 2>&1 &
-tail -f /root/JqLogs/coder.log
-
-待测试方案2
-workon newvllm 
-NCCL_P2P_DISABLE=1 VLLM_USE_DEEP_GEMM=0 OMP_NUM_THREADS=4 TORCH_CUDA_ARCH_LIST="8.9" NCCL_P2P_DISABLE=1 PYTORCH_ALLOC_CONF=expandable_segments:True NCCL_DEBUG=INFO nohup vllm serve /data/models/MiniMax/MiniMax-M2___5 \
-    --trust-remote-code \
-    --gpu_memory_utilization 0.92 \
-    --max_model_len -1 \
-    --cpu-offload-gb 0 \
-    --max_num_seqs 8 \
-    --kv_cache_dtype fp8 \
-    --served-model-name coder \
-    --tensor-parallel-size 2 \
-    --data-parallel-size 4 \ 
-    --enable-expert-parallel \
-    --enable-auto-tool-choice \
-    --tool-call-parser minimax_m2 \
-    --reasoning-parser minimax_m2 \
-    --performance-mode throughput \
-    --enable-chunked-prefill \
-    --speculative-config '{"method": "ngram_gpu", "num_speculative_tokens": 6, "prompt_lookup_max": 8, "prompt_lookup_min": 3}' \
-    --host 0.0.0.0 --port 8000 >> /root/JqLogs/coder.log 2>&1 &
-tail -f /root/JqLogs/coder.log
-
-
-待测试方案3
-workon newvllm 
-NCCL_P2P_DISABLE=1 VLLM_USE_DEEP_GEMM=0 OMP_NUM_THREADS=4 TORCH_CUDA_ARCH_LIST="8.9" NCCL_P2P_DISABLE=1 PYTORCH_ALLOC_CONF=expandable_segments:True NCCL_DEBUG=INFO nohup vllm serve /data/models/MiniMax/MiniMax-M2___5 \
-    --trust-remote-code \
-    --gpu_memory_utilization 0.92 \
-    --max_model_len -1 \
-    --cpu-offload-gb 0 \
-    --max_num_seqs 8 \
-    --kv_cache_dtype fp8 \
-    --served-model-name coder \
-    --tensor-parallel-size 8 \
-    --enable-expert-parallel \
-    --enable-auto-tool-choice \
-    --tool-call-parser minimax_m2 \
-    --reasoning-parser minimax_m2 \
-    --performance-mode throughput \
-    --enable-chunked-prefill \
-    --speculative-config '{"method": "ngram_gpu", "num_speculative_tokens": 6, "prompt_lookup_max": 8, "prompt_lookup_min": 3}' \
-    --host 0.0.0.0 --port 8000 >> /root/JqLogs/coder.log 2>&1 &
-tail -f /root/JqLogs/coder.log
-
-    --moe-runner-backend flashinfer_cutlass \
-
-
-
-
-
-
-
-
-
-workon vllm
-unset CC CXX
-CUDA_VISIBLE_DEVICES=2,3,4,5,6,7 PYTORCH_ALLOC_CONF=expandable_segments:True NCCL_DEBUG=INFO nohup vllm serve /data/models/MiniMax/MiniMax-M2___5 \
-    --trust-remote-code \
-    --gpu_memory_utilization 0.95 \
-    --max_model_len -1 \
-    --compilation-config "{\"cudagraph_mode\": \"PIECEWISE\"}" \
-    --max_num_seqs 16 \
-    --kv_cache_dtype fp8 \
-    --served-model-name coder \
-    --tensor-parallel-size 2 \
-    --data-parallel-size 3 \
-    --enable-expert-parallel \
-    --enable-auto-tool-choice \
-    --tool-call-parser minimax_m2 \
-    --reasoning-parser minimax_m2_append_think \
-    --host 0.0.0.0 --port 8000 >> /root/JqLogs/coder.log 2>&1 &
-tail -f /root/JqLogs/coder.log
-```
-
-    --no-async-scheduling \
-### /data/models/MiniMax/MiniMax-M2___1
-```
-workon newvllm
-unset CC CXX
-CUDA_VISIBLE_DEVICES=2,3,4,5,6,7 SAFETENSORS_FAST_GPU=1 PYTORCH_ALLOC_CONF=expandable_segments:True nohup vllm serve /data/models/MiniMax/MiniMax-M2___5 \
-    --trust-remote-code \
-    --gpu_memory_utilization 0.95 \
-    --max_model_len 32000 \
-    --no-async-scheduling \
-    --cpu-offload-gb 0 \
-    --max_num_seqs 16 \
-    --kv_cache_dtype fp8 \
-    --served-model-name coder \
-    --chat-template /data/models/MiniMax/MiniMax-M2___1/chat_template.jinja \
-    --tensor-parallel-size 2 \
-    --data-parallel-size 3 \
-    --enable-expert-parallel \
-    --enable-auto-tool-choice --tool-call-parser minimax_m2 \
-    --reasoning-parser minimax_m2 \
-    --host 0.0.0.0 --port 8000 >> /root/JqLogs/coder.log 2>&1 &
-tail -f /root/JqLogs/coder.log
-
-
-unset CC CXX
-workon vllm
-CUDA_VISIBLE_DEVICES=2,3,4,5,6,7 SAFETENSORS_FAST_GPU=1 PYTORCH_ALLOC_CONF=expandable_segments:True nohup vllm serve /data/models/MiniMax/MiniMax-M2___1 \
-    --trust-remote-code \
-    --gpu_memory_utilization 0.96 \
-    --max_model_len 100000 \
-    --max_num_seqs 16 \
-    --kv_cache_dtype fp8 \
-    --served-model-name coder \
-    --chat-template /data/models/MiniMax/MiniMax-M2___1/chat_template.jinja \
-    --tensor-parallel-size 2 \
-    --data-parallel-size 3 \
-    --enable-expert-parallel \
-    --enable-auto-tool-choice --tool-call-parser minimax_m2 \
-    --reasoning-parser minimax_m2 \
-    --host 0.0.0.0 --port 8000 >> /root/JqLogs/coder.log 2>&1 &
-tail -f /root/JqLogs/coder.log
-```
-
-
-
-## 双卡运行Kimi-K2.5模型
-
-sudo lsof -i :9000
-<!-- unset CC CXX -->
-<!-- CCACHE_DISABLE=1  -->
-
-<!-- workon ktsglang
-workon ktsglangv051
-
-export CC=/usr/bin/gcc
-export CXX=/usr/bin/g++ -->
 
 
 rm -rf /root/.cache/flashinfer/0.6.2/89/
@@ -1306,10 +1695,43 @@ CUDA_VISIBLE_DEVICES=0,1,2,3 PYTORCH_ALLOC_CONF=expandable_segments:True SGLANG_
 tail -f /root/JqLogs/qwen3.log
 ```
 
+
+
+
 ```
 workon sglang35
-CUDA_VISIBLE_DEVICES=0,1,2,3 PYTORCH_ALLOC_CONF=expandable_segments:True SGLANG_USE_MODELSCOPE=true nohup python -m sglang.launch_server --model-path /data/models/Qwen/Qwen3___5-27B-FP8 --host 0.0.0.0 --port 9998 --tp-size 4 --mem-fraction-static 0.7 --context-length 262144 --reasoning-parser qwen3 --max-running-requests 8 --tool-call-parser qwen3_coder --kv-cache-dtype auto --speculative-algo NEXTN --speculative-num-steps 3 --speculative-eagle-topk 1 --speculative-num-draft-tokens 4 >> /root/JqLogs/qwen3.log 2>&1 &
+CUDA_VISIBLE_DEVICES=2,3 PYTORCH_ALLOC_CONF=expandable_segments:True SGLANG_USE_MODELSCOPE=true nohup python -m sglang.launch_server --model-path /data/models/Qwen/Qwen3___5-27B-FP8 --host 0.0.0.0 --port 9998 --tp-size 2 --mem-fraction-static 0.85 --context-length 196000 --reasoning-parser qwen3 --max-running-requests 8 --tool-call-parser qwen3_coder --dtype auto --kv-cache-dtype fp8_e4m3 >> /root/JqLogs/qwen3.log 2>&1 &
 tail -f /root/JqLogs/qwen3.log
+```
+
+```
+workon sglang35
+CUDA_VISIBLE_DEVICES=2,3 \
+PYTORCH_ALLOC_CONF=expandable_segments:True \
+SGLANG_USE_MODELSCOPE=true \
+SGLANG_ENABLE_SPEC_V2=1 \
+nohup python -m sglang.launch_server \
+    --model-path /data/models/Qwen/Qwen3___5-27B-FP8 \
+    --host 0.0.0.0 \
+    --port 9998 \
+    --tp-size 2 \
+    --mem-fraction-static 0.88 \
+    --context-length 196000 \
+    --reasoning-parser qwen3 \
+    --max-running-requests 8 \
+    --tool-call-parser qwen3_coder \
+    --dtype auto \
+    --kv-cache-dtype fp8_e4m3 \
+    --speculative-algo NEXTN \
+    --speculative-num-steps 3 \
+    --speculative-eagle-topk 1 \
+    --speculative-num-draft-tokens 4 \
+    --mamba-scheduler-strategy extra_buffer \
+    >> /root/JqLogs/qwen3.log 2>&1 &
+tail -f /root/JqLogs/qwen3.log
+
+ValueError: Speculative decoding for Qwen3_5ForConditionalGeneration is not compatible with radix cache when using --mamba-scheduler-strategy no_buffer.To use radix cache with speculative decoding, please use --mamba-scheduler-strategy extra_buffer and set SGLANG_ENABLE_SPEC_V2=1.
+
 ```
 
 vllm --default-chat-template-kwargs '{"enable_thinking": false}'
